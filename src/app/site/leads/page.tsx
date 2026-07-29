@@ -1,25 +1,27 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { requireCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
+
+export const dynamic = 'force-dynamic';
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(date);
 }
 
-function whatsappLink(phone: string) {
-  const clean = phone.replace(/\D/g, '');
+export default async function SiteLeadsPage() {
+  const user = await requireCurrentUser();
 
-  if (clean.startsWith('55')) {
-    return `https://wa.me/${clean}`;
+  if (user.role !== 'DIRECTOR') {
+    redirect('/clientes');
   }
 
-  return `https://wa.me/55${clean}`;
-}
-
-export default async function AprovUpLeadsPage() {
   const leads = await prisma.aprovUpLead.findMany({
     orderBy: {
       createdAt: 'desc',
@@ -27,119 +29,110 @@ export default async function AprovUpLeadsPage() {
   });
 
   return (
-    <main className="min-h-screen bg-[#F7F8FC] px-6 py-10 text-[#111827]">
-      <section className="mx-auto max-w-7xl">
-        <div className="flex flex-col justify-between gap-6 rounded-[36px] bg-white p-8 shadow-2xl shadow-slate-200 md:flex-row md:items-center">
+    <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8 flex flex-col justify-between gap-4 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/30 md:flex-row md:items-center">
           <div>
-            <AprovUpLogo size="sm" showTagline={false} />
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
+              AprovUp
+            </p>
 
-            <h1 className="mt-8 text-4xl font-black tracking-[-0.05em]">
-              Leads do AprovUp
+            <h1 className="mt-2 text-3xl font-bold">
+              Leads captados pelo site
             </h1>
 
-            <p className="mt-3 text-slate-600">
-              Interessados que preencheram o formulário do site.
+            <p className="mt-2 max-w-2xl text-sm text-slate-300">
+              Aqui ficam os contatos que preencheram o formulário comercial do AprovUp.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
+            <Link
+              href="/clientes"
+              className="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              Voltar ao sistema
+            </Link>
+
             <a
               href="/api/aprovup-leads/export"
-              className="rounded-full bg-gradient-to-r from-[#8B3DFF] to-[#2563EB] px-6 py-3 text-sm font-black text-white"
+              className="rounded-full bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-100"
             >
               Exportar CSV
             </a>
-
-            <Link
-              href="/site"
-              className="rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-black text-slate-800"
-            >
-              Voltar para o site
-            </Link>
           </div>
         </div>
 
-        <div className="mt-8 grid gap-4">
+        <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/5">
           {leads.length === 0 ? (
-            <div className="rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200">
-              <p className="text-lg font-black text-slate-900">
-                Nenhum lead cadastrado ainda.
-              </p>
+            <div className="p-8 text-center text-slate-300">
+              Nenhum lead captado ainda.
             </div>
           ) : (
-            leads.map((lead) => (
-              <div
-                key={lead.id}
-                className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200"
-              >
-                <div className="flex flex-col justify-between gap-5 md:flex-row md:items-start">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-[#7554F7]">
-                      {lead.status}
-                    </p>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] border-collapse text-left text-sm">
+                <thead className="bg-white/10 text-xs uppercase tracking-wider text-slate-300">
+                  <tr>
+                    <th className="px-5 py-4">Nome</th>
+                    <th className="px-5 py-4">Agência</th>
+                    <th className="px-5 py-4">WhatsApp</th>
+                    <th className="px-5 py-4">Clientes</th>
+                    <th className="px-5 py-4">Maior dor</th>
+                    <th className="px-5 py-4">Data</th>
+                    <th className="px-5 py-4">Ação</th>
+                  </tr>
+                </thead>
 
-                    <h2 className="mt-2 text-2xl font-black tracking-[-0.03em]">
-                      {lead.agency}
-                    </h2>
+                <tbody className="divide-y divide-white/10">
+                  {leads.map((lead) => {
+                    const whatsappDigits = lead.whatsapp.replace(/\D/g, '');
+                    const whatsappLink = `https://wa.me/55${whatsappDigits}`;
 
-                    <p className="mt-1 font-bold text-slate-600">
-                      {lead.name}
-                    </p>
-                  </div>
+                    return (
+                      <tr key={lead.id} className="text-slate-200">
+                        <td className="px-5 py-4 font-semibold text-white">
+                          {lead.name}
+                        </td>
 
-                  <div className="text-sm font-semibold text-slate-500">
-                    {formatDate(lead.createdAt)}
-                  </div>
-                </div>
+                        <td className="px-5 py-4">
+                          {lead.agency}
+                        </td>
 
-                <div className="mt-6 grid gap-4 md:grid-cols-3">
-                  <div className="rounded-3xl bg-slate-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.15em] text-slate-400">
-                      WhatsApp
-                    </p>
-                    <p className="mt-2 font-black text-slate-900">{lead.whatsapp}</p>
-                  </div>
+                        <td className="px-5 py-4">
+                          {lead.whatsapp}
+                        </td>
 
-                  <div className="rounded-3xl bg-slate-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.15em] text-slate-400">
-                      Clientes
-                    </p>
-                    <p className="mt-2 font-black text-slate-900">
-                      {lead.clientCount || 'Não informado'}
-                    </p>
-                  </div>
+                        <td className="px-5 py-4">
+                          {lead.clientCount || '-'}
+                        </td>
 
-                  <div className="rounded-3xl bg-slate-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.15em] text-slate-400">
-                      Origem
-                    </p>
-                    <p className="mt-2 font-black text-slate-900">{lead.source}</p>
-                  </div>
-                </div>
+                        <td className="max-w-xs px-5 py-4 text-slate-300">
+                          {lead.biggestPain || '-'}
+                        </td>
 
-                {lead.biggestPain ? (
-                  <div className="mt-4 rounded-3xl bg-slate-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.15em] text-slate-400">
-                      Maior dificuldade
-                    </p>
-                    <p className="mt-2 leading-relaxed text-slate-700">
-                      {lead.biggestPain}
-                    </p>
-                  </div>
-                ) : null}
+                        <td className="px-5 py-4 text-slate-400">
+                          {formatDate(lead.createdAt)}
+                        </td>
 
-                <a
-                  href={whatsappLink(lead.whatsapp)}
-                  target="_blank"
-                  className="mt-5 inline-flex rounded-full bg-emerald-500 px-5 py-3 text-sm font-black text-white"
-                >
-                  Chamar no WhatsApp
-                </a>
-              </div>
-            ))
+                        <td className="px-5 py-4">
+                          <a
+                            href={whatsappLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-full bg-cyan-300 px-4 py-2 text-xs font-bold text-slate-950 transition hover:bg-cyan-200"
+                          >
+                            Chamar
+                          </a>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
-      </section>
+      </div>
     </main>
   );
 }
