@@ -3,12 +3,11 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// Nota: SQLite no Prisma nÃ£o suporta enums nativamente.
-// Usaremos campos String que representam os enums no cÃ³digo.
+// Nota: estamos usando campos String para representar status, perfis e categorias no código.
 
 model User {
   id             String    @id @default(cuid())
@@ -139,10 +138,11 @@ model Content {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  finalMediaUrl     String?
-  finalCoverUrl     String?
-  finalMediaType    String?
-  finalUploadedAt   DateTime?
+
+  finalMediaUrl   String?
+  finalCoverUrl   String?
+  finalMediaType  String?
+  finalUploadedAt DateTime?
 }
 
 model Task {
@@ -270,7 +270,6 @@ model CaptureDateSuggestion {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
-
 
 model AprovUpLead {
   id          String   @id @default(cuid())
