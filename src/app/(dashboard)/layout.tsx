@@ -1,4 +1,8 @@
-﻿import { AppSidebar } from '@/components/layout/AppSidebar';
+﻿export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
+import { AppSidebar } from '@/components/layout/AppSidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
 import SocialMediaAlertButton from '@/components/SocialMediaAlertButton';
 
