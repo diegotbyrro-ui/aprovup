@@ -1,0 +1,88 @@
+﻿<svg width="1000" height="310" viewBox="0 0 1000 310" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="upGradient" x1="640" y1="70" x2="835" y2="205" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8B3DFF"/>
+      <stop offset="0.48" stop-color="#6D5DFB"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1000" height="310" fill="white"/>
+
+  <text
+    x="95"
+    y="158"
+    font-family="Inter, Arial, Helvetica, sans-serif"
+    font-size="126"
+    font-weight="900"
+    letter-spacing="-7"
+    fill="#111827"
+  >Aprov</text>
+
+  <text
+    x="625"
+    y="158"
+    font-family="Inter, Arial, Helvetica, sans-serif"
+    font-size="126"
+    font-weight="900"
+    letter-spacing="-7"
+    fill="url(#upGradient)"
+  >Up</text>
+
+  <path
+    d="M723 151V55"
+    stroke="url(#upGradient)"
+    stroke-width="20"
+    stroke-linecap="round"
+  />
+
+  <path
+    d="M723 55L695 88"
+    stroke="url(#upGradient)"
+    stroke-width="20"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <path
+    d="M723 55L751 88"
+    stroke="url(#upGradient)"
+    stroke-width="20"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <text
+    x="155"
+    y="224"
+    font-family="Inter, Arial, Helvetica, sans-serif"
+    font-size="20"
+    font-weight="700"
+    letter-spacing="10"
+    fill="#111827"
+  >APROVAÇÃO</text>
+
+  <circle cx="374" cy="217" r="5" fill="#7C3AED"/>
+
+  <text
+    x="405"
+    y="224"
+    font-family="Inter, Arial, Helvetica, sans-serif"
+    font-size="20"
+    font-weight="700"
+    letter-spacing="10"
+    fill="#111827"
+  >PRODUÇÃO</text>
+
+  <circle cx="602" cy="217" r="5" fill="#7C3AED"/>
+
+  <text
+    x="633"
+    y="224"
+    font-family="Inter, Arial, Helvetica, sans-serif"
+    font-size="20"
+    font-weight="700"
+    letter-spacing="10"
+    fill="#111827"
+  >RESULTADOS</text>
+</svg>

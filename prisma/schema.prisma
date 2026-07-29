@@ -1,0 +1,286 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Nota: SQLite no Prisma nÃ£o suporta enums nativamente.
+// Usaremos campos String que representam os enums no cÃ³digo.
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  password       String?
+  role           String    @default("SOCIAL_MEDIA")
+  status         String    @default("PENDENTE")
+  approvedAt     DateTime?
+  approvedByName String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Client {
+  id                  String  @id @default(cuid())
+  name                String
+  segment             String?
+  internalResponsible String?
+  postingFrequency    String?
+  monthlyContentGoal  Int     @default(0)
+  toneOfVoice         String?
+  contractedServices  String?
+  usefulLinks         String?
+  databaseLink        String?
+  driveLink           String?
+  logoLink            String?
+  strategicNotes      String?
+  logoUrl             String?
+  brandColor          String?
+  clientBriefing      String?
+  personaNotes        String?
+
+  contents         Content[]
+  personas         ClientPersona[]
+  diagnoses        ClientProfileDiagnosis[]
+  monthlyApprovals MonthlyApproval[]
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  cnpj                String?
+  legalName           String?
+  mainContact         String?
+  contactPhone        String?
+  contactEmail        String?
+  companyAddress      String?
+  businessDescription String?
+  targetAudience      String?
+  brandDifferentials  String?
+  marketingGoals      String?
+  competitors         String?
+  benchmarkNotes      String?
+  contentPillars      String?
+  contentRestrictions String?
+}
+
+model ClientPersona {
+  id                 String  @id @default(cuid())
+  name               String
+  ageRange           String?
+  location           String?
+  profession         String?
+  painPoints         String?
+  desires            String?
+  objections         String?
+  realPhrases        String?
+  contentPreferences String?
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClientProfileDiagnosis {
+  id String @id @default(cuid())
+
+  instagramUrl String?
+  teamNotes    String?
+
+  profilePrintUrl    String?
+  insightsPrintUrl   String?
+  highlightsPrintUrl String?
+
+  bioAnalysis              String?
+  profilePhotoAnalysis     String?
+  visualIdentityAnalysis   String?
+  highlightsAnalysis       String?
+  postingFrequencyAnalysis String?
+  offerClarityAnalysis     String?
+  strengths                String?
+  improvementPoints        String?
+  actionPlan               String?
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Content {
+  id            String    @id @default(cuid())
+  title         String
+  objective     String?
+  format        String?
+  platform      String?
+  plannedDate   DateTime?
+  responsible   String?
+  area          String    @default("GERAL")
+  priority      String    @default("MEDIA")
+  caption       String?
+  artText       String?
+  script        String?
+  briefing      String?
+  fileLinks     String?
+  coverImageUrl String?
+  status        String    @default("IDEIA")
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  tasks     Task[]
+  comments  Comment[]
+  approvals Approval[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  finalMediaUrl     String?
+  finalCoverUrl     String?
+  finalMediaType    String?
+  finalUploadedAt   DateTime?
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("A_FAZER")
+  priority    String    @default("MEDIA")
+  dueDate     DateTime?
+  responsible String?
+
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id         String  @id @default(cuid())
+  authorName String?
+  authorRole String?
+  message    String
+
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Approval {
+  id            String  @id @default(cuid())
+  token         String  @unique
+  status        String  @default("PENDENTE")
+  clientComment String?
+
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MonthlyApproval {
+  id     String @id @default(cuid())
+  token  String @unique
+  month  Int
+  year   Int
+  status String @default("PENDENTE")
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([clientId, month, year])
+}
+
+model PromptTemplate {
+  id        String   @id @default(cuid())
+  title     String
+  category  String?
+  segment   String?
+  prompt    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HistoryLog {
+  id          String   @id @default(cuid())
+  entityType  String
+  entityId    String
+  action      String
+  description String
+  authorName  String
+  createdAt   DateTime @default(now())
+}
+
+model DesignKanbanColumn {
+  id        String   @id @default(cuid())
+  title     String
+  statusKey String   @unique
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FilmmakerKanbanColumn {
+  id        String   @id @default(cuid())
+  title     String
+  statusKey String   @unique
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CaptureSchedule {
+  id          String   @id @default(cuid())
+  clientId    String
+  contentId   String?
+  clientName  String
+  contentName String?
+  scheduledAt DateTime
+  dateKey     String
+  location    String?
+  notes       String?
+  status      String   @default("AGENDADO")
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CaptureDateSuggestion {
+  id            String   @id @default(cuid())
+  clientId      String
+  approvalToken String?
+  dateKey       String
+  time          String   @default("09:00")
+  label         String?
+  isActive      Boolean  @default(true)
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+
+model AprovUpLead {
+  id          String   @id @default(cuid())
+  name        String
+  agency      String
+  whatsapp    String
+  clientCount String?
+  biggestPain String?
+  source      String   @default("site")
+  status      String   @default("NOVO")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
