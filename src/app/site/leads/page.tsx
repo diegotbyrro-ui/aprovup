@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { requireCurrentUser } from '@/lib/auth';
+import { requireCommanderAccess } from '@/lib/commanderAccess';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat('pt-BR', {
@@ -16,11 +17,7 @@ function formatDate(date: Date) {
 }
 
 export default async function SiteLeadsPage() {
-  const user = await requireCurrentUser();
-
-  if (user.role !== 'DIRECTOR') {
-    redirect('/clientes');
-  }
+  await requireCommanderAccess();
 
   const leads = await prisma.aprovUpLead.findMany({
     orderBy: {
@@ -42,16 +39,16 @@ export default async function SiteLeadsPage() {
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm text-slate-300">
-              Aqui ficam os contatos que preencheram o formulário comercial do AprovUp.
+              Área restrita à conta principal autorizada.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/clientes"
+              href="/central"
               className="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
             >
-              Voltar ao sistema
+              Voltar para Central
             </Link>
 
             <a

@@ -1,15 +1,20 @@
-﻿import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
+import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 import Link from 'next/link';
 import { requireCurrentUser } from '@/lib/auth';
+import { isCommanderUser } from '@/lib/commanderAccess';
+import { getDailyAccessPath } from '@/lib/dailyAccess';
 import {
   Users,
   Palette,
   Video,
   UserCog,
+  ShieldCheck,
 } from 'lucide-react';
 
 export async function AppSidebar() {
   const user = await requireCurrentUser();
+  const hasPrivateAccess = isCommanderUser(user);
+  const privatePath = hasPrivateAccess ? getDailyAccessPath(user.id) : '/clientes';
 
   const menus = [
     {
@@ -36,9 +41,21 @@ export async function AppSidebar() {
       path: '/usuarios',
       roles: ['DIRECTOR'],
     },
+    {
+      name: 'Central',
+      icon: ShieldCheck,
+      path: privatePath,
+      roles: ['DIRECTOR'],
+      privateOnly: true,
+    },
   ];
 
-  const visibleMenus = menus.filter((menu) => menu.roles.includes(user.role));
+  const visibleMenus = menus.filter((menu) => {
+    if (!menu.roles.includes(user.role)) return false;
+    if (menu.privateOnly && !hasPrivateAccess) return false;
+
+    return true;
+  });
 
   return (
     <aside className="flex min-h-screen w-64 flex-col border-r border-slate-800 bg-slate-950 text-slate-300">

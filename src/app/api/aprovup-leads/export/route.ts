@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireCurrentUser } from '@/lib/auth';
+import { isCommanderUser } from '@/lib/commanderAccess';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -26,7 +27,7 @@ function formatDate(date: Date) {
 export async function GET() {
   const user = await requireCurrentUser();
 
-  if (user.role !== 'DIRECTOR') {
+  if (!isCommanderUser(user)) {
     return NextResponse.json(
       {
         error: 'Acesso negado.',
