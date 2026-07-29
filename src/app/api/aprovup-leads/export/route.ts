@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function escapeCsv(value: string | null | undefined) {
   if (!value) return '';
