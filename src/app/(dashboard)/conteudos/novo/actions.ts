@@ -1,4 +1,4 @@
-﻿'use server';
+'use server';
 
 import { prisma } from '@/lib/prisma';
 import { requireCurrentUser } from '@/lib/auth';
@@ -66,7 +66,7 @@ export async function createContentAction(formData: FormData) {
 
   revalidatePath('/clientes');
   revalidatePath(`/clientes/${clientId}`);
-  revalidatePath('/dashboard');
+  revalidatePath('/clientes');
   revalidatePath('/conteudos/kanban');
 
   redirect(`/conteudos/${content.id}`);

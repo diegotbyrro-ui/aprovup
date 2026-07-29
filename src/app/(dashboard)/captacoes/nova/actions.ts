@@ -226,7 +226,7 @@ await prisma.content.updateMany({
   revalidatePath('/clientes');
   revalidatePath(`/clientes/${clientId}`);
   revalidatePath('/social-media/agendamentos');
-  revalidatePath('/dashboard');
+  revalidatePath('/clientes');
 
   redirect('/filmmaker');
 }

@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
@@ -234,7 +234,7 @@ export default async function EntregasSemanaPage({
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <Link
-                        href="/dashboard"
+                        href="/clientes"
                         className="text-sm text-blue-600 hover:underline mb-2 inline-block"
                     >
                         &larr; Voltar para Dashboard

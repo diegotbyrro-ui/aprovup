@@ -1,4 +1,4 @@
-﻿'use server';
+'use server';
 
 import { prisma } from '@/lib/prisma';
 import { requireCurrentUser, isDirector } from '@/lib/auth';
@@ -97,7 +97,7 @@ export async function updateClientAction(clientId: string, formData: FormData) {
   revalidatePath('/clientes');
   revalidatePath(`/clientes/${clientId}`);
   revalidatePath('/design');
-  revalidatePath('/dashboard');
+  revalidatePath('/clientes');
 
   redirect('/clientes');
 }

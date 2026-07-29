@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
@@ -67,7 +67,7 @@ export async function createMonthlyApprovalLink(
     revalidatePath(`/clientes/${clientId}`);
     revalidatePath(`/clientes/${clientId}/visao`);
     revalidatePath(`/clientes/${clientId}/aprovacao-mensal`);
-    revalidatePath("/dashboard");
+    revalidatePath("/clientes");
 
     redirect(
         `/clientes/${clientId}/aprovacao-mensal?token=${token}&month=${month}&year=${year}`

@@ -79,7 +79,7 @@ export async function createClient(formData: FormData) {
 
   revalidatePath('/clientes');
   revalidatePath('/design');
-  revalidatePath('/dashboard');
+  revalidatePath('/clientes');
 
   redirect(`/clientes/${client.id}`);
 }
@@ -219,7 +219,7 @@ export async function updateClientStrategy(clientId: string, formData: FormData)
   revalidatePath(`/clientes/${clientId}`);
   revalidatePath(`/clientes/${clientId}/visao`);
   revalidatePath("/clientes");
-  revalidatePath("/dashboard");
+  revalidatePath("/clientes");
 }
 
 export async function createContent(formData: FormData) {
@@ -261,7 +261,7 @@ export async function createContent(formData: FormData) {
     "Equipe Level UP"
   );
 
-  revalidatePath("/dashboard");
+  revalidatePath("/clientes");
   revalidatePath("/clientes");
   revalidatePath(`/clientes/${clientId}`);
   revalidatePath(`/clientes/${clientId}/visao`);
@@ -354,7 +354,7 @@ export async function updateContent(contentId: string, formData: FormData) {
   revalidatePath('/clientes');
   revalidatePath('/design');
   revalidatePath('/social-media');
-  revalidatePath('/dashboard');
+  revalidatePath('/clientes');
 
   redirect(`/conteudos/${contentId}`);
 }
@@ -434,7 +434,7 @@ export async function addTask(contentId: string, formData: FormData) {
 
   revalidatePath(`/conteudos/${contentId}`);
   revalidatePath("/tarefas");
-  revalidatePath("/dashboard");
+  revalidatePath("/clientes");
 }
 
 export async function completeTask(taskId: string) {
@@ -458,7 +458,7 @@ export async function completeTask(taskId: string) {
 
   revalidatePath(`/conteudos/${task.contentId}`);
   revalidatePath("/tarefas");
-  revalidatePath("/dashboard");
+  revalidatePath("/clientes");
 }
 
 export async function generateDraftLog(...args: any[]) {
@@ -570,7 +570,7 @@ export async function applyDraftToContent(...args: any[]) {
   revalidatePath(`/conteudos/${contentId}`);
   revalidatePath(`/clientes/${existingContent.clientId}`);
   revalidatePath(`/clientes/${existingContent.clientId}/visao`);
-  revalidatePath("/dashboard");
+  revalidatePath("/clientes");
 
   return {
     success: true,

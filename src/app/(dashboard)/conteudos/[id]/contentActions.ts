@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -57,7 +57,7 @@ export async function generateApprovalLink(contentId: string) {
     });
 
     revalidatePath(`/conteudos/${contentId}`);
-    revalidatePath("/dashboard");
+    revalidatePath("/clientes");
     revalidatePath("/entregas-semana");
     revalidatePath("/conteudos/kanban");
     revalidatePath("/aprovacoes");

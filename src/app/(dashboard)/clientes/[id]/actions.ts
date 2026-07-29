@@ -1,4 +1,4 @@
-﻿'use server';
+'use server';
 
 import { prisma } from '@/lib/prisma';
 import { requireCurrentUser, isDirector, isSocialMedia } from '@/lib/auth';
@@ -13,7 +13,7 @@ export async function generateMonthlyApprovalLinkAction(
   const currentUser = await requireCurrentUser();
 
   if (!isDirector(currentUser.role) && !isSocialMedia(currentUser.role)) {
-    redirect('/dashboard');
+    redirect('/clientes');
   }
 
   const month = Number(formData.get('month') || 0);

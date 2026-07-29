@@ -1,4 +1,4 @@
-﻿'use server';
+'use server';
 
 import { prisma } from '@/lib/prisma';
 import { requireCurrentUser, isDirector } from '@/lib/auth';
@@ -12,7 +12,7 @@ async function requireDirectorUser() {
   const currentUser = await requireCurrentUser();
 
   if (!isDirector(currentUser.role)) {
-    redirect('/dashboard');
+    redirect('/clientes');
   }
 
   return currentUser;

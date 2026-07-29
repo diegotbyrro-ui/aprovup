@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { requireCurrentUser, isDirector } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import {
@@ -194,7 +194,7 @@ export default async function UsuariosPage() {
     const currentUser = await requireCurrentUser();
 
     if (!isDirector(currentUser.role)) {
-        redirect('/dashboard');
+        redirect('/clientes');
     }
 
     const users = await prisma.user.findMany({

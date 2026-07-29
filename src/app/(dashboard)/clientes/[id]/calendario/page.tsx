@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { requireCurrentUser, isDirector, isSocialMedia } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -148,7 +148,7 @@ export default async function ClienteCalendarioPage({
   }
 
   if (!isDirector(currentUser.role) && !isSocialMedia(currentUser.role)) {
-    redirect('/dashboard');
+    redirect('/clientes');
   }
 
   const previousMonth = month === 1 ? 12 : month - 1;

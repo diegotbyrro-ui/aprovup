@@ -1,4 +1,4 @@
-﻿'use server';
+'use server';
 
 import { prisma } from '@/lib/prisma';
 import { requireCurrentUser } from '@/lib/auth';
@@ -98,7 +98,7 @@ export async function uploadContentCoverImage(contentId: string, formData: FormD
   revalidatePath(`/conteudos/${contentId}`);
   revalidatePath(`/clientes/${content.clientId}`);
   revalidatePath('/clientes');
-  revalidatePath('/dashboard');
+  revalidatePath('/clientes');
 
   redirect(`/conteudos/${contentId}`);
 }

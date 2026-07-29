@@ -1,4 +1,4 @@
-﻿'use server';
+'use server';
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -54,7 +54,7 @@ export async function loginAction(formData: FormData) {
     maxAge: 60 * 60 * 24 * 30,
   });
 
-  redirect('/dashboard');
+  redirect('/clientes');
 }
 
 export async function logoutAction() {

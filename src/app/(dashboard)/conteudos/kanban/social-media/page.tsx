@@ -139,7 +139,7 @@ export default async function DesignKanbanPage({
             <div className="flex flex-col gap-4 bg-slate-50 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <Link
-                        href="/dashboard"
+                        href="/clientes"
                         className="mb-2 inline-block text-sm text-blue-600 hover:underline"
                     >
                         &larr; Voltar para Dashboard

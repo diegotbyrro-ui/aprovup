@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
@@ -276,7 +276,7 @@ export default async function AprovacoesPage({
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <Link
-                        href="/dashboard"
+                        href="/clientes"
                         className="mb-2 inline-block text-sm text-blue-600 hover:underline"
                     >
                         &larr; Voltar para Dashboard

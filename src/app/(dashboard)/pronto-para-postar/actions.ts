@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -34,7 +34,7 @@ export async function markContentAsPublished(contentId: string) {
     });
 
     revalidatePath("/pronto-para-postar");
-    revalidatePath("/dashboard");
+    revalidatePath("/clientes");
     revalidatePath("/entregas-semana");
     revalidatePath("/conteudos/kanban");
     revalidatePath(`/conteudos/${contentId}`);

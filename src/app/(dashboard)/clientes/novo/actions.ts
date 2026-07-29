@@ -1,4 +1,4 @@
-﻿'use server';
+'use server';
 
 import { prisma } from '@/lib/prisma';
 import { requireCurrentUser, isDirector } from '@/lib/auth';
@@ -27,7 +27,7 @@ export async function createClientAction(formData: FormData) {
     const currentUser = await requireCurrentUser();
 
     if (!isDirector(currentUser.role)) {
-        redirect('/dashboard');
+        redirect('/clientes');
     }
 
     const name = String(formData.get('name') || '').trim();
@@ -69,7 +69,7 @@ export async function createClientAction(formData: FormData) {
     );
 
     revalidatePath('/clientes');
-    revalidatePath('/dashboard');
+    revalidatePath('/clientes');
 
     redirect('/clientes');
 }

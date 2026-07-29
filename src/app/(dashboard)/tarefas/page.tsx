@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import {
     updateTaskFromTasksPage,
@@ -541,7 +541,7 @@ export default async function TarefasPage({
                 <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <Link
-                            href="/dashboard"
+                            href="/clientes"
                             className="mb-3 inline-block text-sm text-blue-200 hover:underline"
                         >
                             &larr; Voltar para Dashboard

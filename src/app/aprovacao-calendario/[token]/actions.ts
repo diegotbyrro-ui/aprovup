@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -97,7 +97,7 @@ export async function approvePlanningContent(
 
     revalidatePath(`/aprovacao-calendario/${token}`);
     revalidatePath(`/conteudos/${contentId}`);
-    revalidatePath("/dashboard");
+    revalidatePath("/clientes");
     revalidatePath("/conteudos/kanban");
     revalidatePath("/entregas-semana");
     revalidatePath("/tarefas");
@@ -156,7 +156,7 @@ export async function requestPlanningChanges(
 
     revalidatePath(`/aprovacao-calendario/${token}`);
     revalidatePath(`/conteudos/${contentId}`);
-    revalidatePath("/dashboard");
+    revalidatePath("/clientes");
     revalidatePath("/conteudos/kanban");
     revalidatePath("/entregas-semana");
     revalidatePath("/tarefas");

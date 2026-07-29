@@ -1,4 +1,4 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
@@ -360,7 +360,7 @@ export default async function ClientPage({ params }: any) {
               </Link>
 
               <Link
-                href="/dashboard"
+                href="/clientes"
                 className="rounded-full bg-white/10 px-6 py-3 text-center text-sm font-black text-white"
               >
                 Dashboard
