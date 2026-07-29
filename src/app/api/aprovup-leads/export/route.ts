@@ -1,19 +1,41 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireCurrentUser } from '@/lib/auth';
 
-function escapeCsv(value: unknown) {
-  const text = String(value ?? '');
-  return `"${text.replaceAll('"', '""')}"`;
+export const dynamic = 'force-dynamic';
+
+function escapeCsv(value: string | null | undefined) {
+  if (!value) return '';
+
+  const safeValue = value.replace(/"/g, '""');
+
+  return `"${safeValue}"`;
 }
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(date);
 }
 
 export async function GET() {
+  const user = await requireCurrentUser();
+
+  if (user.role !== 'DIRECTOR') {
+    return NextResponse.json(
+      {
+        error: 'Acesso negado.',
+      },
+      {
+        status: 403,
+      },
+    );
+  }
+
   const leads = await prisma.aprovUpLead.findMany({
     orderBy: {
       createdAt: 'desc',
@@ -25,10 +47,10 @@ export async function GET() {
     'Agencia',
     'WhatsApp',
     'Quantidade de clientes',
-    'Maior dificuldade',
-    'Status',
+    'Maior dor',
     'Origem',
-    'Data',
+    'Status',
+    'Data de cadastro',
   ];
 
   const rows = leads.map((lead) => [
@@ -37,8 +59,8 @@ export async function GET() {
     lead.whatsapp,
     lead.clientCount || '',
     lead.biggestPain || '',
-    lead.status,
     lead.source,
+    lead.status,
     formatDate(lead.createdAt),
   ]);
 
