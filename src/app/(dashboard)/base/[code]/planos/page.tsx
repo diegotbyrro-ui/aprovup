@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { requireCommanderAccess } from '@/lib/commanderAccess';
 import { isValidDailyAccessCode } from '@/lib/dailyAccess';
 import { prisma } from '@/lib/prisma';
+import { toggleSaasPlanStatusAction, updateSaasPlanAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -21,8 +22,38 @@ function formatMoney(cents: number) {
   });
 }
 
-function yesNo(value: boolean) {
-  return value ? 'Liberado' : 'Bloqueado';
+function formatInputMoney(cents: number) {
+  return (cents / 100).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function moduleBadge(enabled: boolean, label: string) {
+  return (
+    <span
+      className={[
+        'rounded-full px-3 py-1 text-xs font-bold',
+        enabled ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500',
+      ].join(' ')}
+    >
+      {label}: {enabled ? 'Liberado' : 'Bloqueado'}
+    </span>
+  );
+}
+
+function statusBadge(status: string) {
+  const styles: Record<string, string> = {
+    ACTIVE: 'bg-emerald-50 text-emerald-700',
+    PAUSED: 'bg-amber-50 text-amber-700',
+    ARCHIVED: 'bg-slate-100 text-slate-500',
+  };
+
+  return (
+    <span className={`rounded-full px-3 py-1 text-xs font-bold ${styles[status] || styles.ARCHIVED}`}>
+      {status}
+    </span>
+  );
 }
 
 export default async function CentralPlanosPage({ params }: PageProps) {
@@ -70,7 +101,7 @@ export default async function CentralPlanosPage({ params }: PageProps) {
             </h1>
 
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
-              Controle dos planos comerciais do AprovUp. Aqui ficam os recursos liberados para cada pacote: IA, CRM, postagem automática e relatórios.
+              Controle dos planos comerciais do AprovUp. Aqui você define preço, limites e quais módulos cada plano libera.
             </p>
           </div>
 
@@ -113,90 +144,193 @@ export default async function CentralPlanosPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 p-6">
-          <h2 className="text-xl font-bold text-slate-950">
-            Planos comerciais
-          </h2>
+      <section className="space-y-5">
+        {plans.map((plan) => (
+          <form
+            key={plan.id}
+            action={updateSaasPlanAction}
+            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+          >
+            <input type="hidden" name="code" value={code} />
+            <input type="hidden" name="planId" value={plan.id} />
+            <input type="hidden" name="currentStatus" value={plan.status} />
 
-          <p className="mt-2 text-sm text-slate-500">
-            Esta é a primeira versão de visualização. Na próxima etapa vamos adicionar botões para editar, pausar e liberar módulos.
-          </p>
-        </div>
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h2 className="text-2xl font-bold text-slate-950">
+                    {plan.name}
+                  </h2>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-100 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
-              <tr>
-                <th className="px-6 py-4">Plano</th>
-                <th className="px-6 py-4">Preço</th>
-                <th className="px-6 py-4">Clientes</th>
-                <th className="px-6 py-4">Usuários</th>
-                <th className="px-6 py-4">IA</th>
-                <th className="px-6 py-4">CRM</th>
-                <th className="px-6 py-4">Social</th>
-                <th className="px-6 py-4">Relatórios</th>
-                <th className="px-6 py-4">Assinaturas</th>
-                <th className="px-6 py-4">Status</th>
-              </tr>
-            </thead>
+                  {statusBadge(plan.status)}
+                </div>
 
-            <tbody className="divide-y divide-slate-100">
-              {plans.map((plan) => (
-                <tr key={plan.id} className="hover:bg-slate-50/70">
-                  <td className="px-6 py-5">
-                    <div>
-                      <strong className="block font-bold text-slate-950">
-                        {plan.name}
-                      </strong>
-                      <span className="mt-1 block text-xs text-slate-500">
-                        {plan.slug}
-                      </span>
-                    </div>
-                  </td>
+                <p className="mt-2 text-sm text-slate-500">
+                  {plan.slug} • {formatMoney(plan.priceCents)} / mês • {plan._count.subscriptions} assinatura(s)
+                </p>
 
-                  <td className="px-6 py-5 font-bold text-slate-950">
-                    {formatMoney(plan.priceCents)}
-                  </td>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {moduleBadge(plan.canUseAi, 'IA')}
+                  {moduleBadge(plan.canUseCrm, 'CRM')}
+                  {moduleBadge(plan.canUseSocialPosting, 'Social')}
+                  {moduleBadge(plan.canUseReports, 'Relatórios')}
+                </div>
+              </div>
 
-                  <td className="px-6 py-5 text-slate-600">
-                    {plan.maxClients}
-                  </td>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="submit"
+                  formAction={toggleSaasPlanStatusAction}
+                  className="rounded-full border border-slate-200 px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                >
+                  {plan.status === 'ACTIVE' ? 'Pausar plano' : 'Ativar plano'}
+                </button>
 
-                  <td className="px-6 py-5 text-slate-600">
-                    {plan.maxUsers}
-                  </td>
+                <button
+                  type="submit"
+                  className="rounded-full bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+                >
+                  Salvar alterações
+                </button>
+              </div>
+            </div>
 
-                  <td className="px-6 py-5 text-slate-600">
-                    {yesNo(plan.canUseAi)}
-                  </td>
+            <div className="mt-6 grid gap-4 lg:grid-cols-4">
+              <label className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Nome do plano
+                </span>
+                <input
+                  name="name"
+                  defaultValue={plan.name}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+                />
+              </label>
 
-                  <td className="px-6 py-5 text-slate-600">
-                    {yesNo(plan.canUseCrm)}
-                  </td>
+              <label className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Slug
+                </span>
+                <input
+                  name="slug"
+                  defaultValue={plan.slug}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+                />
+              </label>
 
-                  <td className="px-6 py-5 text-slate-600">
-                    {yesNo(plan.canUseSocialPosting)}
-                  </td>
+              <label className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Status
+                </span>
+                <select
+                  name="status"
+                  defaultValue={plan.status}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+                >
+                  <option value="ACTIVE">Ativo</option>
+                  <option value="PAUSED">Pausado</option>
+                  <option value="ARCHIVED">Arquivado</option>
+                </select>
+              </label>
 
-                  <td className="px-6 py-5 text-slate-600">
-                    {yesNo(plan.canUseReports)}
-                  </td>
+              <label className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Preço mensal em R$
+                </span>
+                <input
+                  name="priceBrl"
+                  defaultValue={formatInputMoney(plan.priceCents)}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+                />
+              </label>
+            </div>
 
-                  <td className="px-6 py-5 text-slate-600">
-                    {plan._count.subscriptions}
-                  </td>
+            <div className="mt-4 grid gap-4 lg:grid-cols-4">
+              <label className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Taxa inicial em R$
+                </span>
+                <input
+                  name="setupFeeBrl"
+                  defaultValue={formatInputMoney(plan.setupFeeCents)}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+                />
+              </label>
 
-                  <td className="px-6 py-5">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
-                      {plan.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              <label className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Máximo de clientes
+                </span>
+                <input
+                  name="maxClients"
+                  defaultValue={plan.maxClients}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+                />
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Máximo de usuários
+                </span>
+                <input
+                  name="maxUsers"
+                  defaultValue={plan.maxUsers}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+                />
+              </label>
+
+              <label className="space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Limite IA em R$
+                </span>
+                <input
+                  name="monthlyAiLimitBrl"
+                  defaultValue={formatInputMoney(plan.monthlyAiLimitCents)}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+                />
+              </label>
+            </div>
+
+            <label className="mt-4 block space-y-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Descrição
+              </span>
+              <textarea
+                name="description"
+                defaultValue={plan.description || ''}
+                rows={2}
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+              />
+            </label>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-5">
+              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700">
+                <input name="canUseAi" type="checkbox" defaultChecked={plan.canUseAi} />
+                IA
+              </label>
+
+              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700">
+                <input name="canUseCrm" type="checkbox" defaultChecked={plan.canUseCrm} />
+                CRM
+              </label>
+
+              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700">
+                <input name="canUseSocialPosting" type="checkbox" defaultChecked={plan.canUseSocialPosting} />
+                Social/Postagem
+              </label>
+
+              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700">
+                <input name="canUseReports" type="checkbox" defaultChecked={plan.canUseReports} />
+                Relatórios
+              </label>
+
+              <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700">
+                <input name="isPublic" type="checkbox" defaultChecked={plan.isPublic} />
+                Público no site
+              </label>
+            </div>
+          </form>
+        ))}
       </section>
     </div>
   );
