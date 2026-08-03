@@ -46,7 +46,7 @@ export default async function BasePage({ params }: PageProps) {
         </h1>
 
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
-          Área restrita para gestão sensível do AprovUp. O endereço desta área muda automaticamente todos os dias e o acesso continua protegido pela sua conta principal.
+          Ãrea restrita para gestÃ£o sensÃ­vel do AprovUp. O endereÃ§o desta Ã¡rea muda automaticamente todos os dias e o acesso continua protegido pela sua conta principal.
         </p>
       </section>
 
@@ -85,7 +85,7 @@ export default async function BasePage({ params }: PageProps) {
             {totalSubscriptions}
           </strong>
           <p className="mt-5 text-xs leading-relaxed text-slate-500">
-            Próxima etapa: controle por agência.
+            PrÃ³xima etapa: controle por agÃªncia.
           </p>
         </div>
 
@@ -95,7 +95,7 @@ export default async function BasePage({ params }: PageProps) {
             {pendingPayments}
           </strong>
           <p className="mt-5 text-xs leading-relaxed text-slate-500">
-            Próxima etapa: histórico financeiro.
+            PrÃ³xima etapa: histÃ³rico financeiro.
           </p>
         </div>
 
@@ -105,7 +105,7 @@ export default async function BasePage({ params }: PageProps) {
             {totalCoupons}
           </strong>
           <p className="mt-5 text-xs leading-relaxed text-slate-500">
-            Próxima etapa: cupons de desconto.
+            PrÃ³xima etapa: cupons de desconto.
           </p>
         </div>
       </section>
@@ -126,16 +126,30 @@ export default async function BasePage({ params }: PageProps) {
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-slate-950">Assinaturas</h2>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+            Liberar planos por agência, pausar acesso e controlar módulos contratados.
+          </p>
+
+          <Link
+            href={`/base/${code}/assinaturas`}
+            className="mt-5 inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+          >
+            Abrir assinaturas
+          </Link>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Pagamentos</h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Separar pendentes, pagos e recebidos, com histórico por cliente.
+            Separar pendentes, pagos e recebidos, com histÃ³rico por cliente.
           </p>
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Cupons</h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Criar códigos promocionais, limitar validade e controlar uso.
+            Criar cÃ³digos promocionais, limitar validade e controlar uso.
           </p>
         </div>
       </section>
