@@ -1,7 +1,9 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getApprovedContentDestination } from '@/lib/contentRouting';
+import {
+  getApprovedContentDestination,
+} from '@/lib/contentRouting';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -34,16 +36,20 @@ async function resolveClient(token: string) {
   });
 }
 
-export async function approveClientContentAction(contentId: string, token: string) {
+export async function approveClientContentAction(
+  contentId: string,
+  token: string
+) {
   const client = await resolveClient(token);
 
   if (!client) {
     redirect(`/aprovacao/${token}`);
   }
 
-  const content = await prisma.content.findUnique({
+  const content = await prisma.content.findFirst({
     where: {
       id: contentId,
+      clientId: client.id,
     },
   });
 
@@ -51,7 +57,8 @@ export async function approveClientContentAction(contentId: string, token: strin
     redirect(`/aprovacao/${token}`);
   }
 
-  const destination = getApprovedContentDestination(content);
+  const destination =
+    getApprovedContentDestination(content);
 
   await prisma.content.update({
     where: {
@@ -63,12 +70,27 @@ export async function approveClientContentAction(contentId: string, token: strin
     },
   });
 
+  await prisma.comment.create({
+    data: {
+      contentId,
+      authorName: client.name,
+      authorRole: 'CLIENTE',
+      message:
+        `APROVAÇÃO DO CLIENTE: conteúdo aprovado e encaminhado para ${
+          destination === 'FILMMAKER'
+            ? 'Filmmaker'
+            : 'Design'
+        }.`,
+    },
+  }).catch(() => null);
+
   await prisma.historyLog.create({
     data: {
       entityType: 'CONTENT',
       entityId: contentId,
       action: 'CLIENT_APPROVED_CONTENT',
-      description: `Cliente aprovou o conteúdo: ${content.title}.`,
+      description:
+        `Cliente aprovou o conteúdo: ${content.title}.`,
       authorName: client.name,
     },
   });
@@ -76,8 +98,10 @@ export async function approveClientContentAction(contentId: string, token: strin
   revalidatePath(`/aprovacao/${token}`);
   revalidatePath(`/clientes/${client.id}`);
   revalidatePath('/clientes');
+  revalidatePath('/calendario-editorial');
   revalidatePath('/design');
   revalidatePath('/filmmaker');
+  revalidatePath('/social-media/agendamentos');
 
   redirect(`/aprovacao/${token}`);
 }
@@ -95,12 +119,15 @@ export async function requestClientAdjustmentAction(
   }
 
   if (!message) {
-    redirect(`/aprovacao/${token}?error=empty-adjustment`);
+    redirect(
+      `/aprovacao/${token}?error=empty-adjustment`
+    );
   }
 
-  const content = await prisma.content.findUnique({
+  const content = await prisma.content.findFirst({
     where: {
       id: contentId,
+      clientId: client.id,
     },
   });
 
@@ -113,7 +140,8 @@ export async function requestClientAdjustmentAction(
       contentId,
       authorName: client.name,
       authorRole: 'CLIENTE',
-      message: `ALTERAÇÃO SOLICITADA PELO CLIENTE: ${message}`,
+      message:
+        `ALTERAÇÃO SOLICITADA PELO CLIENTE: ${message}`,
     },
   });
 
@@ -132,7 +160,8 @@ export async function requestClientAdjustmentAction(
       entityType: 'CONTENT',
       entityId: contentId,
       action: 'CLIENT_REQUESTED_ADJUSTMENT',
-      description: `Cliente pediu alteração no conteúdo: ${content.title}.`,
+      description:
+        `Cliente pediu alteração no conteúdo: ${content.title}.`,
       authorName: client.name,
     },
   });
@@ -140,117 +169,11 @@ export async function requestClientAdjustmentAction(
   revalidatePath(`/aprovacao/${token}`);
   revalidatePath(`/clientes/${client.id}`);
   revalidatePath('/clientes');
+  revalidatePath('/calendario-editorial');
   revalidatePath('/social-media');
-  revalidatePath('/clientes');
+  revalidatePath('/social-media/agendamentos');
+  revalidatePath('/design');
+  revalidatePath('/filmmaker');
 
   redirect(`/aprovacao/${token}`);
-}
-
-export async function scheduleSuggestedCaptureAction(
-  token: string,
-  formData: FormData
-) {
-  const client = await resolveClient(token);
-
-  if (!client) {
-    redirect(`/aprovacao/${token}`);
-  }
-
-  const date = text(formData, 'date');
-  const time = text(formData, 'time') || '09:00';
-
-  if (!date) {
-    redirect(`/aprovacao/${token}?error=no-date`);
-  }
-
-  const dateKey = date;
-  const scheduledAt = new Date(`${date}T${time}:00`);
-
-  const existingSameDayOtherClient = await prisma.captureSchedule.findFirst({
-    where: {
-      dateKey,
-      status: {
-        not: 'CANCELADO',
-      },
-      clientId: {
-        not: client.id,
-      },
-    },
-  });
-
-  if (existingSameDayOtherClient) {
-    redirect(`/aprovacao/${token}?error=busy-date`);
-  }
-
-  const existingSameClient = await prisma.captureSchedule.findFirst({
-    where: {
-      dateKey,
-      clientId: client.id,
-      status: {
-        not: 'CANCELADO',
-      },
-    },
-  });
-
-  if (existingSameClient) {
-    redirect(`/aprovacao/${token}?error=same-client-date`);
-  }
-
-  const filmmakerContents = await prisma.content.findMany({
-    where: {
-      clientId: client.id,
-      area: 'FILMMAKER',
-      status: {
-        in: ['APROVADO', 'FILMMAKER_PRE_PRODUCAO', 'FILMMAKER_AGENDAMENTO'],
-      },
-    },
-    orderBy: {
-      plannedDate: 'asc',
-    },
-  });
-
-  const firstContent = filmmakerContents[0];
-
-  const schedule = await prisma.captureSchedule.create({
-    data: {
-      clientId: client.id,
-      contentId: firstContent?.id || null,
-      clientName: client.name,
-      contentName: firstContent?.title || 'Captação mensal',
-      scheduledAt,
-      dateKey,
-      location: client.companyAddress || '',
-      notes: `Captação sugerida após aprovação do calendário mensal. Conteúdos de vídeo vinculados: ${filmmakerContents.map((item) => item.title).join(', ')}`,
-      status: 'AGENDADO',
-      createdBy: 'Cliente via aprovação mensal',
-    },
-  });
-
-  await prisma.content.updateMany({
-    where: {
-      clientId: client.id,
-      area: 'FILMMAKER',
-      status: 'APROVADO',
-    },
-    data: {
-      status: 'FILMMAKER_AGENDAMENTO',
-    },
-  });
-
-  await prisma.historyLog.create({
-    data: {
-      entityType: 'CAPTURE_SCHEDULE',
-      entityId: schedule.id,
-      action: 'CLIENT_SCHEDULED_CAPTURE',
-      description: `Cliente escolheu data sugerida para captação: ${client.name} em ${date} às ${time}.`,
-      authorName: client.name,
-    },
-  });
-
-  revalidatePath(`/aprovacao/${token}`);
-  revalidatePath('/filmmaker');
-  revalidatePath('/clientes');
-  revalidatePath('/clientes');
-
-  redirect(`/aprovacao/${token}?scheduled=success`);
 }
