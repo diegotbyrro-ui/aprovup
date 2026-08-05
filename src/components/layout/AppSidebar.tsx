@@ -8,7 +8,7 @@ import {
   Palette,
   Video,
   UserCog,
-  ShieldCheck,
+  ShieldCheck, CreditCard,
 } from 'lucide-react';
 
 export async function AppSidebar() {
@@ -36,14 +36,20 @@ export async function AppSidebar() {
       roles: ['DIRECTOR', 'FILMMAKER'],
     },
     {
-      name: 'Usuários',
+      name: 'UsuÃ¡rios',
       icon: UserCog,
       path: '/usuarios',
       roles: ['DIRECTOR'],
     },
     {
+  name: 'Minha assinatura',
+  icon: CreditCard,
+  path: '/minha-assinatura',
+  roles: ['DIRECTOR', 'SOCIAL_MEDIA', 'DESIGN', 'FILMMAKER'],
+},
+{
       name: 'Central',
-      icon: ShieldCheck,
+      icon: ShieldCheck, CreditCard,
       path: privatePath,
       roles: ['DIRECTOR'],
       privateOnly: true,
@@ -94,7 +100,7 @@ export async function AppSidebar() {
       <div className="border-t border-slate-800 p-4">
         <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Operação
+            OperaÃ§Ã£o
           </p>
 
           <p className="mt-1 text-sm font-semibold text-white">
@@ -102,7 +108,7 @@ export async function AppSidebar() {
           </p>
 
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            Aprovação, produção e resultados.
+            AprovaÃ§Ã£o, produÃ§Ã£o e resultados.
           </p>
         </div>
       </div>

@@ -1,9 +1,11 @@
-﻿import { prisma } from '@/lib/prisma';
+import { requireSaasFeature } from '@/lib/saasAccess';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { PromptCard } from '@/components/ui/PromptCard';
 
 export default async function PromptsPage() {
-  const prompts = await prisma.promptTemplate.findMany({
+  await requireSaasFeature('ai');
+const prompts = await prisma.promptTemplate.findMany({
     orderBy: { createdAt: 'desc' }
   });
 

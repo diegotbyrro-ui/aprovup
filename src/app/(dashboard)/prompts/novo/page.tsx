@@ -1,9 +1,11 @@
-﻿import Link from 'next/link';
+import { requireSaasFeature } from '@/lib/saasAccess';
+import Link from 'next/link';
 import { createPrompt } from '@/app/actions';
 import { inputClasses, labelClasses } from '@/lib/styles';
 
-export default function NovoPromptPage() {
-  return (
+export default async function NovoPromptPage() {
+  await requireSaasFeature('ai');
+return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
         <Link href="/prompts" className="text-slate-500 hover:text-slate-900">&larr; Voltar</Link>

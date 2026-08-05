@@ -1,9 +1,11 @@
-﻿import { prisma } from '@/lib/prisma';
+import { requireSaasFeature } from '@/lib/saasAccess';
+import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 export default async function PromptDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+  await requireSaasFeature('ai');
+const { id } = await params;
   
   const prompt = await prisma.promptTemplate.findUnique({
     where: { id }
