@@ -1,171 +1,203 @@
-"use server";
+'use server';
 
-import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { prisma } from '@/lib/prisma';
+import { getApprovedContentDestination } from '@/lib/contentRouting';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 function getMonthRange(year: number, month: number) {
-    const start = new Date(year, month - 1, 1);
-    const end = new Date(year, month, 0, 23, 59, 59, 999);
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 0, 23, 59, 59, 999);
 
-    return {
-        start,
-        end,
-    };
+  return {
+    start,
+    end,
+  };
 }
 
-async function validateMonthlyApproval(token: string, contentId: string) {
-    const monthlyApproval = await prisma.monthlyApproval.findUnique({
-        where: {
-            token,
-        },
-        include: {
-            client: true,
-        },
-    });
+async function validateMonthlyApproval(
+  token: string,
+  contentId: string
+) {
+  const monthlyApproval = await prisma.monthlyApproval.findUnique({
+    where: {
+      token,
+    },
+    include: {
+      client: true,
+    },
+  });
 
-    if (!monthlyApproval) {
-        throw new Error("Calendário de aprovação não encontrado.");
-    }
+  if (!monthlyApproval) {
+    throw new Error('Calendário de aprovação não encontrado.');
+  }
 
-    const { start, end } = getMonthRange(
-        monthlyApproval.year,
-        monthlyApproval.month
+  const { start, end } = getMonthRange(
+    monthlyApproval.year,
+    monthlyApproval.month
+  );
+
+  const content = await prisma.content.findFirst({
+    where: {
+      id: contentId,
+      clientId: monthlyApproval.clientId,
+      plannedDate: {
+        gte: start,
+        lte: end,
+      },
+    },
+    include: {
+      client: true,
+    },
+  });
+
+  if (!content) {
+    throw new Error(
+      'Conteúdo não encontrado neste calendário mensal.'
     );
+  }
 
-    const content = await prisma.content.findFirst({
-        where: {
-            id: contentId,
-            clientId: monthlyApproval.clientId,
-            plannedDate: {
-                gte: start,
-                lte: end,
-            },
-        },
-        include: {
-            client: true,
-        },
-    });
-
-    if (!content) {
-        throw new Error("Conteúdo não encontrado neste calendário mensal.");
-    }
-
-    return {
-        monthlyApproval,
-        content,
-    };
+  return {
+    monthlyApproval,
+    content,
+  };
 }
 
 export async function approvePlanningContent(
-    token: string,
-    contentId: string
+  token: string,
+  contentId: string
 ) {
-    const { monthlyApproval, content } = await validateMonthlyApproval(
-        token,
-        contentId
+  const { monthlyApproval, content } =
+    await validateMonthlyApproval(token, contentId);
+
+  const destination =
+    getApprovedContentDestination(content);
+
+  await prisma.content.update({
+    where: {
+      id: contentId,
+    },
+    data: {
+      status: 'APROVADO',
+      area: destination,
+    },
+  });
+
+  const destinationLabel =
+    destination === 'FILMMAKER'
+      ? 'Filmmaker'
+      : 'Design';
+
+  await prisma.historyLog.create({
+    data: {
+      entityType: 'CONTENT',
+      entityId: contentId,
+      action: 'MONTHLY_PLANNING_APPROVED',
+      description:
+        `Cliente aprovou o planejamento do conteúdo "${content.title}". Demanda encaminhada para ${destinationLabel}.`,
+      authorName: 'Cliente',
+    },
+  });
+
+  await prisma.comment.create({
+    data: {
+      contentId,
+      authorName: 'Cliente',
+      authorRole: 'CLIENTE',
+      message:
+        `Planejamento aprovado. Conteúdo encaminhado para ${destinationLabel}.`,
+    },
+  });
+
+  revalidatePath(`/aprovacao-calendario/${token}`);
+  revalidatePath(`/conteudos/${contentId}`);
+  revalidatePath('/clientes');
+  revalidatePath('/calendario-editorial');
+  revalidatePath('/design');
+  revalidatePath('/filmmaker');
+  revalidatePath('/social-media/agendamentos');
+
+  if (monthlyApproval.clientId) {
+    revalidatePath(
+      `/clientes/${monthlyApproval.clientId}`
     );
 
-    await prisma.content.update({
-        where: {
-            id: contentId,
-        },
-        data: {
-            status: "AGENDAMENTO_PRODUCAO",
-        },
-    });
+    revalidatePath(
+      `/clientes/${monthlyApproval.clientId}/visao`
+    );
+  }
 
-    await prisma.historyLog.create({
-        data: {
-            entityType: "CONTENT",
-            entityId: contentId,
-            action: "MONTHLY_PLANNING_APPROVED",
-            description: `Cliente aprovou o planejamento do conteúdo "${content.title}" no calendário mensal.`,
-            authorName: "Cliente",
-        },
-    });
-
-    await prisma.comment.create({
-        data: {
-            contentId,
-            authorName: "Cliente",
-            authorRole: "CLIENTE",
-            message:
-                "Planejamento aprovado no calendário mensal. Conteúdo liberado para produção.",
-        },
-    });
-
-    revalidatePath(`/aprovacao-calendario/${token}`);
-    revalidatePath(`/conteudos/${contentId}`);
-    revalidatePath("/clientes");
-    revalidatePath("/conteudos/kanban");
-    revalidatePath("/entregas-semana");
-    revalidatePath("/tarefas");
-
-    if (monthlyApproval.clientId) {
-        revalidatePath(`/clientes/${monthlyApproval.clientId}`);
-        revalidatePath(`/clientes/${monthlyApproval.clientId}/visao`);
-    }
-
-    redirect(`/aprovacao-calendario/${token}?feedback=aprovado`);
+  redirect(
+    `/aprovacao-calendario/${token}?feedback=aprovado`
+  );
 }
 
 export async function requestPlanningChanges(
-    token: string,
-    contentId: string,
-    formData: FormData
+  token: string,
+  contentId: string,
+  formData: FormData
 ) {
-    const comment = String(formData.get("clientComment") || "").trim();
+  const comment = String(
+    formData.get('clientComment') || ''
+  ).trim();
 
-    if (!comment) {
-        throw new Error("Informe o que precisa ser alterado.");
-    }
+  if (!comment) {
+    throw new Error('Informe o que precisa ser alterado.');
+  }
 
-    const { monthlyApproval, content } = await validateMonthlyApproval(
-        token,
-        contentId
+  const { monthlyApproval, content } =
+    await validateMonthlyApproval(token, contentId);
+
+  await prisma.content.update({
+    where: {
+      id: contentId,
+    },
+    data: {
+      status: 'ALTERACAO_SOLICITADA',
+      area: 'SOCIAL_MEDIA',
+    },
+  });
+
+  await prisma.comment.create({
+    data: {
+      contentId,
+      authorName: 'Cliente',
+      authorRole: 'CLIENTE',
+      message: comment,
+    },
+  });
+
+  await prisma.historyLog.create({
+    data: {
+      entityType: 'CONTENT',
+      entityId: contentId,
+      action: 'MONTHLY_PLANNING_CHANGE_REQUESTED',
+      description:
+        `Cliente solicitou alteração no planejamento do conteúdo "${content.title}".`,
+      authorName: 'Cliente',
+    },
+  });
+
+  revalidatePath(`/aprovacao-calendario/${token}`);
+  revalidatePath(`/conteudos/${contentId}`);
+  revalidatePath('/clientes');
+  revalidatePath('/calendario-editorial');
+  revalidatePath('/social-media/avisos');
+  revalidatePath('/design');
+  revalidatePath('/filmmaker');
+  revalidatePath('/social-media/agendamentos');
+
+  if (monthlyApproval.clientId) {
+    revalidatePath(
+      `/clientes/${monthlyApproval.clientId}`
     );
 
-    await prisma.content.update({
-        where: {
-            id: contentId,
-        },
-        data: {
-            status: "ALTERACAO_SOLICITADA",
-        },
-    });
+    revalidatePath(
+      `/clientes/${monthlyApproval.clientId}/visao`
+    );
+  }
 
-    await prisma.comment.create({
-        data: {
-            contentId,
-            authorName: "Cliente",
-            authorRole: "CLIENTE",
-            message: comment,
-        },
-    });
-
-    await prisma.historyLog.create({
-        data: {
-            entityType: "CONTENT",
-            entityId: contentId,
-            action: "MONTHLY_PLANNING_CHANGE_REQUESTED",
-            description: `Cliente solicitou alteração no planejamento do conteúdo "${content.title}" pelo calendário mensal.`,
-            authorName: "Cliente",
-        },
-    });
-
-    revalidatePath(`/aprovacao-calendario/${token}`);
-    revalidatePath(`/conteudos/${contentId}`);
-    revalidatePath("/clientes");
-    revalidatePath("/conteudos/kanban");
-    revalidatePath("/entregas-semana");
-    revalidatePath("/tarefas");
-
-    if (monthlyApproval.clientId) {
-        revalidatePath(`/clientes/${monthlyApproval.clientId}`);
-        revalidatePath(`/clientes/${monthlyApproval.clientId}/visao`);
-    }
-
-    redirect(`/aprovacao-calendario/${token}?feedback=alteracao`);
+  redirect(
+    `/aprovacao-calendario/${token}?feedback=alteracao`
+  );
 }
-

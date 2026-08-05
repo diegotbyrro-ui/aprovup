@@ -1,9 +1,12 @@
 'use server';
 
 import { createGoogleCalendarEvent } from '@/lib/googleCalendar';
-
+import { isVideoContent } from '@/lib/contentRouting';
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser, isDirector } from '@/lib/auth';
+import {
+  requireCurrentUser,
+  isDirector,
+} from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -17,12 +20,22 @@ function normalizeRole(role?: string | null) {
 
 function isSocialMedia(role?: string | null) {
   const value = normalizeRole(role);
-  return value === 'social media' || value === 'social_media' || value === 'socialmedia';
+
+  return (
+    value === 'social media' ||
+    value === 'social_media' ||
+    value === 'socialmedia'
+  );
 }
 
 function isFilmmaker(role?: string | null) {
   const value = normalizeRole(role);
-  return value === 'filmmaker' || value === 'audiovisual' || value === 'video';
+
+  return (
+    value === 'filmmaker' ||
+    value === 'audiovisual' ||
+    value === 'video'
+  );
 }
 
 async function checkAccess() {
@@ -43,7 +56,20 @@ function text(formData: FormData, name: string) {
   return String(formData.get(name) || '').trim();
 }
 
-export async function createCaptureScheduleAction(formData: FormData) {
+function formatCaptureDate(date: Date) {
+  return date.toLocaleDateString('pt-BR');
+}
+
+function formatCaptureTime(date: Date) {
+  return date.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export async function createCaptureScheduleAction(
+  formData: FormData
+) {
   const currentUser = await checkAccess();
 
   const clientId = text(formData, 'clientId');
@@ -53,7 +79,9 @@ export async function createCaptureScheduleAction(formData: FormData) {
   const notes = text(formData, 'notes');
 
   if (!clientId || !date || !time) {
-    redirect(`/captacoes/nova?cliente=${clientId}&error=missing`);
+    redirect(
+      `/captacoes/nova?cliente=${clientId}&error=missing`
+    );
   }
 
   const client = await prisma.client.findUnique({
@@ -66,31 +94,43 @@ export async function createCaptureScheduleAction(formData: FormData) {
     redirect('/clientes');
   }
 
-  const dateKey = date;
   const scheduledAt = new Date(`${date}T${time}:00`);
 
-  const existingSameDayOtherClient = await prisma.captureSchedule.findFirst({
-    where: {
-      dateKey,
-      status: {
-        not: 'CANCELADO',
-      },
-      clientId: {
-        not: clientId,
-      },
-    },
-  });
-
-  if (existingSameDayOtherClient) {
-    redirect(`/captacoes/nova?cliente=${clientId}&error=busy`);
+  if (Number.isNaN(scheduledAt.getTime())) {
+    redirect(
+      `/captacoes/nova?cliente=${clientId}&error=missing`
+    );
   }
 
-  const filmmakerContents = await prisma.content.findMany({
+  const existingSameDayOtherClient =
+    await prisma.captureSchedule.findFirst({
+      where: {
+        dateKey: date,
+        status: {
+          not: 'CANCELADO',
+        },
+        clientId: {
+          not: clientId,
+        },
+      },
+    });
+
+  if (existingSameDayOtherClient) {
+    redirect(
+      `/captacoes/nova?cliente=${clientId}&error=busy`
+    );
+  }
+
+  const approvedContents = await prisma.content.findMany({
     where: {
       clientId,
-      area: 'FILMMAKER',
       status: {
-        in: ['APROVADO', 'FILMMAKER_PRE_PRODUCAO', 'FILMMAKER_AGENDAMENTO'],
+        in: [
+          'APROVADO',
+          'AGENDAMENTO_PRODUCAO',
+          'FILMMAKER_PRE_PRODUCAO',
+          'FILMMAKER_AGENDAMENTO',
+        ],
       },
     },
     orderBy: {
@@ -98,44 +138,72 @@ export async function createCaptureScheduleAction(formData: FormData) {
     },
   });
 
-  const firstContent = filmmakerContents[0];
+  const videoContents =
+    approvedContents.filter(isVideoContent);
 
-  const schedule = await prisma.captureSchedule.create({
-    data: {
-      clientId,
-      contentId: firstContent?.id || null,
-      clientName: client.name,
-      contentName: 'Captação mensal',
-      scheduledAt,
-      dateKey,
-      location,
-      notes:
-        notes ||
-        `Captação mensal agendada pelo Social Media. Conteúdos vinculados: ${filmmakerContents
-          .map((item) => item.title)
-          .join(', ')}`,
-      status: 'AGENDADO',
-      createdBy: currentUser.name || currentUser.email || 'Social Media',
-    },
-  });
+  if (videoContents.length === 0) {
+    redirect(
+      `/captacoes/nova?cliente=${clientId}&error=no-video`
+    );
+  }
 
-  
+  const videoIds =
+    videoContents.map((content) => content.id);
 
-  
+  const firstVideo = videoContents[0];
 
-  // FILMMAKER_AGENDAMENTO_AUTO_UPDATE
+  const existingClientSchedule =
+    await prisma.captureSchedule.findFirst({
+      where: {
+        clientId,
+        status: {
+          not: 'CANCELADO',
+        },
+        scheduledAt: {
+          gte: new Date(),
+        },
+      },
+      orderBy: {
+        scheduledAt: 'asc',
+      },
+    });
+
+  const scheduleData = {
+    clientId,
+    contentId: firstVideo?.id || null,
+    clientName: client.name,
+    contentName:
+      `${videoContents.length} conteúdo(s) de vídeo`,
+    scheduledAt,
+    dateKey: date,
+    location: location || null,
+    notes:
+      notes ||
+      `Conteúdos previstos: ${videoContents
+        .map((item) => item.title)
+        .join(', ')}`,
+    status: 'AGENDADO',
+    createdBy:
+      currentUser.name ||
+      currentUser.email ||
+      'Social Media',
+  };
+
+  const schedule = existingClientSchedule
+    ? await prisma.captureSchedule.update({
+        where: {
+          id: existingClientSchedule.id,
+        },
+        data: scheduleData,
+      })
+    : await prisma.captureSchedule.create({
+        data: scheduleData,
+      });
+
   await prisma.content.updateMany({
     where: {
-      clientId: client.id,
-      OR: [
-        { format: 'REELS' },
-        { format: 'VIDEO' },
-        { format: 'VÍDEO' },
-        { format: 'STORY' },
-        { format: 'STORIES' },
-      ],
-      status: {
-        notIn: ['POSTADO', 'PRONTO_PARA_POSTAR'],
+      id: {
+        in: videoIds,
       },
     },
     data: {
@@ -144,89 +212,76 @@ export async function createCaptureScheduleAction(formData: FormData) {
     },
   });
 
-  // DESIGN_AFTER_CAPTURE_SCHEDULE_FIX
-  await prisma.content.updateMany({
-    where: {
-      clientId: client.id,
-      OR: [
-        { format: 'POST_ESTATICO' },
-        { format: 'CARROSSEL' },
-        { format: 'MOTION' },
-      ],
-      status: {
-        in: ['APROVADO', 'CLIENTE'],
-      },
-    },
-    data: {
-      area: 'DESIGN',
-      status: 'APROVADO',
-    },
-  });
-
+  const actionLabel =
+    existingClientSchedule
+      ? 'GRAVAÇÃO REAGENDADA'
+      : 'GRAVAÇÃO AGENDADA';
 
   await prisma.comment.createMany({
-    data: await prisma.content.findMany({
-      where: {
-        clientId: client.id,
-        area: 'FILMMAKER',
-        status: 'FILMMAKER_AGENDAMENTO',
-      },
-      select: {
-        id: true,
-      },
-    }).then((items) =>
-      items.map((item) => ({
-        contentId: item.id,
-        authorName: 'Sistema',
-        authorRole: 'SISTEMA',
-        message: `GRAVAÇÃO AGENDADA: ${new Date(scheduledAt).toLocaleDateString('pt-BR')} às ${new Date(scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.${location ? ' Local: ' + location : ''}`,
-      }))
-    ),
+    data: videoContents.map((content) => ({
+      contentId: content.id,
+      authorName: 'Sistema',
+      authorRole: 'SISTEMA',
+      message:
+        `${actionLabel}: ${formatCaptureDate(
+          scheduledAt
+        )} às ${formatCaptureTime(scheduledAt)}.` +
+        `${location ? ` Local: ${location}.` : ''}` +
+        `${notes ? ` Observações: ${notes}` : ''}`,
+    })),
   }).catch(() => null);
 
-const googleStart = new Date(scheduledAt);
-  const googleEnd = new Date(googleStart.getTime() + 2 * 60 * 60 * 1000);
+  const googleStart = new Date(scheduledAt);
+
+  const googleEnd = new Date(
+    googleStart.getTime() +
+    2 * 60 * 60 * 1000
+  );
 
   await createGoogleCalendarEvent({
     title: `Captação - ${client.name}`,
     description: [
-      'Agendamento criado pelo sistema Level UP.',
+      'Agendamento criado pelo AprovUp.',
+      `Conteúdos: ${videoContents
+        .map((item) => item.title)
+        .join(', ')}`,
       location ? `Local: ${location}` : '',
       notes ? `Observações: ${notes}` : '',
-    ].filter(Boolean).join('\n'),
+    ]
+      .filter(Boolean)
+      .join('\n'),
     location: location || '',
     startDate: googleStart,
     endDate: googleEnd,
   }).catch((error) => {
-    console.error('Erro ao criar evento no Google Agenda:', error);
-  });
-
-await prisma.content.updateMany({
-    where: {
-      clientId,
-      area: 'FILMMAKER',
-      status: 'APROVADO',
-    },
-    data: {
-      status: 'FILMMAKER_AGENDAMENTO',
-    },
+    console.error(
+      'Erro ao criar evento no Google Agenda:',
+      error
+    );
   });
 
   await prisma.historyLog.create({
     data: {
       entityType: 'CAPTURE_SCHEDULE',
       entityId: schedule.id,
-      action: 'CREATED',
-      description: `Captação mensal agendada para ${client.name} em ${date} às ${time}.`,
-      authorName: currentUser.name || currentUser.email || 'Social Media',
+      action:
+        existingClientSchedule
+          ? 'UPDATED'
+          : 'CREATED',
+      description:
+        `Captação de ${client.name} marcada para ${date} às ${time}.`,
+      authorName:
+        currentUser.name ||
+        currentUser.email ||
+        'Social Media',
     },
   });
 
   revalidatePath('/filmmaker');
   revalidatePath('/clientes');
-  revalidatePath(`/clientes/${clientId}`);
+  revalidatePath('/calendario-editorial');
   revalidatePath('/social-media/agendamentos');
-  revalidatePath('/clientes');
+  revalidatePath(`/clientes/${clientId}`);
 
   redirect('/filmmaker');
 }

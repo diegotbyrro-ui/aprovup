@@ -32,6 +32,7 @@ import {
 } from './actions';
 import DraggableColumn from './DraggableColumn';
 import { DraggableContentCard, DroppableFilmmakerColumn } from './DraggableContentCard';
+import { FilmmakerCaptureAgenda } from '@/components/filmmaker/FilmmakerCaptureAgenda';
 function normalizeRole(role?: string | null) {
   return String(role || '')
     .trim()
@@ -481,6 +482,8 @@ export default async function FilmmakerPage() {
         <MetricCard label="Atrasos" value={`${latePercentage}%`} description={`${late} de ${total} atrasadas.`} type="red" />
         <MetricCard label="Finalização" value={`${finishedPercentage}%`} description={`${finished} de ${total} finalizadas.`} type="green" />
       </section>
+
+      <FilmmakerCaptureAgenda />
 
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <form action={createFilmmakerColumnAction} className="flex flex-col gap-3 md:flex-row md:items-end">

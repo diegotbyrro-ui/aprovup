@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { requireCurrentUser } from '@/lib/auth';
 import Link from 'next/link';
 import { createCaptureScheduleAction } from './actions';
@@ -11,6 +11,10 @@ function getErrorMessage(error?: string) {
 
   if (error === 'missing') {
     return 'Preencha cliente, data e horário para agendar.';
+  }
+
+  if (error === 'no-video') {
+    return 'Esse cliente ainda não possui conteúdo de vídeo aprovado na primeira etapa.';
   }
 
   return '';

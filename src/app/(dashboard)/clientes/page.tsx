@@ -136,15 +136,25 @@ export default async function ClientesPage({
             </p>
           </div>
 
-          {director && (
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/clientes/novo"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700"
+              href="/social-media/agendamentos"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/20"
             >
-              <Plus size={16} />
-              Novo Cliente
+              <CalendarDays size={16} />
+              Agendar gravações
             </Link>
-          )}
+
+            {director && (
+              <Link
+                href="/clientes/novo"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700"
+              >
+                <Plus size={16} />
+                Novo Cliente
+              </Link>
+            )}
+          </div>
         </div>
       </section>
 

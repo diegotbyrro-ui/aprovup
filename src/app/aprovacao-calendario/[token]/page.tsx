@@ -30,7 +30,7 @@ const statusLabels: Record<string, string> = {
     REVISAO_INTERNA: "Em revisão interna",
     ENVIADO_CLIENTE: "Enviado para aprovação final",
     ALTERACAO_SOLICITADA: "Alteração solicitada",
-    APROVADO: "Aprovado final",
+    APROVADO: "Aprovado para produção",
     PRONTO_PARA_POSTAR: "Pronto para postar",
     PUBLICADO_MANUALMENTE: "Publicado",
     ARQUIVADO: "Arquivado",

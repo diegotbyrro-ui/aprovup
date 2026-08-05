@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { requireCurrentUser } from '@/lib/auth';
 import Link from 'next/link';
 import { CalendarDays, CheckCircle2, Video, AlertTriangle } from 'lucide-react';
@@ -237,7 +237,7 @@ export default async function SocialMediaAgendamentosPage() {
                   </Link>
 
                   <Link
-                    href={`/clientes/${item.client.id}`}
+                    href={`/calendario-editorial?cliente=${item.client.id}`}
                     className="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
                   >
                     Ver cliente
