@@ -1,3 +1,4 @@
+import { requireSaasFeature } from '@/lib/saasAccess';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -67,6 +68,7 @@ export default async function ProntoParaPostarPage({
         cliente?: string;
     }>;
 }) {
+  await requireSaasFeature('socialPosting');
     const params = await searchParams;
     const selectedClient = params.cliente || 'TODOS';
 

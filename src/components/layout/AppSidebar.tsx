@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import {
+  BarChart3,
+  BriefcaseBusiness,
   Calendar,
   CheckSquare,
   CreditCard,
@@ -92,6 +94,20 @@ export async function AppSidebar() {
       path: '/prompts',
       roles: ['DIRECTOR', 'SOCIAL_MEDIA'],
       requiredFeature: 'ai',
+    },
+    {
+      name: 'CRM',
+      icon: BriefcaseBusiness,
+      path: '/crm',
+      roles: ['DIRECTOR', 'SOCIAL_MEDIA'],
+      requiredFeature: 'crm',
+    },
+    {
+      name: 'Relatorios',
+      icon: BarChart3,
+      path: '/relatorios',
+      roles: ['DIRECTOR', 'SOCIAL_MEDIA'],
+      requiredFeature: 'reports',
     },
     {
       name: 'Equipe',
