@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { requireCurrentUser, isSocialMedia } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -251,7 +251,10 @@ export default async function ClientesPage({
                   )}
                 </div>
 
-                <Link href={`/clientes/${client.id}`} className="block">
+                <Link
+                  href={`/calendario-editorial?cliente=${client.id}`}
+                  className="block"
+                >
                   <div className="relative p-5 pt-0">
                     <div className="-mt-9 flex items-end justify-between">
                       <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-slate-950 text-2xl font-bold text-white shadow-sm">

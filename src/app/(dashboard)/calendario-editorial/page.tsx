@@ -286,7 +286,7 @@ export default async function CalendarioEditorialPage({
                         href="/clientes"
                         className="mb-2 inline-block text-sm text-blue-600 hover:underline"
                     >
-                        &larr; Voltar para Dashboard
+                        &larr; Voltar para clientes
                     </Link>
 
                     <h1 className="text-3xl font-bold text-slate-900">
@@ -321,7 +321,11 @@ export default async function CalendarioEditorialPage({
                     </Link>
 
                     <Link
-                        href="/conteudos/novo"
+                        href={
+                            selectedClient !== 'TODOS'
+                                ? `/conteudos/novo?cliente=${selectedClient}`
+                                : '/clientes'
+                        }
                         className="rounded-md bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800"
                     >
                         Novo Conteúdo
@@ -536,7 +540,11 @@ export default async function CalendarioEditorialPage({
                                     </div>
 
                                     <Link
-                                        href={`/conteudos/novo?date=${formatDateInput(day)}`}
+                                        href={
+                                        selectedClient !== 'TODOS'
+                                            ? `/conteudos/novo?cliente=${selectedClient}&data=${formatDateInput(day)}`
+                                            : '/clientes'
+                                    }
                                         className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold text-slate-500 hover:bg-slate-100"
                                     >
                                         +

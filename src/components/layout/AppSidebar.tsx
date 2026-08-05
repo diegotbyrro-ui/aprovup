@@ -45,7 +45,7 @@ export async function AppSidebar() {
     {
       name: 'Social Mídia',
       icon: Users,
-      path: '/calendario-editorial',
+      path: '/clientes',
       roles: ['DIRECTOR', 'SOCIAL_MEDIA'],
     },
     {
