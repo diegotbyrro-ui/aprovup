@@ -5,7 +5,6 @@ import { deleteContentAction } from './delete-actions';
 import { notFound } from 'next/navigation';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { updateContent, addComment, addTask, completeTask } from '@/app/actions';
-import { ContentAssistant } from './ContentAssistant';
 import { InstagramPreview } from '@/components/content/InstagramPreview';
 import { CoverImageUpload } from './CoverImageUpload';
 import { inputClasses, labelClasses } from '@/lib/styles';
@@ -299,12 +298,6 @@ export default async function ConteudoDetailPage({
     },
     orderBy: {
       createdAt: 'desc',
-    },
-  });
-
-  const prompts = await prisma.promptTemplate.findMany({
-    orderBy: {
-      title: 'asc',
     },
   });
 
@@ -838,9 +831,6 @@ export default async function ConteudoDetailPage({
             contentId={contentSafe.id}
             currentImageUrl={contentSafe.coverImageUrl}
           />
-
-          <ContentAssistant content={content} prompts={prompts} />
-
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 border-b border-slate-100 pb-4">
               <h2 className="text-lg font-bold text-slate-900">
