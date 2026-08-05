@@ -22,13 +22,18 @@ export default async function BasePage({ params }: PageProps) {
     notFound();
   }
 
-  const [totalLeads, totalPlans, totalSubscriptions, pendingPayments, totalCoupons] = await Promise.all([
+  const [totalLeads, totalPlans, totalSubscriptions, pendingPayments, paidPayments, totalCoupons] = await Promise.all([
     prisma.aprovUpLead.count(),
     prisma.saasPlan.count(),
     prisma.saasSubscription.count(),
     prisma.saasPayment.count({
       where: {
         status: 'PENDING',
+      },
+    }),
+    prisma.saasPayment.count({
+      where: {
+        status: 'PAID',
       },
     }),
     prisma.saasCoupon.count(),
@@ -46,13 +51,13 @@ export default async function BasePage({ params }: PageProps) {
         </h1>
 
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
-          Ãrea restrita para gestÃ£o sensÃ­vel do AprovUp. O endereÃ§o desta Ã¡rea muda automaticamente todos os dias e o acesso continua protegido pela sua conta principal.
+          Área restrita para gestão sensível do AprovUp. O endereço desta área muda automaticamente todos os dias e o acesso continua protegido pela sua conta principal.
         </p>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-5">
+      <section className="grid gap-5 md:grid-cols-6">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm text-slate-500">Leads captados</p>
+          <p className="text-sm text-slate-500">Leads</p>
           <strong className="mt-3 block text-4xl font-bold text-slate-950">
             {totalLeads}
           </strong>
@@ -84,18 +89,36 @@ export default async function BasePage({ params }: PageProps) {
           <strong className="mt-3 block text-4xl font-bold text-slate-950">
             {totalSubscriptions}
           </strong>
-          <p className="mt-5 text-xs leading-relaxed text-slate-500">
-            PrÃ³xima etapa: controle por agÃªncia.
-          </p>
+
+          <Link
+            href={`/base/${code}/assinaturas`}
+            className="mt-5 inline-flex rounded-full bg-cyan-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-cyan-700"
+          >
+            Ver assinaturas
+          </Link>
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm text-slate-500">Pagamentos pendentes</p>
+          <p className="text-sm text-slate-500">Pendentes</p>
           <strong className="mt-3 block text-4xl font-bold text-slate-950">
             {pendingPayments}
           </strong>
+
+          <Link
+            href={`/base/${code}/pagamentos`}
+            className="mt-5 inline-flex rounded-full bg-cyan-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-cyan-700"
+          >
+            Ver pagamentos
+          </Link>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-sm text-slate-500">Pagos</p>
+          <strong className="mt-3 block text-4xl font-bold text-slate-950">
+            {paidPayments}
+          </strong>
           <p className="mt-5 text-xs leading-relaxed text-slate-500">
-            PrÃ³xima etapa: histÃ³rico financeiro.
+            Recebimentos confirmados.
           </p>
         </div>
 
@@ -105,16 +128,16 @@ export default async function BasePage({ params }: PageProps) {
             {totalCoupons}
           </strong>
           <p className="mt-5 text-xs leading-relaxed text-slate-500">
-            PrÃ³xima etapa: cupons de desconto.
+            Próxima etapa.
           </p>
         </div>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-3">
+      <section className="grid gap-5 md:grid-cols-4">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Planos</h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Liberar, pausar ou cancelar acesso de clientes ao AprovUp.
+            Editar preços, limites e módulos liberados por pacote.
           </p>
 
           <Link
@@ -142,14 +165,21 @@ export default async function BasePage({ params }: PageProps) {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Pagamentos</h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Separar pendentes, pagos e recebidos, com histÃ³rico por cliente.
+            Registrar cobranças, pagamentos recebidos, pendentes e cancelados.
           </p>
+
+          <Link
+            href={`/base/${code}/pagamentos`}
+            className="mt-5 inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+          >
+            Abrir pagamentos
+          </Link>
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Cupons</h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Criar cÃ³digos promocionais, limitar validade e controlar uso.
+            Criar códigos promocionais, limitar validade e controlar uso.
           </p>
         </div>
       </section>
