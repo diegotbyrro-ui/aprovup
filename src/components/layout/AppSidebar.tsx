@@ -1,31 +1,75 @@
-import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 import Link from 'next/link';
+import type { LucideIcon } from 'lucide-react';
+import {
+  Calendar,
+  CheckSquare,
+  CreditCard,
+  FileText,
+  LayoutDashboard,
+  Lock,
+  PenTool,
+  ShieldCheck,
+  Users,
+  Video,
+} from 'lucide-react';
+import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 import { requireCurrentUser } from '@/lib/auth';
 import { isCommanderUser } from '@/lib/commanderAccess';
 import { getDailyAccessPath } from '@/lib/dailyAccess';
-import {
-  Users,
-  Palette,
-  Video,
-  UserCog,
-  ShieldCheck, CreditCard,
-} from 'lucide-react';
+import { canUseFeature, getCurrentUserSaasAccess, type SaasFeature } from '@/lib/saasAccess';
+
+type MenuItem = {
+  name: string;
+  icon: LucideIcon;
+  path: string;
+  roles: string[];
+  privateOnly?: boolean;
+  requiredFeature?: SaasFeature;
+};
+
+const baseRoles = ['DIRECTOR', 'SOCIAL_MEDIA', 'DESIGN', 'FILMMAKER'];
 
 export async function AppSidebar() {
   const user = await requireCurrentUser();
+  const access = await getCurrentUserSaasAccess();
+
   const hasPrivateAccess = isCommanderUser(user);
   const privatePath = hasPrivateAccess ? getDailyAccessPath(user.id) : '/clientes';
 
-  const menus = [
+  const menuItems: MenuItem[] = [
     {
-      name: 'Social Media',
+      name: 'Operacao',
+      icon: LayoutDashboard,
+      path: '/operacao',
+      roles: baseRoles,
+    },
+    {
+      name: 'Clientes',
       icon: Users,
       path: '/clientes',
       roles: ['DIRECTOR', 'SOCIAL_MEDIA'],
     },
     {
+      name: 'Calendario',
+      icon: Calendar,
+      path: '/calendario-editorial',
+      roles: ['DIRECTOR', 'SOCIAL_MEDIA'],
+    },
+    {
+      name: 'Conteudos',
+      icon: FileText,
+      path: '/conteudos',
+      roles: ['DIRECTOR', 'SOCIAL_MEDIA', 'DESIGN', 'FILMMAKER'],
+    },
+    {
+      name: 'Social Media',
+      icon: CheckSquare,
+      path: '/social-media',
+      roles: ['DIRECTOR', 'SOCIAL_MEDIA'],
+    },
+    {
       name: 'Design',
-      icon: Palette,
+      icon: PenTool,
       path: '/design',
       roles: ['DIRECTOR', 'DESIGN'],
     },
@@ -36,81 +80,99 @@ export async function AppSidebar() {
       roles: ['DIRECTOR', 'FILMMAKER'],
     },
     {
-      name: 'UsuÃ¡rios',
-      icon: UserCog,
+      name: 'Pronto para postar',
+      icon: CheckSquare,
+      path: '/pronto-para-postar',
+      roles: ['DIRECTOR', 'SOCIAL_MEDIA'],
+      requiredFeature: 'socialPosting',
+    },
+    {
+      name: 'Prompts IA',
+      icon: FileText,
+      path: '/prompts',
+      roles: ['DIRECTOR', 'SOCIAL_MEDIA'],
+      requiredFeature: 'ai',
+    },
+    {
+      name: 'Equipe',
+      icon: Users,
       path: '/usuarios',
       roles: ['DIRECTOR'],
     },
     {
-  name: 'Minha assinatura',
-  icon: CreditCard,
-  path: '/minha-assinatura',
-  roles: ['DIRECTOR', 'SOCIAL_MEDIA', 'DESIGN', 'FILMMAKER'],
-},
-{
+      name: 'Minha assinatura',
+      icon: CreditCard,
+      path: '/minha-assinatura',
+      roles: baseRoles,
+    },
+    {
       name: 'Central',
-      icon: ShieldCheck, CreditCard,
+      icon: ShieldCheck,
       path: privatePath,
       roles: ['DIRECTOR'],
       privateOnly: true,
     },
   ];
 
-  const visibleMenus = menus.filter((menu) => {
-    if (!menu.roles.includes(user.role)) return false;
-    if (menu.privateOnly && !hasPrivateAccess) return false;
+  const visibleItems = menuItems.filter((item) => {
+    if (item.privateOnly && !hasPrivateAccess) {
+      return false;
+    }
 
-    return true;
+    return item.roles.includes(user.role);
   });
 
   return (
-    <aside className="flex min-h-screen w-64 flex-col border-r border-slate-800 bg-slate-950 text-slate-300">
-      <div className="flex h-28 items-center border-b border-slate-800 px-5">
-        <Link
-          href="/clientes"
-          className="block w-full rounded-2xl bg-white px-3 py-3 shadow-xl shadow-black/30 transition hover:opacity-95"
-          aria-label="AprovUp"
-        >
-          <AprovUpLogo size="sm" showTagline={false} />
-        </Link>
+    <aside className="flex min-h-screen w-72 flex-col border-r border-slate-200 bg-white px-5 py-6">
+      <div className="mb-8">
+        <AprovUpLogo size="sm" />
       </div>
 
-      <nav className="flex-1 space-y-1.5 px-4 py-6">
-        {visibleMenus.map((menu) => {
-          const Icon = menu.icon;
+      <nav className="flex flex-1 flex-col gap-2">
+        {visibleItems.map((item) => {
+          const Icon = item.icon;
+          const isBlocked = item.requiredFeature ? !canUseFeature(access, item.requiredFeature) : false;
+          const href = isBlocked ? '/acesso-bloqueado' : item.path;
 
           return (
             <Link
-              key={menu.name}
-              href={menu.path}
-              className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-300 transition-all hover:bg-slate-900 hover:text-white"
+              key={item.name}
+              href={href}
+              className={[
+                'group flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition',
+                isBlocked
+                  ? 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                  : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
+              ].join(' ')}
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-slate-400 transition-colors group-hover:bg-slate-800 group-hover:text-white">
-                <Icon size={18} />
+              <span className="flex items-center gap-3">
+                <Icon className="h-5 w-5" />
+                {item.name}
               </span>
 
-              <span className="leading-tight">
-                {menu.name}
-              </span>
+              {isBlocked ? (
+                <span className="flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                  <Lock className="h-3 w-3" />
+                  Bloqueado
+                </span>
+              ) : null}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-slate-800 p-4">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            OperaÃ§Ã£o
-          </p>
+      <div className="mt-6 rounded-3xl bg-slate-50 p-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          Usuario
+        </p>
 
-          <p className="mt-1 text-sm font-semibold text-white">
-            Fluxo enxuto
-          </p>
+        <p className="mt-1 truncate text-sm font-bold text-slate-950">
+          {user.name || user.email}
+        </p>
 
-          <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            AprovaÃ§Ã£o, produÃ§Ã£o e resultados.
-          </p>
-        </div>
+        <p className="mt-1 text-xs text-slate-500">
+          {access.isCommander ? 'Acesso total' : access.subscription?.plan?.name || 'Sem plano ativo'}
+        </p>
       </div>
     </aside>
   );
