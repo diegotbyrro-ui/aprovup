@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { getApprovedContentDestination } from '@/lib/contentRouting';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -9,7 +10,23 @@ function text(formData: FormData, name: string) {
 }
 
 async function resolveClient(token: string) {
-  // Nesta fase, o token usado será o ID real do cliente.
+  const approval = await prisma.approval.findUnique({
+    where: {
+      token,
+    },
+    include: {
+      content: {
+        include: {
+          client: true,
+        },
+      },
+    },
+  });
+
+  if (approval?.content?.client) {
+    return approval.content.client;
+  }
+
   return prisma.client.findUnique({
     where: {
       id: token,
@@ -34,12 +51,15 @@ export async function approveClientContentAction(contentId: string, token: strin
     redirect(`/aprovacao/${token}`);
   }
 
+  const destination = getApprovedContentDestination(content);
+
   await prisma.content.update({
     where: {
       id: contentId,
     },
     data: {
       status: 'APROVADO',
+      area: destination,
     },
   });
 

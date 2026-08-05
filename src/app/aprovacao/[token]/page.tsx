@@ -138,11 +138,26 @@ export default async function ApprovalPage({
   const { token } = await params;
   const query = searchParams ? await searchParams : {};
 
-  const client = await prisma.client.findUnique({
+  const approval = await prisma.approval.findUnique({
     where: {
-      id: token,
+      token,
+    },
+    include: {
+      content: {
+        include: {
+          client: true,
+        },
+      },
     },
   });
+
+  const client =
+    approval?.content?.client ||
+    (await prisma.client.findUnique({
+      where: {
+        id: token,
+      },
+    }));
 
   if (!client) {
     return (
