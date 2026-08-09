@@ -272,12 +272,13 @@ export default async function ClientPage({ params }: any) {
 
   const recentContents = contents.slice(0, 8);
 
-  const approvalToken =
-    client.approvalToken ||
-    client.monthlyApprovalToken ||
-    client.publicToken ||
-    client.monthlyToken ||
-    '';
+  const approvalMonth = calendar.baseDate.getMonth() + 1;
+  const approvalYear = calendar.baseDate.getFullYear();
+
+  const monthlyApprovalHref =
+    `/clientes/${clientId}/aprovacao-mensal` +
+    `?month=${approvalMonth}` +
+    `&year=${approvalYear}`;
 
   const stats = [
     {
@@ -332,31 +333,25 @@ export default async function ClientPage({ params }: any) {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {approvalToken ? (
-                <Link
-                  href={`/aprovacao-mensal/${approvalToken}`}
-                  className="rounded-full bg-white px-6 py-3 text-center text-sm font-black text-slate-950"
-                >
-                  Link Etapa 1
-                </Link>
-              ) : (
-                <div className="rounded-full bg-white/10 px-6 py-3 text-center text-sm font-black text-white/70">
-                  Etapa 1 sem token
-                </div>
-              )}
+              <Link
+                href={monthlyApprovalHref}
+                className="rounded-full bg-white px-6 py-3 text-center text-sm font-black text-slate-950"
+              >
+                {'1\u00aa Etapa de Aprova\u00e7\u00e3o'}
+              </Link>
 
               <Link
-                href={`/aprovacao-final/${clientId}`}
+                href={`/clientes/${clientId}/aprovacao-final`}
                 className="rounded-full bg-white/10 px-6 py-3 text-center text-sm font-black text-white"
               >
-                Aprovação final
+                {'2\u00aa Etapa de Aprova\u00e7\u00e3o'}
               </Link>
 
               <Link
                 href={`/captacoes/nova?clientId=${clientId}`}
                 className="rounded-full bg-white/10 px-6 py-3 text-center text-sm font-black text-white"
               >
-                Agendar captação
+                {'Agendar grava\u00e7\u00e3o'}
               </Link>
 
               <Link

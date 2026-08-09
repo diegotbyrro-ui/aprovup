@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { requireCurrentUser } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
@@ -95,8 +95,15 @@ export async function POST(
       ? await saveFile(coverFile, 'capa')
       : '';
 
+    const reviewStatus =
+      content.area === 'FILMMAKER'
+        ? 'FILMMAKER_ANALISE'
+        : content.area === 'DESIGN'
+          ? 'DESIGN_ANALISE'
+          : 'REVISAO_INTERNA';
+
     const updateData: any = {
-      status: 'ENVIADO_AO_CLIENTE',
+      status: reviewStatus,
       finalUploadedAt: new Date(),
     };
 
@@ -125,7 +132,7 @@ export async function POST(
         contentId: id,
         authorName: currentUser.name || currentUser.email || 'Equipe Level UP',
         authorRole: currentUser.role || 'EQUIPE',
-        message: 'Material final enviado para aprovação do cliente na Etapa 2.',
+        message: 'Material final enviado para conferencia interna antes da 2a Etapa de Aprovacao.',
       },
     }).catch(() => null);
 
