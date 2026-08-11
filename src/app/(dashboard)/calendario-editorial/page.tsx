@@ -298,27 +298,31 @@ export default async function CalendarioEditorialPage({
                     </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                    <Link
-                        href={previousMonthHref}
-                        className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                    >
-                        Mês anterior
-                    </Link>
+                                <div className="flex flex-wrap gap-2">
+                    {selectedClient !== 'TODOS' && (
+                        <>
+                            <Link
+                                href={`/clientes/${selectedClient}/aprovacao-mensal?month=${currentMonth + 1}&year=${currentYear}`}
+                                className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700"
+                            >
+                                {'1\u00aa Etapa de Aprova\u00e7\u00e3o'}
+                            </Link>
 
-                    <Link
-                        href={currentMonthHref}
-                        className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                    >
-                        Mês atual
-                    </Link>
+                            <Link
+                                href={`/clientes/${selectedClient}/aprovacao-final`}
+                                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
+                            >
+                                {'2\u00aa Etapa de Aprova\u00e7\u00e3o'}
+                            </Link>
 
-                    <Link
-                        href={nextMonthHref}
-                        className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                    >
-                        Próximo mês
-                    </Link>
+                            <Link
+                                href={`/captacoes/nova?clientId=${selectedClient}`}
+                                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                            >
+                                {'Agendar grava\u00e7\u00e3o'}
+                            </Link>
+                        </>
+                    )}
 
                     <Link
                         href={
@@ -326,9 +330,9 @@ export default async function CalendarioEditorialPage({
                                 ? `/conteudos/novo?cliente=${selectedClient}`
                                 : '/clientes'
                         }
-                        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800"
+                        className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-slate-800"
                     >
-                        Novo Conteúdo
+                        {'Novo Conte\u00fado'}
                     </Link>
                 </div>
             </div>
@@ -445,10 +449,35 @@ export default async function CalendarioEditorialPage({
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-900">
-                            {monthNames[currentMonth]} de {currentYear}
-                        </h2>
+                                        <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="mr-2 text-2xl font-bold text-slate-900">
+                                {monthNames[currentMonth]} de {currentYear}
+                            </h2>
+
+                            <Link
+                                href={previousMonthHref}
+                                title="Mês anterior"
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-600 hover:bg-slate-100"
+                            >
+                                {'\u2190'}
+                            </Link>
+
+                            <Link
+                                href={currentMonthHref}
+                                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100"
+                            >
+                                Hoje
+                            </Link>
+
+                            <Link
+                                href={nextMonthHref}
+                                title="Próximo mês"
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-600 hover:bg-slate-100"
+                            >
+                                {'\u2192'}
+                            </Link>
+                        </div>
 
                         <p className="mt-1 text-sm text-slate-500">
                             {contents.length} conteúdo(s) encontrado(s) neste mês.
