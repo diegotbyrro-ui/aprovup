@@ -231,13 +231,18 @@ export default async function FinalApprovalPage({
                 content.status === 'ALTERACAO_SOLICITADA';
 
               return (
-                <article
+                                <article
                   key={content.id}
                   className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
                 >
-                  <div className="grid lg:grid-cols-[1fr_360px]">
+                  <div className="grid xl:grid-cols-[minmax(0,1fr)_360px]">
+
                     <div className="p-6">
                       <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full bg-pink-50 px-3 py-1 text-xs font-bold text-pink-700">
+                          Instagram
+                        </span>
+
                         <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
                           {content.format || 'Conteudo'}
                         </span>
@@ -251,63 +256,112 @@ export default async function FinalApprovalPage({
                         {content.title}
                       </h2>
 
-                      {mediaUrl ? (
-                        <div className="mt-5 overflow-hidden rounded-2xl bg-slate-950">
-                          {isVideo(content) ? (
-                            <video
-                              src={mediaUrl}
-                              controls
-                              className="max-h-[620px] w-full"
-                            />
-                          ) : (
-                            <img
-                              src={mediaUrl}
-                              alt={content.title}
-                              className="h-auto w-full"
-                            />
-                          )}
-                        </div>
-                      ) : (
-                        <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm font-bold text-slate-500">
-                          Preview nao disponivel.
-                        </div>
-                      )}
+                      <div className="mt-6 rounded-3xl bg-slate-100 p-4 sm:p-6">
+                        <div className="mx-auto max-w-[390px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-                      {content.fileLinks && (
-                        <a
-                          href={content.fileLinks}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-4 inline-flex rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white"
-                        >
-                          Abrir material
-                        </a>
-                      )}
+                          <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
+                            {client.logoUrl ? (
+                              <img
+                                src={client.logoUrl}
+                                alt={client.name}
+                                className="h-10 w-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-600 to-blue-600 text-sm font-black text-white">
+                                {client.name.slice(0, 1).toUpperCase()}
+                              </div>
+                            )}
 
-                      {content.caption && (
-                        <div className="mt-5 rounded-2xl bg-slate-50 p-5">
-                          <p className="text-xs font-bold uppercase text-slate-400">
-                            Legenda final
-                          </p>
+                            <div>
+                              <p className="text-sm font-black text-slate-900">
+                                {client.name}
+                              </p>
 
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                            {content.caption}
-                          </p>
+                              <p className="text-xs text-slate-400">
+                                Publicacao em aprovacao
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="bg-black">
+                            {mediaUrl ? (
+                              isVideo(content) ? (
+                                <video
+                                  src={mediaUrl}
+                                  controls
+                                  className="aspect-[4/5] w-full object-contain"
+                                />
+                              ) : (
+                                <img
+                                  src={mediaUrl}
+                                  alt={content.title}
+                                  className="aspect-[4/5] w-full object-cover"
+                                />
+                              )
+                            ) : (
+                              <div className="flex aspect-[4/5] items-center justify-center bg-slate-200 p-8 text-center text-sm font-bold text-slate-500">
+                                Material final ainda nao disponivel.
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="px-4 pb-4 pt-3">
+
+                            <div className="mb-3 flex items-center justify-between text-xl text-slate-800">
+                              <div className="flex gap-4">
+                                <span>♡</span>
+                                <span>○</span>
+                                <span>↗</span>
+                              </div>
+
+                              <span>▱</span>
+                            </div>
+
+                            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                              <span className="mr-1 font-black text-slate-900">
+                                {client.name}
+                              </span>
+
+                              {content.caption || 'Nenhuma legenda cadastrada.'}
+                            </p>
+                          </div>
                         </div>
-                      )}
+                      </div>
                     </div>
 
-                    <aside className="border-t border-slate-200 bg-slate-50 p-5 lg:border-l lg:border-t-0">
+                    <aside className="border-t border-slate-200 bg-slate-50 p-6 xl:border-l xl:border-t-0 xl:pt-16">
+
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                        Aprovacao
+                      </p>
+
+                      <p className="mt-2 text-xl font-black text-slate-900">
+                        {statusLabel(content.status)}
+                      </p>
+
                       {approvedContent ? (
-                        <div className="rounded-2xl bg-emerald-100 p-5 font-black text-emerald-800">
-                          Material aprovado
+                        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                          <p className="font-black text-emerald-800">
+                            Conteudo aprovado
+                          </p>
+
+                          <p className="mt-1 text-sm text-emerald-700">
+                            Este material ja foi aprovado na segunda etapa.
+                          </p>
                         </div>
                       ) : adjustmentContent ? (
-                        <div className="rounded-2xl bg-orange-100 p-5 font-black text-orange-800">
-                          Alteracao solicitada
+                        <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-5">
+                          <p className="font-black text-orange-800">
+                            Ajuste solicitado
+                          </p>
+
+                          <p className="mt-1 text-sm text-orange-700">
+                            A solicitacao foi enviada para a equipe.
+                          </p>
                         </div>
                       ) : (
-                        <div className="space-y-4">
+                        <div className="mt-6 space-y-6">
+
                           <form
                             action={approveFinalContentAction.bind(
                               null,
@@ -317,40 +371,49 @@ export default async function FinalApprovalPage({
                           >
                             <button
                               type="submit"
-                              className="w-full rounded-xl bg-emerald-600 px-4 py-3 font-black text-white hover:bg-emerald-700"
+                              className="w-full rounded-2xl bg-emerald-600 px-5 py-4 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700"
                             >
-                              Aprovar material
+                              Aprovar conteudo
                             </button>
                           </form>
 
-                          <form
-                            action={requestFinalChangesAction.bind(
-                              null,
-                              token,
-                              content.id
-                            )}
-                            className="space-y-2"
-                          >
-                            <label className="text-xs font-bold uppercase text-slate-500">
-                              Solicitar alteracao
-                            </label>
+                          <div className="border-t border-slate-200 pt-5">
 
-                            <textarea
-                              name="message"
-                              rows={5}
-                              placeholder="Descreva o que precisa ser ajustado..."
-                              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm outline-none"
-                            />
+                            <p className="text-sm font-black text-slate-900">
+                              Precisa de algum ajuste?
+                            </p>
 
-                            <button
-                              type="submit"
-                              className="w-full rounded-xl bg-orange-500 px-4 py-3 font-black text-white hover:bg-orange-600"
+                            <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                              Descreva abaixo exatamente o que deseja alterar.
+                            </p>
+
+                            <form
+                              action={requestFinalChangesAction.bind(
+                                null,
+                                token,
+                                content.id
+                              )}
+                              className="mt-4 space-y-3"
                             >
-                              Enviar solicitacao
-                            </button>
-                          </form>
+                              <textarea
+                                name="message"
+                                required
+                                rows={6}
+                                placeholder="Ex.: trocar a foto, ajustar uma palavra da arte, alterar um trecho da legenda..."
+                                className="w-full resize-none rounded-2xl border border-slate-300 bg-white p-4 text-sm leading-relaxed text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+                              />
+
+                              <button
+                                type="submit"
+                                className="w-full rounded-2xl bg-orange-500 px-5 py-4 text-sm font-black text-white transition hover:bg-orange-600"
+                              >
+                                Enviar pedido de ajuste
+                              </button>
+                            </form>
+                          </div>
                         </div>
                       )}
+
                     </aside>
                   </div>
                 </article>

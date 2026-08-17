@@ -1,3 +1,19 @@
+/* APROVUP_LOCAL_FONT_FALLBACK
+   Tipografia temporaria local.
+   Evita dependencia de Google Fonts no build.
+   A tipografia definitiva entra no Design System UI V2.
+*/
+:root {
+  --font-geist-sans:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  --font-geist-mono:
+    "Courier New",
+    monospace;
+}
+
 @import "tailwindcss";
 
 :root {

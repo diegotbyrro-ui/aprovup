@@ -278,6 +278,36 @@ export default async function CalendarioEditorialPage({
     const selectedClientName =
         clients.find((client) => client.id === selectedClient)?.name || 'Todos';
 
+    const secondStageApproval =
+        selectedClient !== 'TODOS'
+            ? await prisma.approval.findFirst({
+                  where: {
+                      content: {
+                          clientId: selectedClient,
+                          status: {
+                              in: [
+                                  'ENVIADO_CLIENTE',
+                                  'ALTERACAO_SOLICITADA',
+                                  'PRONTO_PARA_POSTAR',
+                              ],
+                          },
+                      },
+                  },
+                  orderBy: {
+                      createdAt: 'desc',
+                  },
+                  select: {
+                      token: true,
+                  },
+              })
+            : null;
+
+    const secondStageHref =
+        selectedClient !== 'TODOS' && secondStageApproval
+            ? `/aprovacao-final/${secondStageApproval.token}`
+            : selectedClient !== 'TODOS'
+              ? `/clientes/${selectedClient}/aprovacao-final`
+              : '/clientes';
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -309,7 +339,7 @@ export default async function CalendarioEditorialPage({
                             </Link>
 
                             <Link
-                                href={`/clientes/${selectedClient}/aprovacao-final`}
+                                href={secondStageHref}
                                 className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
                             >
                                 {'2\u00aa Etapa de Aprova\u00e7\u00e3o'}

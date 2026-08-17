@@ -1,7 +1,8 @@
-﻿import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { randomUUID } from "crypto";
+import { CopyApprovalLinkButton } from "./CopyApprovalLinkButton";
 import { notFound } from "next/navigation";
-import { createMonthlyApprovalLink } from "./actions";
 
 const monthNames: Record<number, string> = {
     1: "Janeiro",
@@ -70,7 +71,30 @@ export default async function ClientMonthlyApprovalPage({
     const currentMonth = Number(query.month) || now.getMonth() + 1;
     const currentYear = Number(query.year) || now.getFullYear();
 
-    const createAction = createMonthlyApprovalLink.bind(null, id);
+    const ensuredApproval = await prisma.monthlyApproval.createMany({
+        data: [
+            {
+                clientId: id,
+                month: currentMonth,
+                year: currentYear,
+                token: randomUUID(),
+                status: "PENDENTE",
+            },
+        ],
+        skipDuplicates: true,
+    });
+
+    if (ensuredApproval.count > 0) {
+        await prisma.historyLog.create({
+            data: {
+                entityType: "CLIENT",
+                entityId: id,
+                action: "MONTHLY_APPROVAL_LINK_CREATED",
+                description: `Link mensal de aprovação criado automaticamente para ${client.name} - ${currentMonth}/${currentYear}.`,
+                authorName: "Equipe Level UP",
+            },
+        });
+    }
 
     const monthlyApprovals = await prisma.monthlyApproval.findMany({
         where: {
@@ -165,10 +189,6 @@ export default async function ClientMonthlyApprovalPage({
         })
     );
 
-    const generatedLink = query.token
-        ? getPublicApprovalUrl(query.token)
-        : null;
-
     return (
         <div className="space-y-6">
             <section className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-sm">
@@ -196,175 +216,6 @@ export default async function ClientMonthlyApprovalPage({
                             Gere um único link mensal para o cliente revisar o calendário de
                             conteúdos, aprovar planejamentos e solicitar alterações.
                         </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                        <Link
-                            href={`/clientes/${id}`}
-                            className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-slate-900 hover:bg-slate-100"
-                        >
-                            Página do Cliente
-                        </Link>
-
-                        <Link
-                            href={`/clientes/${id}/visao`}
-                            className="rounded-xl border border-white/20 px-4 py-2 text-sm font-bold text-white hover:bg-white/10"
-                        >
-                            Visão Premium
-                        </Link>
-
-                        <Link
-                            href={`/conteudos/kanban?cliente=${id}`}
-                            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
-                        >
-                            Produção do Cliente
-                        </Link>
-                    </div>
-                </div>
-            </section>
-
-            {generatedLink && (
-                <section className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
-                    <p className="text-xs font-bold uppercase tracking-wider text-emerald-500">
-                        Link gerado com sucesso
-                    </p>
-
-                    <h2 className="mt-1 text-lg font-bold text-emerald-900">
-                        Calendário mensal de aprovação criado
-                    </h2>
-
-                    <p className="mt-1 text-sm text-emerald-700">
-                        Copie o link abaixo e envie para o cliente revisar os conteúdos do
-                        mês.
-                    </p>
-
-                    <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-4">
-                        <p className="break-all text-sm font-bold text-slate-900">
-                            {generatedLink}
-                        </p>
-
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            <Link
-                                href={generatedLink}
-                                target="_blank"
-                                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"
-                            >
-                                Abrir link
-                            </Link>
-
-                            <Link
-                                href={`/clientes/${id}/aprovacao-mensal`}
-                                className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100"
-                            >
-                                Limpar aviso
-                            </Link>
-                        </div>
-                    </div>
-                </section>
-            )}
-
-            <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-1">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        Gerar link mensal
-                    </p>
-
-                    <h2 className="mt-1 text-xl font-bold text-slate-900">
-                        Novo calendário de aprovação
-                    </h2>
-
-                    <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                        Se já existir um link para o mesmo mês e ano, o sistema vai
-                        reutilizar o link existente.
-                    </p>
-
-                    <form action={createAction} className="mt-5 space-y-4">
-                        <div>
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">
-                                Mês
-                            </label>
-
-                            <select
-                                name="month"
-                                defaultValue={currentMonth}
-                                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            >
-                                {Object.entries(monthNames).map(([value, label]) => (
-                                    <option key={value} value={value}>
-                                        {label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">
-                                Ano
-                            </label>
-
-                            <input
-                                name="year"
-                                type="number"
-                                defaultValue={currentYear}
-                                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800"
-                        >
-                            Gerar link de aprovação
-                        </button>
-                    </form>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        Como usar
-                    </p>
-
-                    <h2 className="mt-1 text-xl font-bold text-slate-900">
-                        Fluxo recomendado
-                    </h2>
-
-                    <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                            <p className="font-bold text-slate-900">
-                                1. Planeje o mês
-                            </p>
-                            <p className="mt-1 text-sm text-slate-500">
-                                Cadastre os conteúdos com data, briefing, legenda, área e
-                                prioridade.
-                            </p>
-                        </div>
-
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                            <p className="font-bold text-slate-900">
-                                2. Gere o link mensal
-                            </p>
-                            <p className="mt-1 text-sm text-slate-500">
-                                Envie um único link para o cliente revisar o calendário inteiro.
-                            </p>
-                        </div>
-
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                            <p className="font-bold text-slate-900">
-                                3. Cliente aprova
-                            </p>
-                            <p className="mt-1 text-sm text-slate-500">
-                                Ao aprovar, o conteúdo entra em Agendamento de Produção.
-                            </p>
-                        </div>
-
-                        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                            <p className="font-bold text-slate-900">
-                                4. Equipe produz
-                            </p>
-                            <p className="mt-1 text-sm text-slate-500">
-                                Design ou Filmmaker recebe a demanda liberada para produção.
-                            </p>
-                        </div>
                     </div>
                 </div>
             </section>
@@ -447,12 +298,7 @@ export default async function ClientMonthlyApprovalPage({
                                             Abrir link
                                         </Link>
 
-                                        <Link
-                                            href={`/clientes/${id}/aprovacao-mensal?token=${approval.token}&month=${approval.month}&year=${approval.year}`}
-                                            className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100"
-                                        >
-                                            Ver link
-                                        </Link>
+                                        <CopyApprovalLinkButton path={publicUrl} />
                                     </div>
                                 </div>
                             );

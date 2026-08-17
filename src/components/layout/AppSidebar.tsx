@@ -1,5 +1,9 @@
-import Link from 'next/link';
-import type { LucideIcon } from 'lucide-react';
+import Link from "next/link";
+
+import type {
+  LucideIcon,
+} from "lucide-react";
+
 import {
   BriefcaseBusiness,
   LayoutDashboard,
@@ -7,14 +11,26 @@ import {
   PenTool,
   Users,
   Video,
-} from 'lucide-react';
-import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
-import { requireCurrentUser } from '@/lib/auth';
+} from "lucide-react";
+
+import {
+  AprovUpLogo,
+} from "@/components/brand/AprovUpLogo";
+
+import {
+  AprovUpThemeToggle,
+} from "@/components/theme/AprovUpThemeToggle";
+
+import {
+  requireCurrentUser,
+} from "@/lib/auth";
+
 import {
   canUseFeature,
   getCurrentUserSaasAccess,
   type SaasFeature,
-} from '@/lib/saasAccess';
+} from "@/lib/saasAccess";
+
 
 type MenuItem = {
   name: string;
@@ -24,115 +40,279 @@ type MenuItem = {
   requiredFeature?: SaasFeature;
 };
 
+
 const baseRoles = [
-  'DIRECTOR',
-  'SOCIAL_MEDIA',
-  'DESIGN',
-  'FILMMAKER',
+  "DIRECTOR",
+  "SOCIAL_MEDIA",
+  "DESIGN",
+  "FILMMAKER",
 ];
 
+
 export async function AppSidebar() {
-  const user = await requireCurrentUser();
-  const access = await getCurrentUserSaasAccess();
+
+  const user =
+    await requireCurrentUser();
+
+  const access =
+    await getCurrentUserSaasAccess();
+
 
   const menuItems: MenuItem[] = [
     {
-      name: 'Dashboard',
+      name: "Dashboard",
       icon: LayoutDashboard,
-      path: '/operacao',
+      path: "/operacao",
       roles: baseRoles,
     },
     {
-      name: 'Social Mídia',
+      name: "Social Mídia",
       icon: Users,
-      path: '/clientes',
-      roles: ['DIRECTOR', 'SOCIAL_MEDIA'],
+      path: "/clientes",
+      roles: [
+        "DIRECTOR",
+        "SOCIAL_MEDIA",
+      ],
     },
     {
-      name: 'Filmmaker',
+      name: "Filmmaker",
       icon: Video,
-      path: '/filmmaker',
-      roles: ['DIRECTOR', 'FILMMAKER'],
+      path: "/filmmaker",
+      roles: [
+        "DIRECTOR",
+        "FILMMAKER",
+      ],
     },
     {
-      name: 'Design',
+      name: "Design",
       icon: PenTool,
-      path: '/design',
-      roles: ['DIRECTOR', 'DESIGN'],
+      path: "/design",
+      roles: [
+        "DIRECTOR",
+        "DESIGN",
+      ],
     },
     {
-      name: 'CRM',
+      name: "CRM",
       icon: BriefcaseBusiness,
-      path: '/crm',
-      roles: ['DIRECTOR', 'SOCIAL_MEDIA'],
-      requiredFeature: 'crm',
+      path: "/crm",
+      roles: [
+        "DIRECTOR",
+        "SOCIAL_MEDIA",
+      ],
+      requiredFeature: "crm",
     },
   ];
 
-  const visibleItems = menuItems.filter((item) =>
-    item.roles.includes(user.role)
-  );
+
+  const visibleItems =
+    menuItems.filter(
+      (item) =>
+        item.roles.includes(
+          user.role
+        )
+    );
+
 
   return (
-    <aside className="flex min-h-screen w-72 flex-col border-r border-slate-200 bg-white px-5 py-6">
-      <div className="mb-8">
+    <aside
+      className="
+        ap-sidebar
+        relative
+        flex
+        min-h-screen
+        w-72
+        flex-shrink-0
+        flex-col
+        overflow-hidden
+        border-r
+        px-5
+        py-6
+      "
+    >
+
+      <div
+        className="
+          ap-sidebar-logo
+          mb-8
+        "
+      >
         <AprovUpLogo size="sm" />
       </div>
 
-      <nav className="flex flex-1 flex-col gap-2">
+
+      <nav
+        className="
+          flex
+          flex-1
+          flex-col
+          gap-2
+        "
+      >
+
         {visibleItems.map((item) => {
+
           const Icon = item.icon;
 
-          const isBlocked = item.requiredFeature
-            ? !canUseFeature(access, item.requiredFeature)
-            : false;
+          const isBlocked =
+            item.requiredFeature
+              ? !canUseFeature(
+                  access,
+                  item.requiredFeature
+                )
+              : false;
 
-          const href = isBlocked
-            ? '/acesso-bloqueado'
-            : item.path;
+          const href =
+            isBlocked
+              ? "/acesso-bloqueado"
+              : item.path;
+
 
           return (
             <Link
-              key={item.name}
-              href={href}
               className={[
-                'group flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition',
+                `
+                  ap-sidebar-link
+                  group
+                  flex
+                  min-h-[46px]
+                  items-center
+                  justify-between
+                  gap-3
+                  rounded-xl
+                  px-4
+                  text-sm
+                  font-semibold
+                `,
                 isBlocked
-                  ? 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
-                  : 'text-slate-700 hover:bg-slate-100 hover:text-slate-950',
-              ].join(' ')}
+                  ? `
+                    border
+                    border-amber-500/20
+                    bg-amber-500/10
+                  `
+                  : "",
+              ].join(" ")}
+              href={href}
+              key={item.name}
             >
-              <span className="flex items-center gap-3">
-                <Icon className="h-5 w-5" />
+
+              <span
+                className="
+                  flex
+                  items-center
+                  gap-3
+                "
+              >
+
+                <Icon
+                  className="
+                    h-[19px]
+                    w-[19px]
+                  "
+                />
+
                 {item.name}
+
               </span>
 
+
               {isBlocked ? (
-                <span className="flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-700">
-                  <Lock className="h-3 w-3" />
+                <span
+                  className="
+                    flex
+                    items-center
+                    gap-1
+                    rounded-full
+                    bg-amber-500/10
+                    px-2
+                    py-1
+                    text-[9px]
+                    font-bold
+                    uppercase
+                    tracking-wider
+                    text-amber-500
+                  "
+                >
+
+                  <Lock
+                    className="
+                      h-3
+                      w-3
+                    "
+                  />
+
                   Bloqueado
+
                 </span>
               ) : null}
+
             </Link>
           );
         })}
+
       </nav>
 
-      <div className="mt-6 rounded-3xl bg-slate-50 p-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-          Usuário
-        </p>
 
-        <p className="mt-1 truncate text-sm font-bold text-slate-950">
-          {user.name || user.email}
-        </p>
+      <div
+        className="
+          mt-6
+          space-y-3
+        "
+      >
 
-        <p className="mt-1 text-xs text-slate-500">
-          {access.isCommander
-            ? 'Acesso total'
-            : access.subscription?.plan?.name || 'Sem plano ativo'}
-        </p>
+        <AprovUpThemeToggle />
+
+
+        <div
+          className="
+            ap-sidebar-user
+            rounded-2xl
+            p-4
+          "
+        >
+
+          <p
+            className="
+              text-[10px]
+              font-bold
+              uppercase
+              tracking-[0.14em]
+              text-slate-500
+            "
+          >
+            Usuário
+          </p>
+
+          <p
+            className="
+              mt-2
+              truncate
+              text-sm
+              font-bold
+            "
+          >
+            {user.name ||
+              user.email}
+          </p>
+
+          <p
+            className="
+              mt-1
+              text-xs
+              text-slate-500
+            "
+          >
+            {access.isCommander
+              ? "Acesso total"
+              : access.subscription
+                    ?.plan?.name ||
+                "Sem plano ativo"}
+          </p>
+
+        </div>
+
       </div>
+
     </aside>
   );
 }

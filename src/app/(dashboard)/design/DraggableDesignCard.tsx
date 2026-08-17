@@ -1,7 +1,17 @@
-﻿'use client';
+'use client';
 
-import { ReactNode, useState, useTransition } from 'react';
-import { updateDesignStatusAction } from './actions';
+import {
+  useState,
+  useTransition,
+  type ReactNode,
+} from 'react';
+
+import { useRouter } from 'next/navigation';
+
+import {
+  updateDesignStatusAction,
+} from './actions';
+
 
 export function DraggableDesignCard({
   contentId,
@@ -10,21 +20,54 @@ export function DraggableDesignCard({
   contentId: string;
   children: ReactNode;
 }) {
+  const [
+    isDragging,
+    setIsDragging,
+  ] = useState(false);
+
   return (
     <div
+      data-aprovup-content-id={contentId}
       draggable
+      onDragEnd={(event) => {
+        event.stopPropagation();
+        setIsDragging(false);
+      }}
       onDragStart={(event) => {
         event.stopPropagation();
-        event.dataTransfer.setData('application/content-id', contentId);
-        event.dataTransfer.setData('text/plain', contentId);
-        event.dataTransfer.effectAllowed = 'move';
+
+        setIsDragging(true);
+
+        event.dataTransfer.effectAllowed =
+          'move';
+
+        event.dataTransfer.setData(
+          'application/x-aprovup-content-id',
+          contentId
+        );
+
+        event.dataTransfer.setData(
+          'application/content-id',
+          contentId
+        );
+
+        event.dataTransfer.setData(
+          'text/plain',
+          contentId
+        );
       }}
-      className="cursor-grab active:cursor-grabbing"
+      style={{
+        opacity:
+          isDragging
+            ? 0.55
+            : 1,
+      }}
     >
       {children}
     </div>
   );
 }
+
 
 export function DroppableDesignColumn({
   statusKey,
@@ -33,43 +76,114 @@ export function DroppableDesignColumn({
   statusKey: string;
   children: ReactNode;
 }) {
-  const [isOver, setIsOver] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const router =
+    useRouter();
+
+  const [
+    isOver,
+    setIsOver,
+  ] = useState(false);
+
+  const [
+    isPending,
+    startTransition,
+  ] = useTransition();
 
   return (
     <div
-      onDragOver={(event) => {
-        const hasContent =
-          event.dataTransfer.types.includes('application/content-id') ||
-          event.dataTransfer.types.includes('text/plain');
-
-        if (!hasContent) return;
-
+      data-aprovup-drop-status={statusKey}
+      data-drag-active={
+        isOver
+          ? 'true'
+          : 'false'
+      }
+      onDragEnter={(event) => {
         event.preventDefault();
         event.stopPropagation();
+
+        event.dataTransfer.dropEffect =
+          'move';
+
         setIsOver(true);
       }}
-      onDragLeave={() => {
+      onDragLeave={(event) => {
+        event.stopPropagation();
+
+        const nextTarget =
+          event.relatedTarget;
+
+        if (
+          nextTarget instanceof Node &&
+          event.currentTarget.contains(
+            nextTarget
+          )
+        ) {
+          return;
+        }
+
         setIsOver(false);
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        event.dataTransfer.dropEffect =
+          'move';
+
+        setIsOver(true);
       }}
       onDrop={(event) => {
         event.preventDefault();
         event.stopPropagation();
+
         setIsOver(false);
 
+        if (isPending) {
+          return;
+        }
+
         const contentId =
-          event.dataTransfer.getData('application/content-id') ||
-          event.dataTransfer.getData('text/plain');
+          event.dataTransfer.getData(
+            'application/x-aprovup-content-id'
+          ) ||
+          event.dataTransfer.getData(
+            'application/content-id'
+          ) ||
+          event.dataTransfer.getData(
+            'text/plain'
+          );
 
-        if (!contentId) return;
+        if (!contentId) {
+          console.error(
+            '[APROVUP DESIGN] DROP SEM CONTENT ID'
+          );
 
-        startTransition(() => {
-          updateDesignStatusAction(contentId, statusKey);
-        });
+          return;
+        }
+
+        startTransition(
+          async () => {
+            try {
+              await updateDesignStatusAction(
+                contentId,
+                statusKey
+              );
+
+              router.refresh();
+            }
+            catch (error) {
+              console.error(
+                '[APROVUP DESIGN] ERRO AO MOVER:',
+                error
+              );
+
+              window.alert(
+                'Nao foi possivel mover o conteudo. Tente novamente.'
+              );
+            }
+          }
+        );
       }}
-      className={`min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 [scrollbar-width:thin] ${
-        isOver ? 'rounded-2xl bg-blue-50 p-2 ring-2 ring-blue-200' : ''
-      } ${isPending ? 'opacity-60' : ''}`}
     >
       {children}
     </div>

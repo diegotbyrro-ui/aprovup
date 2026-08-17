@@ -1,4 +1,5 @@
-﻿export const dynamic = 'force-dynamic';
+import '../aprovup-theme.css';
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
@@ -12,7 +13,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen w-full overflow-hidden bg-slate-50">
+    <div className="aprovup-app-shell flex min-h-screen w-full overflow-hidden">
       <AppSidebar />
 
       <div className="flex min-w-0 flex-1 flex-col bg-slate-50">

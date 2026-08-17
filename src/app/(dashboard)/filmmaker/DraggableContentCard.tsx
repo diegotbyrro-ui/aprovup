@@ -1,7 +1,17 @@
-﻿'use client';
+'use client';
 
-import { ReactNode, useState, useTransition } from 'react';
-import { updateFilmmakerStatusAction } from './actions';
+import {
+  useState,
+  useTransition,
+  type ReactNode,
+} from 'react';
+
+import { useRouter } from 'next/navigation';
+
+import {
+  updateFilmmakerStatusAction,
+} from './actions';
+
 
 export function DraggableContentCard({
   contentId,
@@ -10,21 +20,68 @@ export function DraggableContentCard({
   contentId: string;
   children: ReactNode;
 }) {
+  const [
+    isDragging,
+    setIsDragging,
+  ] = useState(false);
+
   return (
     <div
+      data-aprovup-content-id={contentId}
       draggable
-      onDragStart={(event) => {
+      onDragEnd={(event) => {
+        /*
+         * Impede o DraggableColumn externo
+         * de interpretar o fim do drag
+         * como movimento da coluna.
+         */
         event.stopPropagation();
-        event.dataTransfer.setData('application/content-id', contentId);
-        event.dataTransfer.setData('text/plain', contentId);
-        event.dataTransfer.effectAllowed = 'move';
+
+        setIsDragging(false);
       }}
-      className="cursor-grab active:cursor-grabbing"
+      onDragStart={(event) => {
+        /*
+         * Filmmaker possui coluna draggable
+         * envolvendo o card.
+         *
+         * O stopPropagation garante que o
+         * drag iniciado no card continue
+         * sendo CARD e nao vire COLUMN.
+         */
+        event.stopPropagation();
+
+        setIsDragging(true);
+
+        event.dataTransfer.effectAllowed =
+          'move';
+
+        event.dataTransfer.setData(
+          'application/x-aprovup-content-id',
+          contentId
+        );
+
+        event.dataTransfer.setData(
+          'application/content-id',
+          contentId
+        );
+
+        event.dataTransfer.setData(
+          'text/plain',
+          contentId
+        );
+      }}
+      style={{
+        opacity:
+          isDragging
+            ? 0.55
+            : 1,
+      }}
     >
       {children}
     </div>
   );
 }
+
 
 export function DroppableFilmmakerColumn({
   statusKey,
@@ -33,43 +90,114 @@ export function DroppableFilmmakerColumn({
   statusKey: string;
   children: ReactNode;
 }) {
-  const [isOver, setIsOver] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const router =
+    useRouter();
+
+  const [
+    isOver,
+    setIsOver,
+  ] = useState(false);
+
+  const [
+    isPending,
+    startTransition,
+  ] = useTransition();
 
   return (
     <div
-      onDragOver={(event) => {
-        const hasContent =
-          event.dataTransfer.types.includes('application/content-id') ||
-          event.dataTransfer.types.includes('text/plain');
-
-        if (!hasContent) return;
-
+      data-aprovup-drop-status={statusKey}
+      data-drag-active={
+        isOver
+          ? 'true'
+          : 'false'
+      }
+      onDragEnter={(event) => {
         event.preventDefault();
         event.stopPropagation();
+
+        event.dataTransfer.dropEffect =
+          'move';
+
         setIsOver(true);
       }}
-      onDragLeave={() => {
+      onDragLeave={(event) => {
+        event.stopPropagation();
+
+        const nextTarget =
+          event.relatedTarget;
+
+        if (
+          nextTarget instanceof Node &&
+          event.currentTarget.contains(
+            nextTarget
+          )
+        ) {
+          return;
+        }
+
         setIsOver(false);
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        event.dataTransfer.dropEffect =
+          'move';
+
+        setIsOver(true);
       }}
       onDrop={(event) => {
         event.preventDefault();
         event.stopPropagation();
+
         setIsOver(false);
 
+        if (isPending) {
+          return;
+        }
+
         const contentId =
-          event.dataTransfer.getData('application/content-id') ||
-          event.dataTransfer.getData('text/plain');
+          event.dataTransfer.getData(
+            'application/x-aprovup-content-id'
+          ) ||
+          event.dataTransfer.getData(
+            'application/content-id'
+          ) ||
+          event.dataTransfer.getData(
+            'text/plain'
+          );
 
-        if (!contentId) return;
+        if (!contentId) {
+          console.error(
+            '[APROVUP FILMMAKER] DROP SEM CONTENT ID'
+          );
 
-        startTransition(() => {
-          updateFilmmakerStatusAction(contentId, statusKey);
-        });
+          return;
+        }
+
+        startTransition(
+          async () => {
+            try {
+              await updateFilmmakerStatusAction(
+                contentId,
+                statusKey
+              );
+
+              router.refresh();
+            }
+            catch (error) {
+              console.error(
+                '[APROVUP FILMMAKER] ERRO AO MOVER:',
+                error
+              );
+
+              window.alert(
+                'Nao foi possivel mover o conteudo. Tente novamente.'
+              );
+            }
+          }
+        );
       }}
-      className={`min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 [scrollbar-width:thin] ${
-        isOver ? 'rounded-2xl bg-blue-50 p-2 ring-2 ring-blue-200' : ''
-      } ${isPending ? 'opacity-60' : ''}`}
     >
       {children}
     </div>
