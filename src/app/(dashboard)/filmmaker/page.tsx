@@ -1,602 +1,1504 @@
-import { formatLabel } from '@/lib/formatLabel';
+import Link from "next/link";
 
-import { prisma } from '@/lib/prisma';
-import { requireCurrentUser, isDirector } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import {
-  CheckCircle2,
+  redirect,
+} from "next/navigation";
+
+import {
   AlertTriangle,
-  Eye,
-  Video,
-  ArrowRight,
   ArrowLeft,
-  HelpCircle,
-  Plus,
+  ArrowRight,
   CalendarDays,
-  Scissors,
   Camera,
-  ClipboardList,
-  Pencil,
-  Trash2,
+  CheckCircle2,
+  Clock3,
+  Database,
+  ExternalLink,
+  Film,
+  FolderOpen,
+  ImageIcon,
   MoreHorizontal,
-} from 'lucide-react';
+  Pencil,
+  Plus,
+  Scissors,
+  Send,
+  Trash2,
+  Video,
+} from "lucide-react";
+
 import {
-  updateFilmmakerStatusAction,
-  sendFilmmakerQuestionAction,
-  createFilmmakerColumnAction,
-  updateFilmmakerColumnTitleAction,
-  moveFilmmakerColumnAction,
+  formatLabel,
+} from "@/lib/formatLabel";
+
+import {
+  prisma,
+} from "@/lib/prisma";
+
+import {
+  isDirector,
+  requireCurrentUser,
+} from "@/lib/auth";
+
+import {
+  FilmmakerCaptureAgenda,
+} from "@/components/filmmaker/FilmmakerCaptureAgenda";
+
+import {
   archiveFilmmakerColumnAction,
+  createFilmmakerColumnAction,
   ensureDefaultFilmmakerColumns,
-} from './actions';
-import DraggableColumn from './DraggableColumn';
-import { DraggableContentCard, DroppableFilmmakerColumn } from './DraggableContentCard';
-import { FilmmakerCaptureAgenda } from '@/components/filmmaker/FilmmakerCaptureAgenda';
-function normalizeRole(role?: string | null) {
-  return String(role || '')
+  moveFilmmakerColumnAction,
+  sendFilmmakerQuestionAction,
+  updateFilmmakerColumnTitleAction,
+} from "./actions";
+
+import DraggableColumn from "./DraggableColumn";
+
+import {
+  DraggableContentCard,
+  DroppableFilmmakerColumn,
+} from "./DraggableContentCard";
+
+
+function normalizeRole(
+  role?:
+    | string
+    | null
+) {
+  return String(
+    role ||
+    ""
+  )
     .trim()
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .normalize(
+      "NFD"
+    )
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    );
 }
 
-function isFilmmaker(role?: string | null) {
-  const value = normalizeRole(role);
-  return value === 'filmmaker' || value === 'audiovisual' || value === 'video';
+
+function isFilmmaker(
+  role?:
+    | string
+    | null
+) {
+  const value =
+    normalizeRole(
+      role
+    );
+
+  return (
+    value ===
+      "filmmaker" ||
+    value ===
+      "audiovisual" ||
+    value ===
+      "video"
+  );
 }
 
-function getColumnIcon(statusKey: string) {
-  const icons: Record<string, any> = {
-    APROVADO: Video,
-    FILMMAKER_PRE_PRODUCAO: ClipboardList,
-    FILMMAKER_AGENDAMENTO: CalendarDays,
-    FILMMAKER_GRAVANDO: Camera,
-    FILMMAKER_EDICAO: Scissors,
-    FILMMAKER_ANALISE: Eye,
-    FILMMAKER_DUVIDA_SOCIAL: HelpCircle,
-    'ALTERACAO_SOLICITADA': AlertTriangle,
-    'PRONTO_PARA_POSTAR': CheckCircle2,
-  };
 
-  return icons[statusKey] || Plus;
+function cleanDemoName(
+  value?:
+    | string
+    | null
+) {
+  return String(
+    value ||
+    ""
+  ).replace(
+    /^\[DEMO\]\s*/i,
+    ""
+  );
 }
 
-function getColumnDescription(statusKey: string) {
-  const descriptions: Record<string, string> = {
-    APROVADO: 'Aprovadas e liberadas para audiovisual.',
-    FILMMAKER_PRE_PRODUCAO: 'Roteiro, referências e preparação.',
-    FILMMAKER_AGENDAMENTO: 'Aguardando data com cliente ou equipe.',
-    FILMMAKER_GRAVANDO: 'Captação em andamento.',
-    FILMMAKER_EDICAO: 'Vídeo em edição.',
-    FILMMAKER_ANALISE: 'Aguardando conferência interna.',
-    FILMMAKER_DUVIDA_SOCIAL: 'Aguardando resposta da Social Media.',
-    'ALTERACAO_SOLICITADA': 'Demandas que voltaram com ajuste.',
-    'PRONTO_PARA_POSTAR': 'Prontos para postagem.',
-  };
 
-  return descriptions[statusKey] || 'Coluna personalizada do Kanban.';
+function isDemoName(
+  value?:
+    | string
+    | null
+) {
+  return /^\[DEMO\]/i.test(
+    String(
+      value ||
+      ""
+    )
+  );
 }
 
-function formatDate(date?: Date | null) {
-  if (!date) return 'Sem data';
 
-  return new Date(date).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-  });
+function getInitials(
+  name?:
+    | string
+    | null
+) {
+  const value =
+    cleanDemoName(
+      name
+    ) ||
+    "Cliente";
+
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(
+      (
+        part
+      ) =>
+        part[0]
+    )
+    .join("")
+    .toUpperCase();
 }
 
-function isLate(plannedDate?: Date | null, status?: string) {
-  if (!plannedDate) return false;
 
-  if (['PRONTO_PARA_POSTAR', 'PUBLICADO'].includes(String(status))) {
+function formatDate(
+  date?:
+    | Date
+    | null
+) {
+  if (!date) {
+    return "Sem data";
+  }
+
+  return new Date(
+    date
+  ).toLocaleDateString(
+    "pt-BR",
+    {
+      day:
+        "2-digit",
+
+      month:
+        "short",
+    }
+  );
+}
+
+
+function isLate(
+  content:
+    any
+) {
+  if (
+    !content.plannedDate
+  ) {
     return false;
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  if (
+    [
+      "PRONTO_PARA_POSTAR",
+      "PUBLICADO",
+      "PUBLICADO_MANUALMENTE",
+    ].includes(
+      String(
+        content.status
+      )
+    )
+  ) {
+    return false;
+  }
 
-  const date = new Date(plannedDate);
-  date.setHours(0, 0, 0, 0);
+  const today =
+    new Date();
+
+  today.setHours(
+    0,
+    0,
+    0,
+    0
+  );
+
+  const date =
+    new Date(
+      content.plannedDate
+    );
+
+  date.setHours(
+    0,
+    0,
+    0,
+    0
+  );
 
   return date < today;
 }
 
-function getPercentage(value: number, total: number) {
-  if (!total || total <= 0) return 0;
-  return Math.min(100, Math.round((value / total) * 100));
+
+function getColumnDescription(
+  statusKey:
+    string,
+  title:
+    string
+) {
+  const descriptions:
+    Record<
+      string,
+      string
+    > = {
+      APROVADO:
+        "Liberados para audiovisual.",
+
+      FILMMAKER_PRE_PRODUCAO:
+        "Roteiro e preparação.",
+
+      FILMMAKER_AGENDAMENTO:
+        "Aguardando data de captação.",
+
+      FILMMAKER_GRAVANDO:
+        "Captação em andamento.",
+
+      FILMMAKER_EDICAO:
+        "Material em edição.",
+
+      FILMMAKER_ANALISE:
+        "Aguardando conferência.",
+
+      FILMMAKER_DUVIDA_SOCIAL:
+        "Dependem da Social Media.",
+
+      ALTERACAO_SOLICITADA:
+        "Voltaram para ajustes.",
+
+      PRONTO_PARA_POSTAR:
+        "Vídeos finalizados.",
+    };
+
+  return (
+    descriptions[
+      statusKey
+    ] ||
+    `Fluxo: ${title}.`
+  );
 }
 
-function getClientLinks(client: any) {
-  const links = String(client?.usefulLinks || '')
-    .split(/\r?\n|,|;/)
-    .map((link) => link.trim())
-    .filter(Boolean);
+
+function getColumnAccent(
+  statusKey:
+    string
+) {
+  const colors:
+    Record<
+      string,
+      string
+    > = {
+      APROVADO:
+        "bg-blue-500",
+
+      FILMMAKER_PRE_PRODUCAO:
+        "bg-violet-500",
+
+      FILMMAKER_AGENDAMENTO:
+        "bg-sky-500",
+
+      FILMMAKER_GRAVANDO:
+        "bg-red-500",
+
+      FILMMAKER_EDICAO:
+        "bg-fuchsia-500",
+
+      FILMMAKER_ANALISE:
+        "bg-amber-500",
+
+      FILMMAKER_DUVIDA_SOCIAL:
+        "bg-orange-500",
+
+      ALTERACAO_SOLICITADA:
+        "bg-rose-500",
+
+      PRONTO_PARA_POSTAR:
+        "bg-emerald-500",
+    };
+
+  return (
+    colors[
+      statusKey
+    ] ||
+    "bg-slate-400"
+  );
+}
+
+
+function getClientLinks(
+  client:
+    any
+) {
+  const usefulLinks =
+    String(
+      client?.usefulLinks ||
+      ""
+    )
+      .split(
+        /\r?\n|,|;/
+      )
+      .map(
+        (
+          item
+        ) =>
+          item.trim()
+      )
+      .filter(Boolean);
 
   return {
-    banco: client?.databaseLink || links[0] || '',
-    drive: client?.driveLink || links[1] || links[0] || '',
-    logo: client?.logoLink || links[2] || '',
+    database:
+      client?.databaseLink ||
+      usefulLinks[0] ||
+      "",
+
+    drive:
+      client?.driveLink ||
+      usefulLinks[1] ||
+      usefulLinks[0] ||
+      "",
+
+    logo:
+      client?.logoLink ||
+      client?.logoUrl ||
+      usefulLinks[2] ||
+      "",
   };
 }
 
-function AssetLinkButton({ href, label }: { href: string; label: string }) {
-  if (!href) {
-    return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2 text-center text-xs font-medium text-slate-400">
-        {label} não cadastrado
-      </div>
-    );
-  }
 
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-center text-xs font-bold text-blue-700 hover:bg-blue-100"
-    >
-      {label}
-    </a>
-  );
-}
-
-function ClientAssetCard({ client }: { client: any }) {
-  const links = getClientLinks(client);
-
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-900 text-sm font-bold text-white">
-          {client.logoUrl ? (
-            <img src={client.logoUrl} alt={client.name} className="h-full w-full object-cover" />
-          ) : (
-            client.name?.charAt(0) || 'C'
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-2 text-sm font-bold text-slate-900">
-            {client.name}
-          </h3>
-
-          <p className="mt-1 text-xs font-medium text-slate-500">
-            {client.segment || 'Sem segmento definido'}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-2">
-        <AssetLinkButton href={links.banco} label="Banco de dados" />
-        <AssetLinkButton href={links.drive} label="Drive" />
-        <AssetLinkButton href={links.logo} label="Logo" />
-      </div>
-    </article>
-  );
-}
-
-function ColumnMenu({ column }: { column: any }) {
+function ColumnMenu({
+  column,
+}: {
+  column:
+    any;
+}) {
   return (
     <details className="relative">
-      <summary className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
-        <MoreHorizontal size={18} />
+      <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 [&::-webkit-details-marker]:hidden">
+        <MoreHorizontal
+          size={16}
+        />
       </summary>
 
-      <div className="absolute right-0 top-11 z-50 w-80 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
-        <form action={updateFilmmakerColumnTitleAction.bind(null, column.id)} className="space-y-2">
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            Editar nome da coluna
+      <div className="absolute right-0 top-10 z-50 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+        <form
+          action={
+            updateFilmmakerColumnTitleAction.bind(
+              null,
+              column.id
+            )
+          }
+          className="space-y-2"
+        >
+          <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
+            Nome da coluna
           </label>
 
           <input
             name="title"
-            defaultValue={column.title}
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-bold text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            defaultValue={
+              column.title
+            }
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-900 outline-none focus:border-blue-500"
           />
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-3 text-sm font-bold text-white hover:bg-slate-800"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 text-[10px] font-bold text-white hover:bg-slate-800"
           >
-            <Pencil size={15} />
-            Salvar nome
+            <Pencil
+              size={13}
+            />
+
+            Salvar
           </button>
         </form>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <form action={moveFilmmakerColumnAction.bind(null, column.id, 'left')}>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <form
+            action={
+              moveFilmmakerColumnAction.bind(
+                null,
+                column.id,
+                "left"
+              )
+            }
+          >
             <button
               type="submit"
-              title="Mover para esquerda"
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+              className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-[10px] font-bold text-slate-600 hover:bg-slate-50"
             >
-              <ArrowLeft size={16} />
+              <ArrowLeft
+                size={13}
+              />
+
               Esquerda
             </button>
           </form>
 
-          <form action={moveFilmmakerColumnAction.bind(null, column.id, 'right')}>
+          <form
+            action={
+              moveFilmmakerColumnAction.bind(
+                null,
+                column.id,
+                "right"
+              )
+            }
+          >
             <button
               type="submit"
-              title="Mover para direita"
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+              className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-[10px] font-bold text-slate-600 hover:bg-slate-50"
             >
               Direita
-              <ArrowRight size={16} />
+
+              <ArrowRight
+                size={13}
+              />
             </button>
           </form>
         </div>
 
-        <form action={archiveFilmmakerColumnAction.bind(null, column.id)} className="mt-3">
+
+        <form
+          action={
+            archiveFilmmakerColumnAction.bind(
+              null,
+              column.id
+            )
+          }
+          className="mt-2"
+        >
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-3 text-sm font-bold text-red-600 hover:bg-red-100"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 text-[10px] font-bold text-red-600 hover:bg-red-100"
           >
-            <Trash2 size={16} />
+            <Trash2
+              size={13}
+            />
+
             Excluir coluna
           </button>
         </form>
 
-        <p className="mt-3 rounded-xl bg-blue-50 p-3 text-xs font-medium leading-relaxed text-blue-700">
-          Para trocar a posição, clique, segure e arraste a coluna para o local desejado.
+
+        <p className="mt-3 text-[8px] leading-relaxed text-slate-400">
+          A coluna também pode ser arrastada pelo puxador.
         </p>
       </div>
     </details>
   );
 }
 
-function StatusMoveButton({
-  contentId,
-  nextStatus,
-  label,
+
+function ClientResource({
+  client,
 }: {
-  contentId: string;
-  nextStatus: string;
-  label: string;
+  client:
+    any;
 }) {
+  const links =
+    getClientLinks(
+      client
+    );
+
+  const visualLogo =
+    client.logoUrl ||
+    "";
+
   return (
-    <form action={updateFilmmakerStatusAction.bind(null, contentId, nextStatus)}>
-      <button
-        type="submit"
-        className="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
-      >
-        {label}
-        <ArrowRight size={13} />
-      </button>
-    </form>
+    <div className="flex min-w-[260px] max-w-[300px] flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+        {visualLogo ? (
+          <img
+            src={
+              visualLogo
+            }
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span className="text-[10px] font-bold text-slate-500">
+            {getInitials(
+              client.name
+            )}
+          </span>
+        )}
+      </div>
+
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <p className="truncate text-[11px] font-bold text-slate-900">
+            {cleanDemoName(
+              client.name
+            )}
+          </p>
+
+          {isDemoName(
+            client.name
+          ) ? (
+            <span className="rounded bg-violet-50 px-1.5 py-0.5 text-[7px] font-bold text-violet-700">
+              DEMO
+            </span>
+          ) : null}
+        </div>
+
+        <p className="mt-0.5 truncate text-[9px] text-slate-400">
+          {client.segment ||
+            "Sem segmento"}
+        </p>
+
+
+        <div className="mt-2 flex items-center gap-1">
+          {links.database ? (
+            <a
+              href={
+                links.database
+              }
+              target="_blank"
+              rel="noreferrer"
+              title="Banco de dados"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+            >
+              <Database
+                size={12}
+              />
+            </a>
+          ) : null}
+
+
+          {links.drive ? (
+            <a
+              href={
+                links.drive
+              }
+              target="_blank"
+              rel="noreferrer"
+              title="Drive"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+            >
+              <FolderOpen
+                size={12}
+              />
+            </a>
+          ) : null}
+
+
+          {links.logo ? (
+            <a
+              href={
+                links.logo
+              }
+              target="_blank"
+              rel="noreferrer"
+              title="Logo"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+            >
+              <ImageIcon
+                size={12}
+              />
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </div>
   );
 }
 
-function FilmmakerCard({
-  content,
-  columns,
+
+function PriorityBadge({
+  priority,
 }: {
-  content: any;
-  columns: any[];
+  priority:
+    string;
 }) {
-  const late = isLate(content.plannedDate, content.status);
+  const styles:
+    Record<
+      string,
+      string
+    > = {
+      URGENTE:
+        "border-red-200 bg-red-50 text-red-700",
+
+      ALTA:
+        "border-orange-200 bg-orange-50 text-orange-700",
+
+      MEDIA:
+        "border-blue-100 bg-blue-50 text-blue-600",
+
+      BAIXA:
+        "border-slate-200 bg-slate-50 text-slate-500",
+    };
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md">
-      {content.coverImageUrl ? (
-        <div className="overflow-hidden rounded-t-2xl border-b border-slate-100 bg-slate-100">
-          <img src={content.coverImageUrl} alt={content.title} className="h-40 w-full object-cover" />
-        </div>
-      ) : (
-        <div className="flex h-24 items-center justify-center rounded-t-2xl border-b border-slate-100 bg-slate-100 text-xs font-bold uppercase tracking-wider text-slate-400">
-          Sem capa
-        </div>
+    <span
+      className={[
+        "rounded-md",
+        "border",
+        "px-1.5",
+        "py-0.5",
+        "text-[8px]",
+        "font-bold",
+        styles[
+          priority
+        ] ||
+          styles.MEDIA,
+      ].join(" ")}
+    >
+      {formatLabel(
+        priority
       )}
+    </span>
+  );
+}
 
-      <div className="space-y-3 p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="line-clamp-2 text-sm font-bold text-slate-900">
-              {content.title}
-            </h3>
 
-            <p className="mt-1 text-xs font-medium text-slate-500">
-              {content.client?.name || 'Cliente não informado'}
-            </p>
-          </div>
+function FilmmakerCard({
+  content,
+}: {
+  content:
+    any;
+}) {
+  const clientName =
+    cleanDemoName(
+      content.client?.name
+    ) ||
+    "Cliente";
 
-          {late && (
-            <span className="rounded-full bg-red-50 px-2 py-1 text-[10px] font-bold uppercase text-red-600">
-              Atrasado
+  const demo =
+    isDemoName(
+      content.client?.name
+    );
+
+  const previewUrl =
+    content.coverImageUrl ||
+    content.finalCoverUrl ||
+    "";
+
+  const late =
+    isLate(
+      content
+    );
+
+  const clientLogo =
+    content.client?.logoUrl ||
+    "";
+
+  return (
+    <article className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md">
+      <div className="relative aspect-[16/10] overflow-hidden border-b border-slate-100 bg-slate-100">
+        {previewUrl ? (
+          <img
+            src={
+              previewUrl
+            }
+            alt=""
+            className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
+          />
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate-400">
+            <Video
+              size={22}
+            />
+
+            <span className="text-[9px] font-bold uppercase tracking-[0.08em]">
+              Sem preview
             </span>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2 text-[11px] font-bold">
-          <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">
-            {formatDate(content.plannedDate)}
-          </span>
-
-          <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-600">
-            {formatLabel(content.format) || 'Formato'}
-          </span>
-        </div>
-
-        {content.briefing && (
-          <p className="line-clamp-3 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
-            {content.briefing}
-          </p>
+          </div>
         )}
 
-        <form action={sendFilmmakerQuestionAction.bind(null, content.id)} className="rounded-xl border border-yellow-100 bg-yellow-50 p-3">
-          <label className="block text-xs font-bold text-yellow-800">
-            Dúvida para Social Media
-          </label>
 
-          <textarea
-            name="question"
-            rows={2}
-            placeholder="Escreva a dúvida..."
-            className="mt-2 w-full rounded-xl border border-yellow-100 bg-white px-3 py-2 text-xs text-slate-700 outline-none"
+        <div className="absolute left-2 top-2 flex items-center gap-1">
+          <PriorityBadge
+            priority={
+              content.priority ||
+              "MEDIA"
+            }
           />
 
-          <button
-            type="submit"
-            className="mt-2 w-full rounded-lg bg-yellow-500 px-3 py-2 text-xs font-bold text-white hover:bg-yellow-600"
-          >
-            Enviar dúvida
-          </button>
-        </form>
+          {late ? (
+            <span className="rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 text-[8px] font-bold text-red-600">
+              ATRASADO
+            </span>
+          ) : null}
+        </div>
 
-        <div className="grid grid-cols-1 gap-2">
 
-          <Link
-            href={`/captacoes/nova?cliente=${content.clientId}&conteudo=${content.id}`}
-            className="rounded-lg bg-blue-600 px-3 py-2 text-center text-xs font-bold text-white transition hover:bg-blue-700"
-          >Reagendamento</Link>
+        {demo ? (
+          <span className="absolute right-2 top-2 rounded-md bg-violet-600 px-1.5 py-0.5 text-[7px] font-bold text-white shadow-sm">
+            DEMO
+          </span>
+        ) : null}
+      </div>
 
-          <Link
-            href={`/conteudos/${content.id}/visualizar`}
-            className="rounded-lg bg-slate-900 px-3 py-2 text-center text-xs font-bold text-white transition hover:bg-slate-800"
-          >
-            Abrir conteúdo
-          </Link>
+
+      <div className="p-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+            {clientLogo ? (
+              <img
+                src={
+                  clientLogo
+                }
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-[8px] font-bold text-slate-500">
+                {getInitials(
+                  clientName
+                )}
+              </span>
+            )}
+          </div>
+
+          <div className="min-w-0">
+            <p className="truncate text-[9px] font-semibold text-slate-500">
+              {clientName}
+            </p>
+
+            <p className="truncate text-[8px] text-slate-400">
+              {content.client?.segment ||
+                "Cliente"}
+            </p>
+          </div>
+        </div>
+
+
+        <h3 className="mt-3 line-clamp-2 min-h-[34px] text-[12px] font-bold leading-[1.4] text-slate-900">
+          {cleanDemoName(
+            content.title
+          )}
+        </h3>
+
+
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-1 text-[8px] font-semibold text-slate-500">
+            <Clock3
+              size={10}
+            />
+
+            {formatDate(
+              content.plannedDate
+            )}
+          </span>
+
+          <span className="rounded-md border border-violet-100 bg-violet-50 px-1.5 py-1 text-[8px] font-bold text-violet-600">
+            {formatLabel(
+              content.format ||
+              "VIDEO"
+            )}
+          </span>
+        </div>
+
+
+        {(content.script ||
+          content.briefing) ? (
+          <p className="mt-3 line-clamp-2 text-[9px] leading-relaxed text-slate-500">
+            {content.script ||
+              content.briefing}
+          </p>
+        ) : null}
+
+
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <details>
+            <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-2 text-[9px] font-bold text-amber-700 [&::-webkit-details-marker]:hidden">
+              <span>
+                Dúvida para Social
+              </span>
+
+              <Send
+                size={11}
+              />
+            </summary>
+
+            <form
+              action={
+                sendFilmmakerQuestionAction.bind(
+                  null,
+                  content.id
+                )
+              }
+              className="mt-2 space-y-2"
+            >
+              <textarea
+                name="question"
+                rows={3}
+                required
+                placeholder="Escreva a dúvida..."
+                className="w-full resize-none rounded-lg border border-amber-200 bg-white px-2.5 py-2 text-[9px] font-medium text-slate-900 outline-none placeholder:text-slate-400"
+              />
+
+              <button
+                type="submit"
+                className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-amber-500 text-[9px] font-bold text-white hover:bg-amber-600"
+              >
+                <Send
+                  size={11}
+                />
+
+                Enviar dúvida
+              </button>
+            </form>
+          </details>
+
+
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Link
+              href={`/captacoes/nova?cliente=${content.clientId}&conteudo=${content.id}`}
+              className="flex h-9 items-center justify-center gap-1 rounded-lg border border-blue-100 bg-blue-50 px-2 text-[8px] font-bold text-blue-600 hover:bg-blue-100"
+            >
+              <CalendarDays
+                size={11}
+              />
+
+              Captação
+            </Link>
+
+            <Link
+              href={`/conteudos/${content.id}/visualizar`}
+              className="flex h-9 items-center justify-center gap-1 rounded-lg bg-slate-900 px-2 text-[8px] font-bold text-white hover:bg-slate-800"
+            >
+              Abrir
+
+              <ExternalLink
+                size={10}
+              />
+            </Link>
+          </div>
         </div>
       </div>
     </article>
   );
 }
 
-function MetricCard({
+
+function CompactMetric({
   label,
   value,
-  description,
-  type,
+  tone,
 }: {
-  label: string;
-  value: string;
-  description: string;
-  type: 'dark' | 'blue' | 'yellow' | 'red' | 'green';
+  label:
+    string;
+
+  value:
+    number;
+
+  tone:
+    "blue"
+    | "violet"
+    | "sky"
+    | "red"
+    | "fuchsia"
+    | "amber"
+    | "green";
 }) {
-  const styles = {
-    dark: 'border-slate-200 bg-white text-slate-900',
-    blue: 'border-blue-100 bg-blue-50 text-blue-800',
-    yellow: 'border-yellow-100 bg-yellow-50 text-yellow-800',
-    red: 'border-red-100 bg-red-50 text-red-800',
-    green: 'border-emerald-100 bg-emerald-50 text-emerald-800',
-  }[type];
+  const dots = {
+    blue:
+      "bg-blue-500",
+
+    violet:
+      "bg-violet-500",
+
+    sky:
+      "bg-sky-500",
+
+    red:
+      "bg-red-500",
+
+    fuchsia:
+      "bg-fuchsia-500",
+
+    amber:
+      "bg-amber-500",
+
+    green:
+      "bg-emerald-500",
+  };
+
 
   return (
-    <div className={`rounded-2xl border p-5 shadow-sm ${styles}`}>
-      <p className="text-xs font-bold uppercase tracking-wider opacity-70">
-        {label}
-      </p>
+    <div className="flex min-w-[128px] items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+      <span
+        className={[
+          "h-2",
+          "w-2",
+          "rounded-full",
+          dots[
+            tone
+          ],
+        ].join(" ")}
+      />
 
-      <p className="mt-2 text-3xl font-bold">
-        {value}
-      </p>
+      <div>
+        <p className="text-lg font-bold leading-none text-slate-900">
+          {value}
+        </p>
 
-      <p className="mt-2 text-xs font-medium opacity-70">
-        {description}
-      </p>
+        <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.07em] text-slate-400">
+          {label}
+        </p>
+      </div>
     </div>
   );
 }
 
-export default async function FilmmakerPage() {
-  const currentUser = await requireCurrentUser();
 
-  if (!isDirector(currentUser.role) && !isFilmmaker(currentUser.role)) {
-    redirect('/clientes');
+export default async function FilmmakerPage() {
+  const currentUser =
+    await requireCurrentUser();
+
+
+  if (
+    !isDirector(
+      currentUser.role
+    ) &&
+    !isFilmmaker(
+      currentUser.role
+    )
+  ) {
+    redirect(
+      "/clientes"
+    );
   }
+
 
   await ensureDefaultFilmmakerColumns();
 
-  const clients = await prisma.client.findMany({
-    orderBy: {
-      name: 'asc',
-    },
-  });
 
-  const columns = await prisma.filmmakerKanbanColumn.findMany({
-    where: {
-      isActive: true,
-    },
-    orderBy: {
-      order: 'asc',
-    },
-  });
-
-  const contents = await prisma.content.findMany({
-    where: {
-      area: 'FILMMAKER',
-      status: {
-        in: columns.map((column) => column.statusKey),
-      },
-    },
-    include: {
-      client: true,
-      comments: {
+  const [
+    clients,
+    columns,
+  ] =
+    await Promise.all([
+      prisma.client.findMany({
         orderBy: {
-          createdAt: 'desc',
+          name:
+            "asc",
+        },
+      }),
+
+      prisma.filmmakerKanbanColumn.findMany({
+        where: {
+          isActive:
+            true,
+        },
+
+        orderBy: {
+          order:
+            "asc",
+        },
+      }),
+    ]);
+
+
+  const statusKeys =
+    columns.map(
+      (
+        column
+      ) =>
+        column.statusKey
+    );
+
+
+  const contents =
+    await prisma.content.findMany({
+      where: {
+        area:
+          "FILMMAKER",
+
+        status: {
+          in:
+            statusKeys,
         },
       },
-    },
-    orderBy: [
-      {
-        plannedDate: 'asc',
-      },
-      {
-        createdAt: 'desc',
-      },
-    ],
-  });
 
-  const total = contents.length;
-  const scheduled = contents.filter((item) => item.status === 'FILMMAKER_AGENDAMENTO').length;
-  const recording = contents.filter((item) => item.status === 'FILMMAKER_GRAVANDO').length;
-  const editing = contents.filter((item) => item.status === 'FILMMAKER_EDICAO').length;
-  const finished = contents.filter((item) => item.status === 'PRONTO_PARA_POSTAR').length;
-  const late = contents.filter((item) => isLate(item.plannedDate, item.status)).length;
+      include: {
+        client:
+          true,
 
-  const finishedPercentage = getPercentage(finished, total);
-  const latePercentage = getPercentage(late, total);
+        comments: {
+          orderBy: {
+            createdAt:
+              "desc",
+          },
+        },
+      },
+
+      orderBy: [
+        {
+          plannedDate:
+            "asc",
+        },
+
+        {
+          createdAt:
+            "desc",
+        },
+      ],
+    });
+
+
+  const preProduction =
+    contents.filter(
+      (
+        item
+      ) =>
+        item.status ===
+        "FILMMAKER_PRE_PRODUCAO"
+    ).length;
+
+
+  const scheduled =
+    contents.filter(
+      (
+        item
+      ) =>
+        item.status ===
+        "FILMMAKER_AGENDAMENTO"
+    ).length;
+
+
+  const recording =
+    contents.filter(
+      (
+        item
+      ) =>
+        item.status ===
+        "FILMMAKER_GRAVANDO"
+    ).length;
+
+
+  const editing =
+    contents.filter(
+      (
+        item
+      ) =>
+        item.status ===
+        "FILMMAKER_EDICAO"
+    ).length;
+
+
+  const finished =
+    contents.filter(
+      (
+        item
+      ) =>
+        item.status ===
+        "PRONTO_PARA_POSTAR"
+    ).length;
+
+
+  const late =
+    contents.filter(
+      (
+        item
+      ) =>
+        isLate(
+          item
+        )
+    ).length;
+
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-sm">
-        <p className="text-sm font-bold uppercase tracking-wider text-blue-300">
-          Filmmaker
-        </p>
+    <div className="space-y-4">
+      {/* ===================================================
+          HEADER
+          =================================================== */}
 
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">
-          Área do Filmmaker
-        </h1>
+      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-sky-600">
+            Produção audiovisual
+          </p>
 
-        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
-          Acompanhe demandas de audiovisual, materiais dos clientes, pré-produção, agendamento, gravação, edição e finalização.
-        </p>
-      </section>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+            Filmmaker
+          </h1>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-6">
-        <MetricCard label="Demandas" value={String(total)} description="Total de demandas no Filmmaker." type="dark" />
-        <MetricCard label="Agendadas" value={String(scheduled)} description="Demandas aguardando captação." type="blue" />
-        <MetricCard label="Gravando" value={String(recording)} description="Captações em andamento." type="yellow" />
-        <MetricCard label="Edição" value={String(editing)} description="Vídeos em edição." type="blue" />
-        <MetricCard label="Atrasos" value={`${latePercentage}%`} description={`${late} de ${total} atrasadas.`} type="red" />
-        <MetricCard label="Finalização" value={`${finishedPercentage}%`} description={`${finished} de ${total} finalizadas.`} type="green" />
-      </section>
+          <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-slate-500">
+            Organize pré-produção, captações, edição e entrega sem perder o contexto de cada conteúdo.
+          </p>
+        </div>
 
-      <FilmmakerCaptureAgenda />
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <form action={createFilmmakerColumnAction} className="flex flex-col gap-3 md:flex-row md:items-end">
-          <div className="flex-1">
-            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-600">
-              Criar nova coluna do Kanban
-            </label>
-
-            <input
-              name="title"
-              required
-              placeholder="Ex: Falta gravar, Separar equipamento, Programado..."
-              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/captacoes/nova"
+            className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 hover:bg-slate-50"
+          >
+            <Camera
+              size={14}
             />
+
+            Nova captação
+          </Link>
+
+          <Link
+            href="/conteudos/novo"
+            className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-[10px] font-bold text-white hover:bg-blue-700"
+          >
+            <Plus
+              size={14}
+            />
+
+            Nova demanda
+          </Link>
+        </div>
+      </section>
+
+
+      {/* ===================================================
+          METRICAS
+          =================================================== */}
+
+      <section className="flex flex-wrap gap-2">
+        <CompactMetric
+          label="Demandas"
+          value={
+            contents.length
+          }
+          tone="blue"
+        />
+
+        <CompactMetric
+          label="Pré-produção"
+          value={
+            preProduction
+          }
+          tone="violet"
+        />
+
+        <CompactMetric
+          label="Agendadas"
+          value={
+            scheduled
+          }
+          tone="sky"
+        />
+
+        <CompactMetric
+          label="Gravando"
+          value={
+            recording
+          }
+          tone="red"
+        />
+
+        <CompactMetric
+          label="Em edição"
+          value={
+            editing
+          }
+          tone="fuchsia"
+        />
+
+        <CompactMetric
+          label="Finalizadas"
+          value={
+            finished
+          }
+          tone="green"
+        />
+
+
+        {late >
+        0 ? (
+          <div className="flex min-w-[160px] items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-3">
+            <AlertTriangle
+              size={15}
+              className="text-red-600"
+            />
+
+            <div>
+              <p className="text-lg font-bold leading-none text-red-700">
+                {late}
+              </p>
+
+              <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.07em] text-red-500">
+                Fora do prazo
+              </p>
+            </div>
           </div>
+        ) : null}
+      </section>
+
+
+      {/* ===================================================
+          RECURSOS
+          =================================================== */}
+
+      <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Database
+                size={14}
+                className="text-slate-500"
+              />
+
+              <h2 className="text-[11px] font-bold text-slate-900">
+                Recursos dos clientes
+              </h2>
+            </div>
+
+            <p className="mt-0.5 text-[9px] text-slate-400">
+              Banco de dados, Drive e logos disponíveis antes da captação.
+            </p>
+          </div>
+
+          <span className="text-[9px] font-semibold text-slate-400">
+            {clients.length} clientes
+          </span>
+        </div>
+
+
+        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+          {clients.map(
+            (
+              client
+            ) => (
+              <ClientResource
+                key={
+                  client.id
+                }
+                client={
+                  client
+                }
+              />
+            )
+          )}
+        </div>
+      </section>
+
+
+      {/* ===================================================
+          AGENDA
+          =================================================== */}
+
+      <details className="group rounded-xl border border-slate-200 bg-white shadow-sm">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 [&::-webkit-details-marker]:hidden">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+              <CalendarDays
+                size={15}
+              />
+            </div>
+
+            <div>
+              <p className="text-[10px] font-bold text-slate-800">
+                Agenda de captações
+              </p>
+
+              <p className="mt-0.5 text-[8px] text-slate-400">
+                Datas sugeridas, confirmadas e reagendamentos.
+              </p>
+            </div>
+          </div>
+
+          <span className="text-[9px] font-bold text-blue-600">
+            Abrir agenda
+          </span>
+        </summary>
+
+        <div className="border-t border-slate-100 p-3">
+          <FilmmakerCaptureAgenda />
+        </div>
+      </details>
+
+
+      {/* ===================================================
+          PERSONALIZAR
+          =================================================== */}
+
+      <details className="group rounded-xl border border-slate-200 bg-white">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 [&::-webkit-details-marker]:hidden">
+          <div>
+            <p className="text-[10px] font-bold text-slate-700">
+              Personalizar Kanban
+            </p>
+
+            <p className="mt-0.5 text-[8px] text-slate-400">
+              Crie etapas extras para o fluxo audiovisual.
+            </p>
+          </div>
+
+          <Plus
+            size={14}
+            className="text-slate-400"
+          />
+        </summary>
+
+
+        <form
+          action={
+            createFilmmakerColumnAction
+          }
+          className="grid grid-cols-1 gap-2 border-t border-slate-100 p-3 md:grid-cols-[1fr_130px]"
+        >
+          <input
+            name="title"
+            required
+            placeholder="Ex: Separar equipamento, Falta gravar..."
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-500"
+          />
 
           <button
             type="submit"
-            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800"
+            className="h-9 rounded-lg bg-slate-900 px-4 text-[10px] font-bold text-white hover:bg-slate-800"
           >
             Criar coluna
           </button>
         </form>
-      </section>
+      </details>
 
-      <section className="relative h-[calc(100vh-230px)] min-h-[620px] w-full overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
-        <div className="flex h-full max-w-[calc(100vw-320px)] gap-4 overflow-x-auto overflow-y-hidden pb-5 pr-6 [scrollbar-width:thin] [&::-webkit-scrollbar]:h-3 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500">
-          <div className="flex h-full w-80 min-w-80 shrink-0 flex-col rounded-3xl border border-slate-200 bg-slate-100/70 p-4">
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Video size={18} className="text-slate-600" />
 
-                  <h2 className="text-base font-bold text-slate-900">
-                    Clientes / banco, Drive e logos
-                  </h2>
-                </div>
+      {/* ===================================================
+          KANBAN
+          =================================================== */}
 
-                <p className="mt-1 text-xs text-slate-500">
-                  Acesso rápido aos materiais principais de cada cliente.
-                </p>
-              </div>
+      <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="mb-3 flex items-center justify-between gap-4 px-1">
+          <div>
+            <h2 className="text-[12px] font-bold text-slate-900">
+              Fluxo audiovisual
+            </h2>
 
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">
-                {clients.length}
-              </span>
-            </div>
-
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 [scrollbar-width:thin]">
-              {clients.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-6 text-center text-xs font-medium text-slate-400">
-                  Nenhum cliente cadastrado.
-                </div>
-              ) : (
-                clients.map((client) => (
-                  <ClientAssetCard key={client.id} client={client} />
-                ))
-              )}
-            </div>
+            <p className="mt-0.5 text-[9px] text-slate-400">
+              Arraste cards entre etapas e colunas para reorganizar o fluxo.
+            </p>
           </div>
 
-          {columns.map((column) => {
-            const Icon = getColumnIcon(column.statusKey);
-            const description = getColumnDescription(column.statusKey);
-            const items = contents.filter((item) => item.status === column.statusKey);
+          <div className="flex items-center gap-1.5 text-[9px] font-semibold text-slate-400">
+            <Film
+              size={13}
+            />
 
-            return (
-              <DraggableColumn key={column.id} columnId={column.id}>
-                <div className="flex h-full w-80 min-w-80 shrink-0 flex-col rounded-3xl border border-slate-200 bg-slate-100/70 p-4">
-                  <div className="mb-4 flex items-start justify-between gap-3 pl-8">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Icon size={18} className="text-slate-600" />
+            {contents.length} demandas
+          </div>
+        </div>
 
-                        <h2 className="text-base font-bold text-slate-900">
-                          {column.title}
-                        </h2>
+
+        <div className="overflow-x-auto pb-2 [scrollbar-width:thin]">
+          <div className="flex min-h-[640px] gap-3">
+            {columns.map(
+              (
+                column
+              ) => {
+                const items =
+                  contents.filter(
+                    (
+                      content
+                    ) =>
+                      content.status ===
+                      column.statusKey
+                  );
+
+                return (
+                  <DraggableColumn
+                    key={
+                      column.id
+                    }
+                    columnId={
+                      column.id
+                    }
+                  >
+                    <div className="flex w-[292px] shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                      <div className="border-b border-slate-200 bg-white px-3 py-3 pl-10">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={[
+                                  "h-2",
+                                  "w-2",
+                                  "shrink-0",
+                                  "rounded-full",
+                                  getColumnAccent(
+                                    column.statusKey
+                                  ),
+                                ].join(" ")}
+                              />
+
+                              <h3 className="truncate text-[11px] font-bold text-slate-900">
+                                {column.title}
+                              </h3>
+
+                              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold text-slate-500">
+                                {items.length}
+                              </span>
+                            </div>
+
+                            <p className="mt-1 truncate text-[8px] text-slate-400">
+                              {getColumnDescription(
+                                column.statusKey,
+                                column.title
+                              )}
+                            </p>
+                          </div>
+
+
+                          <ColumnMenu
+                            column={
+                              column
+                            }
+                          />
+                        </div>
                       </div>
 
-                      <p className="mt-1 text-xs text-slate-500">
-                        {description}
-                      </p>
+
+                      <DroppableFilmmakerColumn
+                        statusKey={
+                          column.statusKey
+                        }
+                      >
+                        <div className="min-h-[560px] space-y-3 p-3">
+                          {items.length ===
+                          0 ? (
+                            <div className="flex min-h-[130px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/60 px-4 text-center">
+                              <div>
+                                <CheckCircle2
+                                  size={18}
+                                  className="mx-auto text-slate-300"
+                                />
+
+                                <p className="mt-2 text-[9px] font-semibold text-slate-400">
+                                  Nenhuma demanda aqui
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            items.map(
+                              (
+                                content
+                              ) => (
+                                <DraggableContentCard
+                                  key={
+                                    content.id
+                                  }
+                                  contentId={
+                                    content.id
+                                  }
+                                >
+                                  <FilmmakerCard
+                                    content={
+                                      content
+                                    }
+                                  />
+                                </DraggableContentCard>
+                              )
+                            )
+                          )}
+                        </div>
+                      </DroppableFilmmakerColumn>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">
-                        {items.length}
-                      </span>
-
-                      <ColumnMenu column={column} />
-                    </div>
-                  </div>
-
-                  <DroppableFilmmakerColumn statusKey={column.statusKey}>
-                    {items.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-6 text-center text-xs font-medium text-slate-400">
-                        Nenhuma demanda aqui.
-                      </div>
-                    ) : (
-                      items.map((content) => (
-                      <DraggableContentCard key={content.id} contentId={content.id}>
-                        <FilmmakerCard
-                          content={content}
-                          columns={columns}
-                        />
-                      </DraggableContentCard>
-                    ))
-                    )}
-                  </DroppableFilmmakerColumn>
-                </div>
-              </DraggableColumn>
-            );
-          })}
+                  </DraggableColumn>
+                );
+              }
+            )}
+          </div>
         </div>
       </section>
     </div>
