@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350">
+    <defs>
+      <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0%" stop-color="#091427" />
+        <stop offset="100%" stop-color="#0f223f" />
+      </linearGradient>
+    </defs>
+    <rect width="1080" height="1350" fill="url(#g)" />
+    <rect x="64" y="64" width="952" height="1222" rx="28" fill="none" stroke="#06b6d4" stroke-width="3" opacity="0.35"/>
+    <text x="90" y="150" fill="#06b6d4" font-size="34" font-family="Arial, Helvetica, sans-serif" font-weight="700">APROVUP DEMO</text>
+    <text x="90" y="280" fill="#ffffff" font-size="78" font-family="Arial, Helvetica, sans-serif" font-weight="700">Vídeo Institucional</text>
+    <text x="90" y="360" fill="#94a3b8" font-size="36" font-family="Arial, Helvetica, sans-serif">Vídeo demo</text>
+    <rect x="90" y="430" width="260" height="54" rx="27" fill="#06b6d4" opacity="0.18" />
+    <text x="120" y="468" fill="#06b6d4" font-size="28" font-family="Arial, Helvetica, sans-serif" font-weight="700">PLACEHOLDER VISUAL</text>
+    <rect x="90" y="560" width="900" height="540" rx="32" fill="#142845" opacity="0.8"/>
+    <text x="540" y="830" text-anchor="middle" fill="#06b6d4" font-size="52" font-family="Arial, Helvetica, sans-serif" font-weight="700">Vídeo Institucional</text>
+    <text x="540" y="890" text-anchor="middle" fill="#cbd5e1" font-size="28" font-family="Arial, Helvetica, sans-serif">Imagem demonstrativa para validar layout</text>
+    <text x="90" y="1190" fill="#e2e8f0" font-size="26" font-family="Arial, Helvetica, sans-serif">Cliente demo • Conteúdo demo • UI V2</text>
+  </svg>
