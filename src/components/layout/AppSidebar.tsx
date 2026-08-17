@@ -1,16 +1,8 @@
 import Link from "next/link";
 
-import type {
-  LucideIcon,
-} from "lucide-react";
-
 import {
-  BriefcaseBusiness,
-  LayoutDashboard,
-  Lock,
-  PenTool,
-  Users,
-  Video,
+  CircleHelp,
+  CreditCard,
 } from "lucide-react";
 
 import {
@@ -18,8 +10,9 @@ import {
 } from "@/components/brand/AprovUpLogo";
 
 import {
-  AprovUpThemeToggle,
-} from "@/components/theme/AprovUpThemeToggle";
+  AppSidebarNav,
+  type AppSidebarNavItem,
+} from "@/components/layout/AppSidebarNav";
 
 import {
   requireCurrentUser,
@@ -32,12 +25,18 @@ import {
 } from "@/lib/saasAccess";
 
 
-type MenuItem = {
+type MenuDefinition = {
   name: string;
-  icon: LucideIcon;
   path: string;
   roles: string[];
   requiredFeature?: SaasFeature;
+  icon:
+    | "dashboard"
+    | "social"
+    | "filmmaker"
+    | "design"
+    | "crm";
+  activePrefixes: string[];
 };
 
 
@@ -50,7 +49,6 @@ const baseRoles = [
 
 
 export async function AppSidebar() {
-
   const user =
     await requireCurrentUser();
 
@@ -58,261 +56,156 @@ export async function AppSidebar() {
     await getCurrentUserSaasAccess();
 
 
-  const menuItems: MenuItem[] = [
+  const definitions: MenuDefinition[] = [
     {
       name: "Dashboard",
-      icon: LayoutDashboard,
+      icon: "dashboard",
       path: "/operacao",
       roles: baseRoles,
+      activePrefixes: [
+        "/operacao",
+      ],
     },
     {
-      name: "Social Mídia",
-      icon: Users,
+      name: "Social Media",
+      icon: "social",
       path: "/clientes",
       roles: [
         "DIRECTOR",
         "SOCIAL_MEDIA",
       ],
+      activePrefixes: [
+        "/clientes",
+        "/social-media",
+        "/calendario-editorial",
+      ],
     },
     {
       name: "Filmmaker",
-      icon: Video,
+      icon: "filmmaker",
       path: "/filmmaker",
       roles: [
         "DIRECTOR",
         "FILMMAKER",
       ],
+      activePrefixes: [
+        "/filmmaker",
+        "/captacoes",
+      ],
     },
     {
       name: "Design",
-      icon: PenTool,
+      icon: "design",
       path: "/design",
       roles: [
         "DIRECTOR",
         "DESIGN",
       ],
+      activePrefixes: [
+        "/design",
+      ],
     },
     {
       name: "CRM",
-      icon: BriefcaseBusiness,
+      icon: "crm",
       path: "/crm",
       roles: [
         "DIRECTOR",
         "SOCIAL_MEDIA",
       ],
       requiredFeature: "crm",
+      activePrefixes: [
+        "/crm",
+      ],
     },
   ];
 
 
-  const visibleItems =
-    menuItems.filter(
-      (item) =>
-        item.roles.includes(
-          user.role
-        )
-    );
+  const items: AppSidebarNavItem[] =
+    definitions
+      .filter(
+        (item) =>
+          item.roles.includes(
+            user.role
+          )
+      )
+      .map((item) => {
+        const blocked =
+          item.requiredFeature
+            ? !canUseFeature(
+                access,
+                item.requiredFeature
+              )
+            : false;
+
+        return {
+          name: item.name,
+          path: item.path,
+          href: blocked
+            ? "/acesso-bloqueado"
+            : item.path,
+          blocked,
+          icon: item.icon,
+          activePrefixes:
+            item.activePrefixes,
+        };
+      });
 
 
   return (
-    <aside
-      className="
-        ap-sidebar
-        relative
-        flex
-        min-h-screen
-        w-72
-        flex-shrink-0
-        flex-col
-        overflow-hidden
-        border-r
-        px-5
-        py-6
-      "
-    >
-
-      <div
-        className="
-          ap-sidebar-logo
-          mb-8
-        "
-      >
-        <AprovUpLogo size="sm" />
+    <aside className="ap-sidebar ap-sidebar-v2">
+      <div className="ap-sidebar-brand">
+        <AprovUpLogo
+          size="sm"
+          className="w-[158px]"
+        />
       </div>
 
+      <div className="ap-sidebar-body">
+        <p className="ap-sidebar-section-label">
+          Workspace
+        </p>
 
-      <nav
-        className="
-          flex
-          flex-1
-          flex-col
-          gap-2
-        "
-      >
+        <AppSidebarNav
+          items={items}
+        />
+      </div>
 
-        {visibleItems.map((item) => {
-
-          const Icon = item.icon;
-
-          const isBlocked =
-            item.requiredFeature
-              ? !canUseFeature(
-                  access,
-                  item.requiredFeature
-                )
-              : false;
-
-          const href =
-            isBlocked
-              ? "/acesso-bloqueado"
-              : item.path;
-
-
-          return (
-            <Link
-              className={[
-                `
-                  ap-sidebar-link
-                  group
-                  flex
-                  min-h-[46px]
-                  items-center
-                  justify-between
-                  gap-3
-                  rounded-xl
-                  px-4
-                  text-sm
-                  font-semibold
-                `,
-                isBlocked
-                  ? `
-                    border
-                    border-amber-500/20
-                    bg-amber-500/10
-                  `
-                  : "",
-              ].join(" ")}
-              href={href}
-              key={item.name}
-            >
-
-              <span
-                className="
-                  flex
-                  items-center
-                  gap-3
-                "
-              >
-
-                <Icon
-                  className="
-                    h-[19px]
-                    w-[19px]
-                  "
-                />
-
-                {item.name}
-
-              </span>
-
-
-              {isBlocked ? (
-                <span
-                  className="
-                    flex
-                    items-center
-                    gap-1
-                    rounded-full
-                    bg-amber-500/10
-                    px-2
-                    py-1
-                    text-[9px]
-                    font-bold
-                    uppercase
-                    tracking-wider
-                    text-amber-500
-                  "
-                >
-
-                  <Lock
-                    className="
-                      h-3
-                      w-3
-                    "
-                  />
-
-                  Bloqueado
-
-                </span>
-              ) : null}
-
-            </Link>
-          );
-        })}
-
-      </nav>
-
-
-      <div
-        className="
-          mt-6
-          space-y-3
-        "
-      >
-
-        <AprovUpThemeToggle />
-
-
-        <div
-          className="
-            ap-sidebar-user
-            rounded-2xl
-            p-4
-          "
+      <div className="ap-sidebar-footer">
+        <Link
+          href="/minha-assinatura"
+          className="ap-sidebar-footer-link"
         >
+          <CreditCard size={16} />
 
-          <p
-            className="
-              text-[10px]
-              font-bold
-              uppercase
-              tracking-[0.14em]
-              text-slate-500
-            "
-          >
-            Usuário
-          </p>
+          <span>
+            Minha assinatura
+          </span>
+        </Link>
 
-          <p
-            className="
-              mt-2
-              truncate
-              text-sm
-              font-bold
-            "
-          >
-            {user.name ||
-              user.email}
-          </p>
+        <Link
+          href="/central"
+          className="ap-sidebar-footer-link"
+        >
+          <CircleHelp size={16} />
 
-          <p
-            className="
-              mt-1
-              text-xs
-              text-slate-500
-            "
-          >
-            {access.isCommander
-              ? "Acesso total"
-              : access.subscription
-                    ?.plan?.name ||
-                "Sem plano ativo"}
-          </p>
+          <span>
+            Central de ajuda
+          </span>
+        </Link>
 
+        <div className="ap-sidebar-product">
+          <span>
+            AprovUp
+          </span>
+
+          <span className="ap-sidebar-product-dot" />
+
+          <span>
+            Operação
+          </span>
         </div>
-
       </div>
-
     </aside>
   );
 }

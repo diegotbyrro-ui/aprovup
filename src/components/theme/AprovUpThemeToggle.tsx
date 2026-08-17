@@ -10,11 +10,24 @@ import {
   useState,
 } from "react";
 
-type Theme = "light" | "dark";
 
-const STORAGE_KEY = "aprovup-theme";
+type Theme =
+  | "light"
+  | "dark";
 
-function applyTheme(theme: Theme) {
+
+type AprovUpThemeToggleProps = {
+  compact?: boolean;
+};
+
+
+const STORAGE_KEY =
+  "aprovup-theme";
+
+
+function applyTheme(
+  theme: Theme
+) {
   document.documentElement.dataset.aprovupTheme =
     theme;
 
@@ -27,12 +40,16 @@ function applyTheme(theme: Theme) {
   );
 }
 
-export function AprovUpThemeToggle() {
+
+export function AprovUpThemeToggle({
+  compact = false,
+}: AprovUpThemeToggleProps) {
   const [theme, setTheme] =
     useState<Theme>("light");
 
   const [mounted, setMounted] =
     useState(false);
+
 
   useEffect(() => {
     const saved =
@@ -46,7 +63,8 @@ export function AprovUpThemeToggle() {
       saved === "light" ||
       saved === "dark"
     ) {
-      initialTheme = saved;
+      initialTheme =
+        saved;
     }
     else {
       initialTheme =
@@ -57,20 +75,74 @@ export function AprovUpThemeToggle() {
           : "light";
     }
 
-    setTheme(initialTheme);
+    setTheme(
+      initialTheme
+    );
 
-    applyTheme(initialTheme);
+    applyTheme(
+      initialTheme
+    );
 
-    setMounted(true);
+    setMounted(
+      true
+    );
   }, []);
 
-  function changeTheme(
-    newTheme: Theme
-  ) {
-    setTheme(newTheme);
 
-    applyTheme(newTheme);
+  function changeTheme(
+    nextTheme: Theme
+  ) {
+    setTheme(
+      nextTheme
+    );
+
+    applyTheme(
+      nextTheme
+    );
   }
+
+
+  function toggleTheme() {
+    changeTheme(
+      theme === "dark"
+        ? "light"
+        : "dark"
+    );
+  }
+
+
+  if (compact) {
+    if (!mounted) {
+      return (
+        <div
+          aria-hidden="true"
+          className="ap-theme-compact ap-theme-compact-loading"
+        />
+      );
+    }
+
+    const nextLabel =
+      theme === "dark"
+        ? "Ativar tema claro"
+        : "Ativar tema escuro";
+
+    return (
+      <button
+        type="button"
+        aria-label={nextLabel}
+        title={nextLabel}
+        className="ap-theme-compact"
+        onClick={toggleTheme}
+      >
+        {theme === "dark" ? (
+          <Sun size={17} />
+        ) : (
+          <Moon size={17} />
+        )}
+      </button>
+    );
+  }
+
 
   if (!mounted) {
     return (
@@ -81,43 +153,56 @@ export function AprovUpThemeToggle() {
     );
   }
 
+
   return (
     <div
       aria-label="Escolher tema"
       className="ap-theme-switch"
     >
       <button
-        aria-pressed={theme === "light"}
+        aria-pressed={
+          theme === "light"
+        }
         className={
           theme === "light"
             ? "ap-theme-option active"
             : "ap-theme-option"
         }
         onClick={() =>
-          changeTheme("light")
+          changeTheme(
+            "light"
+          )
         }
         type="button"
       >
         <Sun size={15} />
 
-        <span>Claro</span>
+        <span>
+          Claro
+        </span>
       </button>
 
       <button
-        aria-pressed={theme === "dark"}
+        aria-pressed={
+          theme === "dark"
+        }
         className={
           theme === "dark"
             ? "ap-theme-option active"
             : "ap-theme-option"
         }
         onClick={() =>
-          changeTheme("dark")
+          changeTheme(
+            "dark"
+          )
         }
         type="button"
       >
         <Moon size={15} />
 
-        <span>Escuro</span>
+        <span>
+          Escuro
+        </span>
       </button>
     </div>
   );
