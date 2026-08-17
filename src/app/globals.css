@@ -1,374 +1,561 @@
-/* APROVUP_LOCAL_FONT_FALLBACK
-   Tipografia temporaria local.
-   Evita dependencia de Google Fonts no build.
-   A tipografia definitiva entra no Design System UI V2.
-*/
+@import "tailwindcss";
+
+
+/* =========================================================
+   APROVUP UI V2
+   BASE GLOBAL
+   ========================================================= */
+
 :root {
-  --font-geist-sans:
-    Arial,
+  --background: #f5f6f8;
+  --foreground: #111827;
+
+  --font-app:
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
     Helvetica,
+    Arial,
     sans-serif;
 
-  --font-geist-mono:
-    "Courier New",
+  --font-code:
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    Menlo,
     monospace;
 }
 
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --font-sans: var(--font-app);
+  --font-mono: var(--font-code);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+
+* {
+  box-sizing: border-box;
 }
 
-body {
+
+html {
+  min-height: 100%;
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 
-
-/* ================================
-   APROVUP BRAND TOKENS
-================================ */
-:root {
-  --aprovup-navy: #0B1120;
-  --aprovup-blue: #2563EB;
-  --aprovup-purple: #7C3AED;
-  --aprovup-indigo: #4F46E5;
-  --aprovup-bg: #F5F7FB;
-  --aprovup-card: #FFFFFF;
-  --aprovup-text: #111827;
-  --aprovup-muted: #64748B;
-  --aprovup-border: #E2E8F0;
-  --aprovup-radius: 22px;
-  --aprovup-shadow: 0 20px 60px rgba(15, 23, 42, 0.10);
-}
-
-.aprovup-gradient-text {
-  background: linear-gradient(135deg, var(--aprovup-purple), var(--aprovup-indigo), var(--aprovup-blue));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.aprovup-gradient-bg {
-  background:
-    radial-gradient(circle at top left, rgba(124, 58, 237, 0.22), transparent 32%),
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.22), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f5f7fb 100%);
-}
-
-.aprovup-card {
-  background: var(--aprovup-card);
-  border: 1px solid var(--aprovup-border);
-  border-radius: var(--aprovup-radius);
-  box-shadow: var(--aprovup-shadow);
-}
-
-.aprovup-button {
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--aprovup-purple), var(--aprovup-blue));
-  color: white;
-  font-weight: 800;
-  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.26);
-  transition: transform 180ms ease, box-shadow 180ms ease;
-}
-
-.aprovup-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 22px 42px rgba(37, 99, 235, 0.34);
-}
-
-.aprovup-chip {
-  border-radius: 999px;
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  background: rgba(37, 99, 235, 0.08);
-  color: #1D4ED8;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-
-
-
-/* ======================================================
-   APROVUP OFICIAL - LOGO HTML/CSS
-   Referência: Aprov preto + Up gradiente + seta no U
-====================================================== */
-
-:root {
-  --aprovup-black: #111827;
-  --aprovup-dark: #0B1120;
-  --aprovup-purple: #8B3DFF;
-  --aprovup-violet: #7C3AED;
-  --aprovup-indigo: #7554F7;
-  --aprovup-blue: #2563EB;
-  --aprovup-bg: #F7F8FC;
-  --aprovup-border: #E5E7EB;
-  --aprovup-muted: #64748B;
-}
-
-html,
 body {
+  min-height: 100vh;
+  margin: 0;
+
   background:
-    radial-gradient(circle at top left, rgba(139, 61, 255, 0.05), transparent 32%),
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.07), transparent 30%),
-    var(--aprovup-bg) !important;
+    var(--background);
+
+  color:
+    var(--foreground);
+
+  font-family:
+    var(--font-app);
+
+  font-size:
+    14px;
+
+  line-height:
+    1.5;
+
+  text-rendering:
+    optimizeLegibility;
+
+  -webkit-font-smoothing:
+    antialiased;
+
+  -moz-osx-font-smoothing:
+    grayscale;
 }
 
-.aprovup-mark {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1;
-  color: var(--aprovup-black);
-}
 
-.aprovup-mark-center {
-  align-items: center;
-  text-align: center;
-}
-
-.aprovup-mark-word {
-  display: inline-flex;
-  align-items: baseline;
-  white-space: nowrap;
-  font-family: Inter, Arial, Helvetica, sans-serif;
-  font-weight: 950;
-  line-height: 0.82;
-  letter-spacing: -0.082em;
-}
-
-.aprovup-mark-dark {
-  color: var(--aprovup-black);
-}
-
-.aprovup-mark-light .aprovup-mark-dark {
-  color: #ffffff;
-}
-
-.aprovup-mark-up {
-  display: inline-flex;
-  align-items: baseline;
-  margin-left: -0.018em;
-  background: linear-gradient(135deg, #8B3DFF 0%, #7554F7 46%, #2563EB 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.aprovup-mark-u {
-  position: relative;
-  display: inline-block;
-}
-
-.aprovup-mark-arrow {
-  position: absolute;
-  left: 50%;
-  top: -0.55em;
-  width: 0.34em;
-  height: 0.72em;
-  transform: translateX(-48%);
-  pointer-events: none;
-}
-
-.aprovup-mark-arrow svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.aprovup-mark-tagline {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.72em;
-  margin-top: 0.48em;
-  padding-left: 0.15em;
-  white-space: nowrap;
-  color: var(--aprovup-black);
-  font-family: Inter, Arial, Helvetica, sans-serif;
-  font-weight: 850;
-  letter-spacing: 0.43em;
-  text-transform: uppercase;
-}
-
-.aprovup-mark-light .aprovup-mark-tagline {
-  color: rgba(255,255,255,0.82);
-}
-
-.aprovup-mark-tagline i {
-  display: inline-block;
-  width: 0.36em;
-  height: 0.36em;
-  border-radius: 999px;
-  background: var(--aprovup-violet);
-}
-
-/* Tamanhos */
-.aprovup-mark-sm .aprovup-mark-word {
-  font-size: 32px;
-}
-
-.aprovup-mark-sm .aprovup-mark-tagline {
-  font-size: 5.5px;
-}
-
-.aprovup-mark-md .aprovup-mark-word {
-  font-size: 52px;
-}
-
-.aprovup-mark-md .aprovup-mark-tagline {
-  font-size: 8px;
-}
-
-.aprovup-mark-lg .aprovup-mark-word {
-  font-size: 78px;
-}
-
-.aprovup-mark-lg .aprovup-mark-tagline {
-  font-size: 10.5px;
-}
-
-.aprovup-mark-xl .aprovup-mark-word {
-  font-size: 118px;
-}
-
-.aprovup-mark-xl .aprovup-mark-tagline {
-  font-size: 13.5px;
-}
-
-/* Ajuste de seta por tamanho */
-.aprovup-mark-sm .aprovup-mark-arrow {
-  top: -0.53em;
-  height: 0.68em;
-  width: 0.32em;
-}
-
-.aprovup-mark-md .aprovup-mark-arrow {
-  top: -0.54em;
-  height: 0.70em;
-  width: 0.33em;
-}
-
-.aprovup-mark-lg .aprovup-mark-arrow {
-  top: -0.55em;
-  height: 0.72em;
-  width: 0.34em;
-}
-
-.aprovup-mark-xl .aprovup-mark-arrow {
-  top: -0.56em;
-  height: 0.74em;
-  width: 0.35em;
-}
-
-/* Visual do site e app */
-.aprovup-gradient-text {
-  background: linear-gradient(135deg, #8B3DFF, #7554F7, #2563EB);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.aprovup-site-bg {
-  background:
-    radial-gradient(circle at 15% 0%, rgba(139, 61, 255, 0.16), transparent 34%),
-    radial-gradient(circle at 85% 5%, rgba(37, 99, 235, 0.16), transparent 34%),
-    linear-gradient(180deg, #FFFFFF 0%, #F7F8FC 58%, #FFFFFF 100%);
-}
-
-.aprovup-card-premium {
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  background: rgba(255,255,255,0.90);
-  box-shadow: 0 24px 80px rgba(17, 24, 39, 0.09);
-  backdrop-filter: blur(18px);
-}
-
-.aprovup-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #8B3DFF, #2563EB);
-  color: #ffffff;
-  font-weight: 900;
-  box-shadow: 0 18px 42px rgba(37, 99, 235, 0.26);
-  transition: transform 180ms ease, box-shadow 180ms ease;
-}
-
-.aprovup-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 24px 54px rgba(37, 99, 235, 0.34);
-}
-
-/* Tema base do app */
-.bg-white {
-  background: rgba(255,255,255,0.96) !important;
-}
-
-.rounded-xl,
-.rounded-2xl,
-.rounded-3xl {
-  border-radius: 24px !important;
-}
-
-.bg-blue-600,
-.bg-blue-700,
-.bg-indigo-600,
-.bg-violet-600 {
-  background: linear-gradient(135deg, #8B3DFF, #2563EB) !important;
-}
-
-.text-blue-600,
-.text-indigo-600,
-.text-violet-600 {
-  color: #7554F7 !important;
-}
-
+button,
 input,
 textarea,
 select {
-  border-radius: 18px !important;
+  font:
+    inherit;
 }
 
-button[type="submit"] {
-  border-radius: 999px !important;
+
+button {
+  -webkit-tap-highlight-color:
+    transparent;
 }
+
+
+::selection {
+  background:
+    rgba(47, 109, 246, 0.18);
+}
+
+
+/* =========================================================
+   BRAND
+   ========================================================= */
+
+:root {
+  --aprovup-black:
+    #111827;
+
+  --aprovup-dark:
+    #0b1120;
+
+  --aprovup-purple:
+    #8b3dff;
+
+  --aprovup-violet:
+    #7c3aed;
+
+  --aprovup-indigo:
+    #7554f7;
+
+  --aprovup-blue:
+    #2563eb;
+
+  --aprovup-bg:
+    #f7f8fc;
+
+  --aprovup-border:
+    #e5e7eb;
+
+  --aprovup-muted:
+    #64748b;
+}
+
+
+/* =========================================================
+   LOGO LEGADA / COMPATIBILIDADE
+   NAO ALTERA O ARQUIVO DA LOGO OFICIAL
+   ========================================================= */
+
+.aprovup-mark {
+  display:
+    inline-flex;
+
+  flex-direction:
+    column;
+
+  align-items:
+    flex-start;
+
+  line-height:
+    1;
+
+  color:
+    var(--aprovup-black);
+}
+
+
+.aprovup-mark-center {
+  align-items:
+    center;
+
+  text-align:
+    center;
+}
+
+
+.aprovup-mark-word {
+  display:
+    inline-flex;
+
+  align-items:
+    baseline;
+
+  white-space:
+    nowrap;
+
+  font-family:
+    var(--font-app);
+
+  font-weight:
+    900;
+
+  line-height:
+    0.82;
+
+  letter-spacing:
+    -0.082em;
+}
+
+
+.aprovup-mark-dark {
+  color:
+    var(--aprovup-black);
+}
+
+
+.aprovup-mark-light
+.aprovup-mark-dark {
+  color:
+    #ffffff;
+}
+
+
+.aprovup-mark-up {
+  display:
+    inline-flex;
+
+  align-items:
+    baseline;
+
+  margin-left:
+    -0.018em;
+
+  background:
+    linear-gradient(
+      135deg,
+      #8b3dff 0%,
+      #7554f7 46%,
+      #2563eb 100%
+    );
+
+  -webkit-background-clip:
+    text;
+
+  background-clip:
+    text;
+
+  color:
+    transparent;
+}
+
+
+.aprovup-mark-u {
+  position:
+    relative;
+
+  display:
+    inline-block;
+}
+
+
+.aprovup-mark-arrow {
+  position:
+    absolute;
+
+  left:
+    50%;
+
+  top:
+    -0.55em;
+
+  width:
+    0.34em;
+
+  height:
+    0.72em;
+
+  transform:
+    translateX(-48%);
+
+  pointer-events:
+    none;
+}
+
+
+.aprovup-mark-arrow svg {
+  display:
+    block;
+
+  width:
+    100%;
+
+  height:
+    100%;
+
+  overflow:
+    visible;
+}
+
+
+.aprovup-mark-tagline {
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  gap:
+    0.72em;
+
+  margin-top:
+    0.48em;
+
+  padding-left:
+    0.15em;
+
+  white-space:
+    nowrap;
+
+  color:
+    var(--aprovup-black);
+
+  font-family:
+    var(--font-app);
+
+  font-weight:
+    800;
+
+  letter-spacing:
+    0.43em;
+
+  text-transform:
+    uppercase;
+}
+
+
+.aprovup-mark-light
+.aprovup-mark-tagline {
+  color:
+    rgba(255, 255, 255, 0.82);
+}
+
+
+.aprovup-mark-tagline i {
+  display:
+    inline-block;
+
+  width:
+    0.36em;
+
+  height:
+    0.36em;
+
+  border-radius:
+    999px;
+
+  background:
+    var(--aprovup-violet);
+}
+
+
+.aprovup-mark-sm
+.aprovup-mark-word {
+  font-size:
+    32px;
+}
+
+
+.aprovup-mark-sm
+.aprovup-mark-tagline {
+  font-size:
+    5.5px;
+}
+
+
+.aprovup-mark-md
+.aprovup-mark-word {
+  font-size:
+    52px;
+}
+
+
+.aprovup-mark-md
+.aprovup-mark-tagline {
+  font-size:
+    8px;
+}
+
+
+.aprovup-mark-lg
+.aprovup-mark-word {
+  font-size:
+    78px;
+}
+
+
+.aprovup-mark-lg
+.aprovup-mark-tagline {
+  font-size:
+    10.5px;
+}
+
+
+.aprovup-mark-xl
+.aprovup-mark-word {
+  font-size:
+    118px;
+}
+
+
+.aprovup-mark-xl
+.aprovup-mark-tagline {
+  font-size:
+    13.5px;
+}
+
+
+.aprovup-gradient-text {
+  background:
+    linear-gradient(
+      135deg,
+      #8b3dff,
+      #7554f7,
+      #2563eb
+    );
+
+  -webkit-background-clip:
+    text;
+
+  background-clip:
+    text;
+
+  color:
+    transparent;
+}
+
+
+/* =========================================================
+   SITE PUBLICO
+   MANTEM IDENTIDADE FORA DO APP
+   ========================================================= */
+
+.aprovup-site-bg {
+  background:
+    radial-gradient(
+      circle at 15% 0%,
+      rgba(139, 61, 255, 0.13),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 85% 5%,
+      rgba(37, 99, 235, 0.12),
+      transparent 34%
+    ),
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #f7f8fc 58%,
+      #ffffff 100%
+    );
+}
+
+
+.aprovup-card,
+.aprovup-card-premium {
+  border:
+    1px solid #e5e7eb;
+
+  border-radius:
+    14px;
+
+  background:
+    rgba(255, 255, 255, 0.96);
+
+  box-shadow:
+    0 8px 28px
+    rgba(15, 23, 42, 0.07);
+}
+
+
+.aprovup-button,
+.aprovup-btn {
+  display:
+    inline-flex;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  border-radius:
+    9px;
+
+  background:
+    #2563eb;
+
+  color:
+    #ffffff;
+
+  font-weight:
+    700;
+
+  box-shadow:
+    0 1px 2px
+    rgba(15, 23, 42, 0.10);
+
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+
+.aprovup-button:hover,
+.aprovup-btn:hover {
+  background:
+    #1d4ed8;
+
+  transform:
+    translateY(-1px);
+
+  box-shadow:
+    0 4px 12px
+    rgba(37, 99, 235, 0.20);
+}
+
+
+.aprovup-chip {
+  border:
+    1px solid rgba(37, 99, 235, 0.18);
+
+  border-radius:
+    7px;
+
+  background:
+    rgba(37, 99, 235, 0.07);
+
+  color:
+    #1d4ed8;
+
+  font-size:
+    11px;
+
+  font-weight:
+    700;
+
+  letter-spacing:
+    0.03em;
+
+  text-transform:
+    uppercase;
+}
+
 
 @media (max-width: 720px) {
-  .aprovup-mark-xl .aprovup-mark-word {
-    font-size: 74px;
+
+  .aprovup-mark-xl
+  .aprovup-mark-word {
+    font-size:
+      74px;
   }
 
-  .aprovup-mark-xl .aprovup-mark-tagline {
-    font-size: 8px;
-    letter-spacing: 0.32em;
-    gap: 0.55em;
+  .aprovup-mark-xl
+  .aprovup-mark-tagline {
+    font-size:
+      8px;
+
+    letter-spacing:
+      0.32em;
+
+    gap:
+      0.55em;
   }
 }
-
-
-
-
-
-

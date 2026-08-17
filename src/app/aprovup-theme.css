@@ -1,120 +1,256 @@
 /* =========================================================
-   APROVUP DESIGN SYSTEM
-   CLARO + ESCURO
+   APROVUP UI V2
+   DESIGN SYSTEM
    ========================================================= */
 
 
 /* =========================================================
-   LIGHT - PADRAO
+   LIGHT
    ========================================================= */
 
 :root {
-  --ap-bg: #f5f7fb;
-  --ap-bg-deep: #eef2f8;
+  color-scheme:
+    light;
 
-  --ap-sidebar: #ffffff;
-  --ap-sidebar-soft: #f8faff;
+  --ap-bg:
+    #f4f6f8;
 
-  --ap-surface: #ffffff;
-  --ap-surface-2: #f8faff;
-  --ap-surface-3: #f1f5fb;
+  --ap-bg-deep:
+    #edf0f3;
 
-  --ap-border: #e1e7f0;
-  --ap-border-strong: #d2dae7;
+  --ap-surface:
+    #ffffff;
 
-  --ap-text: #111827;
-  --ap-text-soft: #5f6b7d;
-  --ap-text-muted: #8b98aa;
+  --ap-surface-2:
+    #f8fafc;
 
-  --ap-blue: #2867ff;
-  --ap-blue-soft: #edf3ff;
+  --ap-surface-3:
+    #f1f5f9;
 
-  --ap-purple: #713bff;
-  --ap-purple-soft: #f2edff;
+  --ap-surface-hover:
+    #f8fafc;
 
-  --ap-cyan: #00aee8;
+  --ap-border:
+    #e2e8f0;
 
-  --ap-green: #16a464;
-  --ap-green-soft: #e9f8f1;
+  --ap-border-strong:
+    #cbd5e1;
 
-  --ap-orange: #f59e0b;
-  --ap-orange-soft: #fff5df;
+  --ap-text:
+    #0f172a;
 
-  --ap-red: #e84f5f;
-  --ap-red-soft: #fff0f2;
+  --ap-text-soft:
+    #475569;
 
-  --ap-shadow:
-    0 10px 35px
-    rgba(20, 35, 60, 0.06);
+  --ap-text-muted:
+    #94a3b8;
 
-  --ap-shadow-lg:
-    0 18px 55px
-    rgba(20, 35, 60, 0.10);
+  --ap-sidebar:
+    #0b1220;
+
+  --ap-sidebar-soft:
+    #111a2c;
+
+  --ap-sidebar-border:
+    #1d293b;
+
+  --ap-sidebar-text:
+    #94a3b8;
+
+  --ap-sidebar-text-strong:
+    #f8fafc;
+
+  --ap-sidebar-hover:
+    rgba(255, 255, 255, 0.055);
+
+  --ap-sidebar-active:
+    rgba(47, 109, 246, 0.18);
 
   --ap-header:
-    rgba(255, 255, 255, 0.90);
+    rgba(255, 255, 255, 0.94);
+
+  --ap-blue:
+    #2f6df6;
+
+  --ap-blue-hover:
+    #245bd7;
+
+  --ap-blue-soft:
+    #edf3ff;
+
+  --ap-purple:
+    #7047eb;
+
+  --ap-purple-soft:
+    #f1edff;
+
+  --ap-cyan:
+    #0891b2;
+
+  --ap-green:
+    #159669;
+
+  --ap-green-soft:
+    #eaf8f2;
+
+  --ap-orange:
+    #d97706;
+
+  --ap-orange-soft:
+    #fff5e6;
+
+  --ap-red:
+    #dc4c64;
+
+  --ap-red-soft:
+    #fff0f3;
+
+  --ap-radius-xs:
+    6px;
+
+  --ap-radius-sm:
+    8px;
+
+  --ap-radius-md:
+    10px;
+
+  --ap-radius-card:
+    12px;
+
+  --ap-radius-panel:
+    14px;
+
+  --ap-shadow-xs:
+    0 1px 2px
+    rgba(15, 23, 42, 0.05);
+
+  --ap-shadow-sm:
+    0 2px 8px
+    rgba(15, 23, 42, 0.055);
+
+  --ap-shadow-md:
+    0 8px 24px
+    rgba(15, 23, 42, 0.08);
 }
 
 
 /* =========================================================
-   DARK - ESCOLHIDO
+   DARK
    ========================================================= */
 
 :root[data-aprovup-theme="dark"] {
-  --ap-bg: #050d19;
-  --ap-bg-deep: #030a14;
+  color-scheme:
+    dark;
 
-  --ap-sidebar: #071321;
-  --ap-sidebar-soft: #0a1727;
+  --ap-bg:
+    #0a101c;
 
-  --ap-surface: #0c192a;
-  --ap-surface-2: #101f34;
-  --ap-surface-3: #13253c;
+  --ap-bg-deep:
+    #070c15;
 
-  --ap-border: #1b2e47;
-  --ap-border-strong: #29415f;
+  --ap-surface:
+    #111927;
 
-  --ap-text: #f5f7fb;
-  --ap-text-soft: #a4b2c5;
-  --ap-text-muted: #71849d;
+  --ap-surface-2:
+    #151f30;
 
-  --ap-blue: #3475ff;
-  --ap-blue-soft:
-    rgba(52, 117, 255, 0.13);
+  --ap-surface-3:
+    #1a2638;
 
-  --ap-purple: #7848ff;
-  --ap-purple-soft:
-    rgba(120, 72, 255, 0.13);
+  --ap-surface-hover:
+    #182337;
 
-  --ap-cyan: #00b9e8;
+  --ap-border:
+    #243247;
 
-  --ap-green: #26d07c;
-  --ap-green-soft:
-    rgba(38, 208, 124, 0.11);
+  --ap-border-strong:
+    #33445f;
 
-  --ap-orange: #ffad32;
-  --ap-orange-soft:
-    rgba(255, 173, 50, 0.11);
+  --ap-text:
+    #f8fafc;
 
-  --ap-red: #ff6474;
-  --ap-red-soft:
-    rgba(255, 100, 116, 0.11);
+  --ap-text-soft:
+    #b4c0d0;
 
-  --ap-shadow:
-    0 12px 40px
-    rgba(0, 0, 0, 0.20);
+  --ap-text-muted:
+    #7788a0;
 
-  --ap-shadow-lg:
-    0 20px 60px
-    rgba(0, 0, 0, 0.28);
+  --ap-sidebar:
+    #070d18;
+
+  --ap-sidebar-soft:
+    #0c1422;
+
+  --ap-sidebar-border:
+    #1a2638;
+
+  --ap-sidebar-text:
+    #8494aa;
+
+  --ap-sidebar-text-strong:
+    #f8fafc;
+
+  --ap-sidebar-hover:
+    rgba(255, 255, 255, 0.055);
+
+  --ap-sidebar-active:
+    rgba(70, 119, 255, 0.18);
 
   --ap-header:
-    rgba(5, 13, 25, 0.90);
+    rgba(10, 16, 28, 0.94);
+
+  --ap-blue:
+    #4d7cff;
+
+  --ap-blue-hover:
+    #6a91ff;
+
+  --ap-blue-soft:
+    rgba(77, 124, 255, 0.12);
+
+  --ap-purple:
+    #8c67ff;
+
+  --ap-purple-soft:
+    rgba(140, 103, 255, 0.12);
+
+  --ap-cyan:
+    #22b8cf;
+
+  --ap-green:
+    #33c58a;
+
+  --ap-green-soft:
+    rgba(51, 197, 138, 0.11);
+
+  --ap-orange:
+    #f2a33c;
+
+  --ap-orange-soft:
+    rgba(242, 163, 60, 0.11);
+
+  --ap-red:
+    #ff697d;
+
+  --ap-red-soft:
+    rgba(255, 105, 125, 0.11);
+
+  --ap-shadow-xs:
+    0 1px 2px
+    rgba(0, 0, 0, 0.18);
+
+  --ap-shadow-sm:
+    0 3px 10px
+    rgba(0, 0, 0, 0.18);
+
+  --ap-shadow-md:
+    0 10px 28px
+    rgba(0, 0, 0, 0.24);
 }
 
 
 /* =========================================================
-   RESPEITAR SISTEMA ANTES DA PRIMEIRA ESCOLHA
+   SISTEMA ANTES DA PRIMEIRA ESCOLHA
    ========================================================= */
 
 @media (prefers-color-scheme: dark) {
@@ -122,71 +258,127 @@
   :root:not(
     [data-aprovup-theme]
   ) {
-    --ap-bg: #050d19;
-    --ap-bg-deep: #030a14;
+    color-scheme:
+      dark;
 
-    --ap-sidebar: #071321;
-    --ap-sidebar-soft: #0a1727;
+    --ap-bg:
+      #0a101c;
 
-    --ap-surface: #0c192a;
-    --ap-surface-2: #101f34;
-    --ap-surface-3: #13253c;
+    --ap-bg-deep:
+      #070c15;
 
-    --ap-border: #1b2e47;
-    --ap-border-strong: #29415f;
+    --ap-surface:
+      #111927;
 
-    --ap-text: #f5f7fb;
-    --ap-text-soft: #a4b2c5;
-    --ap-text-muted: #71849d;
+    --ap-surface-2:
+      #151f30;
 
-    --ap-blue: #3475ff;
-    --ap-purple: #7848ff;
-    --ap-cyan: #00b9e8;
+    --ap-surface-3:
+      #1a2638;
+
+    --ap-surface-hover:
+      #182337;
+
+    --ap-border:
+      #243247;
+
+    --ap-border-strong:
+      #33445f;
+
+    --ap-text:
+      #f8fafc;
+
+    --ap-text-soft:
+      #b4c0d0;
+
+    --ap-text-muted:
+      #7788a0;
+
+    --ap-sidebar:
+      #070d18;
+
+    --ap-sidebar-soft:
+      #0c1422;
+
+    --ap-sidebar-border:
+      #1a2638;
+
+    --ap-sidebar-text:
+      #8494aa;
+
+    --ap-sidebar-text-strong:
+      #f8fafc;
+
+    --ap-sidebar-hover:
+      rgba(255, 255, 255, 0.055);
+
+    --ap-sidebar-active:
+      rgba(70, 119, 255, 0.18);
 
     --ap-header:
-      rgba(5, 13, 25, 0.90);
+      rgba(10, 16, 28, 0.94);
+
+    --ap-blue:
+      #4d7cff;
+
+    --ap-blue-hover:
+      #6a91ff;
+
+    --ap-blue-soft:
+      rgba(77, 124, 255, 0.12);
+
+    --ap-purple:
+      #8c67ff;
+
+    --ap-purple-soft:
+      rgba(140, 103, 255, 0.12);
+
+    --ap-green:
+      #33c58a;
+
+    --ap-green-soft:
+      rgba(51, 197, 138, 0.11);
+
+    --ap-orange:
+      #f2a33c;
+
+    --ap-orange-soft:
+      rgba(242, 163, 60, 0.11);
+
+    --ap-red:
+      #ff697d;
+
+    --ap-red-soft:
+      rgba(255, 105, 125, 0.11);
   }
 }
 
 
 /* =========================================================
-   SHELL
+   APP SHELL
    ========================================================= */
 
 .aprovup-app-shell {
+  min-height:
+    100vh;
+
   background:
-    radial-gradient(
-      circle at 85% -10%,
-      color-mix(
-        in srgb,
-        var(--ap-blue) 8%,
-        transparent
-      ),
-      transparent 32%
-    ),
     var(--ap-bg);
 
   color:
     var(--ap-text);
 
-  min-height:
-    100vh;
-
   transition:
-    background-color 0.20s ease,
-    color 0.20s ease;
+    background-color 160ms ease,
+    color 160ms ease;
 }
 
 
-/* =========================================================
-   CONTEUDO
-   ========================================================= */
-
 .aprovup-app-shell
 .aprovup-main,
+
 .aprovup-app-shell
 .aprovup-content {
-
   background:
     transparent !important;
 
@@ -196,7 +388,8 @@
 
 
 /* =========================================================
-   SIDEBARS
+   SIDEBAR FOUNDATION
+   ETAPA 3 VAI REESTRUTURAR O COMPONENTE
    ========================================================= */
 
 .ap-sidebar {
@@ -204,14 +397,14 @@
     var(--ap-sidebar);
 
   border-color:
-    var(--ap-border);
+    var(--ap-sidebar-border);
 
   color:
-    var(--ap-text);
+    var(--ap-sidebar-text-strong);
 
   transition:
-    background-color 0.20s ease,
-    border-color 0.20s ease;
+    background-color 160ms ease,
+    border-color 160ms ease;
 }
 
 
@@ -220,80 +413,79 @@
     #ffffff;
 
   border:
-    1px solid
-    var(--ap-border);
+    1px solid rgba(255, 255, 255, 0.08);
 
   border-radius:
-    16px;
-
-  box-shadow:
-    var(--ap-shadow);
+    12px;
 
   padding:
-    10px 12px;
+    8px 10px;
+
+  box-shadow:
+    none;
 }
 
 
 .ap-sidebar-link {
+  border:
+    1px solid transparent;
+
+  border-radius:
+    9px !important;
+
   color:
-    var(--ap-text-soft);
+    var(--ap-sidebar-text);
 
   transition:
-    0.18s ease;
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
 }
 
 
 .ap-sidebar-link:hover {
   background:
-    var(--ap-blue-soft);
+    var(--ap-sidebar-hover);
 
   color:
-    var(--ap-text);
+    var(--ap-sidebar-text-strong);
 }
 
 
 .ap-sidebar-link-active {
   background:
-    linear-gradient(
-      135deg,
-      color-mix(
-        in srgb,
-        var(--ap-blue) 17%,
-        transparent
-      ),
-      color-mix(
-        in srgb,
-        var(--ap-purple) 12%,
-        transparent
-      )
-    );
+    var(--ap-sidebar-active);
 
-  border:
-    1px solid
-    color-mix(
-      in srgb,
-      var(--ap-blue) 25%,
-      var(--ap-border)
-    );
+  border-color:
+    rgba(77, 124, 255, 0.20);
 
   color:
-    var(--ap-text);
+    var(--ap-sidebar-text-strong);
 }
 
 
 .ap-sidebar-user {
   background:
-    var(--ap-surface);
+    rgba(255, 255, 255, 0.04);
 
   border:
-    1px solid
-    var(--ap-border);
+    1px solid rgba(255, 255, 255, 0.075);
+
+  border-radius:
+    11px !important;
 
   color:
-    var(--ap-text);
+    var(--ap-sidebar-text-strong);
 
   box-shadow:
-    var(--ap-shadow);
+    none;
+}
+
+
+.ap-sidebar-user
+.text-slate-500 {
+  color:
+    var(--ap-sidebar-text) !important;
 }
 
 
@@ -301,7 +493,8 @@
    HEADER
    ========================================================= */
 
-.aprovup-app-shell header {
+.aprovup-app-shell
+header {
   background:
     var(--ap-header) !important;
 
@@ -312,20 +505,103 @@
     var(--ap-text);
 
   backdrop-filter:
-    blur(18px);
+    blur(12px);
 
   -webkit-backdrop-filter:
-    blur(18px);
+    blur(12px);
+
+  box-shadow:
+    none;
 }
 
 
 /* =========================================================
-   CARDS / SUPERFICIES
+   RAIOS
+   ========================================================= */
+
+.aprovup-app-shell
+.rounded-md {
+  border-radius:
+    var(--ap-radius-xs) !important;
+}
+
+
+.aprovup-app-shell
+.rounded-lg {
+  border-radius:
+    var(--ap-radius-sm) !important;
+}
+
+
+.aprovup-app-shell
+.rounded-xl {
+  border-radius:
+    var(--ap-radius-md) !important;
+}
+
+
+.aprovup-app-shell
+.rounded-2xl {
+  border-radius:
+    var(--ap-radius-card) !important;
+}
+
+
+.aprovup-app-shell
+.rounded-3xl {
+  border-radius:
+    var(--ap-radius-panel) !important;
+}
+
+
+/* Mantemos avatar e badges realmente circulares */
+.aprovup-app-shell
+.rounded-full {
+  border-radius:
+    9999px !important;
+}
+
+
+/* =========================================================
+   SOMBRAS
+   ========================================================= */
+
+.aprovup-app-shell
+.shadow-sm {
+  box-shadow:
+    var(--ap-shadow-xs) !important;
+}
+
+
+.aprovup-app-shell
+.shadow,
+
+.aprovup-app-shell
+.shadow-md {
+  box-shadow:
+    var(--ap-shadow-sm) !important;
+}
+
+
+.aprovup-app-shell
+.shadow-lg,
+
+.aprovup-app-shell
+.shadow-xl,
+
+.aprovup-app-shell
+.shadow-2xl {
+  box-shadow:
+    var(--ap-shadow-md) !important;
+}
+
+
+/* =========================================================
+   SUPERFICIES
    ========================================================= */
 
 .aprovup-app-shell
 .bg-white {
-
   background-color:
     var(--ap-surface) !important;
 }
@@ -333,7 +609,6 @@
 
 .aprovup-app-shell
 .bg-slate-50 {
-
   background-color:
     var(--ap-bg) !important;
 }
@@ -341,7 +616,6 @@
 
 .aprovup-app-shell
 .bg-slate-100 {
-
   background-color:
     var(--ap-surface-2) !important;
 }
@@ -349,7 +623,6 @@
 
 .aprovup-app-shell
 .bg-slate-200 {
-
   background-color:
     var(--ap-surface-3) !important;
 }
@@ -357,27 +630,29 @@
 
 .aprovup-app-shell
 .border-slate-100,
+
 .aprovup-app-shell
 .border-slate-200,
+
 .aprovup-app-shell
 .border-slate-300 {
-
   border-color:
     var(--ap-border) !important;
 }
 
 
 /* =========================================================
-   TEXTO EXISTENTE TAILWIND
+   TEXTO
    ========================================================= */
 
 .aprovup-app-shell
 .text-slate-950,
+
 .aprovup-app-shell
 .text-slate-900,
+
 .aprovup-app-shell
 .text-slate-800 {
-
   color:
     var(--ap-text) !important;
 }
@@ -385,9 +660,9 @@
 
 .aprovup-app-shell
 .text-slate-700,
+
 .aprovup-app-shell
 .text-slate-600 {
-
   color:
     var(--ap-text-soft) !important;
 }
@@ -395,21 +670,28 @@
 
 .aprovup-app-shell
 .text-slate-500,
+
 .aprovup-app-shell
 .text-slate-400 {
-
   color:
     var(--ap-text-muted) !important;
 }
 
 
 /* =========================================================
-   INPUTS
+   CONTROLES
    ========================================================= */
 
-.aprovup-app-shell input,
-.aprovup-app-shell select,
-.aprovup-app-shell textarea {
+.aprovup-app-shell
+input,
+
+.aprovup-app-shell
+select,
+
+.aprovup-app-shell
+textarea {
+  border-radius:
+    var(--ap-radius-sm) !important;
 
   background:
     var(--ap-surface);
@@ -420,18 +702,21 @@
   color:
     var(--ap-text);
 
+  box-shadow:
+    none;
+
   transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    background-color 0.20s ease;
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    background-color 140ms ease;
 }
 
 
 .aprovup-app-shell
 input::placeholder,
+
 .aprovup-app-shell
 textarea::placeholder {
-
   color:
     var(--ap-text-muted);
 }
@@ -439,11 +724,12 @@ textarea::placeholder {
 
 .aprovup-app-shell
 input:focus,
+
 .aprovup-app-shell
 select:focus,
+
 .aprovup-app-shell
 textarea:focus {
-
   border-color:
     var(--ap-blue);
 
@@ -454,7 +740,7 @@ textarea:focus {
     0 0 0 3px
     color-mix(
       in srgb,
-      var(--ap-blue) 13%,
+      var(--ap-blue) 12%,
       transparent
     );
 }
@@ -466,9 +752,9 @@ textarea:focus {
 
 .aprovup-app-shell
 .bg-green-50,
+
 .aprovup-app-shell
 .bg-emerald-50 {
-
   background:
     var(--ap-green-soft) !important;
 }
@@ -476,9 +762,9 @@ textarea:focus {
 
 .aprovup-app-shell
 .bg-amber-50,
+
 .aprovup-app-shell
 .bg-yellow-50 {
-
   background:
     var(--ap-orange-soft) !important;
 }
@@ -486,7 +772,6 @@ textarea:focus {
 
 .aprovup-app-shell
 .bg-red-50 {
-
   background:
     var(--ap-red-soft) !important;
 }
@@ -494,9 +779,9 @@ textarea:focus {
 
 .aprovup-app-shell
 .bg-blue-50,
+
 .aprovup-app-shell
 .bg-indigo-50 {
-
   background:
     var(--ap-blue-soft) !important;
 }
@@ -504,9 +789,9 @@ textarea:focus {
 
 .aprovup-app-shell
 .bg-purple-50,
+
 .aprovup-app-shell
 .bg-violet-50 {
-
   background:
     var(--ap-purple-soft) !important;
 }
@@ -517,36 +802,35 @@ textarea:focus {
    ========================================================= */
 
 .ap-theme-switch {
-  align-items:
-    center;
-
-  background:
-    var(--ap-surface-2);
-
-  border:
-    1px solid
-    var(--ap-border);
-
-  border-radius:
-    12px;
-
   display:
     grid;
-
-  gap:
-    3px;
 
   grid-template-columns:
     1fr 1fr;
 
+  align-items:
+    center;
+
+  width:
+    100%;
+
   min-height:
-    42px;
+    38px;
 
   padding:
     3px;
 
-  width:
-    100%;
+  gap:
+    3px;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.075);
+
+  border-radius:
+    9px;
+
+  background:
+    rgba(255, 255, 255, 0.035);
 }
 
 
@@ -557,26 +841,38 @@ textarea:focus {
 
 
 .ap-theme-option {
+  display:
+    flex;
+
   align-items:
     center;
 
-  background:
-    transparent;
+  justify-content:
+    center;
+
+  gap:
+    6px;
+
+  min-height:
+    30px;
+
+  padding:
+    0 8px;
 
   border:
     0;
 
   border-radius:
-    9px;
+    7px;
+
+  background:
+    transparent;
 
   color:
-    var(--ap-text-muted);
+    var(--ap-sidebar-text);
 
   cursor:
     pointer;
-
-  display:
-    flex;
 
   font-size:
     10px;
@@ -584,126 +880,156 @@ textarea:focus {
   font-weight:
     700;
 
-  gap:
-    6px;
-
-  justify-content:
-    center;
-
-  min-height:
-    34px;
-
-  padding:
-    0 8px;
-
   transition:
-    0.18s ease;
+    background-color 140ms ease,
+    color 140ms ease;
 }
 
 
 .ap-theme-option:hover {
   color:
-    var(--ap-text);
+    var(--ap-sidebar-text-strong);
 }
 
 
 .ap-theme-option.active {
   background:
-    var(--ap-surface);
-
-  box-shadow:
-    0 3px 12px
-    rgba(0, 0, 0, 0.08);
+    rgba(255, 255, 255, 0.08);
 
   color:
-    var(--ap-blue);
+    #ffffff;
+
+  box-shadow:
+    none;
 }
 
 
 /* =========================================================
-   SALES OS / CRM
+   CRM LEGADO - COMPATIBILIDADE
+   ETAPA 6 FARÁ O REDESIGN COMPLETO
    ========================================================= */
 
 :root[data-aprovup-theme="light"]
 .crm-legacy-shell {
+  --background:
+    #f4f6f8;
 
-  --background: #f5f7fb;
-  --surface: #ffffff;
-  --surface-soft: #f8faff;
+  --surface:
+    #ffffff;
 
-  --border: #e1e7f0;
-  --border-strong: #d2dae7;
+  --surface-soft:
+    #f8fafc;
 
-  --text: #111827;
-  --text-soft: #5f6b7d;
-  --text-lighter: #8b98aa;
+  --border:
+    #e2e8f0;
 
-  --sidebar: #071321;
+  --border-strong:
+    #cbd5e1;
 
-  --accent: #2867ff;
-  --accent-dark: #174fdb;
-  --accent-soft: #edf3ff;
+  --text:
+    #0f172a;
 
-  --green: #16a464;
-  --green-soft: #e9f8f1;
+  --text-soft:
+    #475569;
 
-  --yellow: #c98a13;
-  --yellow-soft: #fff5df;
+  --text-lighter:
+    #94a3b8;
 
-  --blue: #2867ff;
-  --blue-soft: #edf3ff;
+  --sidebar:
+    #0b1220;
+
+  --accent:
+    #2f6df6;
+
+  --accent-dark:
+    #245bd7;
+
+  --accent-soft:
+    #edf3ff;
+
+  --green:
+    #159669;
+
+  --green-soft:
+    #eaf8f2;
+
+  --yellow:
+    #b7791f;
+
+  --yellow-soft:
+    #fff5e6;
+
+  --blue:
+    #2f6df6;
+
+  --blue-soft:
+    #edf3ff;
 }
 
 
 :root[data-aprovup-theme="dark"]
 .crm-legacy-shell {
+  --background:
+    #0a101c;
 
-  --background: #050d19;
-  --surface: #0c192a;
-  --surface-soft: #101f34;
+  --surface:
+    #111927;
 
-  --border: #1b2e47;
-  --border-strong: #29415f;
+  --surface-soft:
+    #151f30;
 
-  --text: #f5f7fb;
-  --text-soft: #a4b2c5;
-  --text-lighter: #71849d;
+  --border:
+    #243247;
 
-  --sidebar: #071321;
+  --border-strong:
+    #33445f;
 
-  --accent: #3475ff;
-  --accent-dark: #2158d9;
+  --text:
+    #f8fafc;
+
+  --text-soft:
+    #b4c0d0;
+
+  --text-lighter:
+    #7788a0;
+
+  --sidebar:
+    #070d18;
+
+  --accent:
+    #4d7cff;
+
+  --accent-dark:
+    #6a91ff;
 
   --accent-soft:
-    rgba(52, 117, 255, 0.13);
+    rgba(77, 124, 255, 0.12);
 
-  --green: #26d07c;
+  --green:
+    #33c58a;
 
   --green-soft:
-    rgba(38, 208, 124, 0.11);
+    rgba(51, 197, 138, 0.11);
 
-  --yellow: #ffad32;
+  --yellow:
+    #f2a33c;
 
   --yellow-soft:
-    rgba(255, 173, 50, 0.11);
+    rgba(242, 163, 60, 0.11);
 
-  --blue: #3475ff;
+  --blue:
+    #4d7cff;
 
   --blue-soft:
-    rgba(52, 117, 255, 0.13);
+    rgba(77, 124, 255, 0.12);
 }
 
-
-/* =========================================================
-   DARK - CORRECOES PARA SALES OS LEGADO
-   ========================================================= */
 
 :root[data-aprovup-theme="dark"]
 .crm-legacy-shell
 .real-kanban-column {
-
   background:
-    #091625;
+    #0d1624;
 
   border-color:
     var(--ap-border);
@@ -713,7 +1039,6 @@ textarea:focus {
 :root[data-aprovup-theme="dark"]
 .crm-legacy-shell
 .real-lead-card {
-
   background:
     var(--ap-surface);
 
@@ -725,7 +1050,6 @@ textarea:focus {
 :root[data-aprovup-theme="dark"]
 .crm-legacy-shell
 .stage-counter {
-
   background:
     var(--ap-surface-2);
 }
@@ -742,7 +1066,6 @@ textarea:focus {
 :root[data-aprovup-theme="dark"]
 .crm-legacy-shell
 .lead-form-grid textarea {
-
   background:
     var(--ap-surface-2);
 }
@@ -764,18 +1087,16 @@ textarea:focus {
 
 .aprovup-app-shell
 *::-webkit-scrollbar {
-
   width:
-    8px;
+    7px;
 
   height:
-    8px;
+    7px;
 }
 
 
 .aprovup-app-shell
 *::-webkit-scrollbar-track {
-
   background:
     transparent;
 }
@@ -783,10 +1104,16 @@ textarea:focus {
 
 .aprovup-app-shell
 *::-webkit-scrollbar-thumb {
-
   background:
     var(--ap-border-strong);
 
   border-radius:
-    20px;
+    999px;
+}
+
+
+.aprovup-app-shell
+*::-webkit-scrollbar-thumb:hover {
+  background:
+    var(--ap-text-muted);
 }
