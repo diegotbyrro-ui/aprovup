@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
+import { CalendarBackButton } from './CalendarBackButton';
 const monthNames = [
     'Janeiro',
     'Fevereiro',
@@ -312,12 +313,7 @@ export default async function CalendarioEditorialPage({
         <div className="space-y-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                    <Link
-                        href="/clientes"
-                        className="mb-2 inline-block text-sm text-blue-600 hover:underline"
-                    >
-                        &larr; Voltar para clientes
-                    </Link>
+                    <CalendarBackButton />
 
                     <h1 className="text-3xl font-bold text-slate-900">
                         Calendário Editorial
@@ -365,116 +361,6 @@ export default async function CalendarioEditorialPage({
                         {'Novo Conte\u00fado'}
                     </Link>
                 </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                    <div>
-                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                            Filtros
-                        </p>
-
-                        <h2 className="mt-1 text-lg font-bold text-slate-900">
-                            Refinar calendário
-                        </h2>
-
-                        <p className="mt-1 text-sm text-slate-500">
-                            Filtre por cliente, área responsável e prioridade sem sair do mês atual.
-                        </p>
-                    </div>
-
-                    {hasActiveFilters && (
-                        <Link
-                            href={clearFiltersHref}
-                            className="w-fit rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100"
-                        >
-                            Limpar filtros
-                        </Link>
-                    )}
-                </div>
-
-                <form
-                    action="/calendario-editorial"
-                    method="GET"
-                    className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-5"
-                >
-                    <input type="hidden" name="mes" value={currentMonth + 1} />
-                    <input type="hidden" name="ano" value={currentYear} />
-
-                    <div className="lg:col-span-2">
-                        <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">
-                            Cliente
-                        </label>
-
-                        <select
-                            name="cliente"
-                            defaultValue={selectedClient}
-                            className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                        >
-                            <option value="TODOS">Todos os clientes</option>
-                            {clients.map((client) => (
-                                <option key={client.id} value={client.id}>
-                                    {client.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">
-                            Área
-                        </label>
-
-                        <select
-                            name="area"
-                            defaultValue={selectedArea}
-                            className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                        >
-                            <option value="TODOS">Todas</option>
-                            <option value="GERAL">Geral</option>
-                            <option value="SOCIAL_DESIGN">Social / Design</option>
-                            <option value="AUDIOVISUAL">Audiovisual</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">
-                            Prioridade
-                        </label>
-
-                        <select
-                            name="prioridade"
-                            defaultValue={selectedPriority}
-                            className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                        >
-                            <option value="TODOS">Todas</option>
-                            <option value="BAIXA">Baixa</option>
-                            <option value="MEDIA">Média</option>
-                            <option value="ALTA">Alta</option>
-                            <option value="URGENTE">Urgente</option>
-                        </select>
-                    </div>
-
-                    <div className="flex items-end">
-                        <button
-                            type="submit"
-                            className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800"
-                        >
-                            Aplicar filtros
-                        </button>
-                    </div>
-                </form>
-
-                {hasActiveFilters && (
-                    <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-700">
-                        Exibindo conteúdos filtrados por{' '}
-                        <strong>Cliente: {selectedClientName}</strong>,{' '}
-                        <strong>Área: {areaLabels[selectedArea] || 'Todas'}</strong> e{' '}
-                        <strong>
-                            Prioridade: {priorityLabels[selectedPriority] || 'Todas'}
-                        </strong>.
-                    </div>
-                )}
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

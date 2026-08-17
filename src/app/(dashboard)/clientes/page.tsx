@@ -262,7 +262,7 @@ export default async function ClientesPage({
                 </div>
 
                 <Link
-                  href={`/calendario-editorial?cliente=${client.id}`}
+                  href={`/social-media?cliente=${client.id}`}
                   className="block"
                 >
                   <div className="relative p-5 pt-0">
