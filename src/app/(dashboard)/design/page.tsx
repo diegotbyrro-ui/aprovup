@@ -1,572 +1,1322 @@
-import { formatLabel } from '@/lib/formatLabel';
-import { prisma } from '@/lib/prisma';
-import { requireCurrentUser } from '@/lib/auth';
-import Link from 'next/link';
+import Link from "next/link";
+
 import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  Clock,
-  Eye,
+  Clock3,
+  Database,
+  ExternalLink,
+  FolderOpen,
+  ImageIcon,
   MoreHorizontal,
   Palette,
   Pencil,
-  Pin,
+  Plus,
   Send,
   Trash2,
-} from 'lucide-react';
+} from "lucide-react";
+
+import {
+  formatLabel,
+} from "@/lib/formatLabel";
+
+import {
+  prisma,
+} from "@/lib/prisma";
+
+import {
+  requireCurrentUser,
+} from "@/lib/auth";
+
 import {
   archiveDesignColumnAction,
   createDesignColumnAction,
   moveDesignColumnAction,
   sendDesignQuestionAction,
   updateDesignColumnTitleAction,
-} from './actions';
-import { DraggableDesignCard, DroppableDesignColumn } from './DraggableDesignCard';
-function formatDate(date?: Date | null) {
-  if (!date) return 'Sem data';
+} from "./actions";
 
-  return new Date(date).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-  });
+import {
+  DraggableDesignCard,
+  DroppableDesignColumn,
+} from "./DraggableDesignCard";
+
+
+function formatDate(
+  date?:
+    | Date
+    | null
+) {
+  if (!date) {
+    return "Sem data";
+  }
+
+  return new Date(
+    date
+  ).toLocaleDateString(
+    "pt-BR",
+    {
+      day:
+        "2-digit",
+
+      month:
+        "short",
+    }
+  );
 }
 
-function getInitials(name?: string | null) {
-  const value = String(name || 'C').trim();
+
+function cleanDemoName(
+  value?:
+    | string
+    | null
+) {
+  return String(
+    value ||
+    ""
+  ).replace(
+    /^\[DEMO\]\s*/i,
+    ""
+  );
+}
+
+
+function isDemoName(
+  value?:
+    | string
+    | null
+) {
+  return /^\[DEMO\]/i.test(
+    String(
+      value ||
+      ""
+    )
+  );
+}
+
+
+function getInitials(
+  name?:
+    | string
+    | null
+) {
+  const value =
+    cleanDemoName(
+      name
+    ) ||
+    "Cliente";
 
   return value
-    .split(' ')
+    .split(/\s+/)
+    .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
+    .map(
+      (
+        part
+      ) =>
+        part[0]
+    )
+    .join("")
     .toUpperCase();
 }
 
-function getColumnDescription(statusKey: string, title: string) {
-  const descriptions: Record<string, string> = {
-    APROVADO: 'Aprovadas e liberadas para design.',
-    DESIGN_FAZENDO: 'Em produção pelo designer.',
-    DESIGN_ANALISE: 'Aguardando conferência.',
-    DESIGN_DUVIDA: 'Aguardando resposta da Social Media.',
-    'PRONTO_PARA_POSTAR': 'Pronto para postagem.',
-  };
 
-  return descriptions[statusKey] || `Coluna personalizada: ${title}.`;
+function isLate(
+  content:
+    any
+) {
+  return Boolean(
+    content.plannedDate &&
+    new Date(
+      content.plannedDate
+    ) <
+      new Date() &&
+    content.status !==
+      "PRONTO_PARA_POSTAR"
+  );
 }
 
-function ColumnMenu({ column }: { column: any }) {
+
+function getColumnDescription(
+  statusKey:
+    string,
+  title:
+    string
+) {
+  const descriptions:
+    Record<
+      string,
+      string
+    > = {
+      APROVADO:
+        "Liberadas para iniciar.",
+
+      DESIGN_FAZENDO:
+        "Em produção agora.",
+
+      DESIGN_ANALISE:
+        "Aguardando conferência.",
+
+      DESIGN_DUVIDA:
+        "Dependem da Social Media.",
+
+      PRONTO_PARA_POSTAR:
+        "Peças finalizadas.",
+    };
+
+  return (
+    descriptions[
+      statusKey
+    ] ||
+    `Fluxo: ${title}.`
+  );
+}
+
+
+function getColumnAccent(
+  statusKey:
+    string
+) {
+  const colors:
+    Record<
+      string,
+      string
+    > = {
+      APROVADO:
+        "bg-blue-500",
+
+      DESIGN_FAZENDO:
+        "bg-violet-500",
+
+      DESIGN_ANALISE:
+        "bg-amber-500",
+
+      DESIGN_DUVIDA:
+        "bg-orange-500",
+
+      PRONTO_PARA_POSTAR:
+        "bg-emerald-500",
+    };
+
+  return (
+    colors[
+      statusKey
+    ] ||
+    "bg-slate-400"
+  );
+}
+
+
+function ColumnMenu({
+  column,
+}: {
+  column:
+    any;
+}) {
   return (
     <details className="relative">
-      <summary className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
-        <MoreHorizontal size={18} />
+      <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 [&::-webkit-details-marker]:hidden">
+        <MoreHorizontal
+          size={16}
+        />
       </summary>
 
-      <div className="absolute right-0 top-11 z-50 w-80 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
-        <form action={updateDesignColumnTitleAction.bind(null, column.id)} className="space-y-2">
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">
-            Editar nome da coluna
+      <div className="absolute right-0 top-10 z-50 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+        <form
+          action={
+            updateDesignColumnTitleAction.bind(
+              null,
+              column.id
+            )
+          }
+          className="space-y-2"
+        >
+          <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
+            Nome da coluna
           </label>
 
           <input
             name="title"
-            defaultValue={column.title}
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-bold text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            defaultValue={
+              column.title
+            }
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-900 outline-none focus:border-blue-500"
           />
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-3 text-sm font-bold text-white hover:bg-slate-800"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 text-[10px] font-bold text-white hover:bg-slate-800"
           >
-            <Pencil size={15} />
-            Salvar nome
+            <Pencil
+              size={13}
+            />
+
+            Salvar
           </button>
         </form>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <form action={moveDesignColumnAction.bind(null, column.id, 'left')}>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <form
+            action={
+              moveDesignColumnAction.bind(
+                null,
+                column.id,
+                "left"
+              )
+            }
+          >
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+              className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-[10px] font-bold text-slate-600 hover:bg-slate-50"
             >
-              <ArrowLeft size={16} />
+              <ArrowLeft
+                size={13}
+              />
+
               Esquerda
             </button>
           </form>
 
-          <form action={moveDesignColumnAction.bind(null, column.id, 'right')}>
+          <form
+            action={
+              moveDesignColumnAction.bind(
+                null,
+                column.id,
+                "right"
+              )
+            }
+          >
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+              className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-[10px] font-bold text-slate-600 hover:bg-slate-50"
             >
               Direita
-              <ArrowRight size={16} />
+
+              <ArrowRight
+                size={13}
+              />
             </button>
           </form>
         </div>
 
-        <form action={archiveDesignColumnAction.bind(null, column.id)} className="mt-3">
+
+        <form
+          action={
+            archiveDesignColumnAction.bind(
+              null,
+              column.id
+            )
+          }
+          className="mt-2"
+        >
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-3 text-sm font-bold text-red-600 hover:bg-red-100"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 text-[10px] font-bold text-red-600 hover:bg-red-100"
           >
-            <Trash2 size={16} />
+            <Trash2
+              size={13}
+            />
+
             Excluir coluna
           </button>
         </form>
-
-        <p className="mt-3 rounded-xl bg-blue-50 p-3 text-xs font-medium leading-relaxed text-blue-700">
-          Para trocar a posição, use os botões de esquerda/direita. Para mover demandas, arraste o card entre as colunas.
-        </p>
       </div>
     </details>
   );
 }
 
-function ClientAssetCard({ client }: { client: any }) {
-  const databaseLink = client.databaseLink || '';
-  const driveLink = client.driveLink || '';
-  const logoLink = client.logoLink || client.logoUrl || '';
+
+function ClientResource({
+  client,
+}: {
+  client:
+    any;
+}) {
+  const databaseLink =
+    client.databaseLink ||
+    "";
+
+  const driveLink =
+    client.driveLink ||
+    "";
+
+  const logoLink =
+    client.logoLink ||
+    client.logoUrl ||
+    "";
+
+  const visualLogo =
+    client.logoUrl ||
+    "";
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-bold text-white">
-          {getInitials(client.name)}
-        </div>
-
-        <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-slate-900">
-            {client.name}
-          </p>
-
-          <p className="mt-1 line-clamp-2 text-xs font-medium text-slate-500">
-            {client.segment || 'Sem segmento definido'}
-          </p>
-        </div>
+    <div className="flex min-w-[260px] max-w-[300px] flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+        {visualLogo ? (
+          <img
+            src={
+              visualLogo
+            }
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span className="text-[10px] font-bold text-slate-500">
+            {getInitials(
+              client.name
+            )}
+          </span>
+        )}
       </div>
 
-      <div className="mt-4 grid gap-2">
-        {databaseLink ? (
-          <a
-            href={databaseLink}
-            target="_blank"
-            className="rounded-xl bg-blue-50 px-3 py-2 text-center text-xs font-bold text-blue-700 hover:bg-blue-100"
-          >
-            Banco de dados
-          </a>
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 px-3 py-2 text-center text-xs font-bold text-slate-400">
-            Banco de dados não cadastrado
-          </div>
-        )}
 
-        {driveLink ? (
-          <a
-            href={driveLink}
-            target="_blank"
-            className="rounded-xl bg-blue-50 px-3 py-2 text-center text-xs font-bold text-blue-700 hover:bg-blue-100"
-          >
-            Drive
-          </a>
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 px-3 py-2 text-center text-xs font-bold text-slate-400">
-            Drive não cadastrado
-          </div>
-        )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <p className="truncate text-[11px] font-bold text-slate-900">
+            {cleanDemoName(
+              client.name
+            )}
+          </p>
 
-        {logoLink ? (
-          <a
-            href={logoLink}
-            target="_blank"
-            className="rounded-xl bg-blue-50 px-3 py-2 text-center text-xs font-bold text-blue-700 hover:bg-blue-100"
-          >
-            Logo
-          </a>
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 px-3 py-2 text-center text-xs font-bold text-slate-400">
-            Logo não cadastrado
-          </div>
-        )}
+          {isDemoName(
+            client.name
+          ) ? (
+            <span className="rounded bg-violet-50 px-1.5 py-0.5 text-[7px] font-bold text-violet-700">
+              DEMO
+            </span>
+          ) : null}
+        </div>
+
+        <p className="mt-0.5 truncate text-[9px] text-slate-400">
+          {client.segment ||
+            "Sem segmento"}
+        </p>
+
+
+        <div className="mt-2 flex items-center gap-1">
+          {databaseLink ? (
+            <a
+              href={
+                databaseLink
+              }
+              target="_blank"
+              rel="noreferrer"
+              title="Banco de dados"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+            >
+              <Database
+                size={12}
+              />
+            </a>
+          ) : null}
+
+
+          {driveLink ? (
+            <a
+              href={
+                driveLink
+              }
+              target="_blank"
+              rel="noreferrer"
+              title="Drive"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+            >
+              <FolderOpen
+                size={12}
+              />
+            </a>
+          ) : null}
+
+
+          {logoLink ? (
+            <a
+              href={
+                logoLink
+              }
+              target="_blank"
+              rel="noreferrer"
+              title="Logo"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+            >
+              <ImageIcon
+                size={12}
+              />
+            </a>
+          ) : null}
+        </div>
       </div>
     </div>
   );
 }
 
-function DesignCard({ content }: { content: any }) {
-  const clientName = content.client?.name || 'Cliente';
+
+function PriorityBadge({
+  priority,
+}: {
+  priority:
+    string;
+}) {
+  const styles:
+    Record<
+      string,
+      string
+    > = {
+      URGENTE:
+        "border-red-200 bg-red-50 text-red-700",
+
+      ALTA:
+        "border-orange-200 bg-orange-50 text-orange-700",
+
+      MEDIA:
+        "border-blue-100 bg-blue-50 text-blue-600",
+
+      BAIXA:
+        "border-slate-200 bg-slate-50 text-slate-500",
+    };
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex h-28 items-center justify-center bg-slate-100 text-xs font-bold uppercase tracking-wider text-slate-400">
-        {content.coverUrl ? (
+    <span
+      className={[
+        "rounded-md",
+        "border",
+        "px-1.5",
+        "py-0.5",
+        "text-[8px]",
+        "font-bold",
+        styles[
+          priority
+        ] ||
+          styles.MEDIA,
+      ].join(" ")}
+    >
+      {formatLabel(
+        priority
+      )}
+    </span>
+  );
+}
+
+
+function DesignCard({
+  content,
+}: {
+  content:
+    any;
+}) {
+  const clientName =
+    cleanDemoName(
+      content.client?.name
+    ) ||
+    "Cliente";
+
+  const demo =
+    isDemoName(
+      content.client?.name
+    );
+
+  const previewUrl =
+    content.coverImageUrl ||
+    content.finalCoverUrl ||
+    "";
+
+  const late =
+    isLate(
+      content
+    );
+
+  const clientLogo =
+    content.client?.logoUrl ||
+    "";
+
+  return (
+    <article className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md">
+      <div className="relative aspect-[16/10] overflow-hidden border-b border-slate-100 bg-slate-100">
+        {previewUrl ? (
           <img
-            src={content.coverUrl}
+            src={
+              previewUrl
+            }
             alt=""
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
           />
         ) : (
-          'Sem capa'
-        )}
-      </div>
-
-      <div className="space-y-3 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <h3 className="line-clamp-2 text-sm font-bold text-slate-900">
-              {content.title}
-            </h3>
-
-            <p className="mt-1 text-xs font-semibold text-slate-500">
-              {clientName}
-            </p>
-          </div>
-
-          {content.plannedDate && new Date(content.plannedDate) < new Date() && (
-            <span className="rounded-full bg-red-50 px-2 py-1 text-[10px] font-bold uppercase text-red-600">
-              Atrasado
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-            {formatDate(content.plannedDate)}
-          </span>
-
-          <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-            {content.format || 'Design'}
-          </span>
-        </div>
-
-        {(content.objective || content.briefing) && (
-          <div className="line-clamp-4 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
-            {content.objective || content.briefing}
-          </div>
-        )}
-
-        <details className="rounded-xl border border-amber-100 bg-amber-50 p-3">
-          <summary className="cursor-pointer list-none text-xs font-bold text-amber-800 [&::-webkit-details-marker]:hidden">
-            Tenho dúvida para Social Media
-          </summary>
-
-          <form action={sendDesignQuestionAction.bind(null, content.id)} className="mt-3 space-y-2">
-            <textarea
-              name="message"
-              rows={3}
-              placeholder="Escreva a dúvida..."
-              className="w-full rounded-xl border border-amber-200 bg-white px-3 py-3 text-xs font-semibold text-slate-900 outline-none placeholder:text-slate-400"
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate-400">
+            <ImageIcon
+              size={22}
             />
 
-            <button
-              type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-3 py-3 text-xs font-bold text-white hover:bg-amber-600"
-            >
-              <Send size={14} />
-              Enviar dúvida
-            </button>
-          </form>
-        </details>
+            <span className="text-[9px] font-bold uppercase tracking-[0.08em]">
+              Sem preview
+            </span>
+          </div>
+        )}
 
-        <Link
-          href={`/conteudos/${content.id}/visualizar`}
-          className="block rounded-xl bg-slate-900 px-4 py-3 text-center text-xs font-bold text-white hover:bg-slate-800"
-        >
-          Abrir conteúdo
-        </Link>
+
+        <div className="absolute left-2 top-2 flex items-center gap-1">
+          <PriorityBadge
+            priority={
+              content.priority ||
+              "MEDIA"
+            }
+          />
+
+          {late ? (
+            <span className="rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 text-[8px] font-bold text-red-600">
+              ATRASADO
+            </span>
+          ) : null}
+        </div>
+
+
+        {demo ? (
+          <span className="absolute right-2 top-2 rounded-md bg-violet-600 px-1.5 py-0.5 text-[7px] font-bold text-white shadow-sm">
+            DEMO
+          </span>
+        ) : null}
+      </div>
+
+
+      <div className="p-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+            {clientLogo ? (
+              <img
+                src={
+                  clientLogo
+                }
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-[8px] font-bold text-slate-500">
+                {getInitials(
+                  clientName
+                )}
+              </span>
+            )}
+          </div>
+
+          <div className="min-w-0">
+            <p className="truncate text-[9px] font-semibold text-slate-500">
+              {clientName}
+            </p>
+
+            <p className="truncate text-[8px] text-slate-400">
+              {content.client?.segment ||
+                "Cliente"}
+            </p>
+          </div>
+        </div>
+
+
+        <h3 className="mt-3 line-clamp-2 min-h-[34px] text-[12px] font-bold leading-[1.4] text-slate-900">
+          {cleanDemoName(
+            content.title
+          )}
+        </h3>
+
+
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-1 text-[8px] font-semibold text-slate-500">
+            <Clock3
+              size={10}
+            />
+
+            {formatDate(
+              content.plannedDate
+            )}
+          </span>
+
+          <span className="rounded-md border border-blue-100 bg-blue-50 px-1.5 py-1 text-[8px] font-bold text-blue-600">
+            {formatLabel(
+              content.format ||
+              "DESIGN"
+            )}
+          </span>
+        </div>
+
+
+        {(content.objective ||
+          content.briefing) ? (
+          <p className="mt-3 line-clamp-2 text-[9px] leading-relaxed text-slate-500">
+            {content.objective ||
+              content.briefing}
+          </p>
+        ) : null}
+
+
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <details className="group/question">
+            <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-2 text-[9px] font-bold text-amber-700 [&::-webkit-details-marker]:hidden">
+              <span>
+                Dúvida para Social
+              </span>
+
+              <Send
+                size={11}
+              />
+            </summary>
+
+            <form
+              action={
+                sendDesignQuestionAction.bind(
+                  null,
+                  content.id
+                )
+              }
+              className="mt-2 space-y-2"
+            >
+              <textarea
+                name="message"
+                rows={3}
+                required
+                placeholder="Escreva a dúvida..."
+                className="w-full resize-none rounded-lg border border-amber-200 bg-white px-2.5 py-2 text-[9px] font-medium text-slate-900 outline-none placeholder:text-slate-400"
+              />
+
+              <button
+                type="submit"
+                className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-amber-500 text-[9px] font-bold text-white hover:bg-amber-600"
+              >
+                <Send
+                  size={11}
+                />
+
+                Enviar dúvida
+              </button>
+            </form>
+          </details>
+
+
+          <Link
+            href={`/conteudos/${content.id}/visualizar`}
+            className="mt-2 flex h-9 items-center justify-center gap-1.5 rounded-lg bg-slate-900 text-[9px] font-bold text-white transition hover:bg-slate-800"
+          >
+            Abrir conteúdo
+
+            <ExternalLink
+              size={11}
+            />
+          </Link>
+        </div>
       </div>
     </article>
   );
 }
 
-function MetricCard({
-  title,
+
+function CompactMetric({
+  label,
   value,
-  description,
-  tone = 'white',
+  tone,
 }: {
-  title: string;
-  value: string | number;
-  description: string;
-  tone?: 'white' | 'blue' | 'yellow' | 'red' | 'green';
+  label:
+    string;
+
+  value:
+    number;
+
+  tone:
+    "blue"
+    | "violet"
+    | "amber"
+    | "orange"
+    | "green";
 }) {
-  const styles = {
-    white: 'border-slate-200 bg-white text-slate-900',
-    blue: 'border-blue-100 bg-blue-50 text-blue-800',
-    yellow: 'border-yellow-100 bg-yellow-50 text-yellow-800',
-    red: 'border-red-100 bg-red-50 text-red-800',
-    green: 'border-emerald-100 bg-emerald-50 text-emerald-800',
+  const dots = {
+    blue:
+      "bg-blue-500",
+
+    violet:
+      "bg-violet-500",
+
+    amber:
+      "bg-amber-500",
+
+    orange:
+      "bg-orange-500",
+
+    green:
+      "bg-emerald-500",
   };
 
+
   return (
-    <div className={`rounded-2xl border p-5 shadow-sm ${styles[tone]}`}>
-      <p className="text-xs font-bold uppercase tracking-wider opacity-70">
-        {title}
-      </p>
+    <div className="flex min-w-[128px] items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+      <span
+        className={[
+          "h-2",
+          "w-2",
+          "rounded-full",
+          dots[
+            tone
+          ],
+        ].join(" ")}
+      />
 
-      <p className="mt-2 text-3xl font-bold">
-        {value}
-      </p>
+      <div>
+        <p className="text-lg font-bold leading-none text-slate-900">
+          {value}
+        </p>
 
-      <p className="mt-3 text-sm font-medium opacity-75">
-        {description}
-      </p>
+        <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.07em] text-slate-400">
+          {label}
+        </p>
+      </div>
     </div>
   );
 }
 
+
 export default async function DesignPage() {
   await requireCurrentUser();
 
-  const columnCount = await prisma.designKanbanColumn.count();
 
-  if (columnCount === 0) {
+  const columnCount =
+    await prisma.designKanbanColumn.count();
+
+
+  if (
+    columnCount === 0
+  ) {
     await prisma.designKanbanColumn.createMany({
       data: [
         {
-          title: 'Demandas',
-          statusKey: 'APROVADO',
-          order: 1,
-          isActive: true,
+          title:
+            "Demandas",
+
+          statusKey:
+            "APROVADO",
+
+          order:
+            1,
+
+          isActive:
+            true,
         },
+
         {
-          title: 'Fazendo',
-          statusKey: 'DESIGN_FAZENDO',
-          order: 2,
-          isActive: true,
+          title:
+            "Fazendo",
+
+          statusKey:
+            "DESIGN_FAZENDO",
+
+          order:
+            2,
+
+          isActive:
+            true,
         },
+
         {
-          title: 'Análise',
-          statusKey: 'DESIGN_ANALISE',
-          order: 3,
-          isActive: true,
+          title:
+            "Análise",
+
+          statusKey:
+            "DESIGN_ANALISE",
+
+          order:
+            3,
+
+          isActive:
+            true,
         },
+
         {
-          title: 'Dúvidas',
-          statusKey: 'DESIGN_DUVIDA',
-          order: 4,
-          isActive: true,
+          title:
+            "Dúvidas",
+
+          statusKey:
+            "DESIGN_DUVIDA",
+
+          order:
+            4,
+
+          isActive:
+            true,
         },
+
         {
-          title: 'Finalizado',
-          statusKey: 'PRONTO_PARA_POSTAR',
-          order: 5,
-          isActive: true,
+          title:
+            "Finalizado",
+
+          statusKey:
+            "PRONTO_PARA_POSTAR",
+
+          order:
+            5,
+
+          isActive:
+            true,
         },
       ],
     });
   }
 
-  const columns = await prisma.designKanbanColumn.findMany({
-    where: {
-      isActive: true,
-    },
-    orderBy: {
-      order: 'asc',
-    },
-  });
 
-  const statusKeys = columns.map((column) => column.statusKey);
-
-  const contents = await prisma.content.findMany({
-    where: {
-      area: 'DESIGN',
-      status: {
-        in: statusKeys,
+  const columns =
+    await prisma.designKanbanColumn.findMany({
+      where: {
+        isActive:
+          true,
       },
-    },
-    include: {
-      client: true,
-    },
-    orderBy: [
-      {
-        plannedDate: 'asc',
+
+      orderBy: {
+        order:
+          "asc",
       },
-      {
-        createdAt: 'desc',
+    });
+
+
+  const statusKeys =
+    columns.map(
+      (
+        column
+      ) =>
+        column.statusKey
+    );
+
+
+  const contents =
+    await prisma.content.findMany({
+      where: {
+        area:
+          "DESIGN",
+
+        status: {
+          in:
+            statusKeys,
+        },
       },
-    ],
-  });
 
-  const clients: any[] = await prisma.client.findMany({
-    orderBy: {
-      name: 'asc',
-    },
-  });
+      include: {
+        client:
+          true,
+      },
 
-  const doingCount = contents.filter((content) => content.status === 'DESIGN_FAZENDO').length;
-  const analysisCount = contents.filter((content) => content.status === 'DESIGN_ANALISE').length;
-  const questionCount = contents.filter((content) => content.status === 'DESIGN_DUVIDA').length;
-  const doneCount = contents.filter((content) => content.status === 'PRONTO_PARA_POSTAR').length;
-  const lateCount = contents.filter(
-    (content) => content.plannedDate && new Date(content.plannedDate) < new Date() && content.status !== 'PRONTO_PARA_POSTAR'
-  ).length;
+      orderBy: [
+        {
+          plannedDate:
+            "asc",
+        },
 
-  const latePercent = contents.length ? Math.round((lateCount / contents.length) * 100) : 0;
-  const donePercent = contents.length ? Math.round((doneCount / contents.length) * 100) : 0;
+        {
+          createdAt:
+            "desc",
+        },
+      ],
+    });
+
+
+  const clients =
+    await prisma.client.findMany({
+      orderBy: {
+        name:
+          "asc",
+      },
+    });
+
+
+  const doingCount =
+    contents.filter(
+      (
+        content
+      ) =>
+        content.status ===
+        "DESIGN_FAZENDO"
+    ).length;
+
+
+  const analysisCount =
+    contents.filter(
+      (
+        content
+      ) =>
+        content.status ===
+        "DESIGN_ANALISE"
+    ).length;
+
+
+  const questionCount =
+    contents.filter(
+      (
+        content
+      ) =>
+        content.status ===
+        "DESIGN_DUVIDA"
+    ).length;
+
+
+  const doneCount =
+    contents.filter(
+      (
+        content
+      ) =>
+        content.status ===
+        "PRONTO_PARA_POSTAR"
+    ).length;
+
+
+  const lateCount =
+    contents.filter(
+      (
+        content
+      ) =>
+        isLate(
+          content
+        )
+    ).length;
+
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-sm">
-        <p className="text-sm font-bold uppercase tracking-wider text-blue-300">
-          Design
-        </p>
+    <div className="space-y-4">
+      {/* ===================================================
+          HEADER
+          =================================================== */}
 
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">
-          Área do Design
-        </h1>
+      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-violet-600">
+            Produção criativa
+          </p>
 
-        <p className="mt-3 max-w-4xl text-sm leading-relaxed text-slate-300">
-          Acompanhe demandas de design, materiais dos clientes, dúvidas com Social Media, produção, análise e finalização.
-        </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+            Design
+          </h1>
+
+          <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-slate-500">
+            Organize as peças, acompanhe o fluxo e mova as demandas entre as etapas de produção.
+          </p>
+        </div>
+
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/conteudos"
+            className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 hover:bg-slate-50"
+          >
+            Ver conteúdos
+          </Link>
+
+          <Link
+            href="/conteudos/novo"
+            className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-[10px] font-bold text-white hover:bg-blue-700"
+          >
+            <Plus
+              size={14}
+            />
+
+            Nova demanda
+          </Link>
+        </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-5">
-        <MetricCard
-          title="Demandas"
-          value={contents.length}
-          description="Total de demandas visíveis no Design."
-        />
 
-        <MetricCard
-          title="Fazendo"
-          value={doingCount}
-          description="Demandas em produção."
+      {/* ===================================================
+          RESUMO
+          =================================================== */}
+
+      <section className="flex flex-wrap gap-2">
+        <CompactMetric
+          label="Demandas"
+          value={
+            contents.length
+          }
           tone="blue"
         />
 
-        <MetricCard
-          title="Análise"
-          value={analysisCount}
-          description="Aguardando conferência."
-          tone="yellow"
+        <CompactMetric
+          label="Fazendo"
+          value={
+            doingCount
+          }
+          tone="violet"
         />
 
-        <MetricCard
-          title="Dúvidas"
-          value={questionCount}
-          description="Aguardando resposta da Social Media."
-          tone="yellow"
+        <CompactMetric
+          label="Análise"
+          value={
+            analysisCount
+          }
+          tone="amber"
         />
 
-        <MetricCard
-          title="Atrasos"
-          value={`${latePercent}%`}
-          description={`${lateCount} de ${contents.length} demandas atrasadas.`}
-          tone="red"
+        <CompactMetric
+          label="Dúvidas"
+          value={
+            questionCount
+          }
+          tone="orange"
         />
 
-        <MetricCard
-          title="Finalização"
-          value={`${donePercent}%`}
-          description={`${doneCount} de ${contents.length} demandas finalizadas.`}
+        <CompactMetric
+          label="Finalizadas"
+          value={
+            doneCount
+          }
           tone="green"
         />
+
+
+        {lateCount >
+        0 ? (
+          <div className="flex min-w-[160px] items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-3">
+            <AlertTriangle
+              size={15}
+              className="text-red-600"
+            />
+
+            <div>
+              <p className="text-lg font-bold leading-none text-red-700">
+                {lateCount}
+              </p>
+
+              <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.07em] text-red-500">
+                Fora do prazo
+              </p>
+            </div>
+          </div>
+        ) : null}
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-        <form action={createDesignColumnAction} className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_150px]">
-          <div>
-            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
-              Criar nova coluna do Kanban
-            </label>
 
-            <input
-              name="title"
-              placeholder="Ex: Falta programar, Banco de imagens, Programado..."
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
-            />
+      {/* ===================================================
+          RECURSOS DOS CLIENTES
+          =================================================== */}
+
+      <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Database
+                size={14}
+                className="text-slate-500"
+              />
+
+              <h2 className="text-[11px] font-bold text-slate-900">
+                Recursos dos clientes
+              </h2>
+            </div>
+
+            <p className="mt-0.5 text-[9px] text-slate-400">
+              Banco de dados, Drive e logos sem ocupar uma coluna do Kanban.
+            </p>
           </div>
+
+          <span className="text-[9px] font-semibold text-slate-400">
+            {clients.length} clientes
+          </span>
+        </div>
+
+
+        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+          {clients.map(
+            (
+              client
+            ) => (
+              <ClientResource
+                key={
+                  client.id
+                }
+                client={
+                  client
+                }
+              />
+            )
+          )}
+        </div>
+      </section>
+
+
+      {/* ===================================================
+          CRIAR COLUNA
+          =================================================== */}
+
+      <details className="group rounded-xl border border-slate-200 bg-white">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 [&::-webkit-details-marker]:hidden">
+          <div>
+            <p className="text-[10px] font-bold text-slate-700">
+              Personalizar Kanban
+            </p>
+
+            <p className="mt-0.5 text-[8px] text-slate-400">
+              Crie uma etapa personalizada quando necessário.
+            </p>
+          </div>
+
+          <Plus
+            size={14}
+            className="text-slate-400"
+          />
+        </summary>
+
+
+        <form
+          action={
+            createDesignColumnAction
+          }
+          className="grid grid-cols-1 gap-2 border-t border-slate-100 p-3 md:grid-cols-[1fr_130px]"
+        >
+          <input
+            name="title"
+            required
+            placeholder="Ex: Banco de imagens, Programado..."
+            className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-500"
+          />
 
           <button
             type="submit"
-            className="self-end rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800"
+            className="h-9 rounded-lg bg-slate-900 px-4 text-[10px] font-bold text-white hover:bg-slate-800"
           >
             Criar coluna
           </button>
         </form>
-      </section>
+      </details>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="overflow-x-auto pb-3 [scrollbar-width:thin]">
-          <div className="flex min-h-[620px] gap-4">
-            <div className="flex w-[320px] shrink-0 flex-col rounded-3xl border border-slate-200 bg-slate-50 p-4">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Pin size={18} className="text-slate-600" />
 
-                    <h2 className="text-lg font-bold text-slate-900">
-                      Clientes / banco, Drive e logos
-                    </h2>
-                  </div>
+      {/* ===================================================
+          KANBAN
+          =================================================== */}
 
-                  <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                    Acesso rápido aos materiais principais de cada cliente.
-                  </p>
-                </div>
+      <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="mb-3 flex items-center justify-between gap-4 px-1">
+          <div>
+            <h2 className="text-[12px] font-bold text-slate-900">
+              Fluxo de produção
+            </h2>
 
-                <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">
-                  {clients.length}
-                </span>
-              </div>
+            <p className="mt-0.5 text-[9px] text-slate-400">
+              Arraste os cards entre as colunas para atualizar o status.
+            </p>
+          </div>
 
-              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 [scrollbar-width:thin]">
-                {clients.map((client) => (
-                  <ClientAssetCard key={client.id} client={client} />
-                ))}
-              </div>
-            </div>
+          <div className="flex items-center gap-1.5 text-[9px] font-semibold text-slate-400">
+            <Palette
+              size={13}
+            />
 
-            {columns.map((column) => {
-              const items = contents.filter((content) => content.status === column.statusKey);
+            {contents.length} demandas
+          </div>
+        </div>
 
-              return (
-                <div
-                  key={column.id}
-                  className="flex w-[320px] shrink-0 flex-col rounded-3xl border border-slate-200 bg-slate-50 p-4"
-                >
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Palette size={18} className="text-slate-600" />
 
-                        <h2 className="text-lg font-bold text-slate-900">
-                          {column.title}
-                        </h2>
+        <div className="overflow-x-auto pb-2 [scrollbar-width:thin]">
+          <div className="flex min-h-[620px] gap-3">
+            {columns.map(
+              (
+                column
+              ) => {
+                const items =
+                  contents.filter(
+                    (
+                      content
+                    ) =>
+                      content.status ===
+                      column.statusKey
+                  );
+
+                return (
+                  <div
+                    key={
+                      column.id
+                    }
+                    className="flex w-[292px] shrink-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                  >
+                    <div className="border-b border-slate-200 bg-white px-3 py-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={[
+                                "h-2",
+                                "w-2",
+                                "shrink-0",
+                                "rounded-full",
+                                getColumnAccent(
+                                  column.statusKey
+                                ),
+                              ].join(" ")}
+                            />
+
+                            <h3 className="truncate text-[11px] font-bold text-slate-900">
+                              {column.title}
+                            </h3>
+
+                            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold text-slate-500">
+                              {items.length}
+                            </span>
+                          </div>
+
+                          <p className="mt-1 truncate text-[8px] text-slate-400">
+                            {getColumnDescription(
+                              column.statusKey,
+                              column.title
+                            )}
+                          </p>
+                        </div>
+
+
+                        <ColumnMenu
+                          column={
+                            column
+                          }
+                        />
                       </div>
-
-                      <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                        {getColumnDescription(column.statusKey, column.title)}
-                      </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">
-                        {items.length}
-                      </span>
 
-                      <ColumnMenu column={column} />
-                    </div>
-                  </div>
+                    <DroppableDesignColumn
+                      statusKey={
+                        column.statusKey
+                      }
+                    >
+                      <div className="min-h-[540px] space-y-3 p-3">
+                        {items.length ===
+                        0 ? (
+                          <div className="flex min-h-[130px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/60 px-4 text-center">
+                            <div>
+                              <CheckCircle2
+                                size={18}
+                                className="mx-auto text-slate-300"
+                              />
 
-                  <DroppableDesignColumn statusKey={column.statusKey}>
-                    {items.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-8 text-center text-sm font-medium text-slate-400">
-                        Nenhuma demanda aqui.
+                              <p className="mt-2 text-[9px] font-semibold text-slate-400">
+                                Nenhuma demanda aqui
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          items.map(
+                            (
+                              content
+                            ) => (
+                              <DraggableDesignCard
+                                key={
+                                  content.id
+                                }
+                                contentId={
+                                  content.id
+                                }
+                              >
+                                <DesignCard
+                                  content={
+                                    content
+                                  }
+                                />
+                              </DraggableDesignCard>
+                            )
+                          )
+                        )}
                       </div>
-                    ) : (
-                      items.map((content) => (
-                        <DraggableDesignCard key={content.id} contentId={content.id}>
-                          <DesignCard content={content} />
-                        </DraggableDesignCard>
-                      ))
-                    )}
-                  </DroppableDesignColumn>
-                </div>
-              );
-            })}
+                    </DroppableDesignColumn>
+                  </div>
+                );
+              }
+            )}
           </div>
         </div>
       </section>
