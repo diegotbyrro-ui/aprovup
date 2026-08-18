@@ -33,7 +33,12 @@ import {
 
 import {
   answerDesignQuestionAction,
+  sendContentToFinalApprovalAction,
 } from "./actions";
+
+import {
+  SocialApprovalLinkButton,
+} from "./SocialApprovalLinkButton";
 
 
 function normalizeText(
@@ -808,9 +813,10 @@ export default async function SocialMediaPage({
     futureCaptures,
     weekContents,
     waitingClientContents,
+    finalApprovalContents,
     activeClients,
   ] =
-    await Promise.all([
+    await prisma.$transaction([
       prisma.content.findMany({
         where: {
           clientId,
@@ -939,8 +945,75 @@ export default async function SocialMediaPage({
       }),
 
 
+      prisma.content.findMany({
+        where: {
+          clientId,
+
+          status: {
+            in: [
+              "REVISAO_INTERNA",
+              "DESIGN_ANALISE",
+              "FILMMAKER_ANALISE",
+              "ENVIADO_CLIENTE",
+              "ALTERACAO_SOLICITADA",
+              "PRONTO_PARA_POSTAR",
+            ],
+          },
+        },
+
+        include: {
+          client:
+            true,
+
+          approvals: {
+            orderBy: {
+              createdAt:
+                "desc",
+            },
+
+            take:
+              3,
+          },
+        },
+
+        orderBy: {
+          updatedAt:
+            "desc",
+        },
+
+        take:
+          12,
+      }),
+
+
       prisma.client.count(),
     ]);
+
+
+  const finalApprovalQueue =
+    finalApprovalContents.filter(
+      (content) => {
+        const hasFinal =
+          Boolean(
+            content.finalMediaUrl ||
+            content.finalCoverUrl
+          );
+
+        const alreadyInFlow =
+          [
+            "ENVIADO_CLIENTE",
+            "ALTERACAO_SOLICITADA",
+            "PRONTO_PARA_POSTAR",
+          ].includes(
+            content.status
+          );
+
+        return (
+          hasFinal ||
+          alreadyInFlow
+        );
+      }
+    );
 
 
   return (
@@ -1195,6 +1268,298 @@ export default async function SocialMediaPage({
             </p>
           </div>
         </Link>
+      </section>
+
+
+      {/* ===================================================
+          2a ETAPA DE APROVACAO
+          =================================================== */}
+
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <CheckCircle2
+                  size={15}
+                />
+              </div>
+
+              <div>
+                <h2 className="text-[13px] font-bold text-slate-900">
+                  2ª Etapa de Aprovação
+                </h2>
+
+                <p className="mt-0.5 text-[9px] text-slate-400">
+                  Confira o material final e a legenda antes de enviar ao cliente.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <span className="w-fit rounded-md bg-blue-50 px-2.5 py-1 text-[8px] font-bold text-blue-700">
+            {finalApprovalQueue.length} materiais
+          </span>
+        </div>
+
+
+        {finalApprovalQueue.length === 0 ? (
+          <div className="mt-4 flex min-h-[130px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50">
+            <div className="text-center">
+              <CheckCircle2
+                size={22}
+                className="mx-auto text-slate-300"
+              />
+
+              <p className="mt-2 text-[10px] font-bold text-slate-600">
+                Nenhum material final aguardando envio
+              </p>
+
+              <p className="mt-1 text-[8px] text-slate-400">
+                Quando Design ou Filmmaker finalizarem, o conteúdo aparecerá aqui.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
+            {finalApprovalQueue.map(
+              (content) => {
+                const mediaUrl =
+                  content.finalMediaUrl ||
+                  content.finalCoverUrl ||
+                  "";
+
+                const hasCaption =
+                  Boolean(
+                    String(
+                      content.caption ||
+                      ""
+                    ).trim()
+                  );
+
+                const productionReady =
+                  [
+                    "REVISAO_INTERNA",
+                    "DESIGN_ANALISE",
+                    "FILMMAKER_ANALISE",
+                  ].includes(
+                    content.status
+                  );
+
+                const canSend =
+                  productionReady &&
+                  Boolean(
+                    mediaUrl
+                  ) &&
+                  hasCaption;
+
+                const waiting =
+                  content.status ===
+                  "ENVIADO_CLIENTE";
+
+                const adjustment =
+                  content.status ===
+                  "ALTERACAO_SOLICITADA";
+
+                const approved =
+                  content.status ===
+                  "PRONTO_PARA_POSTAR";
+
+                const pendingApproval =
+                  content.approvals.find(
+                    (approval) =>
+                      approval.status ===
+                      "PENDENTE"
+                  );
+
+
+                return (
+                  <article
+                    key={
+                      content.id
+                    }
+                    className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                  >
+                    <div className="grid sm:grid-cols-[150px_minmax(0,1fr)]">
+                      <div className="flex min-h-[160px] items-center justify-center overflow-hidden bg-slate-950">
+                        {mediaUrl ? (
+                          content.area ===
+                          "FILMMAKER" ? (
+                            <video
+                              src={
+                                mediaUrl
+                              }
+                              controls
+                              className="h-full max-h-[210px] w-full object-contain"
+                            />
+                          ) : (
+                            <img
+                              src={
+                                mediaUrl
+                              }
+                              alt=""
+                              className="h-full max-h-[210px] w-full object-cover"
+                            />
+                          )
+                        ) : (
+                          <div className="flex flex-col items-center gap-2 text-slate-500">
+                            {content.area ===
+                            "FILMMAKER" ? (
+                              <Video
+                                size={22}
+                              />
+                            ) : (
+                              <ImageIcon
+                                size={22}
+                              />
+                            )}
+
+                            <span className="text-[8px] font-bold">
+                              SEM PREVIEW
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+
+                      <div className="flex min-w-0 flex-col p-3">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="rounded-md bg-white px-1.5 py-1 text-[7px] font-bold text-slate-600">
+                            {content.area ===
+                            "FILMMAKER"
+                              ? "FILMMAKER"
+                              : content.area ===
+                                  "DESIGN"
+                                ? "DESIGN"
+                                : "CONTEÚDO"}
+                          </span>
+
+                          <span
+                            className={[
+                              "rounded-md",
+                              "border",
+                              "px-1.5",
+                              "py-1",
+                              "text-[7px]",
+                              "font-bold",
+                              statusStyle(
+                                content.status
+                              ),
+                            ].join(" ")}
+                          >
+                            {statusLabel(
+                              content.status
+                            )}
+                          </span>
+                        </div>
+
+
+                        <h3 className="mt-2 truncate text-[11px] font-bold text-slate-900">
+                          {cleanDemoName(
+                            content.title
+                          )}
+                        </h3>
+
+
+                        <div className="mt-3 rounded-lg border border-slate-200 bg-white p-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-[7px] font-bold uppercase tracking-[0.08em] text-slate-400">
+                              Legenda
+                            </p>
+
+                            <span
+                              className={
+                                hasCaption
+                                  ? "text-[7px] font-bold text-emerald-600"
+                                  : "text-[7px] font-bold text-red-500"
+                              }
+                            >
+                              {hasCaption
+                                ? "PRONTA"
+                                : "PENDENTE"}
+                            </span>
+                          </div>
+
+                          <p className="mt-1.5 line-clamp-3 text-[9px] leading-relaxed text-slate-600">
+                            {hasCaption
+                              ? content.caption
+                              : "Finalize a legenda antes de enviar ao cliente."}
+                          </p>
+                        </div>
+
+
+                        <div className="mt-auto pt-3">
+                          {canSend ? (
+                            <form
+                              action={
+                                sendContentToFinalApprovalAction.bind(
+                                  null,
+                                  content.id,
+                                  clientId
+                                )
+                              }
+                            >
+                              <button
+                                type="submit"
+                                className="flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-[9px] font-bold text-white transition hover:bg-blue-700"
+                              >
+                                <Send
+                                  size={12}
+                                />
+
+                                Enviar para 2ª aprovação
+                              </button>
+                            </form>
+                          ) : waiting ? (
+                            pendingApproval ? (
+                              <SocialApprovalLinkButton
+                                path={
+                                  `/aprovacao-final/${pendingApproval.token}`
+                                }
+                              />
+                            ) : (
+                              <div className="flex h-9 items-center justify-center rounded-lg bg-orange-50 text-[8px] font-bold text-orange-700">
+                                Aguardando cliente
+                              </div>
+                            )
+                          ) : adjustment ? (
+                            <Link
+                              href={
+                                `/conteudos/${content.id}`
+                              }
+                              className="flex h-9 items-center justify-center rounded-lg bg-orange-50 px-3 text-[9px] font-bold text-orange-700 hover:bg-orange-100"
+                            >
+                              Cliente pediu ajuste
+                            </Link>
+                          ) : approved ? (
+                            <Link
+                              href="/pronto-para-postar"
+                              className="flex h-9 items-center justify-center gap-2 rounded-lg bg-emerald-50 px-3 text-[9px] font-bold text-emerald-700 hover:bg-emerald-100"
+                            >
+                              <CheckCircle2
+                                size={12}
+                              />
+
+                              Aprovado • Pronto para postar
+                            </Link>
+                          ) : (
+                            <div className="flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[8px] font-bold text-slate-400">
+                              {!mediaUrl
+                                ? "Material final pendente"
+                                : !hasCaption
+                                  ? "Legenda pendente"
+                                  : "Aguardando produção"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              }
+            )}
+          </div>
+        )}
       </section>
 
 
