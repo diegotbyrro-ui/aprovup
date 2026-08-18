@@ -5,15 +5,17 @@ import type {
 } from "@prisma/client";
 
 import {
-  AlertTriangle,
   ArrowUpRight,
   CalendarDays,
   CheckCircle2,
   Clock3,
   FileText,
+  FolderOpen,
   LayoutGrid,
   Palette,
   Send,
+  TrendingDown,
+  TrendingUp,
   UsersRound,
   Video,
 } from "lucide-react";
@@ -35,8 +37,23 @@ type ContentWithClient =
   }>;
 
 
+type ClientWithCount =
+  Prisma.ClientGetPayload<{
+    include: {
+      _count: {
+        select: {
+          contents: true;
+        };
+      };
+    };
+  }>;
+
+
 const DAY =
-  1000 * 60 * 60 * 24;
+  1000 *
+  60 *
+  60 *
+  24;
 
 
 const planningStatuses = [
@@ -46,40 +63,73 @@ const planningStatuses = [
 ];
 
 
-const designStatuses = [
+const productionStatuses = [
   "DESIGN_FAZENDO",
-  "DESIGN_ANALISE",
-  "DESIGN_DUVIDA",
-];
-
-
-const filmmakerStatuses = [
   "FILMMAKER_PRE_PRODUCAO",
   "FILMMAKER_AGENDAMENTO",
   "FILMMAKER_GRAVANDO",
   "FILMMAKER_EDICAO",
-  "FILMMAKER_ANALISE",
-  "FILMMAKER_DUVIDA_SOCIAL",
 ];
 
 
-const clientStatuses = [
-  "ENVIADO_CLIENTE",
+const reviewStatuses = [
+  "DESIGN_ANALISE",
+  "DESIGN_DUVIDA",
+  "FILMMAKER_ANALISE",
+  "FILMMAKER_DUVIDA_SOCIAL",
   "ALTERACAO_SOLICITADA",
 ];
 
 
-const readyStatuses = [
+const completedStatuses = [
   "PRONTO_PARA_POSTAR",
   "PUBLICADO_MANUALMENTE",
 ];
 
 
+const unresolvedStatuses = [
+  ...planningStatuses,
+  ...productionStatuses,
+  ...reviewStatuses,
+  "ENVIADO_CLIENTE",
+];
+
+
+const monthNames = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+
+const weekDays = [
+  "SEG",
+  "TER",
+  "QUA",
+  "QUI",
+  "SEX",
+  "SÁB",
+  "DOM",
+];
+
+
 function startOfDay(
-  date: Date
+  value:
+    Date
 ) {
   const copy =
-    new Date(date);
+    new Date(
+      value
+    );
 
   copy.setHours(
     0,
@@ -92,33 +142,49 @@ function startOfDay(
 }
 
 
-function addDays(
-  date: Date,
-  days: number
+function cleanName(
+  value:
+    string
 ) {
-  const copy =
-    new Date(date);
-
-  copy.setDate(
-    copy.getDate() +
-    days
+  return value.replace(
+    /^\[DEMO\]\s*/i,
+    ""
   );
+}
 
-  return copy;
+
+function cleanTitle(
+  value:
+    string
+) {
+  return value.replace(
+    /^\[DEMO\]\s*/i,
+    ""
+  );
+}
+
+
+function isDemo(
+  value:
+    string
+) {
+  return /^\[DEMO\]/i.test(
+    value
+  );
 }
 
 
 function formatShortDate(
-  date:
-    | Date
+  value:
+    Date
     | null
 ) {
-  if (!date) {
+  if (!value) {
     return "Sem data";
   }
 
   return new Date(
-    date
+    value
   ).toLocaleDateString(
     "pt-BR",
     {
@@ -126,25 +192,28 @@ function formatShortDate(
         "2-digit",
 
       month:
-        "short",
+        "2-digit",
     }
   );
 }
 
 
 function relativeDate(
-  date:
-    | Date
+  value:
+    Date
     | null,
-  today: Date
+  today:
+    Date
 ) {
-  if (!date) {
+  if (!value) {
     return "Sem data";
   }
 
   const target =
     startOfDay(
-      new Date(date)
+      new Date(
+        value
+      )
     );
 
   const diff =
@@ -172,314 +241,352 @@ function relativeDate(
 }
 
 
-function cleanName(
-  name: string
+function percentageDelta(
+  current:
+    number,
+  previous:
+    number
 ) {
-  return name.replace(
-    /^\[DEMO\]\s*/i,
-    ""
+  if (
+    previous === 0
+  ) {
+    if (
+      current === 0
+    ) {
+      return 0;
+    }
+
+    return 100;
+  }
+
+  return Math.round(
+    (
+      (
+        current -
+        previous
+      ) /
+      previous
+    ) *
+      100
   );
 }
 
 
-function cleanContentTitle(
-  title: string
+function monthsActive(
+  createdAt:
+    Date,
+  now:
+    Date
 ) {
-  return title.replace(
-    /^\[DEMO\]\s*/i,
-    ""
+  const months =
+    (
+      now.getFullYear() -
+      createdAt.getFullYear()
+    ) *
+      12 +
+    (
+      now.getMonth() -
+      createdAt.getMonth()
+    );
+
+  return Math.max(
+    1,
+    months
   );
 }
 
 
-function isDemo(
-  name: string
-) {
-  return /^\[DEMO\]/i.test(
-    name
-  );
-}
-
-
-function historyActionLabel(
-  action: string
+function statusLabel(
+  status:
+    string
 ) {
   const labels:
-    Record<string, string> = {
-      CREATE:
-        "Criado",
+    Record<
+      string,
+      string
+    > = {
+      IDEIA:
+        "Briefing",
 
-      UPDATE:
-        "Atualizado",
+      PLANEJAMENTO:
+        "Planejamento",
 
-      DESIGN_STATUS_UPDATED:
-        "Design atualizado",
+      APROVADO:
+        "Liberado",
 
-      FILMMAKER_STATUS_UPDATED:
-        "Filmmaker atualizado",
+      DESIGN_FAZENDO:
+        "Em design",
 
-      STATUS_UPDATED:
-        "Status atualizado",
+      DESIGN_ANALISE:
+        "Em revisão",
 
-      APPROVAL:
+      DESIGN_DUVIDA:
+        "Dúvida",
+
+      FILMMAKER_PRE_PRODUCAO:
+        "Pré-produção",
+
+      FILMMAKER_AGENDAMENTO:
+        "Agendamento",
+
+      FILMMAKER_GRAVANDO:
+        "Gravando",
+
+      FILMMAKER_EDICAO:
+        "Em edição",
+
+      FILMMAKER_ANALISE:
+        "Em revisão",
+
+      FILMMAKER_DUVIDA_SOCIAL:
+        "Dúvida",
+
+      ENVIADO_CLIENTE:
         "Aprovação",
 
-      COMMENT:
-        "Comentário",
+      ALTERACAO_SOLICITADA:
+        "Em ajuste",
+
+      PRONTO_PARA_POSTAR:
+        "Concluído",
+
+      PUBLICADO_MANUALMENTE:
+        "Publicado",
     };
 
   return (
-    labels[action] ||
-    action
+    labels[
+      status
+    ] ||
+    status
       .replaceAll(
         "_",
         " "
       )
       .toLowerCase()
-      .replace(
-        /^./,
-        (letter) =>
-          letter.toUpperCase()
-      )
   );
 }
 
 
-function cleanHistoryDescription(
-  description: string
+function progressForStatus(
+  status:
+    string
 ) {
-  return description
-    .replace(
-      /^\[DEMO\]\s*/i,
-      ""
-    )
-    .replace(
-      /Conteúdo demo criado:/gi,
-      "Conteúdo criado:"
-    );
-}
-
-
-function areaLabel(
-  area:
-    | string
-    | null
-) {
-  if (
-    area === "DESIGN"
-  ) {
-    return "Design";
-  }
-
-  if (
-    area === "FILMMAKER"
-  ) {
-    return "Filmmaker";
-  }
-
-  if (
-    area === "SOCIAL_MEDIA"
-  ) {
-    return "Social Media";
-  }
-
-  return (
-    area ||
-    "Conteúdo"
-  );
-}
-
-
-function statusMeta(
-  status: string
-) {
-  const map:
+  const progress:
     Record<
       string,
-      {
-        label: string;
-        tone: string;
-      }
+      number
     > = {
-      IDEIA: {
-        label:
-          "Ideia",
-        tone:
-          "slate",
-      },
+      IDEIA:
+        10,
 
-      APROVADO: {
-        label:
-          "Liberado",
-        tone:
-          "blue",
-      },
+      PLANEJAMENTO:
+        15,
 
-      DESIGN_FAZENDO: {
-        label:
-          "Em design",
-        tone:
-          "blue",
-      },
+      APROVADO:
+        25,
 
-      DESIGN_ANALISE: {
-        label:
-          "Revisão design",
-        tone:
-          "amber",
-      },
+      DESIGN_FAZENDO:
+        40,
 
-      DESIGN_DUVIDA: {
-        label:
-          "Dúvida design",
-        tone:
-          "amber",
-      },
+      DESIGN_ANALISE:
+        55,
 
-      FILMMAKER_PRE_PRODUCAO: {
-        label:
-          "Pré-produção",
-        tone:
-          "violet",
-      },
+      DESIGN_DUVIDA:
+        48,
 
-      FILMMAKER_AGENDAMENTO: {
-        label:
-          "Agendamento",
-        tone:
-          "violet",
-      },
+      FILMMAKER_PRE_PRODUCAO:
+        35,
 
-      FILMMAKER_GRAVANDO: {
-        label:
-          "Gravando",
-        tone:
-          "violet",
-      },
+      FILMMAKER_AGENDAMENTO:
+        45,
 
-      FILMMAKER_EDICAO: {
-        label:
-          "Em edição",
-        tone:
-          "violet",
-      },
+      FILMMAKER_GRAVANDO:
+        55,
 
-      FILMMAKER_ANALISE: {
-        label:
-          "Revisão vídeo",
-        tone:
-          "amber",
-      },
+      FILMMAKER_EDICAO:
+        72,
 
-      ENVIADO_CLIENTE: {
-        label:
-          "Com cliente",
-        tone:
-          "orange",
-      },
+      FILMMAKER_ANALISE:
+        82,
 
-      ALTERACAO_SOLICITADA: {
-        label:
-          "Alteração",
-        tone:
-          "red",
-      },
+      FILMMAKER_DUVIDA_SOCIAL:
+        68,
 
-      PRONTO_PARA_POSTAR: {
-        label:
-          "Pronto",
-        tone:
-          "green",
-      },
+      ENVIADO_CLIENTE:
+        92,
 
-      PUBLICADO_MANUALMENTE: {
-        label:
-          "Publicado",
-        tone:
-          "green",
-      },
+      ALTERACAO_SOLICITADA:
+        84,
+
+      PRONTO_PARA_POSTAR:
+        100,
+
+      PUBLICADO_MANUALMENTE:
+        100,
     };
 
   return (
-    map[status] || {
-      label:
-        status
-          .replaceAll(
-            "_",
-            " "
-          )
-          .toLowerCase(),
-
-      tone:
-        "slate",
-    }
-  );
-}
-
-
-function StatusPill({
-  status,
-}: {
-  status: string;
-}) {
-  const meta =
-    statusMeta(
+    progress[
       status
-    );
-
-  const tones:
-    Record<
-      string,
-      string
-    > = {
-      slate:
-        "border-slate-200 bg-slate-50 text-slate-600",
-
-      blue:
-        "border-blue-100 bg-blue-50 text-blue-700",
-
-      amber:
-        "border-amber-200 bg-amber-50 text-amber-700",
-
-      orange:
-        "border-orange-200 bg-orange-50 text-orange-700",
-
-      red:
-        "border-red-200 bg-red-50 text-red-700",
-
-      green:
-        "border-emerald-200 bg-emerald-50 text-emerald-700",
-
-      violet:
-        "border-violet-200 bg-violet-50 text-violet-700",
-    };
-
-
-  return (
-    <span
-      className={[
-        "inline-flex",
-        "items-center",
-        "rounded-md",
-        "border",
-        "px-2",
-        "py-1",
-        "text-[9px]",
-        "font-bold",
-        "leading-none",
-        tones[
-          meta.tone
-        ] ||
-          tones.slate,
-      ].join(" ")}
-    >
-      {meta.label}
-    </span>
+    ] ||
+    20
   );
 }
 
 
-function ContentThumb({
+function approvalStage(
+  status:
+    string
+) {
+  if (
+    status ===
+      "ENVIADO_CLIENTE" ||
+    status ===
+      "ALTERACAO_SOLICITADA"
+  ) {
+    return "2ª Etapa";
+  }
+
+  if (
+    status ===
+      "DESIGN_ANALISE" ||
+    status ===
+      "FILMMAKER_ANALISE"
+  ) {
+    return "Revisão";
+  }
+
+  return "1ª Etapa";
+}
+
+
+function KpiCard({
+  label,
+  value,
+  delta,
+  helper,
+  icon,
+  tone,
+  invertTrend = false,
+}: {
+  label:
+    string;
+
+  value:
+    number;
+
+  delta:
+    number;
+
+  helper:
+    string;
+
+  icon:
+    React.ReactNode;
+
+  tone:
+    "violet"
+    | "blue"
+    | "orange"
+    | "green";
+
+  invertTrend?:
+    boolean;
+}) {
+  const iconTones = {
+    violet:
+      "bg-violet-50 text-violet-600",
+
+    blue:
+      "bg-blue-50 text-blue-600",
+
+    orange:
+      "bg-orange-50 text-orange-600",
+
+    green:
+      "bg-emerald-50 text-emerald-600",
+  };
+
+
+  const good =
+    invertTrend
+      ? delta <= 0
+      : delta >= 0;
+
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[12px] font-bold text-slate-700">
+            {label}
+          </p>
+
+          <div className="mt-2 flex items-end gap-2">
+            <strong className="text-3xl font-bold tracking-tight text-slate-900">
+              {value}
+            </strong>
+
+            <span
+              className={[
+                "mb-1",
+                "inline-flex",
+                "items-center",
+                "gap-0.5",
+                "text-[11px]",
+                "font-bold",
+                good
+                  ? "text-emerald-600"
+                  : "text-red-500",
+              ].join(" ")}
+            >
+              {delta >=
+              0 ? (
+                <TrendingUp
+                  size={10}
+                />
+              ) : (
+                <TrendingDown
+                  size={10}
+                />
+              )}
+
+              {delta >=
+              0
+                ? "+"
+                : ""}
+              {delta}%
+            </span>
+          </div>
+
+          <p className="mt-1 text-[11px] text-slate-400">
+            {helper}
+          </p>
+        </div>
+
+        <div
+          className={[
+            "flex",
+            "h-10",
+            "w-10",
+            "items-center",
+            "justify-center",
+            "rounded-xl",
+            iconTones[
+              tone
+            ],
+          ].join(" ")}
+        >
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function Thumb({
   content,
 }: {
   content:
@@ -491,33 +598,26 @@ function ContentThumb({
 
   if (src) {
     return (
-      <div className="h-16 w-14 flex-none overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
         <img
-          alt=""
           src={src}
+          alt=""
           className="h-full w-full object-cover"
         />
       </div>
     );
   }
 
-
-  const label =
-    areaLabel(
-      content.area
-    );
-
-
   return (
-    <div className="flex h-16 w-14 flex-none items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-slate-400">
-      {label ===
-      "Filmmaker" ? (
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400">
+      {content.area ===
+      "FILMMAKER" ? (
         <Video
-          size={18}
+          size={15}
         />
       ) : (
         <FileText
-          size={18}
+          size={15}
         />
       )}
     </div>
@@ -525,176 +625,53 @@ function ContentThumb({
 }
 
 
-function ContentListRow({
-  content,
-  today,
+function ClientAvatar({
+  client,
 }: {
-  content:
-    ContentWithClient;
-
-  today:
-    Date;
+  client:
+    ClientWithCount;
 }) {
-  return (
-    <Link
-      href={`/conteudos/${content.id}`}
-      className="group flex items-center gap-3 border-b border-slate-100 py-3 last:border-b-0"
-    >
-      <ContentThumb
-        content={content}
-      />
-
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <p className="truncate text-[12px] font-bold text-slate-900 transition group-hover:text-blue-600">
-            {cleanContentTitle(
-              content.title
-            )}
-          </p>
-
-          {isDemo(
-            content.client.name
-          ) ? (
-            <span className="flex-none rounded-md bg-violet-50 px-1.5 py-0.5 text-[8px] font-bold text-violet-700">
-              DEMO
-            </span>
-          ) : null}
-        </div>
-
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-slate-500">
-          <span className="truncate">
-            {cleanName(
-              content.client.name
-            )}
-          </span>
-
-          <span>
-            •
-          </span>
-
-          <span>
-            {areaLabel(
-              content.area
-            )}
-          </span>
-
-          <span>
-            •
-          </span>
-
-          <span>
-            {relativeDate(
-              content.plannedDate,
-              today
-            )}
-          </span>
-        </div>
+  if (
+    client.logoUrl
+  ) {
+    return (
+      <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+        <img
+          src={
+            client.logoUrl
+          }
+          alt=""
+          className="h-full w-full object-cover"
+        />
       </div>
+    );
+  }
 
-      <StatusPill
-        status={
-          content.status
-        }
-      />
-
-      <ArrowUpRight
-        size={14}
-        className="flex-none text-slate-300 transition group-hover:text-slate-700"
-      />
-    </Link>
-  );
-}
-
-
-function DashboardCard({
-  label,
-  value,
-  description,
-  icon,
-  accent,
-}: {
-  label:
-    string;
-
-  value:
-    number;
-
-  description:
-    string;
-
-  icon:
-    React.ReactNode;
-
-  accent:
-    "blue"
-    | "green"
-    | "orange"
-    | "red";
-}) {
-  const tones = {
-    blue: {
-      icon:
-        "bg-blue-50 text-blue-600",
-    },
-
-    green: {
-      icon:
-        "bg-emerald-50 text-emerald-600",
-    },
-
-    orange: {
-      icon:
-        "bg-orange-50 text-orange-600",
-    },
-
-    red: {
-      icon:
-        "bg-red-50 text-red-600",
-    },
-  };
-
+  const initials =
+    cleanName(
+      client.name
+    )
+      .split(/\s+/)
+      .slice(0, 2)
+      .map(
+        (
+          item
+        ) =>
+          item[0]
+      )
+      .join("")
+      .toUpperCase();
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-400">
-            {label}
-          </p>
-
-          <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            {value}
-          </p>
-        </div>
-
-        <div
-          className={[
-            "flex",
-            "h-9",
-            "w-9",
-            "items-center",
-            "justify-center",
-            "rounded-lg",
-            tones[
-              accent
-            ].icon,
-          ].join(" ")}
-        >
-          {icon}
-        </div>
-      </div>
-
-      <p className="mt-2 text-[10px] text-slate-500">
-        {description}
-      </p>
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[12px] font-bold text-white">
+      {initials}
     </div>
   );
 }
 
 
 export default async function OperacaoPage() {
-  const user =
-    await requireCurrentUser();
+  await requireCurrentUser();
 
   const now =
     new Date();
@@ -704,123 +681,55 @@ export default async function OperacaoPage() {
       now
     );
 
-  const weekEnd =
-    addDays(
-      today,
-      7
+  const monthStart =
+    new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1
+    );
+
+  const nextMonthStart =
+    new Date(
+      now.getFullYear(),
+      now.getMonth() +
+        1,
+      1
+    );
+
+  const previousMonthStart =
+    new Date(
+      now.getFullYear(),
+      now.getMonth() -
+        1,
+      1
     );
 
 
   const [
-    activeClients,
-    totalContents,
-    lateCount,
-    planningCount,
-    designCount,
-    filmmakerCount,
-    awaitingClientCount,
-    readyCount,
-    priorityContents,
-    weekContents,
-    pendingClientContents,
-    focusClients,
-    recentHistory,
+    monthContents,
+    previousMonthContents,
+    nextSchedule,
+    approvalQueue,
+    allClients,
+    approvalsThisMonth,
+    approvalsPreviousMonth,
+    briefingCount,
+    productionCount,
+    reviewCount,
+    clientApprovalCount,
+    concludedCount,
+    projectContents,
   ] =
-    await Promise.all([
-      prisma.client.count(),
-
-      prisma.content.count(),
-
-      prisma.content.count({
-        where: {
-          plannedDate: {
-            lt:
-              today,
-          },
-
-          status: {
-            notIn: [
-              "PRONTO_PARA_POSTAR",
-              "PUBLICADO_MANUALMENTE",
-              "ARQUIVADO",
-            ],
-          },
-        },
-      }),
-
-      prisma.content.count({
-        where: {
-          status: {
-            in:
-              planningStatuses,
-          },
-        },
-      }),
-
-      prisma.content.count({
-        where: {
-          status: {
-            in:
-              designStatuses,
-          },
-        },
-      }),
-
-      prisma.content.count({
-        where: {
-          status: {
-            in:
-              filmmakerStatuses,
-          },
-        },
-      }),
-
-      prisma.content.count({
-        where: {
-          status: {
-            in:
-              clientStatuses,
-          },
-        },
-      }),
-
-      prisma.content.count({
-        where: {
-          status: {
-            in:
-              readyStatuses,
-          },
-        },
-      }),
-
+    await prisma.$transaction([
       prisma.content.findMany({
         where: {
-          status: {
-            notIn: [
-              "PRONTO_PARA_POSTAR",
-              "PUBLICADO_MANUALMENTE",
-              "ARQUIVADO",
-            ],
+          plannedDate: {
+            gte:
+              monthStart,
+
+            lt:
+              nextMonthStart,
           },
-
-          OR: [
-            {
-              priority:
-                "URGENTE",
-            },
-
-            {
-              priority:
-                "ALTA",
-            },
-
-            {
-              plannedDate: {
-                lt:
-                  today,
-              },
-            },
-          ],
         },
 
         include: {
@@ -828,30 +737,36 @@ export default async function OperacaoPage() {
             true,
         },
 
-        orderBy: [
-          {
-            plannedDate:
-              "asc",
-          },
-
-          {
-            updatedAt:
-              "desc",
-          },
-        ],
-
-        take:
-          5,
+        orderBy: {
+          plannedDate:
+            "asc",
+        },
       }),
+
+
+      prisma.content.findMany({
+        where: {
+          plannedDate: {
+            gte:
+              previousMonthStart,
+
+            lt:
+              monthStart,
+          },
+        },
+
+        include: {
+          client:
+            true,
+        },
+      }),
+
 
       prisma.content.findMany({
         where: {
           plannedDate: {
             gte:
               today,
-
-            lte:
-              weekEnd,
           },
 
           status: {
@@ -873,14 +788,19 @@ export default async function OperacaoPage() {
         },
 
         take:
-          5,
+          3,
       }),
+
 
       prisma.content.findMany({
         where: {
           status: {
-            in:
-              clientStatuses,
+            in: [
+              "DESIGN_ANALISE",
+              "FILMMAKER_ANALISE",
+              "ENVIADO_CLIENTE",
+              "ALTERACAO_SOLICITADA",
+            ],
           },
         },
 
@@ -889,14 +809,21 @@ export default async function OperacaoPage() {
             true,
         },
 
-        orderBy: {
-          updatedAt:
-            "desc",
-        },
+        orderBy: [
+          {
+            plannedDate:
+              "asc",
+          },
+          {
+            updatedAt:
+              "desc",
+          },
+        ],
 
         take:
           4,
       }),
+
 
       prisma.client.findMany({
         include: {
@@ -912,382 +839,880 @@ export default async function OperacaoPage() {
           updatedAt:
             "desc",
         },
-
-        take:
-          4,
       }),
 
-      prisma.historyLog.findMany({
-        orderBy: {
-          createdAt:
-            "desc",
+
+      prisma.approval.count({
+        where: {
+          status:
+            "APROVADO",
+
+          updatedAt: {
+            gte:
+              monthStart,
+
+            lt:
+              nextMonthStart,
+          },
+        },
+      }),
+
+
+      prisma.approval.count({
+        where: {
+          status:
+            "APROVADO",
+
+          updatedAt: {
+            gte:
+              previousMonthStart,
+
+            lt:
+              monthStart,
+          },
+        },
+      }),
+
+
+      prisma.content.count({
+        where: {
+          status: {
+            in:
+              planningStatuses,
+          },
+        },
+      }),
+
+
+      prisma.content.count({
+        where: {
+          status: {
+            in:
+              productionStatuses,
+          },
+        },
+      }),
+
+
+      prisma.content.count({
+        where: {
+          status: {
+            in:
+              reviewStatuses,
+          },
+        },
+      }),
+
+
+      prisma.content.count({
+        where: {
+          status:
+            "ENVIADO_CLIENTE",
+        },
+      }),
+
+
+      prisma.content.count({
+        where: {
+          status: {
+            in:
+              completedStatuses,
+          },
+        },
+      }),
+
+
+      prisma.content.findMany({
+        where: {
+          status: {
+            in:
+              unresolvedStatuses,
+          },
         },
 
+        include: {
+          client:
+            true,
+        },
+
+        orderBy: [
+          {
+            updatedAt:
+              "desc",
+          },
+          {
+            plannedDate:
+              "asc",
+          },
+        ],
+
         take:
-          5,
+          3,
       }),
     ]);
 
 
-  const productionCount =
-    designCount +
-    filmmakerCount;
+  const currentClientIds =
+    new Set(
+      monthContents.map(
+        (
+          content
+        ) =>
+          content.clientId
+      )
+    );
 
 
-  const firstName =
+  const previousClientIds =
+    new Set(
+      previousMonthContents.map(
+        (
+          content
+        ) =>
+          content.clientId
+      )
+    );
+
+
+  const currentPending =
+    monthContents.filter(
+      (
+        content
+      ) =>
+        Boolean(
+          content.plannedDate
+        ) &&
+        new Date(
+          content.plannedDate as Date
+        ) <
+          today &&
+        unresolvedStatuses.includes(
+          content.status
+        )
+    ).length;
+
+
+  const previousPending =
+    previousMonthContents.filter(
+      (
+        content
+      ) =>
+        unresolvedStatuses.includes(
+          content.status
+        )
+    ).length;
+
+
+  const contentDelta =
+    percentageDelta(
+      monthContents.length,
+      previousMonthContents.length
+    );
+
+
+  const clientsDelta =
+    percentageDelta(
+      currentClientIds.size,
+      previousClientIds.size
+    );
+
+
+  const pendingDelta =
+    percentageDelta(
+      currentPending,
+      previousPending
+    );
+
+
+  const approvalDelta =
+    percentageDelta(
+      approvalsThisMonth,
+      approvalsPreviousMonth
+    );
+
+
+  const contentsByClient =
+    new Map<
+      string,
+      number
+    >();
+
+
+  for (
+    const content
+    of monthContents
+  ) {
+    contentsByClient.set(
+      content.clientId,
+      (
+        contentsByClient.get(
+          content.clientId
+        ) ||
+        0
+      ) +
+        1
+    );
+  }
+
+
+  const focusClients =
+    [...allClients]
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          (
+            contentsByClient.get(
+              b.id
+            ) ||
+            0
+          ) -
+          (
+            contentsByClient.get(
+              a.id
+            ) ||
+            0
+          )
+      )
+      .slice(
+        0,
+        5
+      );
+
+
+  const daysInMonth =
+    new Date(
+      now.getFullYear(),
+      now.getMonth() +
+        1,
+      0
+    ).getDate();
+
+
+  const firstWeekDay =
     (
-      user.name ||
-      "equipe"
-    )
-      .trim()
-      .split(/\s+/)[0];
+      new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        1
+      ).getDay() +
+      6
+    ) %
+    7;
 
 
-  const todayLabel =
-    now.toLocaleDateString(
-      "pt-BR",
+  const calendarCells:
+    Array<
+      number
+      | null
+    > = [];
+
+
+  for (
+    let index = 0;
+    index <
+    firstWeekDay;
+    index++
+  ) {
+    calendarCells.push(
+      null
+    );
+  }
+
+
+  for (
+    let day = 1;
+    day <=
+    daysInMonth;
+    day++
+  ) {
+    calendarCells.push(
+      day
+    );
+  }
+
+
+  while (
+    calendarCells.length %
+      7 !==
+    0
+  ) {
+    calendarCells.push(
+      null
+    );
+  }
+
+
+  const contentCountByDay =
+    new Map<
+      number,
+      number
+    >();
+
+
+  for (
+    const content
+    of monthContents
+  ) {
+    if (
+      !content.plannedDate
+    ) {
+      continue;
+    }
+
+    const date =
+      new Date(
+        content.plannedDate
+      );
+
+    const day =
+      date.getDate();
+
+    contentCountByDay.set(
+      day,
+      (
+        contentCountByDay.get(
+          day
+        ) ||
+        0
+      ) +
+        1
+    );
+  }
+
+
+  const currentProductionContents =
+    monthContents.filter(
+      (
+        content
+      ) =>
+        productionStatuses.includes(
+          content.status
+        )
+    ).length;
+
+
+  const currentCompletedContents =
+    monthContents.filter(
+      (
+        content
+      ) =>
+        completedStatuses.includes(
+          content.status
+        )
+    ).length;
+
+
+  const dailyCounts =
+    Array.from(
       {
-        weekday:
-          "long",
+        length:
+          daysInMonth,
+      },
+      () =>
+        0
+    );
 
-        day:
-          "2-digit",
 
-        month:
-          "long",
+  for (
+    const content
+    of monthContents
+  ) {
+    if (
+      !content.plannedDate
+    ) {
+      continue;
+    }
+
+    const day =
+      new Date(
+        content.plannedDate
+      ).getDate();
+
+    dailyCounts[
+      day -
+        1
+    ] +=
+      1;
+  }
+
+
+  let running =
+    0;
+
+
+  const cumulative =
+    dailyCounts.map(
+      (
+        value
+      ) => {
+        running +=
+          value;
+
+        return running;
       }
     );
 
 
-  const formattedTodayLabel =
-    todayLabel
-      .charAt(0)
-      .toUpperCase() +
-    todayLabel.slice(1);
+  const graphMax =
+    Math.max(
+      ...cumulative,
+      1
+    );
 
 
-  const flow = [
+  const graphPoints =
+    cumulative
+      .map(
+        (
+          value,
+          index
+        ) => {
+          const x =
+            24 +
+            (
+              index /
+              Math.max(
+                daysInMonth -
+                  1,
+                1
+              )
+            ) *
+              552;
+
+          const y =
+            150 -
+            (
+              value /
+              graphMax
+            ) *
+              112;
+
+          return `${x.toFixed(
+            1
+          )},${y.toFixed(
+            1
+          )}`;
+        }
+      )
+      .join(
+        " "
+      );
+
+
+  const pipeline = [
     {
       label:
-        "Planejamento",
+        "Briefing",
 
       value:
-        planningCount,
+        briefingCount,
 
       icon:
         <LayoutGrid
           size={15}
         />,
 
-      color:
-        "var(--ap-blue)",
+      tone:
+        "bg-violet-50 text-violet-600",
     },
 
     {
       label:
-        "Design",
+        "Em produção",
 
       value:
-        designCount,
-
-      icon:
-        <Palette
-          size={15}
-        />,
-
-      color:
-        "var(--ap-purple)",
-    },
-
-    {
-      label:
-        "Filmmaker",
-
-      value:
-        filmmakerCount,
+        productionCount,
 
       icon:
         <Video
           size={15}
         />,
 
-      color:
-        "var(--ap-cyan)",
+      tone:
+        "bg-blue-50 text-blue-600",
     },
 
     {
       label:
-        "Com cliente",
+        "Em revisão",
 
       value:
-        awaitingClientCount,
+        reviewCount,
+
+      icon:
+        <Palette
+          size={15}
+        />,
+
+      tone:
+        "bg-orange-50 text-orange-600",
+    },
+
+    {
+      label:
+        "Aprovação",
+
+      value:
+        clientApprovalCount,
 
       icon:
         <Send
           size={15}
         />,
 
-      color:
-        "var(--ap-orange)",
+      tone:
+        "bg-emerald-50 text-emerald-600",
     },
 
     {
       label:
-        "Prontos",
+        "Concluído",
 
       value:
-        readyCount,
+        concludedCount,
 
       icon:
         <CheckCircle2
           size={15}
         />,
 
-      color:
-        "var(--ap-green)",
+      tone:
+        "bg-emerald-50 text-emerald-600",
     },
   ];
 
 
   return (
-    <div className="space-y-5">
-      {/* ===================================================
-          CABECALHO
-          =================================================== */}
-
-      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-[10px] font-bold capitalize tracking-[0.03em] text-slate-400">
-            {formattedTodayLabel}
-          </p>
-
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-            Olá, {firstName}
-          </h1>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Aqui está o que merece atenção na operação agora.
-          </p>
-        </div>
-
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/calendario-editorial"
-            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            <CalendarDays
-              size={15}
-            />
-
-            Calendário
-          </Link>
-
-          <Link
-            href="/conteudos/novo"
-            className="inline-flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-[11px] font-bold text-white transition hover:bg-blue-700"
-          >
-            <FileText
-              size={15}
-            />
-
-            Novo conteúdo
-          </Link>
-        </div>
-      </section>
-
-
-      {/* ===================================================
-          RESUMO / ALERTA
-          =================================================== */}
-
-      {lateCount >
-      0 ? (
-        <Link
-          href="/entregas-semana"
-          className="flex items-center justify-between gap-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-decoration-none"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-600">
-              <AlertTriangle
-                size={16}
-              />
-            </div>
-
-            <div>
-              <p className="text-[11px] font-bold text-red-700">
-                {lateCount} conteúdos precisam de atenção
-              </p>
-
-              <p className="mt-0.5 text-[9px] text-red-500">
-                Há itens vencidos ou pendentes que merecem revisão.
-              </p>
-            </div>
-          </div>
-
-          <span className="flex items-center gap-1 text-[10px] font-bold text-red-600">
-            Revisar
-
-            <ArrowUpRight
-              size={13}
-            />
-          </span>
-        </Link>
-      ) : null}
-
-
+    <div className="space-y-4">
       {/* ===================================================
           KPIS
           =================================================== */}
 
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <DashboardCard
+        <KpiCard
+          label="Conteúdos do mês"
+          value={
+            monthContents.length
+          }
+          delta={
+            contentDelta
+          }
+          helper="vs. mês anterior"
+          icon={
+            <FileText
+              size={18}
+            />
+          }
+          tone="violet"
+        />
+
+        <KpiCard
           label="Clientes ativos"
-          value={activeClients}
-          description={`${totalContents} conteúdos na operação`}
+          value={
+            currentClientIds.size
+          }
+          delta={
+            clientsDelta
+          }
+          helper="com conteúdo neste mês"
           icon={
             <UsersRound
-              size={17}
+              size={18}
             />
           }
-          accent="blue"
+          tone="blue"
         />
 
-        <DashboardCard
-          label="Em produção"
-          value={productionCount}
-          description={`${designCount} design • ${filmmakerCount} audiovisual`}
+        <KpiCard
+          label="Pendências"
+          value={
+            currentPending
+          }
+          delta={
+            pendingDelta
+          }
+          helper="vs. mês anterior"
           icon={
             <Clock3
-              size={17}
+              size={18}
             />
           }
-          accent="orange"
+          tone="orange"
+          invertTrend
         />
 
-        <DashboardCard
-          label="Aguardando cliente"
-          value={awaitingClientCount}
-          description="Materiais enviados para retorno"
-          icon={
-            <Send
-              size={17}
-            />
+        <KpiCard
+          label="Aprovações concluídas"
+          value={
+            approvalsThisMonth
           }
-          accent="blue"
-        />
-
-        <DashboardCard
-          label="Prontos"
-          value={readyCount}
-          description={`${lateCount} itens ainda precisam de atenção`}
+          delta={
+            approvalDelta
+          }
+          helper="vs. mês anterior"
           icon={
             <CheckCircle2
-              size={17}
+              size={18}
             />
           }
-          accent="green"
+          tone="green"
         />
       </section>
 
 
       {/* ===================================================
-          FLUXO
+          CALENDARIO + APROVACOES + CLIENTES
           =================================================== */}
 
-      <section className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-[13px] font-bold text-slate-900">
-              Fluxo de produção
-            </h2>
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        {/* CALENDARIO */}
 
-            <p className="mt-0.5 text-[10px] text-slate-500">
-              Distribuição atual das demandas.
-            </p>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <CalendarDays
+                size={16}
+                className="text-slate-700"
+              />
+
+              <h2 className="text-[15px] font-bold text-slate-900">
+                Calendário editorial
+              </h2>
+            </div>
+
+            <Link
+              href={`/calendario-editorial?mes=${now.getMonth() + 1}&ano=${now.getFullYear()}`}
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
+            >
+              Ver calendário
+            </Link>
           </div>
 
+
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <span className="text-slate-300">
+              ‹
+            </span>
+
+            <p className="text-[13px] font-bold text-slate-700">
+              {monthNames[
+                now.getMonth()
+              ]}{" "}
+              {now.getFullYear()}
+            </p>
+
+            <span className="text-slate-300">
+              ›
+            </span>
+          </div>
+
+
+          <div className="mt-3 grid grid-cols-7 gap-1">
+            {weekDays.map(
+              (
+                day
+              ) => (
+                <div
+                  key={
+                    day
+                  }
+                  className="py-1 text-center text-[9px] font-bold text-slate-400"
+                >
+                  {day}
+                </div>
+              )
+            )}
+
+
+            {calendarCells.map(
+              (
+                day,
+                index
+              ) => {
+                if (
+                  day ===
+                  null
+                ) {
+                  return (
+                    <div
+                      key={`empty-${index}`}
+                      className="h-7"
+                    />
+                  );
+                }
+
+                const active =
+                  day ===
+                    now.getDate();
+
+                const count =
+                  contentCountByDay.get(
+                    day
+                  ) ||
+                  0;
+
+                return (
+                  <div
+                    key={
+                      day
+                    }
+                    className="relative flex h-7 items-center justify-center"
+                  >
+                    <span
+                      className={[
+                        "flex",
+                        "h-6",
+                        "w-6",
+                        "items-center",
+                        "justify-center",
+                        "rounded-full",
+                        "text-[10px]",
+                        "font-semibold",
+                        active
+                          ? "bg-violet-600 text-white"
+                          : "text-slate-600",
+                      ].join(
+                        " "
+                      )}
+                    >
+                      {day}
+                    </span>
+
+                    {count >
+                    0 ? (
+                      <span
+                        className={[
+                          "absolute",
+                          "bottom-0",
+                          "h-1",
+                          "w-1",
+                          "rounded-full",
+                          active
+                            ? "bg-violet-200"
+                            : "bg-blue-500",
+                        ].join(
+                          " "
+                        )}
+                      />
+                    ) : null}
+                  </div>
+                );
+              }
+            )}
+          </div>
+
+
+          <div className="mt-4 space-y-1">
+            {nextSchedule.length ===
+            0 ? (
+              <div className="rounded-lg border border-dashed border-slate-200 py-5 text-center text-[11px] text-slate-400">
+                Nenhum conteúdo próximo.
+              </div>
+            ) : (
+              nextSchedule.map(
+                (
+                  content
+                ) => (
+                  <Link
+                    key={
+                      content.id
+                    }
+                    href={`/conteudos/${content.id}`}
+                    className="flex items-center gap-3 rounded-lg border border-slate-100 px-3 py-2 hover:bg-slate-50"
+                  >
+                    <span className="w-10 shrink-0 text-[11px] font-bold text-slate-700">
+                      {content.plannedDate
+                        ? new Date(
+                            content.plannedDate
+                          ).toLocaleTimeString(
+                            "pt-BR",
+                            {
+                              hour:
+                                "2-digit",
+
+                              minute:
+                                "2-digit",
+                            }
+                          )
+                        : "--:--"}
+                    </span>
+
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-50 text-violet-600">
+                      {content.area ===
+                      "FILMMAKER" ? (
+                        <Video
+                          size={11}
+                        />
+                      ) : (
+                        <FileText
+                          size={11}
+                        />
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[11px] font-bold text-slate-800">
+                        {cleanTitle(
+                          content.title
+                        )}
+                      </p>
+
+                      <p className="mt-0.5 truncate text-[9px] text-slate-400">
+                        Cliente:{" "}
+                        {cleanName(
+                          content.client.name
+                        )}
+                      </p>
+                    </div>
+
+                    <span className="rounded-md bg-blue-50 px-2 py-1 text-[9px] font-bold text-blue-600">
+                      {statusLabel(
+                        content.status
+                      )}
+                    </span>
+                  </Link>
+                )
+              )
+            )}
+          </div>
+
+
           <Link
-            href="/conteudos/kanban"
-            className="flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:underline"
+            href="/conteudos"
+            className="mt-3 flex items-center justify-center gap-1 text-[11px] font-bold text-blue-600 hover:underline"
           >
-            Abrir Kanban
+            Ver todos os conteúdos
 
             <ArrowUpRight
-              size={13}
+              size={10}
             />
           </Link>
         </div>
 
 
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
-          {flow.map(
-            (
-              item,
-              index
-            ) => (
-              <div
-                key={
-                  item.label
-                }
-                className="relative rounded-lg border border-slate-200 bg-slate-50 px-3 py-3"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span
-                    className="flex h-7 w-7 items-center justify-center rounded-md"
-                    style={{
-                      color:
-                        item.color,
+        {/* APROVACOES */}
 
-                      background:
-                        `color-mix(in srgb, ${item.color} 10%, transparent)`,
-                    }}
-                  >
-                    {item.icon}
-                  </span>
-
-                  <span className="text-xl font-bold text-slate-900">
-                    {item.value}
-                  </span>
-                </div>
-
-                <p className="mt-3 text-[10px] font-semibold text-slate-600">
-                  {item.label}
-                </p>
-
-                {index <
-                flow.length -
-                  1 ? (
-                  <span className="absolute -right-[7px] top-1/2 z-10 hidden -translate-y-1/2 text-slate-300 md:block">
-                    ›
-                  </span>
-                ) : null}
-              </div>
-            )
-          )}
-        </div>
-      </section>
-
-
-      {/* ===================================================
-          PRINCIPAL
-          =================================================== */}
-
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-7">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-4">
           <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-[13px] font-bold text-slate-900">
-                Prioridades
+            <div className="flex items-center gap-2">
+              <CheckCircle2
+                size={16}
+                className="text-slate-700"
+              />
+
+              <h2 className="text-[15px] font-bold text-slate-900">
+                Próximas aprovações
               </h2>
 
-              <p className="mt-0.5 text-[10px] text-slate-500">
-                Demandas que precisam de atenção primeiro.
-              </p>
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-50 px-1.5 text-[10px] font-bold text-violet-600">
+                {approvalQueue.length}
+              </span>
             </div>
 
             <Link
-              href="/entregas-semana"
+              href="/aprovacoes"
               className="text-[10px] font-bold text-blue-600 hover:underline"
             >
               Ver todas
@@ -1295,161 +1720,128 @@ export default async function OperacaoPage() {
           </div>
 
 
-          <div className="mt-2">
-            {priorityContents.length ===
+          <div className="mt-3 space-y-1">
+            {approvalQueue.length ===
             0 ? (
-              <div className="mt-4 rounded-lg border border-dashed border-slate-200 py-8 text-center text-[11px] text-slate-400">
-                Nenhuma prioridade no momento.
+              <div className="rounded-lg border border-dashed border-slate-200 py-8 text-center text-[11px] text-slate-400">
+                Nenhuma aprovação pendente.
               </div>
             ) : (
-              priorityContents.map(
+              approvalQueue.map(
                 (
                   content
                 ) => (
-                  <ContentListRow
+                  <Link
                     key={
                       content.id
                     }
-                    content={
-                      content
-                    }
-                    today={
-                      today
-                    }
-                  />
+                    href={`/conteudos/${content.id}`}
+                    className="flex items-center gap-3 rounded-lg p-2 hover:bg-slate-50"
+                  >
+                    <Thumb
+                      content={
+                        content
+                      }
+                    />
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-[11px] font-bold text-slate-800">
+                          {cleanTitle(
+                            content.title
+                          )}
+                        </p>
+
+                        {isDemo(
+                          content.client.name
+                        ) ? (
+                          <span className="rounded bg-violet-50 px-1 py-0.5 text-[6px] font-bold text-violet-600">
+                            DEMO
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <p className="mt-1 truncate text-[9px] text-slate-400">
+                        Cliente:{" "}
+                        {cleanName(
+                          content.client.name
+                        )}
+                      </p>
+
+                      <div className="mt-1.5 flex items-center justify-between gap-2">
+                        <span className="text-[9px] text-slate-400">
+                          Entrega:{" "}
+                          {formatShortDate(
+                            content.plannedDate
+                          )}
+                        </span>
+
+                        <span
+                          className={[
+                            "text-[9px]",
+                            "font-bold",
+                            content.plannedDate &&
+                            new Date(
+                              content.plannedDate
+                            ) <
+                              today
+                              ? "text-red-500"
+                              : "text-orange-500",
+                          ].join(
+                            " "
+                          )}
+                        >
+                          {relativeDate(
+                            content.plannedDate,
+                            today
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="shrink-0 rounded-md bg-violet-50 px-2 py-1 text-[9px] font-bold text-violet-600">
+                      {approvalStage(
+                        content.status
+                      )}
+                    </span>
+                  </Link>
                 )
               )
             )}
           </div>
-        </div>
 
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-[13px] font-bold text-slate-900">
-                Próximas entregas
-              </h2>
+          <Link
+            href="/aprovacoes"
+            className="mt-3 flex items-center justify-center gap-1 border-t border-slate-100 pt-3 text-[11px] font-bold text-blue-600 hover:underline"
+          >
+            Ver todas as aprovações
 
-              <p className="mt-0.5 text-[10px] text-slate-500">
-                Agenda dos próximos 7 dias.
-              </p>
-            </div>
-
-            <CalendarDays
-              size={16}
-              className="text-slate-400"
+            <ArrowUpRight
+              size={10}
             />
-          </div>
-
-
-          <div className="mt-2">
-            {weekContents.length ===
-            0 ? (
-              <div className="mt-4 rounded-lg border border-dashed border-slate-200 py-8 text-center text-[11px] text-slate-400">
-                Nenhuma entrega prevista.
-              </div>
-            ) : (
-              weekContents.map(
-                (
-                  content
-                ) => (
-                  <ContentListRow
-                    key={
-                      content.id
-                    }
-                    content={
-                      content
-                    }
-                    today={
-                      today
-                    }
-                  />
-                )
-              )
-            )}
-          </div>
+          </Link>
         </div>
-      </section>
 
 
-      {/* ===================================================
-          CLIENTE + CARTEIRA
-          =================================================== */}
+        {/* CLIENTES */}
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-7">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-3">
           <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-[13px] font-bold text-slate-900">
-                Aguardando cliente
-              </h2>
-
-              <p className="mt-0.5 text-[10px] text-slate-500">
-                Materiais enviados e ainda sem conclusão.
-              </p>
-            </div>
-
-            <Link
-              href="/aprovacoes"
-              className="text-[10px] font-bold text-blue-600 hover:underline"
-            >
-              Aprovações
-            </Link>
-          </div>
-
-
-          <div className="mt-2">
-            {pendingClientContents.length ===
-            0 ? (
-              <div className="mt-4 rounded-lg border border-dashed border-slate-200 py-8 text-center text-[11px] text-slate-400">
-                Nenhum retorno pendente.
-              </div>
-            ) : (
-              pendingClientContents.map(
-                (
-                  content
-                ) => (
-                  <ContentListRow
-                    key={
-                      content.id
-                    }
-                    content={
-                      content
-                    }
-                    today={
-                      today
-                    }
-                  />
-                )
-              )
-            )}
-          </div>
-        </div>
-
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-[13px] font-bold text-slate-900">
-                Clientes em foco
-              </h2>
-
-              <p className="mt-0.5 text-[10px] text-slate-500">
-                Carteira com atividade recente.
-              </p>
-            </div>
+            <h2 className="text-[15px] font-bold text-slate-900">
+              Clientes ativos
+            </h2>
 
             <Link
               href="/clientes"
               className="text-[10px] font-bold text-blue-600 hover:underline"
             >
-              Ver carteira
+              Ver todos
             </Link>
           </div>
 
 
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-1">
             {focusClients.map(
               (
                 client
@@ -1459,143 +1851,454 @@ export default async function OperacaoPage() {
                     client.id
                   }
                   href={`/clientes/${client.id}`}
-                  className="group flex items-center gap-3 rounded-lg border border-slate-100 px-3 py-2.5 transition hover:bg-slate-50"
+                  className="flex items-center gap-3 rounded-lg px-1 py-2 hover:bg-slate-50"
                 >
-                  <div className="flex h-9 w-9 flex-none items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                    {client.logoUrl ? (
-                      <img
-                        alt=""
-                        src={
-                          client.logoUrl
-                        }
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-[10px] font-bold text-slate-500">
-                        {cleanName(
-                          client.name
-                        )
-                          .slice(
-                            0,
-                            2
-                          )
-                          .toUpperCase()}
-                      </span>
-                    )}
-                  </div>
+                  <ClientAvatar
+                    client={
+                      client
+                    }
+                  />
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-[11px] font-bold text-slate-900">
-                        {cleanName(
-                          client.name
-                        )}
-                      </p>
-
-                      {isDemo(
+                    <p className="truncate text-[11px] font-bold text-slate-800">
+                      {cleanName(
                         client.name
-                      ) ? (
-                        <span className="rounded-md bg-violet-50 px-1.5 py-0.5 text-[8px] font-bold text-violet-700">
-                          DEMO
-                        </span>
-                      ) : null}
-                    </div>
+                      )}
+                    </p>
 
-                    <p className="mt-0.5 truncate text-[9px] text-slate-500">
-                      {client.segment ||
-                        "Segmento não informado"}
+                    <p className="mt-0.5 truncate text-[9px] text-slate-400">
+                      {client._count.contents} projetos
+                      {" • "}
+                      ativo há{" "}
+                      {monthsActive(
+                        client.createdAt,
+                        now
+                      )}{" "}
+                      meses
                     </p>
                   </div>
 
-                  <div className="text-right">
-                    <p className="text-[13px] font-bold text-slate-900">
-                      {
-                        client
-                          ._count
-                          .contents
-                      }
-                    </p>
-
-                    <p className="text-[8px] text-slate-400">
-                      conteúdos
-                    </p>
-                  </div>
-
-                  <ArrowUpRight
-                    size={13}
-                    className="text-slate-300 transition group-hover:text-slate-700"
-                  />
+                  <span className="text-slate-300">
+                    ⋮
+                  </span>
                 </Link>
               )
             )}
           </div>
+
+
+          <Link
+            href="/clientes"
+            className="mt-3 flex items-center justify-center gap-1 border-t border-slate-100 pt-3 text-[11px] font-bold text-blue-600 hover:underline"
+          >
+            Ver todos os clientes
+
+            <ArrowUpRight
+              size={10}
+            />
+          </Link>
         </div>
       </section>
 
 
       {/* ===================================================
-          ATIVIDADE
+          PRODUCAO + PERFORMANCE
           =================================================== */}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-[13px] font-bold text-slate-900">
-              Atividade recente
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+        {/* STATUS PRODUCAO */}
+
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-7">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[15px] font-bold text-slate-900">
+              Status da produção
             </h2>
 
-            <p className="mt-0.5 text-[10px] text-slate-500">
-              Últimas movimentações registradas no AprovUp.
-            </p>
+            <Link
+              href="/conteudos/kanban"
+              className="text-[10px] font-bold text-blue-600 hover:underline"
+            >
+              Ver todos
+            </Link>
           </div>
 
-          <Clock3
-            size={16}
-            className="text-slate-400"
-          />
-        </div>
 
-
-        <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-5">
-          {recentHistory.length ===
-          0 ? (
-            <div className="col-span-full rounded-lg border border-dashed border-slate-200 py-7 text-center text-[11px] text-slate-400">
-              Nenhuma atividade registrada.
-            </div>
-          ) : (
-            recentHistory.map(
+          <div className="mt-4 grid grid-cols-5 gap-2">
+            {pipeline.map(
               (
-                item
+                item,
+                index
               ) => (
                 <div
                   key={
-                    item.id
+                    item.label
                   }
-                  className="rounded-lg border border-slate-100 bg-slate-50 p-3"
+                  className="relative text-center"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-
-                    <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">
-                      {historyActionLabel(
-                        item.action
-                      )}
-                    </p>
+                  <div
+                    className={[
+                      "mx-auto",
+                      "flex",
+                      "h-9",
+                      "w-9",
+                      "items-center",
+                      "justify-center",
+                      "rounded-full",
+                      item.tone,
+                    ].join(
+                      " "
+                    )}
+                  >
+                    {item.icon}
                   </div>
 
-                  <p className="mt-2 line-clamp-2 text-[10px] font-medium leading-relaxed text-slate-700">
-                    {cleanHistoryDescription(
-                      item.description
-                    )}
+                  <p className="mt-2 text-[10px] font-semibold text-slate-500">
+                    {item.label}
                   </p>
 
-                  <p className="mt-2 text-[8px] text-slate-400">
-                    {item.authorName}
+                  <p className="mt-0.5 text-lg font-bold text-slate-900">
+                    {item.value}
                   </p>
+
+                  <p className="text-[9px] text-slate-400">
+                    projetos
+                  </p>
+
+                  {index <
+                  pipeline.length -
+                    1 ? (
+                    <span className="absolute right-[-8px] top-4 text-slate-300">
+                      →
+                    </span>
+                  ) : null}
                 </div>
               )
-            )
-          )}
+            )}
+          </div>
+
+
+          <div className="mt-5 border-t border-slate-100 pt-3">
+            {projectContents.length ===
+            0 ? (
+              <div className="rounded-lg border border-dashed border-slate-200 py-8 text-center text-[11px] text-slate-400">
+                Nenhum projeto em andamento.
+              </div>
+            ) : (
+              projectContents.map(
+                (
+                  content
+                ) => {
+                  const progress =
+                    progressForStatus(
+                      content.status
+                    );
+
+                  return (
+                    <Link
+                      key={
+                        content.id
+                      }
+                      href={`/conteudos/${content.id}`}
+                      className="grid grid-cols-[minmax(0,1fr)_150px_80px] items-center gap-3 border-b border-slate-100 py-2.5 last:border-b-0"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <FolderOpen
+                          size={13}
+                          className="shrink-0 text-slate-400"
+                        />
+
+                        <div className="min-w-0">
+                          <p className="truncate text-[11px] font-bold text-slate-800">
+                            {cleanTitle(
+                              content.title
+                            )}
+                          </p>
+
+                          <p className="mt-0.5 truncate text-[9px] text-slate-400">
+                            {cleanName(
+                              content.client.name
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full bg-violet-600"
+                            style={{
+                              width:
+                                `${progress}%`,
+                            }}
+                          />
+                        </div>
+
+                        <span className="w-7 text-right text-[9px] font-bold text-slate-500">
+                          {progress}%
+                        </span>
+                      </div>
+
+
+                      <span className="rounded-md bg-slate-50 px-2 py-1 text-center text-[9px] font-bold text-slate-500">
+                        {statusLabel(
+                          content.status
+                        )}
+                      </span>
+                    </Link>
+                  );
+                }
+              )
+            )}
+          </div>
+
+
+          <Link
+            href="/conteudos/kanban"
+            className="mt-3 flex items-center justify-center gap-1 text-[11px] font-bold text-blue-600 hover:underline"
+          >
+            Ver todos os projetos
+
+            <ArrowUpRight
+              size={10}
+            />
+          </Link>
+        </div>
+
+
+        {/* PERFORMANCE */}
+
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[15px] font-bold text-slate-900">
+                Performance operacional
+              </h2>
+
+              <p className="mt-0.5 text-[10px] text-slate-400">
+                Evolução da produção no mês atual.
+              </p>
+            </div>
+
+            <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-slate-600">
+              Este mês
+            </span>
+          </div>
+
+
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            <div>
+              <p className="text-[9px] text-slate-400">
+                Planejados
+              </p>
+
+              <p className="mt-1 text-[15px] font-bold text-slate-900">
+                {monthContents.length}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[9px] text-slate-400">
+                Em produção
+              </p>
+
+              <p className="mt-1 text-[15px] font-bold text-slate-900">
+                {currentProductionContents}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[9px] text-slate-400">
+                Aprovações
+              </p>
+
+              <p className="mt-1 text-[15px] font-bold text-slate-900">
+                {approvalsThisMonth}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[9px] text-slate-400">
+                Concluídos
+              </p>
+
+              <p className="mt-1 text-[15px] font-bold text-slate-900">
+                {currentCompletedContents}
+              </p>
+            </div>
+          </div>
+
+
+          <div className="mt-4 overflow-hidden rounded-lg border border-slate-100 bg-slate-50/50 p-2">
+            <svg
+              viewBox="0 0 600 180"
+              className="h-[175px] w-full"
+              role="img"
+              aria-label="Evolução de conteúdos planejados no mês"
+            >
+              <line
+                x1="24"
+                x2="576"
+                y1="150"
+                y2="150"
+                stroke="#e2e8f0"
+                strokeWidth="1"
+              />
+
+              <line
+                x1="24"
+                x2="576"
+                y1="112"
+                y2="112"
+                stroke="#e2e8f0"
+                strokeWidth="1"
+              />
+
+              <line
+                x1="24"
+                x2="576"
+                y1="74"
+                y2="74"
+                stroke="#e2e8f0"
+                strokeWidth="1"
+              />
+
+              <line
+                x1="24"
+                x2="576"
+                y1="36"
+                y2="36"
+                stroke="#e2e8f0"
+                strokeWidth="1"
+              />
+
+              <polygon
+                points={`24,150 ${graphPoints} 576,150`}
+                fill="rgba(124,58,237,0.08)"
+              />
+
+              <polyline
+                points={
+                  graphPoints
+                }
+                fill="none"
+                stroke="#6d4aff"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {cumulative.map(
+                (
+                  value,
+                  index
+                ) => {
+                  if (
+                    index %
+                      4 !==
+                      0 &&
+                    index !==
+                      cumulative.length -
+                        1
+                  ) {
+                    return null;
+                  }
+
+                  const x =
+                    24 +
+                    (
+                      index /
+                      Math.max(
+                        daysInMonth -
+                          1,
+                        1
+                      )
+                    ) *
+                      552;
+
+                  const y =
+                    150 -
+                    (
+                      value /
+                      graphMax
+                    ) *
+                      112;
+
+                  return (
+                    <circle
+                      key={
+                        index
+                      }
+                      cx={
+                        x
+                      }
+                      cy={
+                        y
+                      }
+                      r="3.5"
+                      fill="white"
+                      stroke="#6d4aff"
+                      strokeWidth="2"
+                    />
+                  );
+                }
+              )}
+
+              <text
+                x="24"
+                y="173"
+                fontSize="9"
+                fill="#94a3b8"
+              >
+                1{" "}
+                {monthNames[
+                  now.getMonth()
+                ].slice(
+                  0,
+                  3
+                )}
+              </text>
+
+              <text
+                x="190"
+                y="173"
+                fontSize="9"
+                fill="#94a3b8"
+              >
+                10
+              </text>
+
+              <text
+                x="372"
+                y="173"
+                fontSize="9"
+                fill="#94a3b8"
+              >
+                20
+              </text>
+
+              <text
+                x="552"
+                y="173"
+                fontSize="9"
+                fill="#94a3b8"
+              >
+                {daysInMonth}
+              </text>
+            </svg>
+          </div>
+
+
+          <Link
+            href="/relatorios"
+            className="mt-3 flex items-center justify-center gap-1 text-[11px] font-bold text-blue-600 hover:underline"
+          >
+            Ver relatório completo
+
+            <ArrowUpRight
+              size={10}
+            />
+          </Link>
         </div>
       </section>
     </div>
