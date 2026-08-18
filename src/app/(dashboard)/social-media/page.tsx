@@ -1027,18 +1027,7 @@ export default async function SocialMediaPage({
 
 
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/calendario-editorial?cliente=${clientId}`}
-            className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[9px] font-bold text-slate-600 hover:bg-slate-50"
-          >
-            <CalendarDays
-              size={13}
-            />
-
-            Calendário
-          </Link>
-
-          <Link
+<Link
             href={`/conteudos/novo?cliente=${clientId}`}
             className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-[9px] font-bold text-white hover:bg-blue-700"
           >
