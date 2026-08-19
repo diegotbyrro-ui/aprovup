@@ -2,10 +2,9 @@
 
 import { prisma } from '@/lib/prisma';
 import { requireAnyPermission } from '@/lib/userAccess';
+import { uploadAprovUpFile } from '@/lib/aprovupStorage';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 
 async function logHistory(
   entityType: string,
@@ -61,20 +60,12 @@ export async function uploadContentCoverImage(contentId: string, formData: FormD
         redirect(`/conteudos/${contentId}?error=invalid-image`);
       }
 
-      const bytes = await uploadedFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const extension =
-        uploadedFile.name.split('.').pop()?.toLowerCase() || 'png';
-
-      const fileName = `cover-${contentId}-${Date.now()}.${extension}`;
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-      const uploadPath = path.join(uploadDir, fileName);
-
-      await fs.mkdir(uploadDir, { recursive: true });
-      await fs.writeFile(uploadPath, buffer);
-
-      coverImageUrl = `/uploads/${fileName}`;
+      coverImageUrl =
+        await uploadAprovUpFile(
+          uploadedFile,
+          'covers',
+          `cover-${contentId}`
+        );
     }
   }
 

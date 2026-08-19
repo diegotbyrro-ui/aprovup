@@ -1,59 +1,136 @@
-import { prisma } from '@/lib/prisma';
-import { requireCurrentUser } from '@/lib/auth';
-import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
+import {
+  NextRequest,
+  NextResponse,
+} from 'next/server';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+import {
+  getCurrentUser,
+} from '@/lib/auth';
 
-function safeFileName(name: string) {
-  return String(name || 'arquivo')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9._-]+/g, '-')
-    .replace(/-+/g, '-')
-    .toLowerCase();
+import {
+  prisma,
+} from '@/lib/prisma';
+
+import {
+  hasPermission,
+  type PermissionKey,
+} from '@/lib/userAccess';
+
+import {
+  aprovUpFileExists,
+  createAprovUpSignedUpload,
+  getAprovUpPublicUrl,
+} from '@/lib/aprovupStorage';
+
+
+export const runtime =
+  'nodejs';
+
+export const dynamic =
+  'force-dynamic';
+
+
+function permissionForArea(
+  area: string
+): PermissionKey {
+  if (
+    area === 'FILMMAKER'
+  ) {
+    return 'filmmaker.manage';
+  }
+
+
+  if (
+    area === 'DESIGN'
+  ) {
+    return 'design.manage';
+  }
+
+
+  return 'social.manage';
 }
 
-async function saveFile(file: File, prefix: string) {
-  if (!file || file.size === 0) return '';
 
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'final-content');
+function validObjectPath(
+  contentId: string,
+  kind: 'final' | 'cover',
+  value: unknown
+) {
+  if (
+    typeof value !==
+    'string'
+  ) {
+    return false;
+  }
 
-  await fs.mkdir(uploadsDir, {
-    recursive: true,
-  });
 
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+  const expectedPrefix =
+    kind === 'final'
+      ? `final-content/material-final-${contentId}-`
+      : `final-content/capa-${contentId}-`;
 
-  const originalName = safeFileName(file.name || 'arquivo');
-  const extension = path.extname(originalName) || '.bin';
-  const fileName = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}${extension}`;
 
-  const filePath = path.join(uploadsDir, fileName);
-
-  await fs.writeFile(filePath, buffer);
-
-  return `/uploads/final-content/${fileName}`;
+  return value.startsWith(
+    expectedPrefix
+  );
 }
+
 
 export async function POST(
   request: NextRequest,
   context: {
-    params: Promise<{ id: string }>;
+    params: Promise<{
+      id: string;
+    }>;
   }
 ) {
   try {
-    const currentUser = await requireCurrentUser();
-    const { id } = await context.params;
+    const {
+      id,
+    } =
+      await context.params;
 
-    const content = await prisma.content.findUnique({
-      where: {
-        id,
-      },
-    });
+
+    const currentUser =
+      await getCurrentUser();
+
+
+    if (!currentUser) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: 'Sessão expirada. Entre novamente.',
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+
+    if (
+      currentUser.status !==
+      'APROVADO'
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: 'Usuário sem acesso ao AprovUp.',
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+
+    const content =
+      await prisma.content.findUnique({
+        where: {
+          id,
+        },
+      });
+
 
     if (!content) {
       return NextResponse.json(
@@ -67,82 +144,342 @@ export async function POST(
       );
     }
 
-    const formData = await request.formData();
 
-    const finalFile = formData.get('finalFile') as File | null;
-    const coverFile = formData.get('coverFile') as File | null;
+    const requiredPermission =
+      permissionForArea(
+        content.area
+      );
 
-    const hasFinalFile = finalFile && finalFile.size > 0;
-    const hasCoverFile = coverFile && coverFile.size > 0;
 
-    if (!hasFinalFile && !hasCoverFile) {
+    if (
+      !hasPermission(
+        currentUser,
+        requiredPermission
+      )
+    ) {
       return NextResponse.json(
         {
           ok: false,
-          message: 'Envie pelo menos um arquivo.',
+          message: 'Você não tem permissão para enviar este material.',
         },
         {
-          status: 400,
+          status: 403,
         }
       );
     }
 
-    const finalMediaUrl = hasFinalFile
-      ? await saveFile(finalFile, 'material-final')
-      : '';
 
-    const coverUrl = hasCoverFile
-      ? await saveFile(coverFile, 'capa')
-      : '';
+    const body =
+      await request.json();
 
-    const reviewStatus =
-      content.area === 'FILMMAKER'
-        ? 'FILMMAKER_ANALISE'
-        : content.area === 'DESIGN'
-          ? 'DESIGN_ANALISE'
-          : 'REVISAO_INTERNA';
 
-    const updateData: any = {
-      status: reviewStatus,
-      finalUploadedAt: new Date(),
-    };
+    if (
+      body?.action ===
+      'prepare'
+    ) {
+      const kind =
+        body.kind === 'cover'
+          ? 'cover'
+          : body.kind === 'final'
+            ? 'final'
+            : null;
 
-    if (finalMediaUrl) {
-      updateData.finalMediaUrl = finalMediaUrl;
-      updateData.finalMediaType = finalFile?.type || '';
 
-      if (String(finalFile?.type || '').startsWith('image/') && !coverUrl) {
-        updateData.finalCoverUrl = finalMediaUrl;
+      if (!kind) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: 'Tipo de upload inválido.',
+          },
+          {
+            status: 400,
+          }
+        );
       }
+
+
+      const fileName =
+        typeof body.fileName === 'string'
+          ? body.fileName
+          : 'arquivo.bin';
+
+
+      const prefix =
+        kind === 'final'
+          ? `material-final-${id}`
+          : `capa-${id}`;
+
+
+      const prepared =
+        await createAprovUpSignedUpload({
+          folder:
+            'final-content',
+
+          prefix,
+
+          fileName,
+        });
+
+
+      return NextResponse.json({
+        ok: true,
+
+        bucket:
+          'aprovup-files',
+
+        path:
+          prepared.path,
+
+        token:
+          prepared.token,
+
+        endpoint:
+          prepared.endpoint,
+      });
     }
 
-    if (coverUrl) {
-      updateData.finalCoverUrl = coverUrl;
+
+    if (
+      body?.action ===
+      'complete'
+    ) {
+      const finalPath =
+        typeof body.finalPath ===
+        'string'
+          ? body.finalPath
+          : '';
+
+
+      const coverPath =
+        typeof body.coverPath ===
+        'string'
+          ? body.coverPath
+          : '';
+
+
+      if (
+        !finalPath &&
+        !coverPath
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: 'Nenhum arquivo foi enviado.',
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+
+      if (
+        finalPath &&
+        !validObjectPath(
+          id,
+          'final',
+          finalPath
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: 'Caminho do material final inválido.',
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+
+      if (
+        coverPath &&
+        !validObjectPath(
+          id,
+          'cover',
+          coverPath
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: 'Caminho da capa inválido.',
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+
+      if (finalPath) {
+        const exists =
+          await aprovUpFileExists(
+            finalPath
+          );
+
+
+        if (!exists) {
+          return NextResponse.json(
+            {
+              ok: false,
+              message: 'O material final ainda não chegou ao Storage.',
+            },
+            {
+              status: 400,
+            }
+          );
+        }
+      }
+
+
+      if (coverPath) {
+        const exists =
+          await aprovUpFileExists(
+            coverPath
+          );
+
+
+        if (!exists) {
+          return NextResponse.json(
+            {
+              ok: false,
+              message: 'A capa ainda não chegou ao Storage.',
+            },
+            {
+              status: 400,
+            }
+          );
+        }
+      }
+
+
+      const finalMediaUrl =
+        finalPath
+          ? getAprovUpPublicUrl(
+              finalPath
+            )
+          : '';
+
+
+      const coverUrl =
+        coverPath
+          ? getAprovUpPublicUrl(
+              coverPath
+            )
+          : '';
+
+
+      const reviewStatus =
+        content.area ===
+        'FILMMAKER'
+          ? 'FILMMAKER_ANALISE'
+          : content.area ===
+              'DESIGN'
+            ? 'DESIGN_ANALISE'
+            : 'REVISAO_INTERNA';
+
+
+      const updateData: any = {
+        status:
+          reviewStatus,
+
+        finalUploadedAt:
+          new Date(),
+      };
+
+
+      if (finalMediaUrl) {
+        updateData.finalMediaUrl =
+          finalMediaUrl;
+
+        updateData.finalMediaType =
+          typeof body.finalMediaType ===
+          'string'
+            ? body.finalMediaType
+            : '';
+
+
+        if (
+          String(
+            body.finalMediaType ||
+            ''
+          ).startsWith(
+            'image/'
+          ) &&
+          !coverUrl
+        ) {
+          updateData.finalCoverUrl =
+            finalMediaUrl;
+        }
+      }
+
+
+      if (coverUrl) {
+        updateData.finalCoverUrl =
+          coverUrl;
+      }
+
+
+      await prisma.content.update({
+        where: {
+          id,
+        },
+
+        data:
+          updateData,
+      });
+
+
+      await prisma.comment.create({
+        data: {
+          contentId:
+            id,
+
+          authorName:
+            currentUser.name ||
+            currentUser.email ||
+            'Equipe Level UP',
+
+          authorRole:
+            currentUser.role ||
+            'EQUIPE',
+
+          message:
+            'Material final enviado para conferência interna antes da 2ª Etapa de Aprovação.',
+        },
+      }).catch(
+        () => null
+      );
+
+
+      return NextResponse.json({
+        ok: true,
+
+        finalMediaUrl,
+
+        coverUrl,
+      });
     }
 
-    await prisma.content.update({
-      where: {
-        id,
-      },
-      data: updateData,
-    });
 
-    await prisma.comment.create({
-      data: {
-        contentId: id,
-        authorName: currentUser.name || currentUser.email || 'Equipe Level UP',
-        authorRole: currentUser.role || 'EQUIPE',
-        message: 'Material final enviado para conferencia interna antes da 2a Etapa de Aprovacao.',
+    return NextResponse.json(
+      {
+        ok: false,
+        message: 'Ação de upload inválida.',
       },
-    }).catch(() => null);
+      {
+        status: 400,
+      }
+    );
+  }
+  catch (error) {
+    console.error(
+      'AprovUp upload-final:',
+      error
+    );
 
-    return NextResponse.json({
-      ok: true,
-      finalMediaUrl,
-      coverUrl,
-    });
-  } catch (error) {
-    console.error(error);
 
     return NextResponse.json(
       {

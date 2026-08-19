@@ -1,7 +1,7 @@
-﻿import fs from 'fs/promises';
-import path from 'path';
-import { revalidatePath } from 'next/cache';
+﻿import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
+import { uploadAprovUpFile } from '@/lib/aprovupStorage';
+import { requirePermission } from '@/lib/userAccess';
 
 type DiagnosisPrintUploadProps = {
   clientId: string;
@@ -11,6 +11,10 @@ type DiagnosisPrintUploadProps = {
 
 async function uploadDiagnosisPrintLocal(clientId: string, formData: FormData) {
   'use server';
+
+  await requirePermission(
+    'social.manage'
+  );
 
   if (!clientId) {
     throw new Error('Cliente não informado.');
@@ -38,34 +42,12 @@ async function uploadDiagnosisPrintLocal(clientId: string, formData: FormData) {
     throw new Error('Formato não permitido. Envie PNG, JPG, WEBP ou PDF.');
   }
 
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'diagnosis');
-  await fs.mkdir(uploadDir, { recursive: true });
-
-  const originalName = file.name || 'diagnostico';
-  const extensionFromName = originalName.includes('.')
-    ? originalName.split('.').pop()
-    : '';
-
-  const extension =
-    file.type === 'image/png'
-      ? 'png'
-      : file.type === 'image/jpeg' || file.type === 'image/jpg'
-        ? 'jpg'
-        : file.type === 'image/webp'
-          ? 'webp'
-          : file.type === 'application/pdf'
-            ? 'pdf'
-            : extensionFromName || 'bin';
-
-  const safeName = `diagnostico-${clientId}-${Date.now()}.${extension}`;
-  const fullPath = path.join(uploadDir, safeName);
-
-  await fs.writeFile(fullPath, buffer);
-
-  const publicUrl = `/uploads/diagnosis/${safeName}`;
+  const publicUrl =
+    await uploadAprovUpFile(
+      file,
+      'diagnosis',
+      `diagnostico-${clientId}`
+    );
 
   const runtimeModel = (prisma as any)._runtimeDataModel?.models?.Client;
   const fieldNames = new Set(

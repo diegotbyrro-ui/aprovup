@@ -1,6 +1,7 @@
 import { formatLabel } from '@/lib/formatLabel';
 import { prisma } from '@/lib/prisma';
 import { requireCurrentUser } from '@/lib/auth';
+import { requirePermission } from '@/lib/userAccess';
 import Link from 'next/link';
 import { deleteContentAction } from '../delete-actions';
 import FinalUploadForm from './FinalUploadForm';
@@ -117,6 +118,17 @@ export default async function ViewContentPage({
     );
   }
 
+  const requiredPermission =
+    content.area === 'FILMMAKER'
+      ? 'filmmaker.manage'
+      : content.area === 'DESIGN'
+        ? 'design.manage'
+        : 'social.manage';
+
+  await requirePermission(
+    requiredPermission
+  );
+
   const item: any = content;
 
   const title = item.title || 'Conteúdo sem título';
@@ -138,7 +150,21 @@ export default async function ViewContentPage({
   const finalMediaUrl = item.finalMediaUrl || '';
   const finalCoverUrl = item.finalCoverUrl || '';
   const finalMediaType = item.finalMediaType || '';
-  const finalPreviewUrl = finalCoverUrl || finalMediaUrl;
+
+  const finalIsVideo =
+    finalMediaType.startsWith('video/');
+
+  const finalIsImage =
+    finalMediaType.startsWith('image/');
+
+  const imagePreviewUrl =
+    finalCoverUrl ||
+    (finalIsImage ? finalMediaUrl : '');
+
+  const videoPreviewUrl =
+    !finalCoverUrl && finalIsVideo
+      ? finalMediaUrl
+      : '';
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
@@ -230,28 +256,55 @@ export default async function ViewContentPage({
             </p>
 
             <h2 className="mt-2 text-lg font-bold text-blue-950">
-              Enviar arquivo pronto para aprovação
+              Enviar arquivo pronto para conferência
             </h2>
 
             <p className="mt-2 text-sm leading-relaxed text-blue-800">
-              Suba aqui a arte final, vídeo editado ou capa do vídeo. Depois do envio, esse conteúdo aparece na Etapa 2 para o cliente aprovar ou pedir ajuste.
+              Suba aqui a arte final, vídeo editado ou capa do vídeo. Depois do envio, o material segue para conferência interna antes de avançar para a Etapa 2 de aprovação do cliente.
             </p>
 
             {(finalMediaUrl || finalCoverUrl) && (
               <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
-                Material enviado para aprovação final.
+                Material enviado para conferência interna.
               </div>
             )}
 
-            {finalPreviewUrl && (
+            {imagePreviewUrl && (
               <div className="mt-4 overflow-hidden rounded-2xl border border-blue-100 bg-white">
                 <img
-                  src={finalPreviewUrl}
-                  alt=""
+                  src={imagePreviewUrl}
+                  alt="Preview do material final"
                   className="h-44 w-full object-cover"
                 />
               </div>
             )}
+
+            {videoPreviewUrl && (
+              <div className="mt-4 overflow-hidden rounded-2xl border border-blue-100 bg-black">
+                <video
+                  src={videoPreviewUrl}
+                  controls
+                  preload="metadata"
+                  className="aspect-video w-full bg-black"
+                >
+                  Seu navegador não conseguiu reproduzir este vídeo.
+                </video>
+              </div>
+            )}
+
+            {finalMediaUrl &&
+              !imagePreviewUrl &&
+              !videoPreviewUrl && (
+                <div className="mt-4 rounded-2xl border border-blue-100 bg-white p-4 text-center">
+                  <p className="text-sm font-bold text-slate-700">
+                    Arquivo final enviado.
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    Use o botão abaixo para visualizar o arquivo.
+                  </p>
+                </div>
+              )}
 
             {finalMediaUrl && (
               <a

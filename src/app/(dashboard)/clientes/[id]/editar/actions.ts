@@ -2,10 +2,9 @@
 
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/userAccess';
+import { uploadAprovUpFile } from '@/lib/aprovupStorage';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 
 export async function updateClientAction(clientId: string, formData: FormData) {
   const currentUser = await requirePermission('social.manage');
@@ -37,19 +36,12 @@ const client = await prisma.client.findUnique({
         redirect(`/clientes/${clientId}/editar?error=invalid-logo`);
       }
 
-      const bytes = await uploadedFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      const extension = uploadedFile.name.split('.').pop()?.toLowerCase() || 'png';
-      const fileName = `client-logo-${clientId}-${Date.now()}.${extension}`;
-
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'clients');
-      const uploadPath = path.join(uploadDir, fileName);
-
-      await fs.mkdir(uploadDir, { recursive: true });
-      await fs.writeFile(uploadPath, buffer);
-
-      logoUrl = `/uploads/clients/${fileName}`;
+      logoUrl =
+        await uploadAprovUpFile(
+          uploadedFile,
+          'clients',
+          `client-logo-${clientId}`
+        );
     }
   }
 

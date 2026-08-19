@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { requireCurrentUser } from '@/lib/auth';
+import { requirePermission } from '@/lib/userAccess';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
@@ -36,6 +37,17 @@ export async function deleteContentAction(
   if (!content) {
     redirect('/clientes');
   }
+
+  const requiredPermission =
+    content.area === 'FILMMAKER'
+      ? 'filmmaker.manage'
+      : content.area === 'DESIGN'
+        ? 'design.manage'
+        : 'social.manage';
+
+  await requirePermission(
+    requiredPermission
+  );
 
   const redirectUrl = getCalendarRedirect(
     content.clientId,
