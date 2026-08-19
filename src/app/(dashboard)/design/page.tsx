@@ -1486,7 +1486,10 @@ export default async function DesignPage() {
         </div>
 
 
-        <SyncedHorizontalScroll className="pb-2 [scrollbar-width:thin]">
+        <SyncedHorizontalScroll
+          alwaysShowTop
+          className="pb-2 [scrollbar-width:thin]"
+        >
           <div className="flex min-h-[620px] gap-3">
             {columns.map(
               (

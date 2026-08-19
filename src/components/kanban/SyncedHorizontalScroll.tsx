@@ -14,12 +14,16 @@ import type {
 export function SyncedHorizontalScroll({
   children,
   className = '',
+  alwaysShowTop = false,
 }: {
   children:
     ReactNode;
 
   className?:
     string;
+
+  alwaysShowTop?:
+    boolean;
 }) {
   const topRef =
     useRef<HTMLDivElement>(
@@ -236,7 +240,7 @@ export function SyncedHorizontalScroll({
     <>
       <div
         className={[
-          hasOverflow
+          hasOverflow || alwaysShowTop
             ? 'sticky top-[68px] z-30 mb-2 rounded-lg border border-slate-200 bg-white/95 px-2 pt-1 shadow-sm backdrop-blur'
             : 'hidden',
         ].join(' ')}
@@ -255,7 +259,7 @@ export function SyncedHorizontalScroll({
           ref={
             topRef
           }
-          className="h-4 overflow-x-auto overflow-y-hidden [scrollbar-width:thin]"
+          className="h-4 overflow-x-scroll overflow-y-hidden [scrollbar-width:thin]"
           aria-label="Navegação horizontal do Kanban"
         >
           <div

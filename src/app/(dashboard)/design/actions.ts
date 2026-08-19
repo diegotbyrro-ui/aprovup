@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser, isDirector } from '@/lib/auth';
+import { requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -19,13 +19,7 @@ function isDesigner(role?: string | null) {
 }
 
 async function checkAccess() {
-  const currentUser = await requireCurrentUser();
-
-  if (!isDirector(currentUser.role) && !isDesigner(currentUser.role)) {
-    redirect('/clientes');
-  }
-
-  return currentUser;
+  return requirePermission('design.manage');
 }
 
 function text(formData: FormData, name: string) {

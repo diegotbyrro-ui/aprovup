@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser, isDirector, isSocialMedia } from '@/lib/auth';
+import { requirePermission } from '@/lib/userAccess';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'node:crypto';
@@ -10,13 +10,8 @@ export async function generateMonthlyApprovalLinkAction(
   clientId: string,
   formData: FormData
 ) {
-  const currentUser = await requireCurrentUser();
-
-  if (!isDirector(currentUser.role) && !isSocialMedia(currentUser.role)) {
-    redirect('/clientes');
-  }
-
-  const month = Number(formData.get('month') || 0);
+  const currentUser = await requirePermission('social.manage');
+const month = Number(formData.get('month') || 0);
   const year = Number(formData.get('year') || 0);
 
   if (!clientId || !month || !year) {

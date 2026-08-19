@@ -1,5 +1,8 @@
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser, isSocialMedia } from '@/lib/auth';
+import {
+  hasPermission,
+  requirePermission,
+} from '@/lib/userAccess';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -62,15 +65,19 @@ export default async function ClientesPage({
     ordem?: string;
   }>;
 }) {
-  const currentUser = await requireCurrentUser();
+  const currentUser = await requirePermission("social.view");
 
-  const director = isDirectorRole(currentUser.role);
+  const director =
+    isDirectorRole(
+      currentUser.role
+    );
 
-  if (!director && !isSocialMedia(currentUser.role)) {
-    redirect('/design');
-  }
-
-  const query = searchParams ? await searchParams : {};
+  const canManageSocial =
+    hasPermission(
+      currentUser,
+      'social.manage'
+    );
+const query = searchParams ? await searchParams : {};
   const search = String(query?.busca || '').trim();
   const order = String(query?.ordem || 'az');
 
@@ -87,7 +94,7 @@ export default async function ClientesPage({
   const userEmail = normalize(currentUser.email);
 
   const visibleClients = allClients.filter((client) => {
-    if (director) return true;
+    if (director || canManageSocial) return true;
 
     const responsible = normalize(client.internalResponsible);
     return responsible.includes(userName) || responsible.includes(userEmail);
@@ -145,7 +152,7 @@ export default async function ClientesPage({
               Agendar gravações
             </Link>
 
-            {director && (
+            {canManageSocial && (
               <Link
                 href="/clientes/novo"
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700"
@@ -248,7 +255,7 @@ export default async function ClientesPage({
                   className={`relative h-24 bg-gradient-to-r ${client.brandColor ? '' : getGradient(index)}`}
                   style={client.brandColor ? { background: client.brandColor } : undefined}
                 >
-                  {director && (
+                  {canManageSocial && (
                     <div className="absolute right-4 top-4 z-30 flex gap-2">
                       <Link
                         href={`/clientes/${client.id}/editar`}

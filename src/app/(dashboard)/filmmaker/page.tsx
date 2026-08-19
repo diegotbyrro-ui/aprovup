@@ -44,6 +44,10 @@ import {
 } from "@/lib/auth";
 
 import {
+  requirePermission,
+} from "@/lib/userAccess";
+
+import {
   FilmmakerCaptureAgenda,
 } from "@/components/filmmaker/FilmmakerCaptureAgenda";
 
@@ -1211,24 +1215,8 @@ function CompactMetric({
 
 export default async function FilmmakerPage() {
   const currentUser =
-    await requireCurrentUser();
-
-
-  if (
-    !isDirector(
-      currentUser.role
-    ) &&
-    !isFilmmaker(
-      currentUser.role
-    )
-  ) {
-    redirect(
-      "/clientes"
-    );
-  }
-
-
-  await ensureDefaultFilmmakerColumns();
+    await requirePermission("filmmaker.view");
+await ensureDefaultFilmmakerColumns();
 
 
   const [

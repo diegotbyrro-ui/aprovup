@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser, isDirector } from '@/lib/auth';
+import { requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -24,13 +24,8 @@ async function logHistory(
 }
 
 export async function createClientAction(formData: FormData) {
-    const currentUser = await requireCurrentUser();
-
-    if (!isDirector(currentUser.role)) {
-        redirect('/clientes');
-    }
-
-    const name = String(formData.get('name') || '').trim();
+    const currentUser = await requirePermission('social.manage');
+const name = String(formData.get('name') || '').trim();
 
     if (!name) {
         redirect('/clientes/novo?error=name');

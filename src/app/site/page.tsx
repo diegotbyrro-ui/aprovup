@@ -262,25 +262,63 @@ function ApprovalMockup() {
 export default function AprovUpSitePage() {
   return (
     <main className="min-h-screen bg-[#F7F8FC] text-[#111827]">
-      <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <Link href="/site" className="block">
-            <AprovUpLogo size="sm" showTagline={false} />
+      <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/95 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5">
+          <Link
+            href="/site"
+            className="block shrink-0"
+          >
+            <AprovUpLogo
+              size="sm"
+              showTagline={false}
+            />
           </Link>
 
-          <nav className="hidden items-center gap-8 text-sm font-bold text-slate-600 md:flex">
-            <a href="#visao" className="hover:text-[#7554F7]">Visão geral</a>
-            <a href="#recursos" className="hover:text-[#7554F7]">Recursos</a>
-            <a href="#fluxo" className="hover:text-[#7554F7]">Fluxo</a>
-            <a href="#lista" className="hover:text-[#7554F7]">Lista de espera</a>
+          <nav className="hidden items-center gap-7 text-sm font-bold text-slate-600 lg:flex">
+            <a
+              href="#visao"
+              className="hover:text-[#7554F7]"
+            >
+              Visão geral
+            </a>
+
+            <a
+              href="#recursos"
+              className="hover:text-[#7554F7]"
+            >
+              Recursos
+            </a>
+
+            <a
+              href="#fluxo"
+              className="hover:text-[#7554F7]"
+            >
+              Fluxo
+            </a>
+
+            <a
+              href="#lista"
+              className="hover:text-[#7554F7]"
+            >
+              Lista de espera
+            </a>
           </nav>
 
-          <a
-            href="#lista"
-            className="rounded-full bg-gradient-to-r from-[#8B3DFF] to-[#2563EB] px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-500/20"
-          >
-            Quero conhecer
-          </a>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href="/login"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-slate-950 px-4 text-xs font-black text-white shadow-sm transition hover:bg-slate-800 sm:h-11 sm:px-5 sm:text-sm"
+            >
+              Entrar
+            </Link>
+
+            <a
+              href="#lista"
+              className="hidden h-11 items-center justify-center rounded-full bg-gradient-to-r from-[#8B3DFF] to-[#2563EB] px-5 text-sm font-black text-white shadow-lg shadow-blue-500/20 transition hover:opacity-90 sm:inline-flex"
+            >
+              Quero conhecer
+            </a>
+          </div>
         </div>
       </header>
 

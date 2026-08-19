@@ -19,6 +19,14 @@ model User {
   approvedAt     DateTime?
   approvedByName String?
 
+  // Permissoes personalizadas do usuario.
+  // Quando null, o sistema usa as permissoes padrao do cargo.
+  permissions Json?
+
+  // Convite criado pelo administrador.
+  inviteToken     String?   @unique
+  inviteExpiresAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

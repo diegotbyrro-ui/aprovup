@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   CircleHelp,
   CreditCard,
+  Settings,
 } from "lucide-react";
 
 import {
@@ -19,6 +20,11 @@ import {
 } from "@/lib/auth";
 
 import {
+  hasPermission,
+  type PermissionKey,
+} from "@/lib/userAccess";
+
+import {
   canUseFeature,
   getCurrentUserSaasAccess,
   type SaasFeature,
@@ -28,7 +34,7 @@ import {
 type MenuDefinition = {
   name: string;
   path: string;
-  roles: string[];
+  permission: PermissionKey;
   requiredFeature?: SaasFeature;
   icon:
     | "dashboard"
@@ -38,14 +44,6 @@ type MenuDefinition = {
     | "crm";
   activePrefixes: string[];
 };
-
-
-const baseRoles = [
-  "DIRECTOR",
-  "SOCIAL_MEDIA",
-  "DESIGN",
-  "FILMMAKER",
-];
 
 
 export async function AppSidebar() {
@@ -61,7 +59,7 @@ export async function AppSidebar() {
       name: "Dashboard",
       icon: "dashboard",
       path: "/operacao",
-      roles: baseRoles,
+      permission: "dashboard.view",
       activePrefixes: [
         "/operacao",
       ],
@@ -70,10 +68,7 @@ export async function AppSidebar() {
       name: "Social Media",
       icon: "social",
       path: "/clientes",
-      roles: [
-        "DIRECTOR",
-        "SOCIAL_MEDIA",
-      ],
+      permission: "social.view",
       activePrefixes: [
         "/clientes",
         "/social-media",
@@ -84,10 +79,7 @@ export async function AppSidebar() {
       name: "Filmmaker",
       icon: "filmmaker",
       path: "/filmmaker",
-      roles: [
-        "DIRECTOR",
-        "FILMMAKER",
-      ],
+      permission: "filmmaker.view",
       activePrefixes: [
         "/filmmaker",
         "/captacoes",
@@ -97,10 +89,7 @@ export async function AppSidebar() {
       name: "Design",
       icon: "design",
       path: "/design",
-      roles: [
-        "DIRECTOR",
-        "DESIGN",
-      ],
+      permission: "design.view",
       activePrefixes: [
         "/design",
       ],
@@ -109,10 +98,7 @@ export async function AppSidebar() {
       name: "CRM",
       icon: "crm",
       path: "/crm",
-      roles: [
-        "DIRECTOR",
-        "SOCIAL_MEDIA",
-      ],
+      permission: "crm.view",
       requiredFeature: "crm",
       activePrefixes: [
         "/crm",
@@ -125,8 +111,9 @@ export async function AppSidebar() {
     definitions
       .filter(
         (item) =>
-          item.roles.includes(
-            user.role
+          hasPermission(
+            user,
+            item.permission
           )
       )
       .map((item) => {
@@ -172,6 +159,22 @@ export async function AppSidebar() {
       </div>
 
       <div className="ap-sidebar-footer">
+        {hasPermission(
+          user,
+          "settings.manage"
+        ) ? (
+          <Link
+            href="/configuracoes/equipe"
+            className="ap-sidebar-footer-link"
+          >
+            <Settings size={16} />
+
+            <span>
+              Equipe e acessos
+            </span>
+          </Link>
+        ) : null}
+
         <Link
           href="/minha-assinatura"
           className="ap-sidebar-footer-link"

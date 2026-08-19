@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser, isDirector } from '@/lib/auth';
+import { requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -31,13 +31,7 @@ function isFilmmaker(role?: string | null) {
 }
 
 async function checkAccess() {
-  const currentUser = await requireCurrentUser();
-
-  if (!isDirector(currentUser.role) && !isFilmmaker(currentUser.role)) {
-    redirect('/clientes');
-  }
-
-  return currentUser;
+  return requirePermission('filmmaker.manage');
 }
 
 function slugify(value: string) {

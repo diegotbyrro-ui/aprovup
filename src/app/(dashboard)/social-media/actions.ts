@@ -2,11 +2,7 @@
 
 import { randomUUID } from 'crypto';
 import { prisma } from '@/lib/prisma';
-import {
-  requireCurrentUser,
-  isDirector,
-  isSocialMedia,
-} from '@/lib/auth';
+import { requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -23,16 +19,8 @@ export async function answerDesignQuestionAction(
   formData: FormData
 ) {
   const currentUser =
-    await requireCurrentUser();
-
-  if (
-    !isDirector(currentUser.role) &&
-    !isSocialMedia(currentUser.role)
-  ) {
-    redirect('/clientes');
-  }
-
-  const answer =
+    await requirePermission('social.manage');
+const answer =
     String(
       formData.get('answer') || ''
     ).trim();
@@ -119,18 +107,8 @@ export async function answerFilmmakerQuestionAction(
   formData: FormData
 ) {
   const currentUser =
-    await requireCurrentUser();
-
-
-  if (
-    !isDirector(currentUser.role) &&
-    !isSocialMedia(currentUser.role)
-  ) {
-    redirect('/clientes');
-  }
-
-
-  const answer =
+    await requirePermission('social.manage');
+const answer =
     String(
       formData.get('answer') || ''
     ).trim();
@@ -285,17 +263,8 @@ export async function sendContentToFinalApprovalAction(
   _formData: FormData
 ) {
   const currentUser =
-    await requireCurrentUser();
-
-  if (
-    !isDirector(currentUser.role) &&
-    !isSocialMedia(currentUser.role)
-  ) {
-    redirect('/clientes');
-  }
-
-
-  const content =
+    await requirePermission('social.manage');
+const content =
     await prisma.content.findFirst({
       where: {
         id:

@@ -2,7 +2,7 @@
 
 import { randomUUID } from 'crypto';
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser } from '@/lib/auth';
+import { requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 
 const READY_STATUSES = [
@@ -79,7 +79,7 @@ export async function sendContentToFinalApprovalAction(
   clientId: string,
   _formData: FormData
 ) {
-  const currentUser = await requireCurrentUser();
+  const currentUser = await requirePermission('social.manage');
 
   await sendContentToClient(
     contentId,
@@ -101,7 +101,7 @@ export async function sendAllReadyToFinalApprovalAction(
   clientId: string,
   _formData: FormData
 ) {
-  const currentUser = await requireCurrentUser();
+  const currentUser = await requirePermission('social.manage');
 
   const contents = await prisma.content.findMany({
     where: {

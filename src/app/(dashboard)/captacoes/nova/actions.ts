@@ -3,10 +3,7 @@
 import { createGoogleCalendarEvent } from '@/lib/googleCalendar';
 import { isVideoContent } from '@/lib/contentRouting';
 import { prisma } from '@/lib/prisma';
-import {
-  requireCurrentUser,
-  isDirector,
-} from '@/lib/auth';
+import { requireAnyPermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -39,17 +36,10 @@ function isFilmmaker(role?: string | null) {
 }
 
 async function checkAccess() {
-  const currentUser = await requireCurrentUser();
-
-  if (
-    !isDirector(currentUser.role) &&
-    !isFilmmaker(currentUser.role) &&
-    !isSocialMedia(currentUser.role)
-  ) {
-    redirect('/clientes');
-  }
-
-  return currentUser;
+  return requireAnyPermission([
+    'social.manage',
+    'filmmaker.manage',
+  ]);
 }
 
 function text(formData: FormData, name: string) {

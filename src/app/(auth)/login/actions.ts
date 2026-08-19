@@ -16,6 +16,10 @@ import {
   prisma,
 } from "@/lib/prisma";
 
+import {
+  hasPermission,
+} from "@/lib/userAccess";
+
 
 export async function loginAction(
   formData: FormData
@@ -304,8 +308,59 @@ export async function loginAction(
   );
 
 
+  let destination =
+    "/acesso-bloqueado";
+
+
+  if (
+    hasPermission(
+      user,
+      "dashboard.view"
+    )
+  ) {
+    destination =
+      "/operacao";
+  }
+  else if (
+    hasPermission(
+      user,
+      "social.view"
+    )
+  ) {
+    destination =
+      "/clientes";
+  }
+  else if (
+    hasPermission(
+      user,
+      "design.view"
+    )
+  ) {
+    destination =
+      "/design";
+  }
+  else if (
+    hasPermission(
+      user,
+      "filmmaker.view"
+    )
+  ) {
+    destination =
+      "/filmmaker";
+  }
+  else if (
+    hasPermission(
+      user,
+      "crm.view"
+    )
+  ) {
+    destination =
+      "/crm";
+  }
+
+
   redirect(
-    "/clientes"
+    destination
   );
 }
 

@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser, isDirector } from '@/lib/auth';
+import { requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -9,13 +9,9 @@ const allowedRoles = ['DIRECTOR', 'SOCIAL_MEDIA', 'DESIGN', 'FILMMAKER'];
 const allowedStatuses = ['PENDENTE', 'APROVADO', 'RECUSADO', 'INATIVO'];
 
 async function requireDirectorUser() {
-  const currentUser = await requireCurrentUser();
-
-  if (!isDirector(currentUser.role)) {
-    redirect('/clientes');
-  }
-
-  return currentUser;
+  return requirePermission(
+    'users.manage'
+  );
 }
 
 export async function approveUser(userId: string) {

@@ -1,7 +1,7 @@
 ﻿'use server';
 
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser } from '@/lib/auth';
+import { requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import fs from 'fs/promises';
@@ -46,9 +46,7 @@ async function saveUploadedFile(file: File, prefix: string) {
 }
 
 export async function uploadFinalContentFilesAction(contentId: string, formData: FormData) {
-  const currentUser = await requireCurrentUser();
-
-  const finalFile = formData.get('finalFile') as File | null;
+const finalFile = formData.get('finalFile') as File | null;
   const coverFile = formData.get('coverFile') as File | null;
 
   const content = await prisma.content.findUnique({
@@ -60,6 +58,18 @@ export async function uploadFinalContentFilesAction(contentId: string, formData:
   if (!content) {
     redirect('/design');
   }
+
+  const requiredPermission =
+    content.area === 'FILMMAKER'
+      ? 'filmmaker.manage'
+      : content.area === 'DESIGN'
+        ? 'design.manage'
+        : 'social.manage';
+
+  const currentUser =
+    await requirePermission(
+      requiredPermission
+    );
 
   const finalMediaUrl = finalFile && finalFile.size > 0
     ? await saveUploadedFile(finalFile, 'material-final')

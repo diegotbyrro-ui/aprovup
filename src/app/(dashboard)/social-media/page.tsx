@@ -26,6 +26,11 @@ import {
 } from "@/lib/prisma";
 
 import {
+  hasPermission,
+  requirePermission,
+} from "@/lib/userAccess";
+
+import {
   isDirector,
   isSocialMedia,
   requireCurrentUser,
@@ -702,24 +707,16 @@ export default async function SocialMediaPage({
   }>;
 }) {
   const currentUser =
-    await requireCurrentUser();
-
-
-  if (
-    !isDirector(
-      currentUser.role
-    ) &&
-    !isSocialMedia(
-      currentUser.role
-    )
-  ) {
-    redirect(
-      "/clientes"
+    await requirePermission(
+      "social.view"
     );
-  }
 
-
-  const query =
+  const canManageSocial =
+    hasPermission(
+      currentUser,
+      "social.manage"
+    );
+const query =
     searchParams
       ? await searchParams
       : {};
@@ -758,7 +755,8 @@ export default async function SocialMediaPage({
   if (
     !isDirector(
       currentUser.role
-    )
+    ) &&
+    !canManageSocial
   ) {
     const responsible =
       normalizeText(
@@ -1131,7 +1129,8 @@ export default async function SocialMediaPage({
 
 
         <div className="flex flex-wrap items-center gap-2">
-<Link
+{canManageSocial ? (
+          <Link
             href={`/conteudos/novo?cliente=${clientId}`}
             className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-[9px] font-bold text-white hover:bg-blue-700"
           >
@@ -1141,6 +1140,7 @@ export default async function SocialMediaPage({
 
             Novo conteúdo
           </Link>
+        ) : null}
         </div>
       </section>
 

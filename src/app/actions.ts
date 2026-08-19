@@ -1,13 +1,13 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser } from '@/lib/auth';
+import { requireAnyPermission, requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 
 export async function createClient(formData: FormData) {
-  const currentUser = await requireCurrentUser();
+  const currentUser = await requirePermission('social.manage');
 
   function text(name: string) {
     return String(formData.get(name) || '').trim();
@@ -86,6 +86,8 @@ export async function createClient(formData: FormData) {
 
 
 export async function createOrUpdateClientPersona(clientId: string, formData: FormData) {
+  await requirePermission('social.manage');
+
   const existingPersona = await prisma.clientPersona.findFirst({
     where: {
       clientId,
@@ -137,6 +139,8 @@ export async function createOrUpdateClientProfileDiagnosis(
   clientId: string,
   formData: FormData
 ) {
+  await requirePermission('social.manage');
+
   const existingDiagnosis = await prisma.clientProfileDiagnosis.findFirst({
     where: {
       clientId,
@@ -191,6 +195,8 @@ export async function createOrUpdateClientProfileDiagnosis(
 }
 
 export async function updateClientStrategy(clientId: string, formData: FormData) {
+  await requirePermission('social.manage');
+
   const monthlyContentGoalValue = Number(formData.get("monthlyContentGoal") || 0);
 
   await prisma.client.update({
@@ -223,6 +229,8 @@ export async function updateClientStrategy(clientId: string, formData: FormData)
 }
 
 export async function createContent(formData: FormData) {
+  await requirePermission('social.manage');
+
   const clientId = String(formData.get("clientId") || "").trim();
   const title = String(formData.get("title") || "").trim();
 
@@ -273,7 +281,11 @@ export async function createContent(formData: FormData) {
 
 
 export async function updateContent(contentId: string, formData: FormData) {
-  const currentUser = await requireCurrentUser();
+  const currentUser = await requireAnyPermission([
+    'social.manage',
+    'design.manage',
+    'filmmaker.manage',
+  ]);
 
   const currentContent = await prisma.content.findUnique({
     where: {
@@ -361,6 +373,12 @@ export async function updateContent(contentId: string, formData: FormData) {
 
 
 export async function addComment(contentId: string, formData: FormData) {
+  await requireAnyPermission([
+    'social.manage',
+    'design.manage',
+    'filmmaker.manage',
+  ]);
+
   const message = String(formData.get("message") || "").trim();
 
   if (!message) {
@@ -396,6 +414,12 @@ export async function addComment(contentId: string, formData: FormData) {
 }
 
 export async function addTask(contentId: string, formData: FormData) {
+  await requireAnyPermission([
+    'social.manage',
+    'design.manage',
+    'filmmaker.manage',
+  ]);
+
   const title = String(formData.get("title") || "").trim();
 
   if (!title) {
@@ -438,6 +462,12 @@ export async function addTask(contentId: string, formData: FormData) {
 }
 
 export async function completeTask(taskId: string) {
+  await requireAnyPermission([
+    'social.manage',
+    'design.manage',
+    'filmmaker.manage',
+  ]);
+
   const task = await prisma.task.update({
     where: { id: taskId },
     data: {
@@ -462,6 +492,8 @@ export async function completeTask(taskId: string) {
 }
 
 export async function generateDraftLog(...args: any[]) {
+  await requirePermission('social.manage');
+
   const contentId = String(args[0] || "").trim();
   const promptTitle = String(args[1] || "Assistente de ConteÃºdo").trim();
 
@@ -489,6 +521,8 @@ export async function generateDraftLog(...args: any[]) {
 }
 
 export async function applyDraftToContent(...args: any[]) {
+  await requirePermission('social.manage');
+
   const contentId = String(args[0] || "").trim();
 
   if (!contentId) {
@@ -599,8 +633,7 @@ async function logHistory(
 }
 
 export async function createPrompt(formData: FormData) {
-  'use server';
-
+  await requirePermission('settings.manage');
   const { prisma } = await import('@/lib/prisma');
   const { redirect } = await import('next/navigation');
   const { revalidatePath } = await import('next/cache');

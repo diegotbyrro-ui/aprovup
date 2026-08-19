@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser } from '@/lib/auth';
+import { requireAnyPermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import fs from 'node:fs/promises';
@@ -26,7 +26,11 @@ async function logHistory(
 }
 
 export async function uploadContentCoverImage(contentId: string, formData: FormData) {
-  const currentUser = await requireCurrentUser();
+  const currentUser = await requireAnyPermission([
+    'social.manage',
+    'design.manage',
+    'filmmaker.manage',
+  ]);
 
   const content = await prisma.content.findUnique({
     where: {

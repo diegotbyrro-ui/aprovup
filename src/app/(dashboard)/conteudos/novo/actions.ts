@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser } from '@/lib/auth';
+import { requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -24,7 +24,7 @@ async function logHistory(
 }
 
 export async function createContentAction(formData: FormData) {
-  const currentUser = await requireCurrentUser();
+  const currentUser = await requirePermission('social.manage');
 
   const clientId = String(formData.get('clientId') || '').trim();
   const title = String(formData.get('title') || '').trim();
