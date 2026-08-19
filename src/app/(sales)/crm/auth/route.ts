@@ -4,13 +4,11 @@ import {
 } from "next/server";
 
 import {
-  requireSaasFeature,
-} from "@/lib/saasAccess";
-
-import {
   createClient,
 } from "@/lib/crm-supabase/server";
 
+
+import { requireCrmViewAccess } from "@/lib/crmAccess";
 
 export async function GET(
   request: NextRequest
@@ -19,9 +17,7 @@ export async function GET(
    * Primeiro preservamos o controle de acesso
    * comercial do AprovUp.
    */
-  await requireSaasFeature(
-    "crm"
-  );
+  await requireCrmViewAccess();
 
 
   /*

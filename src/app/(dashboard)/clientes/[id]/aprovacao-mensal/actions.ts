@@ -4,11 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requirePermission } from "@/lib/userAccess";
 
 export async function createMonthlyApprovalLink(
     clientId: string,
     formData: FormData
 ) {
+    await requirePermission("social.manage");
+
     const month = Number(formData.get("month"));
     const year = Number(formData.get("year"));
 

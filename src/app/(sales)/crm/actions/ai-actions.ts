@@ -1,5 +1,7 @@
 "use server";
 
+import { requireCrmAiManageAccess } from "@/lib/crmAccess";
+
 import { createClient } from "@/lib/crm-supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -218,6 +220,8 @@ export async function generateAiAnalysisAction(
   _previousState: AiAnalysisActionResult,
   formData: FormData
 ): Promise<AiAnalysisActionResult> {
+  await requireCrmAiManageAccess();
+
   try {
     const leadId = readText(
       formData,

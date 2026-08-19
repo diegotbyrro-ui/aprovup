@@ -1,5 +1,7 @@
 "use server";
 
+import { requireCrmManageAccess } from "@/lib/crmAccess";
+
 import { createClient } from "@/lib/crm-supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -160,6 +162,8 @@ export async function importLeadsAction(
   _previousState: ImportLeadsActionResult,
   formData: FormData
 ): Promise<ImportLeadsActionResult> {
+  await requireCrmManageAccess();
+
   try {
     const rawContent = readText(
       formData,

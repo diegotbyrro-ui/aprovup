@@ -1,5 +1,7 @@
 "use server";
 
+import { requireCrmManageAccess } from "@/lib/crmAccess";
+
 import { createClient } from "@/lib/crm-supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -42,6 +44,8 @@ function normalizeDateTime(value: string) {
 }
 
 async function getAuthenticatedContext() {
+  await requireCrmManageAccess();
+
   const supabase = await createClient();
 
   const {

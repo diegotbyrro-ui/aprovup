@@ -2,8 +2,11 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requirePermission } from "@/lib/userAccess";
 
 export async function markContentAsPublished(contentId: string) {
+    await requirePermission("social.manage");
+
     const content = await prisma.content.findUnique({
         where: {
             id: contentId,

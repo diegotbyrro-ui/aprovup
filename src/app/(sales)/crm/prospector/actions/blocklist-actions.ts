@@ -1,5 +1,10 @@
 "use server";
 
+import {
+  requireCrmViewAccess,
+  requireCrmManageAccess,
+} from "@/lib/crmAccess";
+
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/crm-supabase/server";
 
@@ -29,6 +34,8 @@ export async function blockProspect(input: {
   reason: BlockReason;
   notes?: string;
 }) {
+  await requireCrmManageAccess();
+
   const companyName = input.companyName?.trim();
 
   if (!companyName) {
@@ -87,6 +94,8 @@ export async function blockProspect(input: {
 }
 
 export async function getBlockedProspectNames() {
+  await requireCrmViewAccess();
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -102,6 +111,8 @@ export async function getBlockedProspectNames() {
 }
 
 export async function getProspectorBlocklist() {
+  await requireCrmViewAccess();
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -118,6 +129,8 @@ export async function getProspectorBlocklist() {
 }
 
 export async function unblockProspect(id: string) {
+  await requireCrmManageAccess();
+
   const supabase = await createClient();
 
   const { error } = await supabase

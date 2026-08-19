@@ -5,8 +5,9 @@ import "./crm-original.css";
 import { redirect } from "next/navigation";
 
 import { SalesOsSidebar } from "@/components/sales-os/SalesOsSidebar";
-import { requireSaasFeature } from "@/lib/saasAccess";
 import { createClient } from "@/lib/crm-supabase/server";
+
+import { requireCrmViewAccess } from "@/lib/crmAccess";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -18,7 +19,7 @@ export default async function CrmLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireSaasFeature("crm");
+  await requireCrmViewAccess();
 
   const supabase = await createClient();
 

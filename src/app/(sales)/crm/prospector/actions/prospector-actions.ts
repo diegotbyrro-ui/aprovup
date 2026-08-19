@@ -1,5 +1,10 @@
 "use server";
 
+import {
+  requireCrmManageAccess,
+  requireCrmAiManageAccess,
+} from "@/lib/crmAccess";
+
 import { createClient } from "@/lib/crm-supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -271,6 +276,8 @@ function validateCompanies(
 }
 
 async function getAuthenticatedContext() {
+  await requireCrmManageAccess();
+
   const supabase = await createClient();
 
   const {
@@ -313,6 +320,8 @@ export async function searchCompaniesAction(
   _previousState: ProspectorActionResult,
   formData: FormData
 ): Promise<ProspectorActionResult> {
+  await requireCrmAiManageAccess();
+
   try {
     const searchQuery = readText(
       formData,

@@ -1,8 +1,8 @@
-﻿'use server';
+'use server';
 
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { requirePermission } from '@/lib/userAccess';
 
 async function logHistory(
   entityType: string,
@@ -27,7 +27,7 @@ export async function applyAssistantDraftToContent(
   field: string,
   value: string
 ) {
-  const currentUser = await requireCurrentUser();
+  const currentUser = await requirePermission('social.manage');
 
   const allowedFields = [
     'caption',
