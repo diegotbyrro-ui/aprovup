@@ -33,6 +33,7 @@ import {
 
 import {
   answerDesignQuestionAction,
+  answerFilmmakerQuestionAction,
   sendContentToFinalApprovalAction,
 } from "./actions";
 
@@ -531,6 +532,13 @@ function DesignQuestionCard({
   content:
     any;
 }) {
+  const filmmakerQuestion =
+    content.status ===
+      "FILMMAKER_DUVIDA_SOCIAL" ||
+    content.area ===
+      "FILMMAKER";
+
+
   const lastQuestion =
     content.comments.find(
       (
@@ -591,7 +599,9 @@ function DesignQuestionCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[7px] font-bold text-amber-700">
-              DESIGN
+              {filmmakerQuestion
+                ? "FILMMAKER"
+                : "DESIGN"}
             </span>
 
             {isDemoName(
@@ -631,10 +641,15 @@ function DesignQuestionCard({
 
         <form
           action={
-            answerDesignQuestionAction.bind(
-              null,
-              content.id
-            )
+            filmmakerQuestion
+              ? answerFilmmakerQuestionAction.bind(
+                  null,
+                  content.id
+                )
+              : answerDesignQuestionAction.bind(
+                  null,
+                  content.id
+                )
           }
           className="mt-3 space-y-2"
         >
@@ -642,7 +657,11 @@ function DesignQuestionCard({
             name="answer"
             required
             rows={3}
-            placeholder="Responda para liberar o Design..."
+            placeholder={
+              filmmakerQuestion
+                ? "Responda para liberar o Filmmaker..."
+                : "Responda para liberar o Design..."
+            }
             className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[9px] font-medium text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:bg-white"
           />
 
@@ -821,11 +840,23 @@ export default async function SocialMediaPage({
         where: {
           clientId,
 
-          area:
-            "DESIGN",
+          OR: [
+            {
+              area:
+                "DESIGN",
 
-          status:
-            "DESIGN_DUVIDA",
+              status:
+                "DESIGN_DUVIDA",
+            },
+
+            {
+              area:
+                "FILMMAKER",
+
+              status:
+                "FILMMAKER_DUVIDA_SOCIAL",
+            },
+          ],
         },
 
         include: {
@@ -1124,7 +1155,7 @@ export default async function SocialMediaPage({
           value={
             doubts.length
           }
-          description="Pendências enviadas pelo Design"
+          description="Pendências de Design e Filmmaker"
           icon={
             <MessageCircleQuestion
               size={16}
@@ -1576,7 +1607,7 @@ export default async function SocialMediaPage({
               </h2>
 
               <p className="mt-0.5 text-[9px] text-slate-400">
-                Responda o Design para não travar a produção.
+                Responda Design ou Filmmaker para liberar a produção.
               </p>
             </div>
 

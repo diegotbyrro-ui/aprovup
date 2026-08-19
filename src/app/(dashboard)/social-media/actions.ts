@@ -108,7 +108,174 @@ export async function answerDesignQuestionAction(
   revalidatePath(`/conteudos/${contentId}`);
   revalidatePath(`/clientes/${content.clientId}`);
 
-  redirect('/social-media');
+  redirect(
+    `/social-media?cliente=${content.clientId}`
+  );
+}
+
+
+export async function answerFilmmakerQuestionAction(
+  contentId: string,
+  formData: FormData
+) {
+  const currentUser =
+    await requireCurrentUser();
+
+
+  if (
+    !isDirector(currentUser.role) &&
+    !isSocialMedia(currentUser.role)
+  ) {
+    redirect('/clientes');
+  }
+
+
+  const answer =
+    String(
+      formData.get('answer') || ''
+    ).trim();
+
+
+  if (!answer) {
+    redirect('/clientes');
+  }
+
+
+  const content =
+    await prisma.content.findUnique({
+      where: {
+        id:
+          contentId,
+      },
+    });
+
+
+  if (!content) {
+    redirect('/clientes');
+  }
+
+
+  const originHistory =
+    await prisma.historyLog.findFirst({
+      where: {
+        entityType:
+          'CONTENT',
+
+        entityId:
+          contentId,
+
+        action:
+          'FILMMAKER_QUESTION_SENT',
+      },
+
+      orderBy: {
+        createdAt:
+          'desc',
+      },
+    });
+
+
+  const originMatch =
+    String(
+      originHistory?.description ||
+      ''
+    ).match(
+      /Origem:s*([A-Z0-9_]+)/
+    );
+
+
+  const candidateStatus =
+    originMatch?.[1] ||
+    'FILMMAKER_EDICAO';
+
+
+  const allowedStatuses = [
+    'FILMMAKER_PRE_PRODUCAO',
+    'FILMMAKER_AGENDAMENTO',
+    'FILMMAKER_GRAVANDO',
+    'FILMMAKER_EDICAO',
+    'FILMMAKER_ANALISE',
+  ];
+
+
+  const returnStatus =
+    allowedStatuses.includes(
+      candidateStatus
+    )
+      ? candidateStatus
+      : 'FILMMAKER_EDICAO';
+
+
+  await prisma.comment.create({
+    data: {
+      contentId,
+
+      authorName:
+        currentUser.name ||
+        currentUser.email ||
+        'Social Media',
+
+      authorRole:
+        'SOCIAL_MEDIA',
+
+      message:
+        `RESPOSTA DA SOCIAL MEDIA: ${answer}`,
+    },
+  });
+
+
+  await prisma.content.update({
+    where: {
+      id:
+        contentId,
+    },
+
+    data: {
+      status:
+        returnStatus,
+
+      area:
+        'FILMMAKER',
+    },
+  });
+
+
+  await prisma.historyLog.create({
+    data: {
+      entityType:
+        'CONTENT',
+
+      entityId:
+        contentId,
+
+      action:
+        'SOCIAL_MEDIA_ANSWERED_FILMMAKER',
+
+      description:
+        `Social Media respondeu ao Filmmaker e devolveu a demanda para ${returnStatus}.`,
+
+      authorName:
+        currentUser.name ||
+        currentUser.email ||
+        'Social Media',
+    },
+  });
+
+
+  revalidatePath('/social-media');
+  revalidatePath('/filmmaker');
+  revalidatePath(
+    `/conteudos/${contentId}`
+  );
+
+  revalidatePath(
+    `/clientes/${content.clientId}`
+  );
+
+
+  redirect(
+    `/social-media?cliente=${content.clientId}`
+  );
 }
 
 

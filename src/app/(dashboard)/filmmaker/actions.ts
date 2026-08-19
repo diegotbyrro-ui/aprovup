@@ -384,12 +384,23 @@ export async function sendFilmmakerQuestionAction(contentId: string, formData: F
     redirect('/filmmaker');
   }
 
+  const originStatus =
+    content.status;
+
+
   await prisma.comment.create({
     data: {
       contentId,
-      authorName: currentUser.name || currentUser.email || 'Filmmaker',
-      authorRole: 'FILMMAKER',
-      message: `DÚVIDA PARA SOCIAL MEDIA: ${question}`,
+      authorName:
+        currentUser.name ||
+        currentUser.email ||
+        'Filmmaker',
+
+      authorRole:
+        'FILMMAKER',
+
+      message:
+        `DÚVIDA PARA SOCIAL MEDIA: ${question}`,
     },
   });
 
@@ -403,7 +414,30 @@ export async function sendFilmmakerQuestionAction(contentId: string, formData: F
     },
   });
 
+  await prisma.historyLog.create({
+    data: {
+      entityType:
+        'CONTENT',
+
+      entityId:
+        contentId,
+
+      action:
+        'FILMMAKER_QUESTION_SENT',
+
+      description:
+        `Filmmaker enviou uma dúvida para a Social Media. Origem: ${originStatus}.`,
+
+      authorName:
+        currentUser.name ||
+        currentUser.email ||
+        'Filmmaker',
+    },
+  });
+
+
   revalidatePath('/filmmaker');
+  revalidatePath('/social-media');
   revalidatePath(`/conteudos/${contentId}`);
   revalidatePath(`/clientes/${content.clientId}`);
 

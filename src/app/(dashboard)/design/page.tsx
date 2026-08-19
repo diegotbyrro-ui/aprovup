@@ -27,6 +27,10 @@ import {
 } from "@/lib/prisma";
 
 import {
+  SyncedHorizontalScroll,
+} from "@/components/kanban/SyncedHorizontalScroll";
+
+import {
   requireCurrentUser,
 } from "@/lib/auth";
 
@@ -94,6 +98,130 @@ function isDemoName(
       ""
     )
   );
+}
+
+
+
+function getReturnNotice(
+  content:
+    any
+) {
+  const comments =
+    Array.isArray(
+      content.comments
+    )
+      ? content.comments
+      : [];
+
+
+  for (
+    const item
+    of comments
+  ) {
+    const message =
+      String(
+        item.message ||
+        ""
+      );
+
+
+    if (
+      item.authorRole ===
+        "CLIENTE" &&
+      message.startsWith(
+        "ALTERACAO FINAL SOLICITADA PELO CLIENTE:"
+      )
+    ) {
+      return {
+        source:
+          "CLIENTE",
+
+        label:
+          "Cliente pediu ajuste",
+
+        message:
+          message
+            .replace(
+              "ALTERACAO FINAL SOLICITADA PELO CLIENTE:",
+              ""
+            )
+            .trim(),
+      };
+    }
+
+
+    if (
+      item.authorRole ===
+        "SOCIAL_MEDIA" &&
+      message.startsWith(
+        "RESPOSTA DA SOCIAL MEDIA:"
+      )
+    ) {
+      return {
+        source:
+          "SOCIAL_MEDIA",
+
+        label:
+          "Social Media respondeu",
+
+        message:
+          message
+            .replace(
+              "RESPOSTA DA SOCIAL MEDIA:",
+              ""
+            )
+            .trim(),
+      };
+    }
+  }
+
+
+  return null;
+}
+
+
+function shouldEmphasizeReturn(
+  content:
+    any
+) {
+  const notice =
+    getReturnNotice(
+      content
+    );
+
+
+  if (!notice) {
+    return false;
+  }
+
+
+  if (
+    content.area ===
+      "DESIGN"
+  ) {
+    return (
+      content.status ===
+      "DESIGN_FAZENDO"
+    );
+  }
+
+
+  if (
+    content.area ===
+      "FILMMAKER"
+  ) {
+    return [
+      "FILMMAKER_PRE_PRODUCAO",
+      "FILMMAKER_AGENDAMENTO",
+      "FILMMAKER_GRAVANDO",
+      "FILMMAKER_EDICAO",
+    ].includes(
+      content.status
+    );
+  }
+
+
+  return false;
 }
 
 
@@ -531,8 +659,73 @@ function DesignCard({
     content.client?.logoUrl ||
     "";
 
+
+  const returnNotice =
+    getReturnNotice(
+      content
+    );
+
+
+  const emphasizeReturn =
+    shouldEmphasizeReturn(
+      content
+    );
+
+
   return (
-    <article className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md">
+    <article
+      className={[
+        "group",
+        "overflow-hidden",
+        "rounded-xl",
+        "border",
+        "bg-white",
+        "shadow-sm",
+        "transition",
+        "hover:shadow-md",
+
+        emphasizeReturn
+          ? returnNotice?.source ===
+              "CLIENTE"
+            ? "border-orange-300 ring-2 ring-orange-100 shadow-md"
+            : "border-blue-300 ring-2 ring-blue-100 shadow-md"
+          : "border-slate-200 hover:border-slate-300",
+      ].join(" ")}
+    >
+      {emphasizeReturn &&
+      returnNotice ? (
+        <div
+          className={[
+            "flex",
+            "items-center",
+            "justify-between",
+            "gap-2",
+            "px-3",
+            "py-2",
+            "text-[8px]",
+            "font-black",
+            "uppercase",
+            "tracking-[0.08em]",
+            returnNotice.source ===
+              "CLIENTE"
+              ? "bg-orange-500 text-white"
+              : "bg-blue-600 text-white",
+          ].join(" ")}
+        >
+          <span>
+            RETORNO RECEBIDO
+          </span>
+
+          <span className="opacity-90">
+            {returnNotice.source ===
+            "CLIENTE"
+              ? "CLIENTE"
+              : "SOCIAL MEDIA"}
+          </span>
+        </div>
+      ) : null}
+
+
       <div className="relative aspect-[16/10] overflow-hidden border-b border-slate-100 bg-slate-100">
         {previewUrl ? (
           <img
@@ -646,6 +839,76 @@ function DesignCard({
               content.briefing}
           </p>
         ) : null}
+
+        {emphasizeReturn &&
+        returnNotice ? (
+          <div
+            className={[
+              "mt-3",
+              "rounded-lg",
+              "border",
+              "p-2.5",
+
+              returnNotice.source ===
+                "CLIENTE"
+                ? "border-orange-200 bg-orange-50"
+                : "border-blue-200 bg-blue-50",
+            ].join(" ")}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p
+                className={[
+                  "text-[8px]",
+                  "font-black",
+                  "uppercase",
+                  "tracking-[0.07em]",
+
+                  returnNotice.source ===
+                    "CLIENTE"
+                    ? "text-orange-700"
+                    : "text-blue-700",
+                ].join(" ")}
+              >
+                {returnNotice.label}
+              </p>
+
+              <span
+                className={[
+                  "rounded-md",
+                  "px-1.5",
+                  "py-0.5",
+                  "text-[7px]",
+                  "font-black",
+
+                  returnNotice.source ===
+                    "CLIENTE"
+                    ? "bg-orange-100 text-orange-700"
+                    : "bg-blue-100 text-blue-700",
+                ].join(" ")}
+              >
+                AÇÃO NECESSÁRIA
+              </span>
+            </div>
+
+            <p
+              className={[
+                "mt-1.5",
+                "line-clamp-4",
+                "text-[9px]",
+                "font-medium",
+                "leading-relaxed",
+
+                returnNotice.source ===
+                  "CLIENTE"
+                  ? "text-orange-900"
+                  : "text-blue-900",
+              ].join(" ")}
+            >
+              {returnNotice.message}
+            </p>
+          </div>
+        ) : null}
+
 
 
         <div className="mt-3 border-t border-slate-100 pt-3">
@@ -896,6 +1159,25 @@ export default async function DesignPage() {
       include: {
         client:
           true,
+
+        comments: {
+          where: {
+            authorRole: {
+              in: [
+                "CLIENTE",
+                "SOCIAL_MEDIA",
+              ],
+            },
+          },
+
+          orderBy: {
+            createdAt:
+              "desc",
+          },
+
+          take:
+            8,
+        },
       },
 
       orderBy: [
@@ -1204,20 +1486,46 @@ export default async function DesignPage() {
         </div>
 
 
-        <div className="overflow-x-auto pb-2 [scrollbar-width:thin]">
+        <SyncedHorizontalScroll className="pb-2 [scrollbar-width:thin]">
           <div className="flex min-h-[620px] gap-3">
             {columns.map(
               (
                 column
               ) => {
                 const items =
-                  contents.filter(
-                    (
-                      content
-                    ) =>
-                      content.status ===
-                      column.statusKey
-                  );
+                  contents
+                    .filter(
+                      (
+                        content
+                      ) =>
+                        content.status ===
+                        column.statusKey
+                    )
+                    .sort(
+                      (
+                        a,
+                        b
+                      ) => {
+                        const aPriority =
+                          shouldEmphasizeReturn(
+                            a
+                          )
+                            ? 1
+                            : 0;
+
+                        const bPriority =
+                          shouldEmphasizeReturn(
+                            b
+                          )
+                            ? 1
+                            : 0;
+
+                        return (
+                          bPriority -
+                          aPriority
+                        );
+                      }
+                    );
 
                 return (
                   <div
@@ -1318,7 +1626,7 @@ export default async function DesignPage() {
               }
             )}
           </div>
-        </div>
+        </SyncedHorizontalScroll>
       </section>
     </div>
   );

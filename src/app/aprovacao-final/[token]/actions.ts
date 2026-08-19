@@ -112,6 +112,8 @@ export async function approveFinalContentAction(
 
   revalidatePath('/design');
   revalidatePath('/filmmaker');
+  revalidatePath('/social-media');
+  revalidatePath('/pronto-para-postar');
 
   redirect(
     `/aprovacao-final/${token}?feedback=aprovado`
@@ -166,6 +168,35 @@ export async function requestFinalChangesAction(
     );
   }
 
+  const normalizedFormat =
+    String(
+      content.format || ''
+    ).toUpperCase();
+
+
+  const returnsToFilmmaker =
+    content.area === 'FILMMAKER' ||
+    [
+      'REEL',
+      'VIDEO',
+      'TIKTOK',
+      'SHORT',
+    ].some(
+      (format) =>
+        normalizedFormat.includes(
+          format
+        )
+    );
+
+
+  const returnLabel =
+    returnsToFilmmaker
+      ? 'Filmmaker / Edição'
+      : content.area === 'DESIGN'
+        ? 'Design / Fazendo'
+        : 'Produção';
+
+
   await prisma.$transaction(async (transaction) => {
     await transaction.approval.update({
       where: {
@@ -181,9 +212,20 @@ export async function requestFinalChangesAction(
       where: {
         id: contentId,
       },
-      data: {
-        status: 'ALTERACAO_SOLICITADA',
-      },
+
+      data: returnsToFilmmaker
+        ? {
+            status: 'FILMMAKER_EDICAO',
+            area: 'FILMMAKER',
+          }
+        : content.area === 'DESIGN'
+          ? {
+              status: 'DESIGN_FAZENDO',
+              area: 'DESIGN',
+            }
+          : {
+              status: 'ALTERACAO_SOLICITADA',
+            },
     });
 
     await transaction.comment.create({
@@ -202,7 +244,7 @@ export async function requestFinalChangesAction(
         entityId: contentId,
         action: 'FINAL_APPROVAL_CHANGE_REQUESTED',
         description:
-          `Cliente solicitou alteracao no material final: ${content.title}.`,
+          `Cliente solicitou alteracao no material final: ${content.title}. Retornado para ${returnLabel}.`,
         authorName: client.name,
       },
     });
@@ -218,6 +260,8 @@ export async function requestFinalChangesAction(
 
   revalidatePath('/design');
   revalidatePath('/filmmaker');
+  revalidatePath('/social-media');
+  revalidatePath('/pronto-para-postar');
 
   redirect(
     `/aprovacao-final/${token}?feedback=alteracao`
