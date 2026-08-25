@@ -511,3 +511,101 @@ export async function regenerateInviteAction(
     "/configuracoes/equipe"
   );
 }
+
+
+export async function deleteEmployeeAction(
+  userId:
+    string,
+  _formData:
+    FormData
+) {
+  const currentUser =
+    await requirePermission(
+      "users.manage"
+    );
+
+
+  /*
+   * Nunca permite excluir a propria conta.
+   */
+  if (
+    currentUser.id ===
+    userId
+  ) {
+    redirect(
+      "/configuracoes/equipe?error=self"
+    );
+  }
+
+
+  const target =
+    await prisma.user.findUnique({
+      where: {
+        id:
+          userId,
+      },
+    });
+
+
+  if (!target) {
+    redirect(
+      "/configuracoes/equipe?error=notfound"
+    );
+  }
+
+
+  /*
+   * Administradores nao podem ser excluidos
+   * por esta funcionalidade.
+   */
+  if (
+    target.role ===
+    "DIRECTOR"
+  ) {
+    redirect(
+      "/configuracoes/equipe?error=admin"
+    );
+  }
+
+
+  const targetName =
+    target.name ||
+    target.email ||
+    "Funcionário";
+
+
+  await prisma.$transaction([
+    prisma.user.delete({
+      where: {
+        id:
+          userId,
+      },
+    }),
+
+    prisma.historyLog.create({
+      data: {
+        entityType:
+          "USER",
+
+        entityId:
+          userId,
+
+        action:
+          "DELETED",
+
+        description:
+          `Funcionário excluído: ${targetName}.`,
+
+        authorName:
+          currentUser.name ||
+          currentUser.email ||
+          "Administrador",
+      },
+    }),
+  ]);
+
+
+  revalidatePath(
+    "/configuracoes/equipe"
+  );
+}

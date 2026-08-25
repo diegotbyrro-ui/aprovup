@@ -25,6 +25,9 @@ import {
 import {
   InviteCopyButton,
 } from "./InviteCopyButton";
+import {
+  DeleteEmployeeButton,
+} from "./DeleteEmployeeButton";
 
 import {
   deactivateEmployeeAction,
@@ -681,6 +684,15 @@ export default async function TeamAccessPage({
                               Desativar
                             </button>
                           )}
+                          <DeleteEmployeeButton
+                            userId={user.id}
+                            userName={
+                              user.name ||
+                              user.email ||
+                              "Funcionário"
+                            }
+                          />
+
                         </div>
                       </form>
                     </div>
