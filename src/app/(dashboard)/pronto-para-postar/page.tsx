@@ -21,7 +21,7 @@ const priorityClasses: Record<string, string> = {
 const areaLabels: Record<string, string> = {
     GERAL: 'Geral',
     SOCIAL_DESIGN: 'Design',
-    AUDIOVISUAL: 'Filmmaker',
+    AUDIOVISUAL: 'Filmaker',
 };
 
 function formatDate(date: Date | null) {
@@ -305,7 +305,7 @@ export default async function ProntoParaPostarPage({
 
                 <div className="rounded-xl border border-indigo-100 bg-white p-4 shadow-sm">
                     <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">
-                        Filmmaker
+                        Filmaker
                     </p>
 
                     <p className="mt-2 text-3xl font-bold text-indigo-700">

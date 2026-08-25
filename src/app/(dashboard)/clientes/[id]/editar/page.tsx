@@ -1,8 +1,9 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { requireCurrentUser, isDirector } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { updateClientAction } from './actions';
+import { DeleteClientButton } from '../../DeleteClientButton';
 
 const inputClasses =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50';
@@ -162,6 +163,30 @@ export default async function EditarClientePage({
           </button>
         </div>
       </form>
+
+      <section className="rounded-3xl border border-red-200 bg-red-50 p-6 shadow-sm">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+              Zona de perigo
+            </p>
+
+            <h2 className="mt-1 text-lg font-bold text-red-900">
+              Excluir cliente
+            </h2>
+
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-red-700">
+              Use esta opção quando o cliente deixar a empresa.
+              Os dados vinculados a ele serão removidos permanentemente.
+            </p>
+          </div>
+
+          <DeleteClientButton
+            clientId={client.id}
+            clientName={client.name}
+          />
+        </div>
+      </section>
     </div>
   );
 }

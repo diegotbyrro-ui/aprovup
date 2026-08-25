@@ -52,7 +52,7 @@ const roleLabels:
       "Design",
 
     FILMMAKER:
-      "Filmmaker",
+      "Filmaker",
   };
 
 
@@ -93,7 +93,7 @@ const pageMeta = [
     prefix:
       "/filmmaker",
     title:
-      "Filmmaker",
+      "Filmaker",
     description:
       "Produção audiovisual",
   },

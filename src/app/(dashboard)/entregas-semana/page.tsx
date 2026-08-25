@@ -19,7 +19,7 @@ const priorityClasses: Record<string, string> = {
 const areaLabels: Record<string, string> = {
     GERAL: 'Geral',
     SOCIAL_DESIGN: 'Design',
-    AUDIOVISUAL: 'Filmmaker',
+    AUDIOVISUAL: 'Filmaker',
 };
 
 const priorityOrder: Record<string, number> = {

@@ -388,7 +388,7 @@ export async function sendFilmmakerQuestionAction(contentId: string, formData: F
       authorName:
         currentUser.name ||
         currentUser.email ||
-        'Filmmaker',
+        'Filmaker',
 
       authorRole:
         'FILMMAKER',
@@ -425,7 +425,7 @@ export async function sendFilmmakerQuestionAction(contentId: string, formData: F
       authorName:
         currentUser.name ||
         currentUser.email ||
-        'Filmmaker',
+        'Filmaker',
     },
   });
 

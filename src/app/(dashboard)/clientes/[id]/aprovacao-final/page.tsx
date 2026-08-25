@@ -29,7 +29,7 @@ function statusLabel(status: string) {
 
 function areaLabel(area?: string | null) {
   if (area === 'DESIGN') return 'Design';
-  if (area === 'FILMMAKER') return 'Filmmaker';
+  if (area === 'FILMMAKER') return 'Filmaker';
 
   return area || 'Conteudo';
 }

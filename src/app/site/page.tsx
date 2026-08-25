@@ -173,7 +173,7 @@ function KanbanMockup() {
       cards: ['Post estático', 'Carrossel educativo'],
     },
     {
-      title: 'Filmmaker',
+      title: 'Filmaker',
       cards: ['Reel agendado', 'Vídeo em edição'],
     },
   ];
@@ -448,7 +448,7 @@ export default function AprovUpSitePage() {
           </h2>
 
           <div className="mt-12 grid gap-5 md:grid-cols-5">
-            {['Planejamento', 'Aprovação', 'Design', 'Filmmaker', 'Postagem'].map((item, index) => (
+            {['Planejamento', 'Aprovação', 'Design', 'Filmaker', 'Postagem'].map((item, index) => (
               <div key={item} className="rounded-[28px] bg-white/10 p-6">
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-lg font-black text-[#111827]">
                   {index + 1}

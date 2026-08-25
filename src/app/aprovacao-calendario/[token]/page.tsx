@@ -61,7 +61,7 @@ const priorityLabels: Record<string, string> = {
 const areaLabels: Record<string, string> = {
     GERAL: "Geral",
     SOCIAL_DESIGN: "Design",
-    AUDIOVISUAL: "Filmmaker",
+    AUDIOVISUAL: "Filmaker",
 };
 
 function getMonthRange(year: number, month: number) {

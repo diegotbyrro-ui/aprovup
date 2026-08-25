@@ -559,3 +559,21 @@ button {
       0.55em;
   }
 }
+
+/* =========================================================
+   APROVUP THEME LOGO
+   ========================================================= */
+
+.aprovup-logo-image-dark {
+  display: none;
+}
+
+html[data-aprovup-theme="dark"] .aprovup-logo-image-default {
+  display: none;
+}
+
+html[data-aprovup-theme="dark"] .aprovup-logo-image-dark {
+  display: block;
+}
+
+/* APROVUP THEME LOGO SWITCH */

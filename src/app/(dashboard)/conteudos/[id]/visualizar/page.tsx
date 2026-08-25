@@ -173,7 +173,7 @@ export default async function ViewContentPage({
         className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-950"
       >
         <ArrowLeft size={16} />
-        Voltar para {item.area === 'FILMMAKER' ? 'Filmmaker' : 'Design'}
+        Voltar para {item.area === 'FILMMAKER' ? 'Filmaker' : 'Design'}
       </Link>
 
       <section className="rounded-3xl bg-slate-950 p-8 text-white shadow-sm">

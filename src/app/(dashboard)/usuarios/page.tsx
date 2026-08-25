@@ -12,7 +12,7 @@ const roleLabels: Record<string, string> = {
     DIRECTOR: 'Diretor',
     SOCIAL_MEDIA: 'Social Media',
     DESIGN: 'Design',
-    FILMMAKER: 'Filmmaker',
+    FILMMAKER: 'Filmaker',
 };
 
 const statusLabels: Record<string, string> = {
@@ -130,7 +130,7 @@ function UserCard({
                             <option value="DIRECTOR">Diretor</option>
                             <option value="SOCIAL_MEDIA">Social Media</option>
                             <option value="DESIGN">Design</option>
-                            <option value="FILMMAKER">Filmmaker</option>
+                            <option value="FILMMAKER">Filmaker</option>
                         </select>
 
                         <select

@@ -70,7 +70,7 @@ async function approveContentBase(
   if (result) {
     const destinationLabel =
       result.destination === 'FILMMAKER'
-        ? 'Filmmaker'
+        ? 'Filmaker'
         : 'Design';
 
     await prisma.comment.create({

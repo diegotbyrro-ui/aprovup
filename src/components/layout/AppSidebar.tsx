@@ -76,7 +76,7 @@ export async function AppSidebar() {
       ],
     },
     {
-      name: "Filmmaker",
+      name: "Filmaker",
       icon: "filmmaker",
       path: "/filmmaker",
       permission: "filmmaker.view",

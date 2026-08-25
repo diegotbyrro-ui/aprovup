@@ -486,7 +486,7 @@ function ContentRow({
           <span>
             {content.area ===
             "FILMMAKER"
-              ? "Filmmaker"
+              ? "Filmaker"
               : "Design"}
           </span>
 

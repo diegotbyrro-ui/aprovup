@@ -35,7 +35,7 @@ function label(value?: string | null) {
   const labels: Record<string, string> = {
     SOCIAL_MEDIA: 'Social Media',
     DESIGN: 'Design',
-    FILMMAKER: 'Filmmaker',
+    FILMMAKER: 'Filmaker',
     RASCUNHO: 'Rascunho',
     EM_PRODUCAO: 'Em produção',
     EM_APROVACAO: 'Em aprovação',

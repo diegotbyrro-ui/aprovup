@@ -85,7 +85,7 @@ export async function approvePlanningContent(
 
   const destinationLabel =
     destination === 'FILMMAKER'
-      ? 'Filmmaker'
+      ? 'Filmaker'
       : 'Design';
 
   await prisma.historyLog.create({

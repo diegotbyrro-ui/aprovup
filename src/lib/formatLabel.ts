@@ -23,7 +23,7 @@ export function formatLabel(value?: string | null) {
     DESIGN_DUVIDA: 'Dúvida do Design',
     DESIGN_MOTION: 'Design Motion',
 
-    FILMMAKER: 'Filmmaker',
+    FILMMAKER: 'Filmaker',
     FILMMAKER_PRE_PRODUCAO: 'Pré-produção',
     FILMMAKER_AGENDAMENTO: 'Agendamento',
     FILMMAKER_GRAVACAO: 'Gravando',

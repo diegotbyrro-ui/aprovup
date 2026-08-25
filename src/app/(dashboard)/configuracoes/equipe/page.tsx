@@ -50,7 +50,7 @@ const ROLE_LABELS:
     "Design",
 
   FILMMAKER:
-    "Filmmaker",
+    "Filmaker",
 };
 
 
@@ -562,7 +562,7 @@ export default async function TeamAccessPage({
                             </option>
 
                             <option value="FILMMAKER">
-                              Filmmaker
+                              Filmaker
                             </option>
                           </select>
 

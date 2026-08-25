@@ -78,7 +78,7 @@ export async function approveClientContentAction(
       message:
         `APROVAÇÃO DO CLIENTE: conteúdo aprovado e encaminhado para ${
           destination === 'FILMMAKER'
-            ? 'Filmmaker'
+            ? 'Filmaker'
             : 'Design'
         }.`,
     },

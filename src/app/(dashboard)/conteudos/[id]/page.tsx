@@ -13,7 +13,7 @@ import { generateApprovalLink } from './contentActions';
 const areaLabels: Record<string, string> = {
   GERAL: 'Geral',
   SOCIAL_DESIGN: 'Design',
-  AUDIOVISUAL: 'Filmmaker',
+  AUDIOVISUAL: 'Filmaker',
 };
 
 const priorityLabels: Record<string, string> = {
@@ -662,7 +662,7 @@ export default async function ConteudoDetailPage({
                   >
                     <option value="GERAL">Geral</option>
                     <option value="SOCIAL_DESIGN">Design</option>
-                    <option value="AUDIOVISUAL">Filmmaker</option>
+                    <option value="AUDIOVISUAL">Filmaker</option>
                   </select>
                 </div>
 
