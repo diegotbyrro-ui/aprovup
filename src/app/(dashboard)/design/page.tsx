@@ -26,8 +26,6 @@ import {
   prisma,
 } from "@/lib/prisma";
 
-import { IncomingTasks } from "@/components/tasks/IncomingTasks";
-
 import {
   SyncedHorizontalScroll,
 } from "@/components/kanban/SyncedHorizontalScroll";
@@ -812,6 +810,17 @@ function DesignCard({
             content.title
           )}
         </h3>
+        {content.format === "DEMANDA_EMERGENCIAL" ? (
+          <div className="mt-2 rounded-lg border border-red-200 bg-red-50 px-2.5 py-2">
+            <p className="text-[8px] font-black uppercase tracking-[0.08em] text-red-700">
+              DEMANDA EMERGENCIAL
+            </p>
+
+            <p className="mt-1 text-[9px] font-semibold text-red-900">
+              Solicitado por: {content.responsible || "Social Media"}
+            </p>
+          </div>
+        ) : null}
 
 
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -1299,11 +1308,6 @@ export default async function DesignPage() {
         </div>
       </section>
 
-
-      <IncomingTasks
-        destination="DESIGN"
-        title="Tarefas recebidas"
-      />
 
       {/* ===================================================
           RESUMO

@@ -142,6 +142,9 @@ export default async function MonthlyApprovalCalendarPage({
     const contents = await prisma.content.findMany({
         where: {
             clientId: monthlyApproval.clientId,
+            format: {
+                not: "DEMANDA_EMERGENCIAL",
+            },
             plannedDate: {
                 gte: start,
                 lte: end,

@@ -72,6 +72,7 @@ export default async function FinalApprovalManagerPage({
   const contents = await prisma.content.findMany({
     where: {
       clientId: id,
+      format: { not: "DEMANDA_EMERGENCIAL" },
       status: {
         in: [
           ...READY_STATUSES,

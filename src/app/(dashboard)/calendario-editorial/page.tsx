@@ -353,12 +353,12 @@ export default async function CalendarioEditorialPage({
                     <Link
                         href={
                             selectedClient !== 'TODOS'
-                                ? `/conteudos/novo?cliente=${selectedClient}`
-                                : '/clientes'
+                                ? `/demandas-emergenciais/nova?cliente=${selectedClient}`
+                                : '/demandas-emergenciais/nova'
                         }
-                        className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-slate-800"
+                        className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-red-700"
                     >
-                        {'Novo Conte\u00fado'}
+                        Demanda Emergencial
                     </Link>
                 </div>
             </div>
@@ -562,96 +562,6 @@ export default async function CalendarioEditorialPage({
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                <section className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm">
-                    <h2 className="text-lg font-bold text-red-800">
-                        Atenção do mês
-                    </h2>
-
-                    <p className="mt-1 text-sm text-red-600">
-                        Conteúdos atrasados ou urgentes neste calendário.
-                    </p>
-
-                    <div className="mt-4 space-y-3">
-                        {[...lateContents, ...urgentContents]
-                            .filter(
-                                (content, index, array) =>
-                                    array.findIndex((item) => item.id === content.id) === index
-                            )
-                            .slice(0, 5)
-                            .map((content) => (
-                                <Link
-                                    key={content.id}
-                                    href={`/conteudos/${content.id}`}
-                                    className="block rounded-xl border border-red-100 bg-white p-3 hover:shadow-sm"
-                                >
-                                    <p className="font-bold text-slate-900">
-                                        {content.title}
-                                    </p>
-
-                                    <p className="mt-1 text-xs text-slate-500">
-                                        {content.client?.name || 'Cliente não informado'} •{' '}
-                                        {formatDateInput(new Date(content.plannedDate || today))}
-                                    </p>
-                                </Link>
-                            ))}
-
-                        {lateContents.length === 0 && urgentContents.length === 0 && (
-                            <p className="rounded-xl border border-dashed border-red-200 bg-white p-6 text-center text-sm text-red-500">
-                                Nenhum conteúdo crítico neste mês.
-                            </p>
-                        )}
-                    </div>
-                </section>
-
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
-                    <h2 className="text-lg font-bold text-slate-900">
-                        Legenda rápida
-                    </h2>
-
-                    <p className="mt-1 text-sm text-slate-500">
-                        Como interpretar a visão do calendário.
-                    </p>
-
-                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-                        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-                            <p className="font-bold text-blue-800">
-                                Dia atual
-                            </p>
-                            <p className="mt-1 text-sm text-blue-700">
-                                Aparece com fundo azul para facilitar a leitura do dia.
-                            </p>
-                        </div>
-
-                        <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-                            <p className="font-bold text-red-800">
-                                Conteúdo atrasado
-                            </p>
-                            <p className="mt-1 text-sm text-red-700">
-                                Data anterior a hoje e ainda não publicado ou arquivado.
-                            </p>
-                        </div>
-
-                        <div className="rounded-xl border border-orange-100 bg-orange-50 p-4">
-                            <p className="font-bold text-orange-800">
-                                Alta prioridade
-                            </p>
-                            <p className="mt-1 text-sm text-orange-700">
-                                Conteúdos que precisam de atenção, mas não são urgentes.
-                            </p>
-                        </div>
-
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <p className="font-bold text-slate-800">
-                                Botão +
-                            </p>
-                            <p className="mt-1 text-sm text-slate-600">
-                                Cria um novo conteúdo já com aquela data preenchida.
-                            </p>
-                        </div>
-                    </div>
-                </section>
-            </div>
         </div>
     );
 }

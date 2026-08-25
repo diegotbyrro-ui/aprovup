@@ -27,6 +27,10 @@ async function sendContentToClient(
     throw new Error('Conteudo nao encontrado.');
   }
 
+  if (content.format === 'DEMANDA_EMERGENCIAL') {
+    return;
+  }
+
   if (!READY_STATUSES.includes(content.status)) {
     return;
   }
@@ -106,6 +110,7 @@ export async function sendAllReadyToFinalApprovalAction(
   const contents = await prisma.content.findMany({
     where: {
       clientId,
+      format: { not: "DEMANDA_EMERGENCIAL" },
       status: {
         in: READY_STATUSES,
       },

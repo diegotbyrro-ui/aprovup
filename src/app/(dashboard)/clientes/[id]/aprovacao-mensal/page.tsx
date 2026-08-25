@@ -122,6 +122,7 @@ export default async function ClientMonthlyApprovalPage({
                     prisma.content.count({
                         where: {
                             clientId: id,
+                            format: { not: "DEMANDA_EMERGENCIAL" },
                             plannedDate: {
                                 gte: start,
                                 lte: end,
@@ -135,6 +136,7 @@ export default async function ClientMonthlyApprovalPage({
                     prisma.content.count({
                         where: {
                             clientId: id,
+                            format: { not: "DEMANDA_EMERGENCIAL" },
                             plannedDate: {
                                 gte: start,
                                 lte: end,
@@ -157,6 +159,7 @@ export default async function ClientMonthlyApprovalPage({
                     prisma.content.count({
                         where: {
                             clientId: id,
+                            format: { not: "DEMANDA_EMERGENCIAL" },
                             plannedDate: {
                                 gte: start,
                                 lte: end,
@@ -168,6 +171,7 @@ export default async function ClientMonthlyApprovalPage({
                     prisma.content.count({
                         where: {
                             clientId: id,
+                            format: { not: "DEMANDA_EMERGENCIAL" },
                             plannedDate: {
                                 gte: start,
                                 lte: end,
