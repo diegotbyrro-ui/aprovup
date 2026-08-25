@@ -29,6 +29,11 @@ const STAFF_ROLES = [
   "FILMMAKER",
 ];
 
+const INVITE_ROLES = [
+  "DIRECTOR",
+  ...STAFF_ROLES,
+];
+
 
 function readPermissions(
   formData:
@@ -117,12 +122,23 @@ export async function createEmployeeInviteAction(
 
 
   if (
-    !STAFF_ROLES.includes(
+    !INVITE_ROLES.includes(
       role
     )
   ) {
     redirect(
       "/configuracoes/equipe?error=role"
+    );
+  }
+
+
+  /* Apenas Diretor pode criar outro Diretor. */
+  if (
+    role === "DIRECTOR" &&
+    currentUser.role !== "DIRECTOR"
+  ) {
+    redirect(
+      "/configuracoes/equipe?error=admin-only"
     );
   }
 
@@ -171,7 +187,8 @@ export async function createEmployeeInviteAction(
         status:
           "PENDENTE",
 
-        permissions,
+        permissions:
+          role === "DIRECTOR" ? undefined : permissions,
 
         inviteToken,
         inviteExpiresAt,

@@ -144,6 +144,20 @@ const ROLE_PRESETS:
     string[]
   > = {
 
+  DIRECTOR: [
+    "dashboard.view",
+    "social.view",
+    "social.manage",
+    "design.view",
+    "design.manage",
+    "filmmaker.view",
+    "filmmaker.manage",
+    "crm.view",
+    "crm.manage",
+    "users.manage",
+    "settings.manage",
+  ],
+
   SOCIAL_MEDIA: [
     "dashboard.view",
     "social.view",
@@ -283,6 +297,10 @@ export function InviteEmployeeForm() {
             }
             className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-900 outline-none focus:border-blue-500"
           >
+                        <option value="DIRECTOR">
+              Diretor(a) / Administrador
+            </option>
+
             <option value="SOCIAL_MEDIA">
               Social Media
             </option>
@@ -306,7 +324,9 @@ export function InviteEmployeeForm() {
           </p>
 
           <p className="mt-1 text-[9px] text-slate-400">
-            O cargo define um ponto de partida. Você pode liberar ou remover qualquer área.
+            {role === "DIRECTOR"
+              ? "Diretores possuem acesso administrativo completo a todas as áreas do AprovUp."
+              : "O cargo define um ponto de partida. Você pode liberar ou remover qualquer área."}
           </p>
         </div>
 
@@ -358,6 +378,9 @@ export function InviteEmployeeForm() {
                               toggle(
                                 permission.value
                               )
+                          }
+                          disabled={
+                            role === "DIRECTOR"
                           }
                           className="mt-0.5"
                         />
