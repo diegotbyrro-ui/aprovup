@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser, isDirector } from '@/lib/auth';
+import { requireCurrentUser, isDirector, isSocialMedia } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { updateClientAction } from './actions';
@@ -18,7 +18,10 @@ export default async function EditarClientePage({
 }) {
   const currentUser = await requireCurrentUser();
 
-  if (!isDirector(currentUser.role)) {
+  if (
+    !isDirector(currentUser.role) &&
+    !isSocialMedia(currentUser.role)
+  ) {
     redirect('/clientes');
   }
 
