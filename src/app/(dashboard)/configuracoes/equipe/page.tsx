@@ -399,6 +399,51 @@ export default async function TeamAccessPage({
                     Esta é sua conta
                   </p>
                 ) : null}
+                {/* DIRECTOR_INVITE_BLOCK */}
+                {user.status ===
+                  "PENDENTE" &&
+                user.inviteToken ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-amber-100 bg-amber-50 p-2.5">
+                    <Clock3
+                      size={
+                        13
+                      }
+                      className="text-amber-600"
+                    />
+
+                    <span className="text-[9px] font-semibold text-amber-700">
+                      Aguardando criação da senha
+                    </span>
+
+                    <InviteCopyButton
+                      token={
+                        user.inviteToken
+                      }
+                    />
+
+                    <form
+                      action={
+                        regenerateInviteAction.bind(
+                          null,
+                          user.id
+                        )
+                      }
+                    >
+                      <button
+                        type="submit"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-amber-200 bg-white px-3 text-[9px] font-bold text-amber-700 hover:bg-amber-50"
+                      >
+                        <KeyRound
+                          size={
+                            11
+                          }
+                        />
+
+                        Novo link
+                      </button>
+                    </form>
+                  </div>
+                ) : null}
               </article>
             )
           )}

@@ -476,13 +476,38 @@ export async function regenerateInviteAction(
     });
 
 
+  /* DIRECTOR_REGENERATE_GUARD */
+  if (!target) {
+    redirect(
+      "/configuracoes/equipe?error=notfound"
+    );
+  }
+
+
+  /*
+   * Apenas outro Director pode renovar
+   * o convite de um Director.
+   */
   if (
-    !target ||
-    target.role ===
-      "DIRECTOR"
+    target.role === "DIRECTOR" &&
+    currentUser.role !== "DIRECTOR"
   ) {
     redirect(
-      "/configuracoes/equipe?error=admin"
+      "/configuracoes/equipe?error=admin-only"
+    );
+  }
+
+
+  /*
+   * Nao permite renovar convite
+   * da propria conta logada.
+   */
+  if (
+    currentUser.id ===
+    userId
+  ) {
+    redirect(
+      "/configuracoes/equipe?error=self"
     );
   }
 
