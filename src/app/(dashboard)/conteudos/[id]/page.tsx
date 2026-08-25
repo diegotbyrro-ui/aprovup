@@ -1106,6 +1106,12 @@ export default async function ConteudoDetailPage({
                 placeholder="Nova tarefa..."
                 className={inputClasses}
               />
+              <textarea
+                name="description"
+                rows={3}
+                placeholder="Orientações, detalhes ou observações para quem vai executar..."
+                className={inputClasses}
+              />
 
               <div className="grid grid-cols-1 gap-2">
                 <select
@@ -1119,8 +1125,28 @@ export default async function ConteudoDetailPage({
                   <option value="URGENTE">Urgente</option>
                 </select>
 
+                <select
+                  name="responsible"
+                  required
+                  defaultValue=""
+                  className="rounded-md border border-slate-300 bg-white p-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="" disabled>
+                    Enviar para...
+                  </option>
+
+                  <option value="DESIGN">
+                    Design
+                  </option>
+
+                  <option value="FILMMAKER">
+                    Filmaker
+                  </option>
+                </select>
+
                 <input
                   name="dueDate"
+                  required
                   type="date"
                   className="rounded-md border border-slate-300 bg-white p-2 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />

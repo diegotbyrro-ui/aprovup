@@ -444,7 +444,7 @@ export async function addTask(contentId: string, formData: FormData) {
       status: String(formData.get("status") || "A_FAZER").trim(),
       priority: String(formData.get("priority") || "MEDIA").trim(),
       responsible: String(formData.get("responsible") || "").trim(),
-      dueDate: dueDateValue ? new Date(dueDateValue) : null,
+      dueDate: dueDateValue ? new Date(`${dueDateValue}T12:00:00`) : null,
     },
   });
 
@@ -458,6 +458,8 @@ export async function addTask(contentId: string, formData: FormData) {
 
   revalidatePath(`/conteudos/${contentId}`);
   revalidatePath("/tarefas");
+  revalidatePath("/design");
+  revalidatePath("/filmmaker");
   revalidatePath("/clientes");
 }
 
@@ -471,7 +473,7 @@ export async function completeTask(taskId: string) {
   const task = await prisma.task.update({
     where: { id: taskId },
     data: {
-      status: "FINALIZADA",
+      status: "FINALIZADO",
     },
     include: {
       content: true,
@@ -488,6 +490,8 @@ export async function completeTask(taskId: string) {
 
   revalidatePath(`/conteudos/${task.contentId}`);
   revalidatePath("/tarefas");
+  revalidatePath("/design");
+  revalidatePath("/filmmaker");
   revalidatePath("/clientes");
 }
 

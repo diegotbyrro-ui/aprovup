@@ -26,6 +26,8 @@ import {
   prisma,
 } from "@/lib/prisma";
 
+import { IncomingTasks } from "@/components/tasks/IncomingTasks";
+
 import {
   SyncedHorizontalScroll,
 } from "@/components/kanban/SyncedHorizontalScroll";
@@ -1297,6 +1299,11 @@ export default async function DesignPage() {
         </div>
       </section>
 
+
+      <IncomingTasks
+        destination="DESIGN"
+        title="Tarefas recebidas"
+      />
 
       {/* ===================================================
           RESUMO

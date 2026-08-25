@@ -34,6 +34,8 @@ import {
   prisma,
 } from "@/lib/prisma";
 
+import { IncomingTasks } from "@/components/tasks/IncomingTasks";
+
 import {
   SyncedHorizontalScroll,
 } from "@/components/kanban/SyncedHorizontalScroll";
@@ -1400,6 +1402,11 @@ await ensureDefaultFilmmakerColumns();
         </div>
       </section>
 
+
+      <IncomingTasks
+        destination="FILMMAKER"
+        title="Tarefas recebidas"
+      />
 
       {/* ===================================================
           METRICAS
