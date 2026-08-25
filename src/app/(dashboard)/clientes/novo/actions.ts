@@ -23,9 +23,14 @@ async function logHistory(
     });
 }
 
+function text(formData: FormData, name: string) {
+    return String(formData.get(name) || '').trim();
+}
+
 export async function createClientAction(formData: FormData) {
     const currentUser = await requirePermission('social.manage');
-const name = String(formData.get('name') || '').trim();
+
+    const name = text(formData, 'name');
 
     if (!name) {
         redirect('/clientes/novo?error=name');
@@ -38,20 +43,104 @@ const name = String(formData.get('name') || '').trim();
     const client = await prisma.client.create({
         data: {
             name,
-            segment: String(formData.get('segment') || '').trim(),
-            internalResponsible: String(
-                formData.get('internalResponsible') || ''
-            ).trim(),
-            postingFrequency: String(formData.get('postingFrequency') || '').trim(),
-            monthlyContentGoal: Number.isNaN(monthlyContentGoalValue)
+
+            // Dados basicos
+            legalName: text(formData, 'legalName'),
+            cnpj: text(formData, 'cnpj'),
+            segment: text(formData, 'segment'),
+            mainContact: text(formData, 'mainContact'),
+            contactPhone: text(formData, 'contactPhone'),
+            contactEmail: text(formData, 'contactEmail'),
+            companyAddress: text(formData, 'companyAddress'),
+
+            // Contrato e operacao
+            internalResponsible: text(
+                formData,
+                'internalResponsible'
+            ),
+            monthlyContentGoal: Number.isNaN(
+                monthlyContentGoalValue
+            )
                 ? 0
                 : monthlyContentGoalValue,
-            toneOfVoice: String(formData.get('toneOfVoice') || '').trim(),
-            contractedServices: String(
-                formData.get('contractedServices') || ''
-            ).trim(),
-            strategicNotes: String(formData.get('strategicNotes') || '').trim(),
-            usefulLinks: String(formData.get('usefulLinks') || '').trim(),
+            postingFrequency: text(
+                formData,
+                'postingFrequency'
+            ),
+            toneOfVoice: text(
+                formData,
+                'toneOfVoice'
+            ),
+            contractedServices: text(
+                formData,
+                'contractedServices'
+            ),
+
+            // Materiais e links
+            databaseLink: text(
+                formData,
+                'databaseLink'
+            ),
+            driveLink: text(
+                formData,
+                'driveLink'
+            ),
+            logoLink: text(
+                formData,
+                'logoLink'
+            ),
+            usefulLinks: text(
+                formData,
+                'usefulLinks'
+            ),
+
+            // Briefing estrategico
+            businessDescription: text(
+                formData,
+                'businessDescription'
+            ),
+            targetAudience: text(
+                formData,
+                'targetAudience'
+            ),
+            brandDifferentials: text(
+                formData,
+                'brandDifferentials'
+            ),
+            marketingGoals: text(
+                formData,
+                'marketingGoals'
+            ),
+            competitors: text(
+                formData,
+                'competitors'
+            ),
+            benchmarkNotes: text(
+                formData,
+                'benchmarkNotes'
+            ),
+            contentPillars: text(
+                formData,
+                'contentPillars'
+            ),
+            contentRestrictions: text(
+                formData,
+                'contentRestrictions'
+            ),
+            clientBriefing: text(
+                formData,
+                'clientBriefing'
+            ),
+
+            // Campos adicionais existentes
+            strategicNotes: text(
+                formData,
+                'strategicNotes'
+            ),
+            personaNotes: text(
+                formData,
+                'personaNotes'
+            ),
         },
     });
 
@@ -60,12 +149,12 @@ const name = String(formData.get('name') || '').trim();
         client.id,
         'CREATED',
         `Cliente ${client.name} criado.`,
-        currentUser.name || currentUser.email || 'Diretor'
+        currentUser.name ||
+            currentUser.email ||
+            'Equipe Level UP'
     );
 
-    revalidatePath('/clientes');
     revalidatePath('/clientes');
 
     redirect('/clientes');
 }
-
