@@ -46,6 +46,10 @@ import {
   saveInstagramSnapshot,
 } from '@/lib/instagramSnapshots';
 
+import {
+  getInstagramHistorySummary,
+} from '@/lib/instagramHistory';
+
 
 function formatMetricValue(
   value:
@@ -716,6 +720,77 @@ export default async function ClientInstagramPage({
   }
 
 
+  const followerHistory =
+    await getInstagramHistorySummary({
+
+      clientId:
+        client.id,
+
+      days:
+        90,
+
+    });
+
+
+  let followerHelper:
+    string | undefined;
+
+
+  if (
+    followerHistory.daysWithData >= 2
+  ) {
+
+    const delta =
+      followerHistory.followersDelta;
+
+
+    const deltaText =
+      delta === null
+        ? '—'
+        : (
+            delta > 0
+              ? '+'
+              : ''
+          ) +
+          delta.toLocaleString(
+            'pt-BR'
+          );
+
+
+    const firstDateText =
+      followerHistory.first
+        ?.dateKey
+        ?.split('-')
+        .reverse()
+        .join('/') ||
+      'a primeira coleta';
+
+
+    followerHelper =
+      deltaText +
+      ' desde ' +
+      firstDateText;
+
+  }
+  else if (
+    followerHistory.daysWithData === 1
+  ) {
+
+    followerHelper =
+      'Histórico iniciado hoje';
+
+  }
+  else if (
+    connection
+  ) {
+
+    followerHelper =
+      'Aguardando primeira coleta histórica';
+
+  }
+
+
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
 
@@ -935,12 +1010,12 @@ export default async function ClientInstagramPage({
             Conteúdos
           </Link>
 
-          <button
-            disabled
-            className="cursor-not-allowed rounded-xl px-4 py-2.5 text-sm font-bold text-slate-400"
+          <Link
+            href={`/clientes/${client.id}/instagram/relatorios`}
+            className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 transition hover:bg-slate-100"
           >
             Relatórios
-          </button>
+          </Link>
 
         </div>
 
@@ -973,7 +1048,7 @@ export default async function ClientInstagramPage({
           helper={
             connection &&
             configured
-              ? 'Total atual de seguidores'
+              ? followerHelper
               : connection
                 ? 'Configuração Meta pendente no servidor'
                 : undefined
