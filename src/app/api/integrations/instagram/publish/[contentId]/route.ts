@@ -16,7 +16,9 @@ import {
 } from '@/lib/metaCrypto';
 
 import {
+  publishInstagramCarousel,
   publishInstagramImage,
+  publishInstagramReel,
 } from '@/lib/metaInstagram';
 
 import {
@@ -31,30 +33,77 @@ export const dynamic =
   'force-dynamic';
 
 
-function isCarouselFormat(
-  format:
+function normalizedFormat(
+  value:
     string | null
 ) {
 
-  const normalized =
-    String(
-      format ||
-      ''
-    )
-      .trim()
-      .toUpperCase();
+  return String(
+    value ||
+    ''
+  )
+    .trim()
+    .toUpperCase();
+}
+
+
+function isCarouselFormat(
+  value:
+    string | null
+) {
+
+  const format =
+    normalizedFormat(
+      value
+    );
 
 
   return (
-    normalized.includes(
+    format.includes(
       'CARROSSEL'
     ) ||
-    normalized.includes(
+    format.includes(
       'CAROUSEL'
     ) ||
-    normalized.includes(
+    format.includes(
       'ALBUM'
     )
+  );
+}
+
+
+function isReelFormat(
+  value:
+    string | null
+) {
+
+  const format =
+    normalizedFormat(
+      value
+    );
+
+
+  return (
+    format.includes(
+      'REEL'
+    ) ||
+    format ===
+      'VIDEO' ||
+    format ===
+      'VÍDEO'
+  );
+}
+
+
+function isStoryFormat(
+  value:
+    string | null
+) {
+
+  return normalizedFormat(
+    value
+  ).includes(
+    'STORY'
   );
 }
 
@@ -103,7 +152,6 @@ export async function POST(
       'social.manage'
     )
   ) {
-
     return NextResponse.json(
       {
         ok:
@@ -117,7 +165,6 @@ export async function POST(
           403,
       }
     );
-
   }
 
 
@@ -135,23 +182,28 @@ export async function POST(
           contentId,
       },
 
-
       include: {
 
         client: {
 
           include: {
-
             instagramConnection:
               true,
-
           },
 
         },
 
-
         instagramPublication:
           true,
+
+        instagramMediaAssets: {
+
+          orderBy: {
+            position:
+              'asc',
+          },
+
+        },
 
       },
 
@@ -181,7 +233,6 @@ export async function POST(
     content.status !==
     'PRONTO_PARA_POSTAR'
   ) {
-
     return NextResponse.json(
       {
         ok:
@@ -195,7 +246,6 @@ export async function POST(
           409,
       }
     );
-
   }
 
 
@@ -207,7 +257,6 @@ export async function POST(
   if (
     !connection
   ) {
-
     return NextResponse.json(
       {
         ok:
@@ -221,14 +270,73 @@ export async function POST(
           400,
       }
     );
+  }
 
+
+  const carousel =
+    isCarouselFormat(
+      content.format
+    );
+
+
+  const reel =
+    isReelFormat(
+      content.format
+    );
+
+
+  const story =
+    isStoryFormat(
+      content.format
+    );
+
+
+  if (
+    story
+  ) {
+    return NextResponse.json(
+      {
+        ok:
+          false,
+
+        message:
+          'Story ainda não está disponível nesta versão.',
+      },
+      {
+        status:
+          400,
+      }
+    );
   }
 
 
   if (
+    carousel &&
+    content
+      .instagramMediaAssets
+      .length <
+      2
+  ) {
+    return NextResponse.json(
+      {
+        ok:
+          false,
+
+        message:
+          'Envie pelo menos 2 imagens para o carrossel.',
+      },
+      {
+        status:
+          400,
+      }
+    );
+  }
+
+
+  if (
+    !carousel &&
     !content.finalMediaUrl
   ) {
-
     return NextResponse.json(
       {
         ok:
@@ -242,11 +350,37 @@ export async function POST(
           400,
       }
     );
-
   }
 
 
   if (
+    reel &&
+    !String(
+      content.finalMediaType ||
+      ''
+    ).startsWith(
+      'video/'
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok:
+          false,
+
+        message:
+          'O Reel precisa possuir um arquivo final de vídeo.',
+      },
+      {
+        status:
+          400,
+      }
+    );
+  }
+
+
+  if (
+    !carousel &&
+    !reel &&
     !String(
       content.finalMediaType ||
       ''
@@ -254,44 +388,19 @@ export async function POST(
       'image/'
     )
   ) {
-
     return NextResponse.json(
       {
         ok:
           false,
 
         message:
-          'Nesta primeira etapa somente imagem única pode ser publicada.',
+          'O formato deste material ainda não é suportado.',
       },
       {
         status:
           400,
       }
     );
-
-  }
-
-
-  if (
-    isCarouselFormat(
-      content.format
-    )
-  ) {
-
-    return NextResponse.json(
-      {
-        ok:
-          false,
-
-        message:
-          'Carrossel será liberado na próxima etapa.',
-      },
-      {
-        status:
-          400,
-      }
-    );
-
   }
 
 
@@ -301,7 +410,6 @@ export async function POST(
       ?.status ===
     'PUBLICADO'
   ) {
-
     return NextResponse.json(
       {
         ok:
@@ -315,7 +423,6 @@ export async function POST(
           409,
       }
     );
-
   }
 
 
@@ -335,7 +442,6 @@ export async function POST(
       ).getTime() <
       5 * 60 * 1000
   ) {
-
     return NextResponse.json(
       {
         ok:
@@ -349,7 +455,6 @@ export async function POST(
           409,
       }
     );
-
   }
 
 
@@ -357,6 +462,21 @@ export async function POST(
     content.caption
       ?.trim() ||
     null;
+
+
+  const snapshotMediaUrl =
+    carousel
+      ? content
+          .instagramMediaAssets[0]
+          ?.url ||
+        null
+      : content.finalMediaUrl;
+
+
+  const snapshotMediaType =
+    carousel
+      ? 'carousel/image'
+      : content.finalMediaType;
 
 
   await prisma
@@ -367,7 +487,6 @@ export async function POST(
         contentId:
           content.id,
       },
-
 
       create: {
 
@@ -384,13 +503,13 @@ export async function POST(
         caption,
 
         mediaUrl:
-          content.finalMediaUrl,
+          snapshotMediaUrl,
 
         coverUrl:
           content.finalCoverUrl,
 
         mediaType:
-          content.finalMediaType,
+          snapshotMediaType,
 
         status:
           'PUBLICANDO',
@@ -406,7 +525,6 @@ export async function POST(
 
       },
 
-
       update: {
 
         instagramUserId:
@@ -419,13 +537,13 @@ export async function POST(
         caption,
 
         mediaUrl:
-          content.finalMediaUrl,
+          snapshotMediaUrl,
 
         coverUrl:
           content.finalCoverUrl,
 
         mediaType:
-          content.finalMediaType,
+          snapshotMediaType,
 
         status:
           'PUBLICANDO',
@@ -456,20 +574,59 @@ export async function POST(
 
 
     const result =
-      await publishInstagramImage({
+      carousel
+        ? await publishInstagramCarousel({
 
-        instagramUserId:
-          connection
-            .instagramUserId,
+            instagramUserId:
+              connection
+                .instagramUserId,
 
-        accessToken,
+            accessToken,
 
-        imageUrl:
-          content.finalMediaUrl,
+            imageUrls:
+              content
+                .instagramMediaAssets
+                .map(
+                  (
+                    asset
+                  ) =>
+                    asset.url
+                ),
 
-        caption,
+            caption,
 
-      });
+          })
+        : reel
+          ? await publishInstagramReel({
+
+              instagramUserId:
+                connection
+                  .instagramUserId,
+
+              accessToken,
+
+              videoUrl:
+                content
+                  .finalMediaUrl!,
+
+              caption,
+
+            })
+          : await publishInstagramImage({
+
+              instagramUserId:
+                connection
+                  .instagramUserId,
+
+              accessToken,
+
+              imageUrl:
+                content
+                  .finalMediaUrl!,
+
+              caption,
+
+            });
 
 
     await prisma.$transaction([
@@ -541,6 +698,12 @@ export async function POST(
               connection.username
                 ? ` @${connection.username}`
                 : ''
+            }. Formato: ${
+              carousel
+                ? 'Carrossel'
+                : reel
+                  ? 'Reel'
+                  : 'Imagem'
             }.`,
 
           authorName:
@@ -606,7 +769,8 @@ export async function POST(
 
       })
       .catch(
-        () => null
+        () =>
+          null
       );
 
 

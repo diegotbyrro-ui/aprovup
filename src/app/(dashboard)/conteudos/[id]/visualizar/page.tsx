@@ -5,6 +5,7 @@ import { requirePermission } from '@/lib/userAccess';
 import Link from 'next/link';
 import { deleteContentAction } from '../delete-actions';
 import FinalUploadForm from './FinalUploadForm';
+import { CarouselFinalUpload } from '@/components/content/CarouselFinalUpload';
 import {
   ArrowLeft,
   CalendarDays,
@@ -92,6 +93,12 @@ export default async function ViewContentPage({
           createdAt: 'desc',
         },
       },
+
+      instagramMediaAssets: {
+        orderBy: {
+          position: 'asc',
+        },
+      },
     },
   });
 
@@ -150,6 +157,33 @@ export default async function ViewContentPage({
   const finalMediaUrl = item.finalMediaUrl || '';
   const finalCoverUrl = item.finalCoverUrl || '';
   const finalMediaType = item.finalMediaType || '';
+
+  const normalizedFormat =
+    String(
+      item.format ||
+      ''
+    )
+      .trim()
+      .toUpperCase();
+
+  const isDesignCarousel =
+    (
+      item.area ===
+        'DESIGN' ||
+      item.area ===
+        'SOCIAL_DESIGN'
+    ) &&
+    (
+      normalizedFormat.includes(
+        'CARROSSEL'
+      ) ||
+      normalizedFormat.includes(
+        'CAROUSEL'
+      ) ||
+      normalizedFormat.includes(
+        'ALBUM'
+      )
+    );
 
   const finalIsVideo =
     finalMediaType.startsWith('video/');
@@ -256,20 +290,55 @@ export default async function ViewContentPage({
             </p>
 
             <h2 className="mt-2 text-lg font-bold text-blue-950">
-              Enviar arquivo pronto para conferência
+              {
+                isDesignCarousel
+                  ? 'Montar carrossel para conferência'
+                  : 'Enviar arquivo pronto para conferência'
+              }
             </h2>
 
             <p className="mt-2 text-sm leading-relaxed text-blue-800">
-              Suba aqui a arte final, vídeo editado ou capa do vídeo. Depois do envio, o material segue para conferência interna antes de avançar para a Etapa 2 de aprovação do cliente.
+              {
+                isDesignCarousel
+                  ? 'Adicione todas as páginas na ordem correta. O carrossel completo seguirá para conferência interna e depois para a 2ª Etapa de aprovação do cliente.'
+                  : 'Suba aqui a arte final, vídeo editado ou capa do vídeo. Depois do envio, o material segue para conferência interna antes de avançar para a Etapa 2 de aprovação do cliente.'
+              }
             </p>
 
-            {(finalMediaUrl || finalCoverUrl) && (
+            {isDesignCarousel && (
+
+              <div className="mt-5">
+
+                <CarouselFinalUpload
+                  contentId={
+                    item.id
+                  }
+                  status={
+                    item.status
+                  }
+                  assets={
+                    item.instagramMediaAssets.map(
+                      (asset: any) => ({
+                        id: asset.id,
+                        url: asset.url,
+                        mimeType: asset.mimeType,
+                        position: asset.position,
+                      })
+                    )
+                  }
+                />
+
+              </div>
+
+            )}
+
+            {!isDesignCarousel && (finalMediaUrl || finalCoverUrl) && (
               <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
                 Material enviado para conferência interna.
               </div>
             )}
 
-            {imagePreviewUrl && (
+            {!isDesignCarousel && imagePreviewUrl && (
               <div className="mt-4 overflow-hidden rounded-2xl border border-blue-100 bg-white">
                 <img
                   src={imagePreviewUrl}
@@ -279,7 +348,7 @@ export default async function ViewContentPage({
               </div>
             )}
 
-            {videoPreviewUrl && (
+            {!isDesignCarousel && videoPreviewUrl && (
               <div className="mt-4 overflow-hidden rounded-2xl border border-blue-100 bg-black">
                 <video
                   src={videoPreviewUrl}
@@ -292,7 +361,8 @@ export default async function ViewContentPage({
               </div>
             )}
 
-            {finalMediaUrl &&
+            {!isDesignCarousel &&
+              finalMediaUrl &&
               !imagePreviewUrl &&
               !videoPreviewUrl && (
                 <div className="mt-4 rounded-2xl border border-blue-100 bg-white p-4 text-center">
@@ -306,7 +376,7 @@ export default async function ViewContentPage({
                 </div>
               )}
 
-            {finalMediaUrl && (
+            {!isDesignCarousel && finalMediaUrl && (
               <a
                 href={finalMediaUrl}
                 target="_blank"
@@ -316,7 +386,13 @@ export default async function ViewContentPage({
               </a>
             )}
 
-            <FinalUploadForm contentId={item.id} />
+            {!isDesignCarousel && (
+              <FinalUploadForm
+                contentId={
+                  item.id
+                }
+              />
+            )}
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

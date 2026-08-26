@@ -102,6 +102,12 @@ export default async function FinalApprovalPage({
           createdAt: 'desc',
         },
       },
+
+      instagramMediaAssets: {
+        orderBy: {
+          position: 'asc',
+        },
+      },
     },
     orderBy: [
       {
@@ -224,6 +230,28 @@ export default async function FinalApprovalPage({
                 content.coverImageUrl ||
                 '';
 
+              const normalizedFormat =
+                String(
+                  content.format ||
+                  ''
+                )
+                  .trim()
+                  .toUpperCase();
+
+              const carouselContent =
+                normalizedFormat.includes(
+                  'CARROSSEL'
+                ) ||
+                normalizedFormat.includes(
+                  'CAROUSEL'
+                ) ||
+                normalizedFormat.includes(
+                  'ALBUM'
+                );
+
+              const carouselAssets =
+                content.instagramMediaAssets;
+
               const approvedContent =
                 content.status === 'PRONTO_PARA_POSTAR';
 
@@ -284,25 +312,89 @@ export default async function FinalApprovalPage({
                           </div>
 
                           <div className="bg-black">
-                            {mediaUrl ? (
-                              isVideo(content) ? (
-                                <video
-                                  src={mediaUrl}
-                                  controls
-                                  className="aspect-[4/5] w-full object-contain"
-                                />
-                              ) : (
-                                <img
-                                  src={mediaUrl}
-                                  alt={content.title}
-                                  className="aspect-[4/5] w-full object-cover"
-                                />
-                              )
-                            ) : (
-                              <div className="flex aspect-[4/5] items-center justify-center bg-slate-200 p-8 text-center text-sm font-bold text-slate-500">
-                                Material final ainda nao disponivel.
-                              </div>
-                            )}
+
+                            {
+                              carouselContent &&
+                              carouselAssets.length > 0
+                                ? (
+
+                                    <div className="flex snap-x snap-mandatory overflow-x-auto">
+
+                                      {carouselAssets.map(
+                                        (
+                                          asset,
+                                          index
+                                        ) => (
+
+                                          <div
+                                            key={
+                                              asset.id
+                                            }
+                                            className="relative min-w-full snap-center"
+                                          >
+
+                                            <img
+                                              src={
+                                                asset.url
+                                              }
+                                              alt={
+                                                `${content.title} - página ${index + 1}`
+                                              }
+                                              className="aspect-[4/5] w-full object-contain"
+                                            />
+
+
+                                            <span className="absolute right-3 top-3 rounded-full bg-black/75 px-3 py-1 text-xs font-black text-white">
+                                              {index + 1}/{carouselAssets.length}
+                                            </span>
+
+                                          </div>
+
+                                        )
+                                      )}
+
+                                    </div>
+
+                                  )
+                                : mediaUrl
+                                  ? (
+                                      isVideo(
+                                        content
+                                      )
+                                        ? (
+
+                                            <video
+                                              src={
+                                                mediaUrl
+                                              }
+                                              controls
+                                              className="aspect-[4/5] w-full object-contain"
+                                            />
+
+                                          )
+                                        : (
+
+                                            <img
+                                              src={
+                                                mediaUrl
+                                              }
+                                              alt={
+                                                content.title
+                                              }
+                                              className="aspect-[4/5] w-full object-cover"
+                                            />
+
+                                          )
+                                    )
+                                  : (
+
+                                      <div className="flex aspect-[4/5] items-center justify-center bg-slate-200 p-8 text-center text-sm font-bold text-slate-500">
+                                        Material final ainda não disponível.
+                                      </div>
+
+                                    )
+                            }
+
                           </div>
 
                           <div className="px-4 pb-4 pt-3">

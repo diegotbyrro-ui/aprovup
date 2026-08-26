@@ -2080,3 +2080,672 @@ export async function publishInstagramImage({
     permalink,
   };
 }
+
+
+
+async function waitInstagramContainerReady({
+  containerId,
+  accessToken,
+  attempts = 45,
+  delayMs = 2000,
+}: {
+  containerId: string;
+  accessToken: string;
+  attempts?: number;
+  delayMs?: number;
+}) {
+
+  for (
+    let attempt = 0;
+    attempt < attempts;
+    attempt++
+  ) {
+
+    const statusUrl =
+      new URL(
+        `https://graph.facebook.com/${graphVersion()}/${containerId}`
+      );
+
+
+    statusUrl.searchParams.set(
+      'fields',
+      'status_code,status'
+    );
+
+    statusUrl.searchParams.set(
+      'access_token',
+      accessToken
+    );
+
+
+    const response =
+      await fetch(
+        statusUrl,
+        {
+          cache:
+            'no-store',
+        }
+      );
+
+
+    const payload =
+      await parseMeta<{
+        status_code?: string;
+        status?: string;
+      }>(
+        response
+      );
+
+
+    const code =
+      String(
+        payload.status_code ||
+        ''
+      ).toUpperCase();
+
+
+    if (
+      code ===
+      'FINISHED'
+    ) {
+      return;
+    }
+
+
+    if (
+      code === 'ERROR' ||
+      code === 'EXPIRED'
+    ) {
+      throw new Error(
+        payload.status ||
+        `A Meta informou erro no processamento (${code}).`
+      );
+    }
+
+
+    await sleepMeta(
+      delayMs
+    );
+
+  }
+
+
+  throw new Error(
+    'A Meta demorou demais para processar a mídia.'
+  );
+}
+
+
+async function getPublishedInstagramPermalink({
+  mediaId,
+  accessToken,
+}: {
+  mediaId: string;
+  accessToken: string;
+}) {
+
+  try {
+
+    const url =
+      new URL(
+        `https://graph.facebook.com/${graphVersion()}/${mediaId}`
+      );
+
+
+    url.searchParams.set(
+      'fields',
+      'id,permalink'
+    );
+
+    url.searchParams.set(
+      'access_token',
+      accessToken
+    );
+
+
+    const response =
+      await fetch(
+        url,
+        {
+          cache:
+            'no-store',
+        }
+      );
+
+
+    const payload =
+      await parseMeta<{
+        id: string;
+        permalink?: string;
+      }>(
+        response
+      );
+
+
+    return (
+      payload.permalink ||
+      null
+    );
+
+  }
+  catch (
+    error
+  ) {
+
+    console.warn(
+      'INSTAGRAM PERMALINK ERROR',
+      error
+    );
+
+    return null;
+
+  }
+
+}
+
+
+export async function publishInstagramReel({
+  instagramUserId,
+  accessToken,
+  videoUrl,
+  caption,
+}: {
+  instagramUserId: string;
+  accessToken: string;
+  videoUrl: string;
+  caption?: string | null;
+}): Promise<InstagramImagePublishResult> {
+
+  if (
+    !videoUrl.startsWith(
+      'https://'
+    )
+  ) {
+    throw new Error(
+      'O vídeo precisa possuir URL HTTPS pública.'
+    );
+  }
+
+
+  const createUrl =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/media`
+    );
+
+
+  const createBody =
+    new URLSearchParams();
+
+  createBody.set(
+    'media_type',
+    'REELS'
+  );
+
+  createBody.set(
+    'video_url',
+    videoUrl
+  );
+
+  createBody.set(
+    'share_to_feed',
+    'true'
+  );
+
+  if (
+    caption?.trim()
+  ) {
+    createBody.set(
+      'caption',
+      caption.trim()
+    );
+  }
+
+  createBody.set(
+    'access_token',
+    accessToken
+  );
+
+
+  const createResponse =
+    await fetch(
+      createUrl,
+      {
+        method:
+          'POST',
+
+        headers: {
+          'Content-Type':
+            'application/x-www-form-urlencoded',
+        },
+
+        body:
+          createBody,
+
+        cache:
+          'no-store',
+      }
+    );
+
+
+  const created =
+    await parseMeta<{
+      id: string;
+    }>(
+      createResponse
+    );
+
+
+  if (
+    !created.id
+  ) {
+    throw new Error(
+      'A Meta não retornou o container do Reel.'
+    );
+  }
+
+
+  await waitInstagramContainerReady({
+
+    containerId:
+      created.id,
+
+    accessToken,
+
+    attempts:
+      45,
+
+    delayMs:
+      2000,
+
+  });
+
+
+  const publishUrl =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/media_publish`
+    );
+
+
+  const publishBody =
+    new URLSearchParams();
+
+  publishBody.set(
+    'creation_id',
+    created.id
+  );
+
+  publishBody.set(
+    'access_token',
+    accessToken
+  );
+
+
+  const publishResponse =
+    await fetch(
+      publishUrl,
+      {
+        method:
+          'POST',
+
+        headers: {
+          'Content-Type':
+            'application/x-www-form-urlencoded',
+        },
+
+        body:
+          publishBody,
+
+        cache:
+          'no-store',
+      }
+    );
+
+
+  const published =
+    await parseMeta<{
+      id: string;
+    }>(
+      publishResponse
+    );
+
+
+  if (
+    !published.id
+  ) {
+    throw new Error(
+      'A Meta não retornou o ID do Reel publicado.'
+    );
+  }
+
+
+  const permalink =
+    await getPublishedInstagramPermalink({
+
+      mediaId:
+        published.id,
+
+      accessToken,
+
+    });
+
+
+  return {
+
+    containerId:
+      created.id,
+
+    mediaId:
+      published.id,
+
+    permalink,
+
+  };
+}
+
+
+export async function publishInstagramCarousel({
+  instagramUserId,
+  accessToken,
+  imageUrls,
+  caption,
+}: {
+  instagramUserId: string;
+  accessToken: string;
+  imageUrls: string[];
+  caption?: string | null;
+}): Promise<InstagramImagePublishResult> {
+
+  if (
+    imageUrls.length < 2
+  ) {
+    throw new Error(
+      'O carrossel precisa de pelo menos 2 imagens.'
+    );
+  }
+
+
+  if (
+    imageUrls.length > 10
+  ) {
+    throw new Error(
+      'Nesta versão o carrossel aceita até 10 imagens.'
+    );
+  }
+
+
+  const childIds:
+    string[] =
+    [];
+
+
+  for (
+    const imageUrl
+    of imageUrls
+  ) {
+
+    if (
+      !imageUrl.startsWith(
+        'https://'
+      )
+    ) {
+      throw new Error(
+        'Todas as imagens do carrossel precisam possuir URL HTTPS pública.'
+      );
+    }
+
+
+    const childUrl =
+      new URL(
+        `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/media`
+      );
+
+
+    const childBody =
+      new URLSearchParams();
+
+    childBody.set(
+      'image_url',
+      imageUrl
+    );
+
+    childBody.set(
+      'is_carousel_item',
+      'true'
+    );
+
+    childBody.set(
+      'access_token',
+      accessToken
+    );
+
+
+    const childResponse =
+      await fetch(
+        childUrl,
+        {
+          method:
+            'POST',
+
+          headers: {
+            'Content-Type':
+              'application/x-www-form-urlencoded',
+          },
+
+          body:
+            childBody,
+
+          cache:
+            'no-store',
+        }
+      );
+
+
+    const child =
+      await parseMeta<{
+        id: string;
+      }>(
+        childResponse
+      );
+
+
+    if (
+      !child.id
+    ) {
+      throw new Error(
+        'A Meta não retornou uma das páginas do carrossel.'
+      );
+    }
+
+
+    await waitInstagramContainerReady({
+
+      containerId:
+        child.id,
+
+      accessToken,
+
+      attempts:
+        15,
+
+      delayMs:
+        1000,
+
+    });
+
+
+    childIds.push(
+      child.id
+    );
+
+  }
+
+
+  const parentUrl =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/media`
+    );
+
+
+  const parentBody =
+    new URLSearchParams();
+
+  parentBody.set(
+    'media_type',
+    'CAROUSEL'
+  );
+
+  parentBody.set(
+    'children',
+    childIds.join(',')
+  );
+
+  if (
+    caption?.trim()
+  ) {
+    parentBody.set(
+      'caption',
+      caption.trim()
+    );
+  }
+
+  parentBody.set(
+    'access_token',
+    accessToken
+  );
+
+
+  const parentResponse =
+    await fetch(
+      parentUrl,
+      {
+        method:
+          'POST',
+
+        headers: {
+          'Content-Type':
+            'application/x-www-form-urlencoded',
+        },
+
+        body:
+          parentBody,
+
+        cache:
+          'no-store',
+      }
+    );
+
+
+  const parent =
+    await parseMeta<{
+      id: string;
+    }>(
+      parentResponse
+    );
+
+
+  if (
+    !parent.id
+  ) {
+    throw new Error(
+      'A Meta não retornou o container do carrossel.'
+    );
+  }
+
+
+  await waitInstagramContainerReady({
+
+    containerId:
+      parent.id,
+
+    accessToken,
+
+    attempts:
+      20,
+
+    delayMs:
+      1500,
+
+  });
+
+
+  const publishUrl =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/media_publish`
+    );
+
+
+  const publishBody =
+    new URLSearchParams();
+
+  publishBody.set(
+    'creation_id',
+    parent.id
+  );
+
+  publishBody.set(
+    'access_token',
+    accessToken
+  );
+
+
+  const publishResponse =
+    await fetch(
+      publishUrl,
+      {
+        method:
+          'POST',
+
+        headers: {
+          'Content-Type':
+            'application/x-www-form-urlencoded',
+        },
+
+        body:
+          publishBody,
+
+        cache:
+          'no-store',
+      }
+    );
+
+
+  const published =
+    await parseMeta<{
+      id: string;
+    }>(
+      publishResponse
+    );
+
+
+  if (
+    !published.id
+  ) {
+    throw new Error(
+      'A Meta não retornou o ID do carrossel publicado.'
+    );
+  }
+
+
+  const permalink =
+    await getPublishedInstagramPermalink({
+
+      mediaId:
+        published.id,
+
+      accessToken,
+
+    });
+
+
+  return {
+
+    containerId:
+      parent.id,
+
+    mediaId:
+      published.id,
+
+    permalink,
+
+  };
+}

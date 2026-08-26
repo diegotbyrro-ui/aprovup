@@ -7,6 +7,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { updateContent, addComment, addTask, completeTask } from '@/app/actions';
 import { InstagramPreview } from '@/components/content/InstagramPreview';
 import { CoverImageUpload } from './CoverImageUpload';
+import { CarouselFinalUpload } from '@/components/content/CarouselFinalUpload';
 import { inputClasses, labelClasses } from '@/lib/styles';
 import { generateApprovalLink } from './contentActions';
 
@@ -591,6 +592,12 @@ export default async function ConteudoDetailPage({
           createdAt: 'desc',
         },
       },
+
+      instagramMediaAssets: {
+        orderBy: {
+          position: 'asc',
+        },
+      },
     },
   });
 
@@ -632,6 +639,30 @@ export default async function ConteudoDetailPage({
 
   const currentArea = contentSafe.area || 'GERAL';
   const currentPriority = contentSafe.priority || 'MEDIA';
+
+  const normalizedContentFormat =
+    String(
+      contentSafe.format ||
+      ''
+    )
+      .trim()
+      .toUpperCase();
+
+  const isDesignCarousel =
+    ['DESIGN', 'SOCIAL_DESIGN'].includes(
+      currentArea
+    ) &&
+    (
+      normalizedContentFormat.includes(
+        'CARROSSEL'
+      ) ||
+      normalizedContentFormat.includes(
+        'CAROUSEL'
+      ) ||
+      normalizedContentFormat.includes(
+        'ALBUM'
+      )
+    );
   const late = isLate(contentSafe.plannedDate, contentSafe.status);
 
   const pendingTasks = contentSafe.tasks.filter(
@@ -1263,7 +1294,30 @@ export default async function ConteudoDetailPage({
             </form>
           </section>
 
-          <CoverImageUpload
+          {isDesignCarousel && (
+
+                <CarouselFinalUpload
+                  contentId={
+                    contentSafe.id
+                  }
+                  status={
+                    contentSafe.status
+                  }
+                  assets={
+                    contentSafe.instagramMediaAssets.map(
+                      (asset) => ({
+                        id: asset.id,
+                        url: asset.url,
+                        mimeType: asset.mimeType,
+                        position: asset.position,
+                      })
+                    )
+                  }
+                />
+
+              )}
+
+              <CoverImageUpload
             contentId={contentSafe.id}
             currentImageUrl={contentSafe.coverImageUrl}
           />

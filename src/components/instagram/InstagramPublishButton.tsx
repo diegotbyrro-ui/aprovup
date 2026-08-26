@@ -13,6 +13,7 @@ export function InstagramPublishButton({
   contentId,
   enabled,
   disabledReason,
+  scheduled = false,
 }: {
   contentId:
     string;
@@ -22,6 +23,9 @@ export function InstagramPublishButton({
 
   disabledReason?:
     string;
+
+  scheduled?:
+    boolean;
 }) {
 
   const router =
@@ -57,10 +61,15 @@ export function InstagramPublishButton({
     );
 
 
+  const available =
+    enabled &&
+    !scheduled;
+
+
   async function publish() {
 
     if (
-      !enabled ||
+      !available ||
       loading
     ) {
       return;
@@ -171,29 +180,33 @@ export function InstagramPublishButton({
       <button
         type="button"
         disabled={
-          !enabled ||
+          !available ||
           loading
         }
         title={
-          enabled
-            ? 'Publicar agora no Instagram'
-            : disabledReason ||
-              'Publicação indisponível'
+          scheduled
+            ? 'Cancele o agendamento para publicar agora.'
+            : available
+              ? 'Publicar agora no Instagram'
+              : disabledReason ||
+                'Publicação indisponível'
         }
         onClick={
           publish
         }
         className={
-          enabled
+          available
             ? 'w-full rounded-lg bg-slate-950 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-60'
             : 'w-full cursor-not-allowed rounded-lg bg-slate-300 px-3 py-2.5 text-xs font-bold text-slate-500'
         }
       >
 
         {
-          loading
-            ? 'Publicando...'
-            : 'Publicar agora'
+          scheduled
+            ? 'Publicação agendada'
+            : loading
+              ? 'Publicando...'
+              : 'Publicar agora'
         }
 
       </button>
@@ -217,4 +230,5 @@ export function InstagramPublishButton({
 
     </div>
   );
+
 }

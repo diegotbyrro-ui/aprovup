@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { markContentAsPublished } from './actions';
 import { InstagramPublishButton } from '@/components/instagram/InstagramPublishButton';
+import { InstagramScheduleControl } from '@/components/instagram/InstagramScheduleControl';
 
 const priorityLabels: Record<string, string> = {
     BAIXA: 'Baixa',
@@ -99,6 +100,12 @@ export default async function ProntoParaPostarPage({
             },
 
             instagramPublication: true,
+
+            instagramMediaAssets: {
+                orderBy: {
+                    position: 'asc',
+                },
+            },
         },
         orderBy: [
             {
@@ -396,7 +403,8 @@ export default async function ProntoParaPostarPage({
 
                                         const hasFinalMedia =
                                             Boolean(
-                                                content.finalMediaUrl
+                                                content.finalMediaUrl ||
+                                                content.instagramMediaAssets.length >= 2
                                             );
 
                                         const hasCaption =
@@ -443,23 +451,70 @@ export default async function ProntoParaPostarPage({
                                                 'image/'
                                             );
 
-                                        const canPublishSingleImage =
+                                        const isReel =
+                                            normalizedFormat.includes(
+                                                'REEL'
+                                            ) ||
+                                            normalizedFormat ===
+                                                'VIDEO' ||
+                                            normalizedFormat ===
+                                                'VÍDEO';
+
+                                        const isStory =
+                                            normalizedFormat.includes(
+                                                'STORY'
+                                            );
+
+                                        const isVideoMedia =
+                                            String(
+                                                content.finalMediaType ||
+                                                ''
+                                            ).startsWith(
+                                                'video/'
+                                            );
+
+                                        const carouselMediaCount =
+                                            content
+                                                .instagramMediaAssets
+                                                .length;
+
+                                        const canPublishInstagram =
                                             Boolean(
-                                                instagramReady &&
-                                                isImageMedia &&
-                                                !isCarousel
+                                                instagramConnection &&
+                                                (
+                                                    isCarousel
+                                                        ? carouselMediaCount >= 2
+                                                        : isReel
+                                                            ? Boolean(
+                                                                content.finalMediaUrl &&
+                                                                isVideoMedia
+                                                            )
+                                                            : !isStory &&
+                                                              Boolean(
+                                                                  content.finalMediaUrl &&
+                                                                  isImageMedia
+                                                              )
+                                                )
                                             );
 
                                         const publishDisabledReason =
                                             !instagramConnection
                                                 ? 'Instagram não conectado.'
-                                                : !hasFinalMedia
-                                                    ? 'Material final ausente.'
-                                                    : isCarousel
-                                                        ? 'Carrossel será liberado na próxima etapa.'
-                                                        : !isImageMedia
-                                                            ? 'Nesta etapa somente imagem única pode ser publicada.'
-                                                            : undefined;
+                                                : isCarousel &&
+                                                  carouselMediaCount < 2
+                                                    ? 'Envie pelo menos 2 imagens do carrossel.'
+                                                    : isStory
+                                                        ? 'Story ainda não está disponível nesta versão.'
+                                                        : !hasFinalMedia
+                                                            ? 'Material final ausente.'
+                                                            : isReel &&
+                                                              !isVideoMedia
+                                                                ? 'Reel precisa de arquivo final de vídeo.'
+                                                                : !isCarousel &&
+                                                                  !isReel &&
+                                                                  !isImageMedia
+                                                                    ? 'Formato de mídia ainda não suportado.'
+                                                                    : undefined;
 
                                         return (
                                             <div
@@ -729,21 +784,44 @@ export default async function ProntoParaPostarPage({
                                                                     )
                                                                     : null
                                                             }
-
-
-                                                            <div className="mt-4 grid grid-cols-1 gap-2">
+<div className="mt-4 grid grid-cols-1 gap-2">
 
                                                                 <InstagramPublishButton
                                                                     contentId={
                                                                         content.id
                                                                     }
                                                                     enabled={
-                                                                        canPublishSingleImage
+                                                                        canPublishInstagram
                                                                     }
                                                                     disabledReason={
                                                                         publishDisabledReason
                                                                     }
-                                                                />
+                                                                  scheduled={
+    publicationStatus ===
+    'AGENDADO'
+  }
+/>
+
+                                                        <InstagramScheduleControl
+                                                            contentId={
+                                                                content.id
+                                                            }
+                                                            enabled={
+                                                                canPublishInstagram
+                                                            }
+                                                            disabledReason={
+                                                                publishDisabledReason
+                                                            }
+                                                            scheduledFor={
+                                                                content.instagramPublication
+                                                                    ?.scheduledFor
+                                                                    ?.toISOString() ||
+                                                                null
+                                                            }
+                                                            publicationStatus={
+                                                                publicationStatus
+                                                            }
+                                                        />
 
 
                                                                 <button
@@ -835,4 +913,3 @@ export default async function ProntoParaPostarPage({
         </div>
     );
 }
-
