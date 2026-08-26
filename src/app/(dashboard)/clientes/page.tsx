@@ -1,4 +1,6 @@
 import { prisma } from '@/lib/prisma';
+
+import { InstagramIcon } from '@/components/icons/InstagramIcon';
 import {
   hasPermission,
   requirePermission,
@@ -255,8 +257,16 @@ const query = searchParams ? await searchParams : {};
                   className={`relative h-24 bg-gradient-to-r ${client.brandColor ? '' : getGradient(index)}`}
                   style={client.brandColor ? { background: client.brandColor } : undefined}
                 >
-                  {canManageSocial && (
-                    <div className="absolute right-4 top-4 z-30 flex gap-2">
+                  <div className="absolute right-4 top-4 z-30 flex gap-2">
+                    <Link
+                      href={`/clientes/${client.id}/instagram`}
+                      title="Instagram do cliente"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-600/90 text-white shadow-sm backdrop-blur transition hover:bg-pink-500"
+                    >
+                      <InstagramIcon size={18} />
+                    </Link>
+
+                    {canManageSocial && (
                       <Link
                         href={`/clientes/${client.id}/editar`}
                         title="Editar cliente"
@@ -264,8 +274,8 @@ const query = searchParams ? await searchParams : {};
                       >
                         <Pencil size={17} />
                       </Link>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
 
                 <Link
