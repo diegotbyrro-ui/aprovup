@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { markContentAsPublished } from './actions';
+import { InstagramPublishButton } from '@/components/instagram/InstagramPublishButton';
 
 const priorityLabels: Record<string, string> = {
     BAIXA: 'Baixa',
@@ -91,7 +92,13 @@ export default async function ProntoParaPostarPage({
                 : {}),
         },
         include: {
-            client: true,
+            client: {
+                include: {
+                    instagramConnection: true,
+                },
+            },
+
+            instagramPublication: true,
         },
         orderBy: [
             {
@@ -114,11 +121,17 @@ export default async function ProntoParaPostarPage({
     const lateContents = contents.filter((content) => isLate(content.plannedDate));
 
     const designContents = contents.filter(
-        (content) => (content.area || 'GERAL') === 'SOCIAL_DESIGN'
+        (content) =>
+            ['DESIGN', 'SOCIAL_DESIGN'].includes(
+                content.area || ''
+            )
     );
 
     const filmmakerContents = contents.filter(
-        (content) => (content.area || 'GERAL') === 'AUDIOVISUAL'
+        (content) =>
+            ['FILMMAKER', 'AUDIOVISUAL'].includes(
+                content.area || ''
+            )
     );
 
     const contentsByDate = contents.reduce<Record<string, typeof contents>>(
@@ -377,6 +390,77 @@ export default async function ProntoParaPostarPage({
                                             content.id
                                         );
 
+                                        const instagramConnection =
+                                            content.client
+                                                ?.instagramConnection;
+
+                                        const hasFinalMedia =
+                                            Boolean(
+                                                content.finalMediaUrl
+                                            );
+
+                                        const hasCaption =
+                                            Boolean(
+                                                content.caption
+                                                    ?.trim()
+                                            );
+
+                                        const instagramReady =
+                                            Boolean(
+                                                instagramConnection &&
+                                                hasFinalMedia
+                                            );
+
+                                        const publicationStatus =
+                                            content.instagramPublication
+                                                ?.status ||
+                                            'NAO_PREPARADO';
+
+                                        const normalizedFormat =
+                                            String(
+                                                content.format ||
+                                                ''
+                                            )
+                                                .trim()
+                                                .toUpperCase();
+
+                                        const isCarousel =
+                                            normalizedFormat.includes(
+                                                'CARROSSEL'
+                                            ) ||
+                                            normalizedFormat.includes(
+                                                'CAROUSEL'
+                                            ) ||
+                                            normalizedFormat.includes(
+                                                'ALBUM'
+                                            );
+
+                                        const isImageMedia =
+                                            String(
+                                                content.finalMediaType ||
+                                                ''
+                                            ).startsWith(
+                                                'image/'
+                                            );
+
+                                        const canPublishSingleImage =
+                                            Boolean(
+                                                instagramReady &&
+                                                isImageMedia &&
+                                                !isCarousel
+                                            );
+
+                                        const publishDisabledReason =
+                                            !instagramConnection
+                                                ? 'Instagram não conectado.'
+                                                : !hasFinalMedia
+                                                    ? 'Material final ausente.'
+                                                    : isCarousel
+                                                        ? 'Carrossel será liberado na próxima etapa.'
+                                                        : !isImageMedia
+                                                            ? 'Nesta etapa somente imagem única pode ser publicada.'
+                                                            : undefined;
+
                                         return (
                                             <div
                                                 key={content.id}
@@ -533,10 +617,173 @@ export default async function ProntoParaPostarPage({
                                                         )}
                                                     </div>
 
-                                                    <aside className="rounded-xl border border-slate-200 bg-white p-4">
-                                                        <p className="text-sm font-bold text-slate-900">
-                                                            Checklist antes de publicar
-                                                        </p>
+                                                    <aside className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
+
+                                                        <div className="rounded-xl border border-pink-100 bg-gradient-to-br from-pink-50 to-violet-50 p-4">
+
+                                                            <div className="flex items-start justify-between gap-3">
+
+                                                                <div>
+
+                                                                    <p className="text-[10px] font-black uppercase tracking-wider text-pink-500">
+                                                                        Publicação Instagram
+                                                                    </p>
+
+                                                                    <p className="mt-1 text-sm font-bold text-slate-900">
+                                                                        {
+                                                                            instagramConnection
+                                                                                ?.username
+                                                                                ? '@' +
+                                                                                  instagramConnection.username
+                                                                                : 'Conta não conectada'
+                                                                        }
+                                                                    </p>
+
+                                                                </div>
+
+
+                                                                <span
+                                                                    className={
+                                                                        instagramConnection
+                                                                            ? 'rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-[10px] font-bold text-emerald-700'
+                                                                            : 'rounded-full border border-amber-200 bg-white px-2.5 py-1 text-[10px] font-bold text-amber-700'
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        instagramConnection
+                                                                            ? '● Conectado'
+                                                                            : 'Pendente'
+                                                                    }
+                                                                </span>
+
+                                                            </div>
+
+
+                                                            <div className="mt-4 grid grid-cols-2 gap-2">
+
+                                                                <div className="rounded-lg bg-white p-3">
+
+                                                                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                                                                        Material final
+                                                                    </p>
+
+                                                                    <p
+                                                                        className={
+                                                                            hasFinalMedia
+                                                                                ? 'mt-1 text-xs font-bold text-emerald-700'
+                                                                                : 'mt-1 text-xs font-bold text-red-600'
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            hasFinalMedia
+                                                                                ? '✓ Pronto'
+                                                                                : '✕ Ausente'
+                                                                        }
+                                                                    </p>
+
+                                                                </div>
+
+
+                                                                <div className="rounded-lg bg-white p-3">
+
+                                                                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                                                                        Legenda
+                                                                    </p>
+
+                                                                    <p
+                                                                        className={
+                                                                            hasCaption
+                                                                                ? 'mt-1 text-xs font-bold text-emerald-700'
+                                                                                : 'mt-1 text-xs font-bold text-amber-700'
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            hasCaption
+                                                                                ? '✓ Pronta'
+                                                                                : 'Sem legenda'
+                                                                        }
+                                                                    </p>
+
+                                                                </div>
+
+                                                            </div>
+
+
+                                                            {
+                                                                publicationStatus !==
+                                                                'NAO_PREPARADO'
+                                                                    ? (
+                                                                        <div className="mt-3 rounded-lg border border-white bg-white/80 px-3 py-2">
+
+                                                                            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                                                                                Situação
+                                                                            </p>
+
+                                                                            <p className="mt-1 text-xs font-black text-slate-700">
+                                                                                {
+                                                                                    publicationStatus
+                                                                                }
+                                                                            </p>
+
+                                                                        </div>
+                                                                    )
+                                                                    : null
+                                                            }
+
+
+                                                            <div className="mt-4 grid grid-cols-1 gap-2">
+
+                                                                <InstagramPublishButton
+                                                                    contentId={
+                                                                        content.id
+                                                                    }
+                                                                    enabled={
+                                                                        canPublishSingleImage
+                                                                    }
+                                                                    disabledReason={
+                                                                        publishDisabledReason
+                                                                    }
+                                                                />
+
+
+                                                                <button
+                                                                    type="button"
+                                                                    disabled
+                                                                    title={
+                                                                        instagramReady
+                                                                            ? 'Será ativado na próxima etapa.'
+                                                                            : 'Conecte o Instagram e envie o material final.'
+                                                                    }
+                                                                    className="cursor-not-allowed rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-600 opacity-70"
+                                                                >
+                                                                    Agendar publicação
+                                                                </button>
+
+                                                            </div>
+
+
+                                                            {
+                                                                instagramReady
+                                                                    ? (
+                                                                        <p className="mt-3 text-[10px] leading-relaxed text-emerald-700">
+                                                                            Pronto para integrar com a publicação automática da Meta.
+                                                                        </p>
+                                                                    )
+                                                                    : (
+                                                                        <p className="mt-3 text-[10px] leading-relaxed text-amber-700">
+                                                                            Para publicar automaticamente, precisamos do Instagram conectado e do material final.
+                                                                        </p>
+                                                                    )
+                                                            }
+
+                                                        </div>
+
+
+                                                        <div>
+
+                                                            <p className="text-sm font-bold text-slate-900">
+                                                                Checklist antes de publicar
+                                                            </p>
 
                                                         <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-slate-500">
                                                             <li>Conferir se a arte/vídeo é a versão final.</li>
@@ -571,6 +818,8 @@ export default async function ProntoParaPostarPage({
                                                                     Marcar como publicado
                                                                 </button>
                                                             </form>
+                                                        </div>
+
                                                         </div>
                                                     </aside>
                                                 </div>

@@ -1701,3 +1701,382 @@ export async function getInstagramTopMedia({
     limit
   );
 }
+
+
+export type InstagramImagePublishResult = {
+  containerId:
+    string;
+
+  mediaId:
+    string;
+
+  permalink:
+    string | null;
+};
+
+
+function sleepMeta(
+  milliseconds:
+    number
+) {
+  return new Promise<void>(
+    (
+      resolve
+    ) => {
+      setTimeout(
+        resolve,
+        milliseconds
+      );
+    }
+  );
+}
+
+
+export async function publishInstagramImage({
+  instagramUserId,
+  accessToken,
+  imageUrl,
+  caption,
+}: {
+  instagramUserId:
+    string;
+
+  accessToken:
+    string;
+
+  imageUrl:
+    string;
+
+  caption?:
+    string | null;
+}): Promise<
+  InstagramImagePublishResult
+> {
+
+  if (
+    !imageUrl.startsWith(
+      'https://'
+    )
+  ) {
+    throw new Error(
+      'A mídia precisa possuir uma URL HTTPS pública.'
+    );
+  }
+
+
+  /* ==========================================================
+     1. CRIAR CONTAINER
+  ========================================================== */
+
+  const createUrl =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/media`
+    );
+
+
+  const createBody =
+    new URLSearchParams();
+
+  createBody.set(
+    'image_url',
+    imageUrl
+  );
+
+  if (
+    caption
+      ?.trim()
+  ) {
+    createBody.set(
+      'caption',
+      caption.trim()
+    );
+  }
+
+  createBody.set(
+    'access_token',
+    accessToken
+  );
+
+
+  const createResponse =
+    await fetch(
+      createUrl,
+      {
+        method:
+          'POST',
+
+        headers: {
+          'Content-Type':
+            'application/x-www-form-urlencoded',
+        },
+
+        body:
+          createBody,
+
+        cache:
+          'no-store',
+      }
+    );
+
+
+  const created =
+    await parseMeta<{
+      id:
+        string;
+    }>(
+      createResponse
+    );
+
+
+  const containerId =
+    created.id;
+
+
+  if (
+    !containerId
+  ) {
+    throw new Error(
+      'A Meta não retornou o container da publicação.'
+    );
+  }
+
+
+  /* ==========================================================
+     2. AGUARDAR PROCESSAMENTO
+  ========================================================== */
+
+  let finished =
+    false;
+
+
+  for (
+    let attempt = 0;
+    attempt < 12;
+    attempt++
+  ) {
+
+    const statusUrl =
+      new URL(
+        `https://graph.facebook.com/${graphVersion()}/${containerId}`
+      );
+
+
+    statusUrl.searchParams.set(
+      'fields',
+      'status_code,status'
+    );
+
+    statusUrl.searchParams.set(
+      'access_token',
+      accessToken
+    );
+
+
+    const statusResponse =
+      await fetch(
+        statusUrl,
+        {
+          cache:
+            'no-store',
+        }
+      );
+
+
+    const status =
+      await parseMeta<{
+        status_code?:
+          string;
+
+        status?:
+          string;
+      }>(
+        statusResponse
+      );
+
+
+    const statusCode =
+      String(
+        status.status_code ||
+        ''
+      ).toUpperCase();
+
+
+    if (
+      statusCode ===
+      'FINISHED'
+    ) {
+      finished =
+        true;
+
+      break;
+    }
+
+
+    if (
+      statusCode ===
+        'ERROR' ||
+      statusCode ===
+        'EXPIRED'
+    ) {
+      throw new Error(
+        status.status ||
+        `A Meta não conseguiu processar a mídia (${statusCode}).`
+      );
+    }
+
+
+    await sleepMeta(
+      1500
+    );
+  }
+
+
+  if (
+    !finished
+  ) {
+    throw new Error(
+      'A Meta demorou demais para processar a imagem.'
+    );
+  }
+
+
+  /* ==========================================================
+     3. PUBLICAR CONTAINER
+  ========================================================== */
+
+  const publishUrl =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/media_publish`
+    );
+
+
+  const publishBody =
+    new URLSearchParams();
+
+  publishBody.set(
+    'creation_id',
+    containerId
+  );
+
+  publishBody.set(
+    'access_token',
+    accessToken
+  );
+
+
+  const publishResponse =
+    await fetch(
+      publishUrl,
+      {
+        method:
+          'POST',
+
+        headers: {
+          'Content-Type':
+            'application/x-www-form-urlencoded',
+        },
+
+        body:
+          publishBody,
+
+        cache:
+          'no-store',
+      }
+    );
+
+
+  const published =
+    await parseMeta<{
+      id:
+        string;
+    }>(
+      publishResponse
+    );
+
+
+  const mediaId =
+    published.id;
+
+
+  if (
+    !mediaId
+  ) {
+    throw new Error(
+      'A Meta não retornou o ID da publicação.'
+    );
+  }
+
+
+  /* ==========================================================
+     4. BUSCAR PERMALINK
+  ========================================================== */
+
+  let permalink:
+    string | null =
+    null;
+
+
+  try {
+
+    const mediaUrl =
+      new URL(
+        `https://graph.facebook.com/${graphVersion()}/${mediaId}`
+      );
+
+
+    mediaUrl.searchParams.set(
+      'fields',
+      'id,permalink'
+    );
+
+    mediaUrl.searchParams.set(
+      'access_token',
+      accessToken
+    );
+
+
+    const mediaResponse =
+      await fetch(
+        mediaUrl,
+        {
+          cache:
+            'no-store',
+        }
+      );
+
+
+    const media =
+      await parseMeta<{
+        id:
+          string;
+
+        permalink?:
+          string;
+      }>(
+        mediaResponse
+      );
+
+
+    permalink =
+      media.permalink ||
+      null;
+
+  }
+  catch (
+    error
+  ) {
+
+    console.warn(
+      'INSTAGRAM PERMALINK READ ERROR',
+      error
+    );
+
+  }
+
+
+  return {
+    containerId,
+    mediaId,
+    permalink,
+  };
+}

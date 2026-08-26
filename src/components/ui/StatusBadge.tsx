@@ -10,6 +10,7 @@
   APROVADO: 'Aprovado',
   PRONTO_PARA_POSTAR: 'Pronto para Postar',
   PUBLICADO_MANUALMENTE: 'Publicado',
+  PUBLICADO: 'Publicado',
   ARQUIVADO: 'Arquivado',
 };
 
@@ -25,6 +26,7 @@ const statusClasses: Record<string, string> = {
   APROVADO: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   PRONTO_PARA_POSTAR: 'bg-teal-50 text-teal-700 border-teal-100',
   PUBLICADO_MANUALMENTE: 'bg-slate-900 text-white border-slate-900',
+  PUBLICADO: 'bg-emerald-600 text-white border-emerald-600',
   ARQUIVADO: 'bg-slate-100 text-slate-500 border-slate-200',
 };
 

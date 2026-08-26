@@ -19,20 +19,6 @@ export default async function NovoConteudoClientePage({
 
   const users = await prisma.user.findMany({ orderBy: { name: 'asc' } });
 
-  const statuses = [
-    'IDEIA',
-    'ROTEIRO',
-    'DESIGN',
-    'EDICAO',
-    'REVISAO_INTERNA',
-    'ENVIADO_CLIENTE',
-    'ALTERACAO_SOLICITADA',
-    'APROVADO',
-    'PRONTO_PARA_POSTAR',
-    'PUBLICADO_MANUALMENTE',
-    'ARQUIVADO',
-  ];
-
   const priorities = [
     { value: 'BAIXA', label: 'Baixa' },
     { value: 'MEDIA', label: 'Média' },
@@ -60,8 +46,9 @@ export default async function NovoConteudoClientePage({
         className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6"
       >
         <input type="hidden" name="clientId" value={client.id} />
+        <input type="hidden" name="status" value="IDEIA" />
 
-        <div className="grid grid-cols-2 gap-6">
+        <div>
           <div>
             <label className={labelClasses}>Cliente</label>
             <input
@@ -72,21 +59,6 @@ export default async function NovoConteudoClientePage({
             />
           </div>
 
-          <div>
-            <label className={labelClasses}>Status Inicial *</label>
-            <select
-              name="status"
-              required
-              defaultValue="IDEIA"
-              className={inputClasses}
-            >
-              {statuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
         <div>
@@ -100,19 +72,89 @@ export default async function NovoConteudoClientePage({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className={labelClasses}>Formato</label>
-            <input
-              name="format"
-              type="text"
-              placeholder="Ex: Reels, Carrossel, Storie"
-              className={inputClasses}
-            />
-          </div>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
 
           <div>
-            <label className={labelClasses}>Data Prevista</label>
+            <label className={labelClasses}>
+              Formato *
+            </label>
+
+            <select
+              name="format"
+              required
+              defaultValue="IMAGEM"
+              className={inputClasses}
+            >
+              <option value="IMAGEM">
+                Imagem única
+              </option>
+
+              <option value="CARROSSEL">
+                Carrossel
+              </option>
+
+              <option value="REEL">
+                Reel
+              </option>
+
+              <option value="VIDEO">
+                Vídeo
+              </option>
+
+              <option value="STORY">
+                Story
+              </option>
+            </select>
+
+            <p className="mt-1 text-xs text-slate-500">
+              Esse formato será usado também na publicação automática.
+            </p>
+          </div>
+
+
+          <div>
+            <label className={labelClasses}>
+              Plataforma *
+            </label>
+
+            <select
+              name="platform"
+              required
+              defaultValue="Instagram"
+              className={inputClasses}
+            >
+              <option value="Instagram">
+                Instagram
+              </option>
+
+              <option value="Facebook">
+                Facebook
+              </option>
+
+              <option value="Instagram + Facebook">
+                Instagram + Facebook
+              </option>
+
+              <option value="TikTok">
+                TikTok
+              </option>
+
+              <option value="LinkedIn">
+                LinkedIn
+              </option>
+
+              <option value="Outra">
+                Outra
+              </option>
+            </select>
+          </div>
+
+
+          <div>
+            <label className={labelClasses}>
+              Data Prevista
+            </label>
+
             <input
               name="plannedDate"
               type="date"
@@ -120,6 +162,7 @@ export default async function NovoConteudoClientePage({
               className={inputClasses}
             />
           </div>
+
         </div>
 
         <div className="grid grid-cols-2 gap-6">
@@ -128,16 +171,15 @@ export default async function NovoConteudoClientePage({
             <select
               name="area"
               required
-              defaultValue="GERAL"
+              defaultValue="DESIGN"
               className={inputClasses}
             >
-              <option value="GERAL">Geral</option>
-              <option value="SOCIAL_DESIGN">Social Media / Design</option>
-              <option value="AUDIOVISUAL">Audiovisual</option>
+              <option value="DESIGN">Design</option>
+              <option value="FILMMAKER">Filmmaker</option>
             </select>
 
             <p className="mt-1 text-xs text-slate-500">
-              Esse campo define em qual Kanban o conteúdo vai aparecer.
+              Define qual equipe será responsável pela produção.
             </p>
           </div>
 

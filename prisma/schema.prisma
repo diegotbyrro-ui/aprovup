@@ -142,9 +142,10 @@ model Content {
   clientId String
   client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  tasks     Task[]
-  comments  Comment[]
-  approvals Approval[]
+  tasks                Task[]
+  comments             Comment[]
+  approvals            Approval[]
+  instagramPublication InstagramPublication?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -210,6 +211,45 @@ model MonthlyApproval {
   updatedAt DateTime @updatedAt
 
   @@unique([clientId, month, year])
+}
+
+model InstagramPublication {
+  id String @id @default(cuid())
+
+  contentId String  @unique
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  // Conta que sera usada na publicacao.
+  instagramUserId   String?
+  instagramUsername String?
+
+  // Copia dos dados no momento da preparacao.
+  caption   String?
+  mediaUrl  String?
+  coverUrl  String?
+  mediaType String?
+
+  // PRONTO | AGENDADO | PUBLICANDO | PUBLICADO | ERRO
+  status String @default("PRONTO")
+
+  scheduledFor DateTime?
+  publishedAt  DateTime?
+
+  // IDs devolvidos pela Meta.
+  metaContainerId String?
+  metaMediaId     String?
+  permalink       String?
+
+  attemptCount  Int       @default(0)
+  lastAttemptAt DateTime?
+  lastError     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([instagramUserId])
 }
 
 model InstagramConnection {

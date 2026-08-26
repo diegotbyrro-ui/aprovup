@@ -11,9 +11,11 @@ import { inputClasses, labelClasses } from '@/lib/styles';
 import { generateApprovalLink } from './contentActions';
 
 const areaLabels: Record<string, string> = {
-  GERAL: 'Geral',
+  DESIGN: 'Design',
+  FILMMAKER: 'Filmmaker',
   SOCIAL_DESIGN: 'Design',
-  AUDIOVISUAL: 'Filmaker',
+  AUDIOVISUAL: 'Filmmaker',
+  GERAL: 'Geral',
 };
 
 const priorityLabels: Record<string, string> = {
@@ -41,7 +43,8 @@ const statusOptions = [
   { value: 'ALTERACAO_SOLICITADA', label: 'Alteração Solicitada' },
   { value: 'APROVADO', label: 'Aprovado' },
   { value: 'PRONTO_PARA_POSTAR', label: 'PRONTO_PARA_POSTAR' },
-  { value: 'PUBLICADO_MANUALMENTE', label: 'Publicado' },
+  { value: 'PUBLICADO_MANUALMENTE', label: 'Publicado manualmente' },
+  { value: 'PUBLICADO', label: 'Publicado automaticamente' },
   { value: 'ARQUIVADO', label: 'Arquivado' },
 ];
 
@@ -82,7 +85,7 @@ function formatDateInput(date: Date | null) {
 function isLate(date: Date | null, status: string) {
   if (!date) return false;
 
-  if (['PUBLICADO_MANUALMENTE', 'ARQUIVADO'].includes(status)) {
+  if (['PUBLICADO', 'PUBLICADO_MANUALMENTE', 'ARQUIVADO'].includes(status)) {
     return false;
   }
 
@@ -121,16 +124,16 @@ function getNextStep(status: string, area: string) {
   if (status === 'AGENDAMENTO_PRODUCAO') {
     return {
       title:
-        area === 'AUDIOVISUAL'
+        (area === 'FILMMAKER' || area === 'AUDIOVISUAL')
           ? 'Iniciar produção audiovisual'
-          : area === 'SOCIAL_DESIGN'
+          : (area === 'DESIGN' || area === 'SOCIAL_DESIGN')
             ? 'Iniciar criação visual'
             : 'Iniciar produção',
       description:
         'O planejamento já foi aprovado. Agora a equipe pode iniciar a produção da peça.',
       color: 'cyan',
       actionLabel:
-        area === 'AUDIOVISUAL'
+        (area === 'FILMMAKER' || area === 'AUDIOVISUAL')
           ? 'Mover para pré-produção'
           : 'Mover para design',
       nextStatus: 'DESIGN',
@@ -140,7 +143,7 @@ function getNextStep(status: string, area: string) {
   if (status === 'DESIGN') {
     return {
       title:
-        area === 'AUDIOVISUAL'
+        (area === 'FILMMAKER' || area === 'AUDIOVISUAL')
           ? 'Organizar pré-produção'
           : 'Produzir material visual',
       description:
@@ -217,7 +220,7 @@ function getNextStep(status: string, area: string) {
     };
   }
 
-  if (status === 'PUBLICADO_MANUALMENTE') {
+  if (['PUBLICADO', 'PUBLICADO_MANUALMENTE'].includes(status)) {
     return {
       title: 'Conteúdo publicado',
       description:
@@ -237,6 +240,315 @@ function getNextStep(status: string, area: string) {
     nextStatus: null,
   };
 }
+
+
+function getClientCommentTone(
+  message: string
+) {
+
+  const normalized =
+    String(
+      message ||
+      ''
+    )
+      .normalize('NFD')
+      .replace(
+        /[\u0300-\u036f]/g,
+        ''
+      )
+      .toLowerCase();
+
+
+  const positiveWords = [
+    'aprovado',
+    'aprovada',
+    'aprovacao',
+    'material aprovado',
+    'planejamento aprovado',
+    'conteudo aprovado',
+  ];
+
+
+  const negativeWords = [
+    'alteracao solicitada',
+    'alteracao',
+    'reprovado',
+    'reprovada',
+    'erro',
+    'corrigir',
+    'correcao',
+    'ajuste solicitado',
+  ];
+
+
+  if (
+    negativeWords.some(
+      (
+        word
+      ) =>
+        normalized.includes(
+          word
+        )
+    )
+  ) {
+
+    return 'error';
+
+  }
+
+
+  if (
+    positiveWords.some(
+      (
+        word
+      ) =>
+        normalized.includes(
+          word
+        )
+    )
+  ) {
+
+    return 'success';
+
+  }
+
+
+  return 'neutral';
+}
+
+
+function clientCommentSectionClasses(
+  status: string
+) {
+
+  if (
+    status ===
+    'ALTERACAO_SOLICITADA'
+  ) {
+
+    return {
+      section:
+        'border-red-200 bg-red-50',
+
+      title:
+        'text-emerald-800',
+
+      subtitle:
+        'text-red-600',
+    };
+
+  }
+
+
+  if (
+    [
+      'APROVADO',
+      'PRONTO_PARA_POSTAR',
+      'PUBLICADO',
+      'PUBLICADO_MANUALMENTE',
+    ].includes(
+      status
+    )
+  ) {
+
+    return {
+      section:
+        'border-emerald-200 bg-emerald-50',
+
+      title:
+        'text-emerald-800',
+
+      subtitle:
+        'text-emerald-600',
+    };
+
+  }
+
+
+  return {
+    section:
+      'border-slate-200 bg-white',
+
+    title:
+      'text-slate-900',
+
+    subtitle:
+      'text-slate-500',
+  };
+}
+
+
+function clientCommentCardClasses(
+  message: string
+) {
+
+  const tone =
+    getClientCommentTone(
+      message
+    );
+
+
+  if (
+    tone ===
+    'success'
+  ) {
+
+    return {
+      card:
+        'border-emerald-200 bg-white',
+
+      author:
+        'text-emerald-800',
+
+      date:
+        'text-emerald-500',
+
+      message:
+        'text-slate-700',
+    };
+
+  }
+
+
+  if (
+    tone ===
+    'error'
+  ) {
+
+    return {
+      card:
+        'border-emerald-200 bg-white',
+
+      author:
+        'text-emerald-800',
+
+      date:
+        'text-emerald-500',
+
+      message:
+        'text-slate-700',
+    };
+
+  }
+
+
+  return {
+    card:
+      'border-slate-200 bg-white',
+
+    author:
+      'text-slate-800',
+
+    date:
+      'text-slate-400',
+
+    message:
+      'text-slate-700',
+  };
+}
+
+
+
+function getClientFeedbackTone(
+  message: string
+): 'success' | 'error' | 'neutral' {
+
+  const normalized =
+    String(message || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+
+  const errorTerms = [
+    'alteracao solicitada',
+    'ajuste solicitado',
+    'reprovado',
+    'reprovada',
+    'erro',
+    'corrigir',
+    'correcao',
+  ];
+
+
+  if (
+    errorTerms.some(
+      (term) =>
+        normalized.includes(term)
+    )
+  ) {
+    return 'error';
+  }
+
+
+  const successTerms = [
+    'aprovado',
+    'aprovada',
+    'aprovacao',
+  ];
+
+
+  if (
+    successTerms.some(
+      (term) =>
+        normalized.includes(term)
+    )
+  ) {
+    return 'success';
+  }
+
+
+  return 'neutral';
+}
+
+
+function getContentFeedbackTone(
+  status: string
+): 'success' | 'error' | 'neutral' {
+
+  if (
+    status ===
+    'ALTERACAO_SOLICITADA'
+  ) {
+    return 'error';
+  }
+
+
+  if (
+    [
+      'APROVADO',
+      'PRONTO_PARA_POSTAR',
+      'PUBLICADO',
+      'PUBLICADO_MANUALMENTE',
+    ].includes(status)
+  ) {
+    return 'success';
+  }
+
+
+  return 'neutral';
+}
+
+
+function formatClientFeedbackMessage(
+  message: string
+) {
+
+  return String(message || '')
+    .replace(
+      /APROVACAO FINAL:/gi,
+      'APROVAÇÃO FINAL:'
+    )
+    .replace(
+      /2a Etapa de Aprovacao/gi,
+      '2ª Etapa de Aprovação'
+    )
+    .replace(
+      /Aprovacao/gi,
+      'Aprovação'
+    );
+}
+
 
 function nextStepClasses(color: string) {
   const classes: Record<string, string> = {
@@ -340,6 +652,16 @@ export default async function ConteudoDetailPage({
 
   const nextStep = getNextStep(contentSafe.status, currentArea);
 
+  const contentFeedbackTone =
+    getContentFeedbackTone(
+      contentSafe.status
+    );
+
+  const clientCommentSection =
+    clientCommentSectionClasses(
+      contentSafe.status
+    );
+
   function HiddenContentFields({ nextStatus }: { nextStatus: string }) {
     return (
       <>
@@ -422,11 +744,11 @@ export default async function ConteudoDetailPage({
               <strong className="text-white">
                 {contentSafe.client?.name || 'Cliente não informado'}
               </strong>{' '}
-              • Data prevista:{' '}
+              ⬢ Data prevista:{' '}
               <strong className={late ? 'text-red-300' : 'text-white'}>
                 {formatDate(contentSafe.plannedDate)}
               </strong>{' '}
-              • Responsável:{' '}
+              ⬢ Responsável:{' '}
               <strong className="text-white">
                 {contentSafe.responsible || 'Não definido'}
               </strong>
@@ -529,40 +851,124 @@ export default async function ConteudoDetailPage({
       </section>
 
       {clientComments.length > 0 && (
-        <section className="rounded-2xl border border-red-100 bg-red-50 p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-red-900">
-            Comentários do Cliente
-          </h2>
 
-          <p className="mt-1 text-sm text-red-700">
-            Ãšltimos retornos enviados pelo cliente neste conteúdo.
-          </p>
+        <section
+          className={
+            contentSafe.status === 'ALTERACAO_SOLICITADA'
+              ? 'rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm'
+              : [
+                  'APROVADO',
+                  'PRONTO_PARA_POSTAR',
+                  'PUBLICADO',
+                  'PUBLICADO_MANUALMENTE',
+                ].includes(contentSafe.status)
+                ? 'rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm'
+                : 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm'
+          }
+        >
+
+          <div className="flex flex-wrap items-start justify-between gap-3">
+
+            <div>
+
+              <h2 className="text-lg font-bold text-slate-900">
+                Comentários do Cliente
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Últimos retornos enviados pelo cliente neste conteúdo.
+              </p>
+
+            </div>
+
+
+            {[
+              'APROVADO',
+              'PRONTO_PARA_POSTAR',
+              'PUBLICADO',
+              'PUBLICADO_MANUALMENTE',
+            ].includes(contentSafe.status) && (
+
+              <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-bold text-emerald-700">
+                ✓ Aprovado
+              </span>
+
+            )}
+
+
+            {contentSafe.status === 'ALTERACAO_SOLICITADA' && (
+
+              <span className="rounded-full border border-red-200 bg-white px-3 py-1 text-xs font-bold text-red-700">
+                Atenção necessária
+              </span>
+
+            )}
+
+          </div>
+
 
           <div className="mt-4 space-y-3">
+
             {clientComments.map((comment) => (
+
               <div
                 key={comment.id}
-                className="rounded-xl border border-red-100 bg-white p-4"
+                className={
+                  contentSafe.status === 'ALTERACAO_SOLICITADA'
+                    ? 'rounded-xl border border-red-200 bg-white p-4'
+                    : [
+                        'APROVADO',
+                        'PRONTO_PARA_POSTAR',
+                        'PUBLICADO',
+                        'PUBLICADO_MANUALMENTE',
+                      ].includes(contentSafe.status)
+                      ? 'rounded-xl border border-emerald-100 bg-white p-4'
+                      : 'rounded-xl border border-slate-200 bg-white p-4'
+                }
               >
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-bold text-red-900">
+
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+
+                  <span className="font-bold text-slate-900">
                     {comment.authorName || 'Cliente'}
                   </span>
 
-                  <span className="text-xs text-red-400">
+                  <span
+                    className={
+                      contentSafe.status === 'ALTERACAO_SOLICITADA'
+                        ? 'text-xs text-red-500'
+                        : 'text-xs text-slate-400'
+                    }
+                  >
                     {formatDateTime(comment.createdAt)}
                   </span>
+
                 </div>
 
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                  {comment.message}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                  {
+                    comment.message
+                      .replace(
+                        /APROVACAO FINAL:/gi,
+                        'APROVAÇÃO FINAL:'
+                      )
+                      .replace(
+                        /2a Etapa de Aprovacao/gi,
+                        '2ª Etapa de Aprovação'
+                      )
+                  }
+                </p>
+
+              </div>
+
+            ))}
+
+          </div>
+
+        </section>
+
+      )}
       <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -657,12 +1063,21 @@ export default async function ConteudoDetailPage({
                   <label className={labelClasses}>Área responsável</label>
                   <select
                     name="area"
-                    defaultValue={currentArea}
+                    defaultValue={
+                      currentArea === 'FILMMAKER' ||
+                      currentArea === 'AUDIOVISUAL'
+                        ? 'FILMMAKER'
+                        : 'DESIGN'
+                    }
                     className={inputClasses}
                   >
-                    <option value="GERAL">Geral</option>
-                    <option value="SOCIAL_DESIGN">Design</option>
-                    <option value="AUDIOVISUAL">Filmaker</option>
+                    <option value="DESIGN">
+                      Design
+                    </option>
+
+                    <option value="FILMMAKER">
+                      Filmmaker
+                    </option>
                   </select>
                 </div>
 
@@ -723,13 +1138,34 @@ export default async function ConteudoDetailPage({
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
                   <label className={labelClasses}>Formato</label>
-                  <input
+                  <select
                     name="format"
-                    defaultValue={contentSafe.format || ''}
-                    type="text"
-                    placeholder="Ex: Reels, Carrossel, Post Estático"
+                    defaultValue={
+                      contentSafe.format ||
+                      'IMAGEM'
+                    }
                     className={inputClasses}
-                  />
+                  >
+                    <option value="IMAGEM">
+                      Imagem única
+                    </option>
+
+                    <option value="CARROSSEL">
+                      Carrossel
+                    </option>
+
+                    <option value="REEL">
+                      Reel
+                    </option>
+
+                    <option value="VIDEO">
+                      Vídeo
+                    </option>
+
+                    <option value="STORY">
+                      Story
+                    </option>
+                  </select>
                 </div>
 
                 <div>
@@ -1017,7 +1453,7 @@ export default async function ConteudoDetailPage({
                 </h2>
 
                 <p className="text-sm text-slate-500">
-                  {pendingTasks.length} pendente(s) • {completedTasks.length} finalizada(s)
+                  {pendingTasks.length} pendente(s) ⬢ {completedTasks.length} finalizada(s)
                 </p>
               </div>
             </div>
@@ -1049,7 +1485,7 @@ export default async function ConteudoDetailPage({
                               : 'border-slate-300 bg-white text-slate-400'
                             }`}
                         >
-                          {task.status === 'FINALIZADO' ? 'âœ“' : ''}
+                          {task.status === 'FINALIZADO' ? 'Ã¢Å“â€œ' : ''}
                         </button>
                       </form>
 
@@ -1162,7 +1598,7 @@ export default async function ConteudoDetailPage({
                     <div className="absolute -left-[5px] top-1.5 h-2 w-2 rounded-full bg-slate-400"></div>
 
                     <p className="mb-0.5 text-xs text-slate-500">
-                      {formatDateTime(log.createdAt)} • {log.authorName}
+                      {formatDateTime(log.createdAt)} ⬢ {log.authorName}
                     </p>
 
                     <p className="text-sm font-medium text-slate-800">
@@ -1178,7 +1614,7 @@ export default async function ConteudoDetailPage({
       <section className="rounded-3xl border border-red-100 bg-red-50 p-6 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+            <p className="text-xs font-bold uppercase tracking-wider text-emerald-500">
               Zona de exclusão
             </p>
 
@@ -1205,4 +1641,3 @@ export default async function ConteudoDetailPage({
     </div>
   );
 }
-
