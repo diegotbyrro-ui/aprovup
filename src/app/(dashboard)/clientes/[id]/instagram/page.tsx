@@ -569,6 +569,7 @@ export default async function ClientInstagramPage({
 
 
   if (
+    configured &&
     connection
       ?.userAccessTokenEncrypted
   ) {
@@ -614,6 +615,7 @@ export default async function ClientInstagramPage({
 
 
   if (
+    configured &&
     connection
       ?.userAccessTokenEncrypted
   ) {
@@ -932,13 +934,17 @@ export default async function ClientInstagramPage({
           }
           connected={
             Boolean(
-              connection
+              connection &&
+              configured
             )
           }
           helper={
-            connection
+            connection &&
+            configured
               ? 'Total atual de seguidores'
-              : undefined
+              : connection
+                ? 'Configuração Meta pendente no servidor'
+                : undefined
           }
         />
 
@@ -961,7 +967,8 @@ export default async function ClientInstagramPage({
           }
           connected={
             Boolean(
-              connection
+              connection &&
+              configured
             )
           }
         />
@@ -985,7 +992,8 @@ export default async function ClientInstagramPage({
           }
           connected={
             Boolean(
-              connection
+              connection &&
+              configured
             )
           }
         />
@@ -1009,7 +1017,8 @@ export default async function ClientInstagramPage({
           }
           connected={
             Boolean(
-              connection
+              connection &&
+              configured
             )
           }
         />
