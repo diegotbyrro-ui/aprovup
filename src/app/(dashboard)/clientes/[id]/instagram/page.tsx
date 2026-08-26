@@ -42,6 +42,10 @@ import {
   requirePermission,
 } from '@/lib/userAccess';
 
+import {
+  saveInstagramSnapshot,
+} from '@/lib/instagramSnapshots';
+
 
 function formatMetricValue(
   value:
@@ -588,6 +592,34 @@ export default async function ClientInstagramPage({
             ),
         });
 
+
+      try {
+
+        await saveInstagramSnapshot({
+
+          clientId:
+            client.id,
+
+          instagramUserId:
+            connection.instagramUserId,
+
+          metrics:
+            dashboardMetrics,
+
+        });
+
+      }
+      catch (
+        snapshotError
+      ) {
+
+        console.error(
+          'INSTAGRAM SNAPSHOT SAVE ERROR',
+          snapshotError
+        );
+
+      }
+
     }
     catch (
       error
@@ -890,18 +922,18 @@ export default async function ClientInstagramPage({
 
         <div className="flex gap-2 overflow-x-auto">
 
-          <button
+          <span
             className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white"
           >
             Visão geral
-          </button>
+          </span>
 
-          <button
-            disabled
-            className="cursor-not-allowed rounded-xl px-4 py-2.5 text-sm font-bold text-slate-400"
+          <Link
+            href={`/clientes/${client.id}/instagram/conteudos`}
+            className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 transition hover:bg-slate-100"
           >
             Conteúdos
-          </button>
+          </Link>
 
           <button
             disabled

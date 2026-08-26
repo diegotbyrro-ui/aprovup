@@ -50,11 +50,12 @@ model Client {
   clientBriefing      String?
   personaNotes        String?
 
-  contents            Content[]
-  personas            ClientPersona[]
-  diagnoses           ClientProfileDiagnosis[]
-  monthlyApprovals    MonthlyApproval[]
-  instagramConnection InstagramConnection?
+  contents                 Content[]
+  personas                 ClientPersona[]
+  diagnoses                ClientProfileDiagnosis[]
+  monthlyApprovals         MonthlyApproval[]
+  instagramConnection      InstagramConnection?
+  instagramMetricSnapshots InstagramMetricSnapshot[]
 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -241,6 +242,31 @@ model InstagramConnection {
 
   @@index([instagramUserId])
   @@index([facebookPageId])
+}
+
+model InstagramMetricSnapshot {
+  id String @id @default(cuid())
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  instagramUserId String
+
+  dateKey String
+
+  followersCount Int?
+  reach          Int?
+  views          Int?
+  interactions   Int?
+
+  capturedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([clientId, dateKey])
+  @@index([instagramUserId, dateKey])
+  @@index([dateKey])
 }
 
 model MetaOAuthSession {
