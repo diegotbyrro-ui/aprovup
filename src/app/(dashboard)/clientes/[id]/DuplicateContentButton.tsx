@@ -1,5 +1,5 @@
-import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/userAccess";
 import { revalidatePath } from "next/cache";
 
 type DuplicateContentButtonProps = {
@@ -15,6 +15,8 @@ function addDays(date: Date, days: number) {
 
 async function duplicateContent(contentId: string, clientId: string) {
     "use server";
+
+    await requirePermission("social.manage");
 
     const originalContent = await prisma.content.findUnique({
         where: {

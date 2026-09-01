@@ -1,5 +1,5 @@
-import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/userAccess";
 import { revalidatePath } from "next/cache";
 
 type DeleteContentButtonProps = {
@@ -14,6 +14,8 @@ async function deleteContent(
     contentTitle: string
 ) {
     "use server";
+
+    await requirePermission("social.manage");
 
     if (!contentId) {
         throw new Error("Conteúdo não informado.");

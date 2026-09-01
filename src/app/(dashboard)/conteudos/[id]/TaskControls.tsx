@@ -1,5 +1,5 @@
-import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 import { prisma } from '@/lib/prisma';
+import { requireAnyPermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 
 type TaskControlsProps = {
@@ -15,6 +15,12 @@ async function updateTaskPriority(
     formData: FormData
 ) {
     'use server';
+
+    await requireAnyPermission([
+        'social.manage',
+        'design.manage',
+        'filmmaker.manage',
+    ]);
 
     const priority = String(formData.get('priority') || 'MEDIA');
 
@@ -52,6 +58,12 @@ async function deleteTask(
     taskTitle: string
 ) {
     'use server';
+
+    await requireAnyPermission([
+        'social.manage',
+        'design.manage',
+        'filmmaker.manage',
+    ]);
 
     await prisma.task.delete({
         where: {

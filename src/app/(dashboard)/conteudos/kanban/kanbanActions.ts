@@ -1,6 +1,7 @@
 ﻿"use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireAnyPermission } from "@/lib/userAccess";
 import { revalidatePath } from "next/cache";
 
 const statusLabels: Record<string, string> = {
@@ -20,6 +21,12 @@ export async function updateContentStatusFromKanban(
     contentId: string,
     newStatus: string
 ) {
+    await requireAnyPermission([
+        "social.manage",
+        "design.manage",
+        "filmmaker.manage",
+    ]);
+
     if (!contentId) {
         throw new Error("Conteúdo não informado.");
     }

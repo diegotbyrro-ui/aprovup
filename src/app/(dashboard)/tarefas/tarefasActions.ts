@@ -1,6 +1,7 @@
 ﻿"use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireAnyPermission } from "@/lib/userAccess";
 import { revalidatePath } from "next/cache";
 
 function normalizeTaskStatus(status: FormDataEntryValue | null) {
@@ -28,6 +29,12 @@ function normalizeTaskPriority(priority: FormDataEntryValue | null) {
 }
 
 export async function updateTaskFromTasksPage(taskId: string, formData: FormData) {
+    await requireAnyPermission([
+        "social.manage",
+        "design.manage",
+        "filmmaker.manage",
+    ]);
+
     const task = await prisma.task.findUnique({
         where: {
             id: taskId,
@@ -69,6 +76,12 @@ export async function updateTaskFromTasksPage(taskId: string, formData: FormData
 }
 
 export async function deleteTaskFromTasksPage(taskId: string) {
+    await requireAnyPermission([
+        "social.manage",
+        "design.manage",
+        "filmmaker.manage",
+    ]);
+
     const task = await prisma.task.findUnique({
         where: {
             id: taskId,

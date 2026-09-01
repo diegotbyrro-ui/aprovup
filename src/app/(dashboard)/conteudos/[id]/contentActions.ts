@@ -1,10 +1,13 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/userAccess";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
 export async function generateApprovalLink(contentId: string) {
+    await requirePermission("social.manage");
+
     const content = await prisma.content.findUnique({
         where: {
             id: contentId,
