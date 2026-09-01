@@ -13,6 +13,12 @@ import {
 } from "@/lib/crm-supabase/syncAprovupUser";
 
 import {
+  APROVUP_SESSION_COOKIE,
+  APROVUP_SESSION_MAX_AGE,
+  createAprovUpSession,
+} from "@/lib/auth";
+
+import {
   prisma,
 } from "@/lib/prisma";
 
@@ -291,20 +297,37 @@ export async function loginAction(
     await cookies();
 
 
+  const aprovUpSession =
+    createAprovUpSession(
+      user.id
+    );
+
+
   cookieStore.set(
-    "levelup_user_id",
-    user.id,
+    APROVUP_SESSION_COOKIE,
+    aprovUpSession,
     {
       httpOnly: true,
+
+      secure:
+        process.env.NODE_ENV ===
+        "production",
+
       sameSite: "lax",
       path: "/",
 
       maxAge:
-        60 *
-        60 *
-        24 *
-        30,
+        APROVUP_SESSION_MAX_AGE,
     }
+  );
+
+
+  /*
+   * Remove o cookie legado que armazenava
+   * diretamente o ID do usuario.
+   */
+  cookieStore.delete(
+    "levelup_user_id"
   );
 
 
@@ -394,6 +417,14 @@ export async function logoutAction() {
     await cookies();
 
 
+  cookieStore.delete(
+    APROVUP_SESSION_COOKIE
+  );
+
+  /*
+   * Compatibilidade de limpeza com
+   * sessoes antigas.
+   */
   cookieStore.delete(
     "levelup_user_id"
   );
