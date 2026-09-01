@@ -23,6 +23,17 @@ function formatDate(date?: Date | string | null) {
 function getTone(message: string) {
   const value = message.toUpperCase();
 
+  if (
+    value.includes('APROVAÇÃO') ||
+    value.includes('APROVACAO')
+  ) {
+    return {
+      label: 'Cliente aprovou',
+      className:
+        'border-emerald-100 bg-emerald-50 text-emerald-800',
+    };
+  }
+
   if (value.includes('ALTERAÇÃO') || value.includes('AJUSTE')) {
     return {
       label: 'Ajuste solicitado',
@@ -56,6 +67,16 @@ export default async function SocialMediaAlertsPage() {
   const comments = await prisma.comment.findMany({
     where: {
       OR: [
+        {
+          message: {
+            contains: 'APROVAÇÃO',
+          },
+        },
+        {
+          message: {
+            contains: 'APROVACAO',
+          },
+        },
         {
           message: {
             contains: 'DÚVIDA',
@@ -129,7 +150,7 @@ export default async function SocialMediaAlertsPage() {
         </div>
 
         <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-300">
-          Aqui ficam reunidas as dúvidas do Design, dúvidas do Filmmaker, pedidos de ajuste do cliente e solicitações de reagendamento.
+          Aqui ficam reunidas as aprovações e os pedidos de ajuste dos clientes, além das dúvidas do Design, dúvidas do Filmmaker e solicitações de reagendamento.
         </p>
       </section>
 
@@ -151,12 +172,12 @@ export default async function SocialMediaAlertsPage() {
             <AlertTriangle size={28} className="mx-auto text-slate-400" />
 
             <p className="mt-3 text-sm font-bold text-slate-500">
-              Nenhuma dúvida ou ajuste pendente no momento.
+              Nenhuma aprovação, dúvida ou ajuste encontrado no momento.
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {comments.map((comment: any) => {
+            {comments.map((comment) => {
               const tone = getTone(comment.message || '');
 
               return (

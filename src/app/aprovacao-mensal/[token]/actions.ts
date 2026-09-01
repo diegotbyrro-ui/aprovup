@@ -131,6 +131,8 @@ async function approveContentBase(
 
   revalidatePath('/clientes');
   revalidatePath('/calendario-editorial');
+  revalidatePath('/social-media');
+  revalidatePath('/social-media/avisos');
   revalidatePath('/design');
   revalidatePath('/filmmaker');
   revalidatePath('/social-media/agendamentos');
@@ -207,6 +209,7 @@ async function requestAdjustmentBase(
 
   revalidatePath('/clientes');
   revalidatePath('/calendario-editorial');
+  revalidatePath('/social-media');
   revalidatePath('/social-media/avisos');
   revalidatePath('/design');
   revalidatePath('/filmmaker');

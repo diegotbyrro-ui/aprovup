@@ -91,6 +91,8 @@ export async function approveClientContentAction(
   revalidatePath(`/clientes/${client.id}`);
   revalidatePath('/clientes');
   revalidatePath('/calendario-editorial');
+  revalidatePath('/social-media');
+  revalidatePath('/social-media/avisos');
   revalidatePath('/design');
   revalidatePath('/filmmaker');
   revalidatePath('/social-media/agendamentos');
@@ -163,6 +165,7 @@ export async function requestClientAdjustmentAction(
   revalidatePath('/clientes');
   revalidatePath('/calendario-editorial');
   revalidatePath('/social-media');
+  revalidatePath('/social-media/avisos');
   revalidatePath('/social-media/agendamentos');
   revalidatePath('/design');
   revalidatePath('/filmmaker');

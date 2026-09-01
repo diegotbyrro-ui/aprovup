@@ -113,6 +113,7 @@ export async function approveFinalContentAction(
   revalidatePath('/design');
   revalidatePath('/filmmaker');
   revalidatePath('/social-media');
+  revalidatePath('/social-media/avisos');
   revalidatePath('/pronto-para-postar');
 
   redirect(
@@ -261,6 +262,7 @@ export async function requestFinalChangesAction(
   revalidatePath('/design');
   revalidatePath('/filmmaker');
   revalidatePath('/social-media');
+  revalidatePath('/social-media/avisos');
   revalidatePath('/pronto-para-postar');
 
   redirect(
