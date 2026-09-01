@@ -24,15 +24,7 @@ async function resolveClient(token: string) {
     },
   });
 
-  if (approval?.content?.client) {
-    return approval.content.client;
-  }
-
-  return prisma.client.findUnique({
-    where: {
-      id: token,
-    },
-  });
+  return approval?.content?.client || null;
 }
 
 function formatDate(date?: Date | null) {

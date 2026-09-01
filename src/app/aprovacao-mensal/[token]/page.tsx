@@ -1,82 +1,46 @@
-import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 import { prisma } from '@/lib/prisma';
-import Link from 'next/link';
 import {
   approveMonthlyContentItemAction,
   requestMonthlyContentAdjustmentAction,
-  scheduleClientSuggestedCaptureAction,
 } from './actions';
 import {
   CheckCircle2,
   AlertTriangle,
-  CalendarDays,
-  Clock,
   Video,
   Palette,
   ChevronDown,
 } from 'lucide-react';
 
+function getMonthRange(year: number, month: number) {
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 0, 23, 59, 59, 999);
+
+  return {
+    start,
+    end,
+  };
+}
+
 async function resolveApprovalContext(token: string) {
-  const prismaAny = prisma as any;
+  const approval =
+    await prisma.monthlyApproval.findUnique({
+      where: {
+        token,
+      },
+      include: {
+        client: true,
+      },
+    });
 
-  const possibleModels = [
-    'monthlyApproval',
-    'monthlyApprovalLink',
-    'approvalLink',
-    'clientApproval',
-    'contentApprovalLink',
-    'approvalToken',
-  ];
-
-  const possibleFields = ['token', 'id', 'publicToken', 'code'];
-
-  for (const modelName of possibleModels) {
-    const model = prismaAny[modelName];
-
-    if (!model?.findFirst) continue;
-
-    for (const field of possibleFields) {
-      try {
-        const record = await model.findFirst({
-          where: {
-            [field]: token,
-          },
-        });
-
-        if (record?.clientId) {
-          const client = await prisma.client.findUnique({
-            where: {
-              id: record.clientId,
-            },
-          });
-
-          if (client) {
-            return {
-              client,
-              approval: record,
-              token,
-            };
-          }
-        }
-      } catch {}
-    }
+  if (!approval) {
+    return null;
   }
 
-  const client = await prisma.client.findUnique({
-    where: {
-      id: token,
-    },
-  });
-
-  if (client) {
-    return {
-      client,
-      approval: null,
-      token,
-    };
-  }
-
-  return null;
+  return {
+    client: approval.client,
+    approval,
+    token,
+  };
 }
 
 function formatDate(date?: Date | null) {
@@ -180,11 +144,19 @@ export default async function MonthlyApprovalPage({
   }
 
   const client = context.client;
-  const prismaAny = prisma as any;
+
+  const { start, end } = getMonthRange(
+    context.approval.year,
+    context.approval.month
+  );
 
   const contents = await prisma.content.findMany({
     where: {
       clientId: client.id,
+      plannedDate: {
+        gte: start,
+        lte: end,
+      },
       status: {
         in: [
           'CLIENTE',
@@ -236,38 +208,7 @@ export default async function MonthlyApprovalPage({
     (content) => content.area === 'FILMMAKER' && approvedStatuses.includes(content.status)
   );
 
-  const suggestions = await prismaAny.captureDateSuggestion.findMany({
-    where: {
-      clientId: client.id,
-      isActive: true,
-      OR: [
-        {
-          approvalToken: token,
-        },
-        {
-          approvalToken: null,
-        },
-      ],
-    },
-    orderBy: {
-      dateKey: 'asc',
-    },
-  });
 
-  const existingSchedule = await prisma.captureSchedule.findFirst({
-    where: {
-      clientId: client.id,
-      status: {
-        not: 'CANCELADO',
-      },
-      scheduledAt: {
-        gte: new Date(),
-      },
-    },
-    orderBy: {
-      scheduledAt: 'asc',
-    },
-  });
 
   const errorMessage = getErrorMessage(query?.error);
 

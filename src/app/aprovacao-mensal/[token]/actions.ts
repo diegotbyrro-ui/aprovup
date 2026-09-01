@@ -3,103 +3,131 @@
 import { prisma } from '@/lib/prisma';
 import { getApprovedContentDestination } from '@/lib/contentRouting';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
-function getTokenFromArgs(args: any[]) {
-  return args.find(
-    (arg) => typeof arg === 'string' && arg.length > 10
-  ) || '';
+function getMonthRange(year: number, month: number) {
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 0, 23, 59, 59, 999);
+
+  return {
+    start,
+    end,
+  };
 }
 
-function getFormDataFromArgs(args: any[]) {
-  return args.find(
-    (arg) => arg instanceof FormData
-  ) as FormData | undefined;
-}
-
-function getText(
-  formData: FormData | undefined,
-  names: string[]
+async function validateMonthlyApproval(
+  token: string,
+  contentId: string
 ) {
-  if (!formData) return '';
-
-  for (const name of names) {
-    const value = String(formData.get(name) || '').trim();
-
-    if (value) return value;
+  if (!token || !contentId) {
+    throw new Error('Link de aprova??o inv?lido.');
   }
 
-  return '';
-}
+  const monthlyApproval =
+    await prisma.monthlyApproval.findUnique({
+      where: {
+        token,
+      },
+      include: {
+        client: true,
+      },
+    });
 
-async function routeApprovedContent(contentId: string) {
-  const content = await prisma.content.findUnique({
+  if (!monthlyApproval) {
+    throw new Error('Calend?rio de aprova??o n?o encontrado.');
+  }
+
+  const { start, end } = getMonthRange(
+    monthlyApproval.year,
+    monthlyApproval.month
+  );
+
+  const content = await prisma.content.findFirst({
     where: {
       id: contentId,
+      clientId: monthlyApproval.clientId,
+      plannedDate: {
+        gte: start,
+        lte: end,
+      },
     },
   });
 
   if (!content) {
-    return null;
+    throw new Error(
+      'Este conte?do n?o pertence ao calend?rio autorizado por este link.'
+    );
   }
 
-  const destination = getApprovedContentDestination(content);
-
-  const updatedContent = await prisma.content.update({
-    where: {
-      id: contentId,
-    },
-    data: {
-      status: 'APROVADO',
-      area: destination,
-    },
-  });
-
   return {
-    content: updatedContent,
-    destination,
+    monthlyApproval,
+    content,
   };
 }
 
 async function approveContentBase(
   contentId: string,
-  args: any[]
+  token: string
 ) {
-  const token = getTokenFromArgs(args);
-  const result = await routeApprovedContent(contentId);
+  const {
+    monthlyApproval,
+    content,
+  } = await validateMonthlyApproval(
+    token,
+    contentId
+  );
 
-  if (result) {
-    const destinationLabel =
-      result.destination === 'FILMMAKER'
-        ? 'Filmaker'
-        : 'Design';
+  const destination =
+    getApprovedContentDestination(content);
 
-    await prisma.comment.create({
+  await prisma.$transaction(async (transaction) => {
+    await transaction.content.update({
+      where: {
+        id: content.id,
+      },
       data: {
-        contentId,
-        authorName: 'Cliente',
+        status: 'APROVADO',
+        area: destination,
+      },
+    });
+
+    await transaction.comment.create({
+      data: {
+        contentId: content.id,
+        authorName: monthlyApproval.client.name,
         authorRole: 'CLIENTE',
         message:
-          `APROVAÇÃO DO CLIENTE: conteúdo aprovado na Etapa 1 e encaminhado para ${destinationLabel}.`,
+          `APROVA??O DO CLIENTE: conte?do aprovado na Etapa 1 e encaminhado para ${
+            destination === 'FILMMAKER'
+              ? 'Filmaker'
+              : 'Design'
+          }.`,
       },
-    }).catch(() => null);
+    });
 
-    await prisma.historyLog.create({
+    await transaction.historyLog.create({
       data: {
         entityType: 'CONTENT',
-        entityId: contentId,
+        entityId: content.id,
         action: 'PLANNING_APPROVED_AND_ROUTED',
         description:
-          `Conteúdo aprovado pelo cliente e encaminhado para ${destinationLabel}.`,
-        authorName: 'Cliente',
+          `Conte?do aprovado pelo cliente e encaminhado para ${
+            destination === 'FILMMAKER'
+              ? 'Filmaker'
+              : 'Design'
+          }.`,
+        authorName: monthlyApproval.client.name,
       },
-    }).catch(() => null);
+    });
+  });
 
-    revalidatePath(`/clientes/${result.content.clientId}`);
-  }
+  revalidatePath(
+    `/aprovacao-mensal/${token}`
+  );
 
-  if (token) {
-    revalidatePath(`/aprovacao-mensal/${token}`);
-  }
+  revalidatePath(
+    `/clientes/${monthlyApproval.clientId}`
+  );
 
   revalidatePath('/clientes');
   revalidatePath('/calendario-editorial');
@@ -110,67 +138,72 @@ async function approveContentBase(
 
 async function requestAdjustmentBase(
   contentId: string,
-  args: any[]
+  token: string,
+  formData: FormData
 ) {
-  const token = getTokenFromArgs(args);
-  const formData = getFormDataFromArgs(args);
+  const message = String(
+    formData.get('message') ||
+    formData.get('adjustment') ||
+    formData.get('adjustmentMessage') ||
+    formData.get('comment') ||
+    formData.get('reason') ||
+    ''
+  ).trim();
 
-  const message = getText(formData, [
-    'message',
-    'adjustment',
-    'adjustmentMessage',
-    'comment',
-    'reason',
-  ]);
-
-  const content = await prisma.content.findUnique({
-    where: {
-      id: contentId,
-    },
-  });
-
-  if (!content) {
-    return;
+  if (!message) {
+    redirect(
+      `/aprovacao-mensal/${token}?error=empty-adjustment`
+    );
   }
 
-  await prisma.content.update({
-    where: {
-      id: contentId,
-    },
-    data: {
-      status: 'ALTERACAO_SOLICITADA',
-      area: 'SOCIAL_MEDIA',
-    },
+  const {
+    monthlyApproval,
+    content,
+  } = await validateMonthlyApproval(
+    token,
+    contentId
+  );
+
+  await prisma.$transaction(async (transaction) => {
+    await transaction.content.update({
+      where: {
+        id: content.id,
+      },
+      data: {
+        status: 'ALTERACAO_SOLICITADA',
+        area: 'SOCIAL_MEDIA',
+      },
+    });
+
+    await transaction.comment.create({
+      data: {
+        contentId: content.id,
+        authorName: monthlyApproval.client.name,
+        authorRole: 'CLIENTE',
+        message:
+          `ALTERA??O SOLICITADA PELO CLIENTE: ${message}`,
+      },
+    });
+
+    await transaction.historyLog.create({
+      data: {
+        entityType: 'CONTENT',
+        entityId: content.id,
+        action: 'PLANNING_CHANGE_REQUESTED',
+        description:
+          'Cliente solicitou altera??o na primeira etapa de aprova??o.',
+        authorName: monthlyApproval.client.name,
+      },
+    });
   });
 
-  await prisma.comment.create({
-    data: {
-      contentId,
-      authorName: 'Cliente',
-      authorRole: 'CLIENTE',
-      message:
-        `ALTERAÇÃO SOLICITADA PELO CLIENTE: ${
-          message || 'Cliente solicitou ajuste neste conteúdo.'
-        }`,
-    },
-  }).catch(() => null);
+  revalidatePath(
+    `/aprovacao-mensal/${token}`
+  );
 
-  await prisma.historyLog.create({
-    data: {
-      entityType: 'CONTENT',
-      entityId: contentId,
-      action: 'PLANNING_CHANGE_REQUESTED',
-      description:
-        'Cliente solicitou alteração na primeira etapa de aprovação.',
-      authorName: 'Cliente',
-    },
-  }).catch(() => null);
-
-  revalidatePath(`/clientes/${content.clientId}`);
-
-  if (token) {
-    revalidatePath(`/aprovacao-mensal/${token}`);
-  }
+  revalidatePath(
+    `/clientes/${monthlyApproval.clientId}`
+  );
 
   revalidatePath('/clientes');
   revalidatePath('/calendario-editorial');
@@ -180,85 +213,109 @@ async function requestAdjustmentBase(
   revalidatePath('/social-media/agendamentos');
 }
 
+/*
+ * Mantemos estes nomes porque podem existir telas antigas
+ * ainda importando algum deles.
+ */
+
 export async function approveContentAction(
   contentId: string,
-  ...args: any[]
+  token: string
 ) {
-  return approveContentBase(contentId, args);
+  return approveContentBase(contentId, token);
 }
 
 export async function approveMonthlyContentAction(
   contentId: string,
-  ...args: any[]
+  token: string
 ) {
-  return approveContentBase(contentId, args);
+  return approveContentBase(contentId, token);
 }
 
 export async function approveItemAction(
   contentId: string,
-  ...args: any[]
+  token: string
 ) {
-  return approveContentBase(contentId, args);
+  return approveContentBase(contentId, token);
 }
 
 export async function approvePlanningContentAction(
   contentId: string,
-  ...args: any[]
+  token: string
 ) {
-  return approveContentBase(contentId, args);
+  return approveContentBase(contentId, token);
 }
 
 export async function approveContent(
   contentId: string,
-  ...args: any[]
+  token: string
 ) {
-  return approveContentBase(contentId, args);
+  return approveContentBase(contentId, token);
 }
 
 export async function approveMonthlyContentItemAction(
   contentId: string,
-  ...args: any[]
+  token: string
 ) {
-  return approveContentBase(contentId, args);
+  return approveContentBase(contentId, token);
 }
 
 export async function requestAdjustmentAction(
   contentId: string,
-  ...args: any[]
+  token: string,
+  formData: FormData
 ) {
-  return requestAdjustmentBase(contentId, args);
+  return requestAdjustmentBase(
+    contentId,
+    token,
+    formData
+  );
 }
 
 export async function requestMonthlyAdjustmentAction(
   contentId: string,
-  ...args: any[]
+  token: string,
+  formData: FormData
 ) {
-  return requestAdjustmentBase(contentId, args);
+  return requestAdjustmentBase(
+    contentId,
+    token,
+    formData
+  );
 }
 
 export async function requestChangeAction(
   contentId: string,
-  ...args: any[]
+  token: string,
+  formData: FormData
 ) {
-  return requestAdjustmentBase(contentId, args);
+  return requestAdjustmentBase(
+    contentId,
+    token,
+    formData
+  );
 }
 
 export async function requestContentAdjustmentAction(
   contentId: string,
-  ...args: any[]
+  token: string,
+  formData: FormData
 ) {
-  return requestAdjustmentBase(contentId, args);
+  return requestAdjustmentBase(
+    contentId,
+    token,
+    formData
+  );
 }
 
 export async function requestMonthlyContentAdjustmentAction(
   contentId: string,
-  ...args: any[]
+  token: string,
+  formData: FormData
 ) {
-  return requestAdjustmentBase(contentId, args);
-}
-
-export async function scheduleClientSuggestedCaptureAction(
-  ...args: any[]
-) {
-  return;
+  return requestAdjustmentBase(
+    contentId,
+    token,
+    formData
+  );
 }
