@@ -113,85 +113,155 @@ export default async function ClientMonthlyApprovalPage({
         ],
     });
 
-    const monthlyApprovalsWithCounts = await Promise.all(
-        monthlyApprovals.map(async (approval) => {
-            const { start, end } = getMonthRange(approval.year, approval.month);
-
-            const [total, approvedForProduction, changesRequested, pending] =
-                await Promise.all([
-                    prisma.content.count({
-                        where: {
-                            clientId: id,
-                            format: { not: "DEMANDA_EMERGENCIAL" },
-                            plannedDate: {
-                                gte: start,
-                                lte: end,
-                            },
-                            status: {
-                                not: "ARQUIVADO",
-                            },
-                        },
-                    }),
-
-                    prisma.content.count({
-                        where: {
-                            clientId: id,
-                            format: { not: "DEMANDA_EMERGENCIAL" },
-                            plannedDate: {
-                                gte: start,
-                                lte: end,
-                            },
-                            status: {
-                                in: [
-                                    "AGENDAMENTO_PRODUCAO",
-                                    "DESIGN",
-                                    "EDICAO",
-                                    "REVISAO_INTERNA",
-                                    "ENVIADO_CLIENTE",
-                                    "APROVADO",
-                                    "PRONTO_PARA_POSTAR",
-                                    "PUBLICADO_MANUALMENTE",
-                                ],
-                            },
-                        },
-                    }),
-
-                    prisma.content.count({
-                        where: {
-                            clientId: id,
-                            format: { not: "DEMANDA_EMERGENCIAL" },
-                            plannedDate: {
-                                gte: start,
-                                lte: end,
-                            },
-                            status: "ALTERACAO_SOLICITADA",
-                        },
-                    }),
-
-                    prisma.content.count({
-                        where: {
-                            clientId: id,
-                            format: { not: "DEMANDA_EMERGENCIAL" },
-                            plannedDate: {
-                                gte: start,
-                                lte: end,
-                            },
-                            status: {
-                                in: ["IDEIA", "ROTEIRO"],
-                            },
-                        },
-                    }),
-                ]);
+    /*
+     * Carregamos os conteúdos apenas UMA vez.
+     *
+     * Antes:
+     * 4 queries paralelas para cada aprovação mensal,
+     * multiplicadas por outro Promise.all.
+     *
+     * Agora:
+     * 1 query total e os contadores são calculados em memória.
+     */
+    const approvalRanges =
+        monthlyApprovals.map((approval) => {
+            const { start, end } =
+                getMonthRange(
+                    approval.year,
+                    approval.month
+                );
 
             return {
-                ...approval,
-                total,
-                approvedForProduction,
-                changesRequested,
-                pending,
+                approval,
+                start,
+                end,
             };
-        })
-    );
+        });
+
+    const firstRange =
+        approvalRanges.length > 0
+            ? approvalRanges.reduce(
+                  (earliest, current) =>
+                      current.start < earliest.start
+                          ? current
+                          : earliest
+              )
+            : null;
+
+    const lastRange =
+        approvalRanges.length > 0
+            ? approvalRanges.reduce(
+                  (latest, current) =>
+                      current.end > latest.end
+                          ? current
+                          : latest
+              )
+            : null;
+
+    const monthlyContents =
+        firstRange && lastRange
+            ? await prisma.content.findMany({
+                  where: {
+                      clientId: id,
+
+                      format: {
+                          not: "DEMANDA_EMERGENCIAL",
+                      },
+
+                      plannedDate: {
+                          gte: firstRange.start,
+                          lte: lastRange.end,
+                      },
+
+                      status: {
+                          not: "ARQUIVADO",
+                      },
+                  },
+
+                  select: {
+                      plannedDate: true,
+                      status: true,
+                  },
+              })
+            : [];
+
+    const approvedForProductionStatuses =
+        new Set([
+            "AGENDAMENTO_PRODUCAO",
+            "DESIGN",
+            "EDICAO",
+            "REVISAO_INTERNA",
+            "ENVIADO_CLIENTE",
+            "APROVADO",
+            "PRONTO_PARA_POSTAR",
+            "PUBLICADO_MANUALMENTE",
+        ]);
+
+    const pendingStatuses =
+        new Set([
+            "IDEIA",
+            "ROTEIRO",
+        ]);
+
+    const monthlyApprovalsWithCounts =
+        approvalRanges.map(
+            ({
+                approval,
+                start,
+                end,
+            }) => {
+                const contentsInMonth =
+                    monthlyContents.filter(
+                        (content) => {
+                            const plannedDate =
+                                content.plannedDate;
+
+                            if (!plannedDate) {
+                                return false;
+                            }
+
+                            return (
+                                plannedDate >= start &&
+                                plannedDate <= end
+                            );
+                        }
+                    );
+
+                const total =
+                    contentsInMonth.length;
+
+                const approvedForProduction =
+                    contentsInMonth.filter(
+                        (content) =>
+                            approvedForProductionStatuses.has(
+                                content.status
+                            )
+                    ).length;
+
+                const changesRequested =
+                    contentsInMonth.filter(
+                        (content) =>
+                            content.status ===
+                            "ALTERACAO_SOLICITADA"
+                    ).length;
+
+                const pending =
+                    contentsInMonth.filter(
+                        (content) =>
+                            pendingStatuses.has(
+                                content.status
+                            )
+                    ).length;
+
+                return {
+                    ...approval,
+                    total,
+                    approvedForProduction,
+                    changesRequested,
+                    pending,
+                };
+            }
+        );
 
     return (
         <div className="space-y-6">
