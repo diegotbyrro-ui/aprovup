@@ -1387,161 +1387,6 @@ const query =
 
 
       {/* ===================================================
-          RETORNOS RECENTES DO CLIENTE
-          =================================================== */}
-
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
-              Cliente
-            </p>
-
-            <h2 className="mt-1 text-sm font-bold text-slate-900">
-              Retornos recentes
-            </h2>
-
-            <p className="mt-1 text-[9px] text-slate-400">
-              Aprovações e pedidos de ajuste recebidos.
-            </p>
-          </div>
-
-          <Link
-            href="/social-media/avisos"
-            className="text-[8px] font-bold text-blue-600 hover:underline"
-          >
-            Ver todos
-          </Link>
-        </div>
-
-        {clientReturns.length === 0 ? (
-          <div className="mt-4 rounded-xl border border-dashed border-slate-200 py-7 text-center text-[9px] text-slate-400">
-            Nenhum retorno recente do cliente.
-          </div>
-        ) : (
-          <div className="mt-3 divide-y divide-slate-100">
-            {clientReturns.map(
-              (comment) => {
-                const message =
-                  String(
-                    comment.message ||
-                    ""
-                  );
-
-                const adjustment =
-                  message.includes(
-                    "ALTERAÇÃO"
-                  ) ||
-                  message.includes(
-                    "ALTERACAO"
-                  );
-
-                const finalApproval =
-                  message.includes(
-                    "FINAL"
-                  );
-
-                return (
-                  <Link
-                    key={
-                      comment.id
-                    }
-                    href={
-                      comment.contentId
-                        ? `/conteudos/${comment.contentId}`
-                        : "/social-media/avisos"
-                    }
-                    className="group flex items-start gap-3 py-3"
-                  >
-                    <div
-                      className={[
-                        "mt-0.5",
-                        "flex",
-                        "h-8",
-                        "w-8",
-                        "shrink-0",
-                        "items-center",
-                        "justify-center",
-                        "rounded-lg",
-                        adjustment
-                          ? "bg-orange-50 text-orange-600"
-                          : "bg-emerald-50 text-emerald-600",
-                      ].join(" ")}
-                    >
-                      {adjustment ? (
-                        <AlertCircle
-                          size={14}
-                        />
-                      ) : (
-                        <CheckCircle2
-                          size={14}
-                        />
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-[10px] font-bold text-slate-900 group-hover:text-blue-600">
-                          {cleanDemoName(
-                            comment.content?.title
-                          ) ||
-                            "Conteúdo"}
-                        </p>
-
-                        <span
-                          className={[
-                            "rounded-md",
-                            "px-1.5",
-                            "py-0.5",
-                            "text-[7px]",
-                            "font-black",
-                            adjustment
-                              ? "bg-orange-50 text-orange-700"
-                              : "bg-emerald-50 text-emerald-700",
-                          ].join(" ")}
-                        >
-                          {adjustment
-                            ? "AJUSTE"
-                            : "APROVADO"}
-                        </span>
-
-                        {finalApproval ? (
-                          <span className="rounded-md bg-violet-50 px-1.5 py-0.5 text-[7px] font-black text-violet-700">
-                            ETAPA FINAL
-                          </span>
-                        ) : (
-                          <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[7px] font-black text-blue-700">
-                            ETAPA 1
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="mt-1 line-clamp-2 text-[9px] leading-relaxed text-slate-500">
-                        {message}
-                      </p>
-
-                      <p className="mt-1 text-[8px] text-slate-400">
-                        {cleanDemoName(
-                          comment.content?.client?.name
-                        ) ||
-                          "Cliente"}
-                      </p>
-                    </div>
-
-                    <ArrowUpRight
-                      size={13}
-                      className="mt-1 shrink-0 text-slate-300 group-hover:text-blue-600"
-                    />
-                  </Link>
-                );
-              }
-            )}
-          </div>
-        )}
-      </section>
-
-
-      {/* ===================================================
           2a ETAPA DE APROVACAO
           =================================================== */}
 
@@ -1907,7 +1752,7 @@ const query =
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h2 className="text-[12px] font-bold text-slate-900">
-                    Dúvidas dos clientes
+                    Dúvidas e ajustes dos clientes
                   </h2>
 
                   {clientQuestions.length > 0 ? (
@@ -1942,11 +1787,11 @@ const query =
                 </div>
 
                 <p className="mt-3 text-[10px] font-bold text-slate-600">
-                  Nenhuma dúvida do cliente
+                  Nenhuma dúvida ou ajuste
                 </p>
 
                 <p className="mt-1 text-[8px] text-slate-400">
-                  Nenhuma resposta sua é necessária agora.
+                  Nenhum retorno do cliente exige sua atenção agora.
                 </p>
               </div>
             </div>
