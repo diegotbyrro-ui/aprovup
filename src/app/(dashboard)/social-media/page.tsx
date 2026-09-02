@@ -837,24 +837,12 @@ const query =
   );
 
 
-  const weekEnd =
-    new Date(
-      today
-    );
-
-  weekEnd.setDate(
-    weekEnd.getDate() +
-    7
-  );
-
-
   const [
     doubts,
     clientReturns,
     waitingClientCount,
     readyCount,
     futureCaptures,
-    weekContents,
     waitingClientContents,
     finalApprovalContents,
     activeClients,
@@ -1021,41 +1009,6 @@ const query =
         where: {
           clientId,
 
-          plannedDate: {
-            gte:
-              today,
-
-            lte:
-              weekEnd,
-          },
-
-          status: {
-            notIn: [
-              "PUBLICADO",
-              "PUBLICADO_MANUALMENTE",
-            ],
-          },
-        },
-
-        include: {
-          client:
-            true,
-        },
-
-        orderBy: {
-          plannedDate:
-            "asc",
-        },
-
-        take:
-          6,
-      }),
-
-
-      prisma.content.findMany({
-        where: {
-          clientId,
-
           status:
             "ENVIADO_CLIENTE",
         },
@@ -1085,7 +1038,6 @@ const query =
               "DESIGN_ANALISE",
               "FILMMAKER_ANALISE",
               "ENVIADO_CLIENTE",
-              "ALTERACAO_SOLICITADA",
               "PRONTO_PARA_POSTAR",
             ],
           },
@@ -1132,7 +1084,6 @@ const query =
         const alreadyInFlow =
           [
             "ENVIADO_CLIENTE",
-            "ALTERACAO_SOLICITADA",
             "PRONTO_PARA_POSTAR",
           ].includes(
             content.status
@@ -1144,6 +1095,32 @@ const query =
         );
       }
     );
+  const clientQuestions =
+    clientReturns.filter(
+      (comment) => {
+        const value =
+          normalizeText(
+            comment.message
+          );
+
+        return (
+          value.includes(
+            "duvida"
+          ) ||
+          value.includes(
+            "pergunta"
+          ) ||
+          value.includes(
+            "ajuste"
+          ) ||
+          value.includes(
+            "alteracao"
+          )
+        );
+      }
+    );
+
+
 
 
   return (
@@ -1857,7 +1834,7 @@ const query =
 
 
       {/* ===================================================
-          DUVIDAS + SEMANA
+          DUVIDAS E RETORNOS DOS CLIENTES
           =================================================== */}
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
@@ -1918,48 +1895,226 @@ const query =
         </div>
 
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-[12px] font-bold text-slate-900">
-                Próximos 7 dias
-              </h2>
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm xl:col-span-5">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                <MessageCircleQuestion
+                  size={16}
+                />
+              </div>
 
-              <p className="mt-0.5 text-[9px] text-slate-400">
-                Conteúdos que entram na agenda.
-              </p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-[12px] font-bold text-slate-900">
+                    Dúvidas dos clientes
+                  </h2>
+
+                  {clientQuestions.length > 0 ? (
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-600 px-1.5 text-[7px] font-black text-white">
+                      {clientQuestions.length}
+                    </span>
+                  ) : null}
+                </div>
+
+                <p className="mt-0.5 text-[9px] text-slate-400">
+                  Perguntas e ajustes que precisam da sua atenção.
+                </p>
+              </div>
             </div>
 
-            <CalendarDays
-              size={15}
-              className="text-slate-400"
-            />
+            <Link
+              href="/social-media/avisos"
+              className="shrink-0 text-[8px] font-bold text-blue-600 hover:underline"
+            >
+              Ver todos
+            </Link>
           </div>
 
 
-          <div className="mt-2">
-            {weekContents.length ===
-            0 ? (
-              <div className="mt-4 rounded-xl border border-dashed border-slate-200 py-8 text-center text-[9px] text-slate-400">
-                Nenhum conteúdo previsto.
-              </div>
-            ) : (
-              weekContents.map(
-                (
-                  content
-                ) => (
-                  <ContentRow
-                    key={
-                      content.id
-                    }
-                    content={
-                      content
-                    }
+          {clientQuestions.length === 0 ? (
+            <div className="flex min-h-[180px] items-center justify-center p-4">
+              <div className="text-center">
+                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500">
+                  <CheckCircle2
+                    size={18}
                   />
+                </div>
+
+                <p className="mt-3 text-[10px] font-bold text-slate-600">
+                  Nenhuma dúvida do cliente
+                </p>
+
+                <p className="mt-1 text-[8px] text-slate-400">
+                  Nenhuma resposta sua é necessária agora.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {clientQuestions
+                .slice(
+                  0,
+                  4
                 )
-              )
-            )}
-          </div>
+                .map(
+                  (comment) => {
+                    const originalMessage =
+                      String(
+                        comment.message ||
+                        ""
+                      );
+
+                    const normalized =
+                      normalizeText(
+                        originalMessage
+                      );
+
+                    const adjustment =
+                      normalized.includes(
+                        "ajuste"
+                      ) ||
+                      normalized.includes(
+                        "alteracao"
+                      );
+
+                    const cleanMessage =
+                      originalMessage
+                        .replace(
+                          /^ALTERAÇÃO FINAL SOLICITADA PELO CLIENTE:\s*/i,
+                          ""
+                        )
+                        .replace(
+                          /^ALTERACAO FINAL SOLICITADA PELO CLIENTE:\s*/i,
+                          ""
+                        )
+                        .replace(
+                          /^ALTERAÇÃO SOLICITADA PELO CLIENTE:\s*/i,
+                          ""
+                        )
+                        .replace(
+                          /^ALTERACAO SOLICITADA PELO CLIENTE:\s*/i,
+                          ""
+                        )
+                        .replace(
+                          /^DÚVIDA DO CLIENTE:\s*/i,
+                          ""
+                        )
+                        .replace(
+                          /^DUVIDA DO CLIENTE:\s*/i,
+                          ""
+                        )
+                        .trim();
+
+                    return (
+                      <Link
+                        key={
+                          comment.id
+                        }
+                        href={
+                          comment.contentId
+                            ? `/conteudos/${comment.contentId}`
+                            : "/social-media/avisos"
+                        }
+                        className="group flex items-start gap-3 px-4 py-3 transition hover:bg-slate-50"
+                      >
+                        <div
+                          className={[
+                            "mt-0.5",
+                            "flex",
+                            "h-9",
+                            "w-9",
+                            "shrink-0",
+                            "items-center",
+                            "justify-center",
+                            "rounded-xl",
+                            adjustment
+                              ? "bg-orange-50 text-orange-600"
+                              : "bg-violet-50 text-violet-600",
+                          ].join(" ")}
+                        >
+                          {adjustment ? (
+                            <AlertCircle
+                              size={15}
+                            />
+                          ) : (
+                            <MessageCircleQuestion
+                              size={15}
+                            />
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <p className="max-w-[180px] truncate text-[10px] font-bold text-slate-900 group-hover:text-blue-600">
+                              {cleanDemoName(
+                                comment.content?.title
+                              ) ||
+                                "Conteúdo"}
+                            </p>
+
+                            <span
+                              className={[
+                                "rounded-md",
+                                "px-1.5",
+                                "py-0.5",
+                                "text-[7px]",
+                                "font-black",
+                                adjustment
+                                  ? "bg-orange-50 text-orange-700"
+                                  : "bg-violet-50 text-violet-700",
+                              ].join(" ")}
+                            >
+                              {adjustment
+                                ? "AJUSTE"
+                                : "DÚVIDA"}
+                            </span>
+                          </div>
+
+                          <p className="mt-1.5 line-clamp-2 text-[9px] leading-relaxed text-slate-600">
+                            {cleanMessage ||
+                              "Cliente enviou uma solicitação."}
+                          </p>
+
+                          <div className="mt-2 flex items-center gap-1.5 text-[8px] text-slate-400">
+                            <span className="font-semibold text-slate-500">
+                              {cleanDemoName(
+                                comment.content?.client?.name
+                              ) ||
+                                "Cliente"}
+                            </span>
+
+                            <span>
+                              •
+                            </span>
+
+                            <span>
+                              {formatDate(
+                                comment.createdAt
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        <ArrowUpRight
+                          size={13}
+                          className="mt-1 shrink-0 text-slate-300 transition group-hover:text-blue-600"
+                        />
+                      </Link>
+                    );
+                  }
+                )}
+
+              {clientQuestions.length > 4 ? (
+                <Link
+                  href="/social-media/avisos"
+                  className="flex h-10 items-center justify-center text-[8px] font-bold text-blue-600 hover:bg-blue-50/50"
+                >
+                  Ver mais {clientQuestions.length - 4} retorno(s)
+                </Link>
+              ) : null}
+            </div>
+          )}
         </div>
       </section>
 
