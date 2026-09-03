@@ -112,6 +112,7 @@ async function currentAuthorizedUser() {
     !user ||
     user.status !==
       'APROVADO' ||
+    !user.agencyId ||
     !hasPermission(
       user,
       'social.manage'
@@ -237,11 +238,16 @@ export async function POST(
 
 
   const content =
-    await prisma.content.findUnique({
+    await prisma.content.findFirst({
 
       where: {
         id:
           contentId,
+
+        client: {
+          agencyId:
+            user.agencyId!,
+        },
       },
 
       include: {
@@ -673,6 +679,47 @@ export async function DELETE(
     contentId,
   } =
     await context.params;
+
+
+  const ownedContent =
+    await prisma.content.findFirst({
+
+      where: {
+        id:
+          contentId,
+
+        client: {
+          agencyId:
+            user.agencyId!,
+        },
+      },
+
+      select: {
+        id: true,
+      },
+
+    });
+
+
+  if (
+    !ownedContent
+  ) {
+
+    return NextResponse.json(
+      {
+        ok:
+          false,
+
+        message:
+          'Conteúdo não encontrado.',
+      },
+      {
+        status:
+          404,
+      }
+    );
+
+  }
 
 
   const publication =

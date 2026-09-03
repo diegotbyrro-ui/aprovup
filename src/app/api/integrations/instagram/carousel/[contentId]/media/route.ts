@@ -81,7 +81,8 @@ async function getUser() {
   if (
     !user ||
     user.status !==
-      'APROVADO'
+      'APROVADO' ||
+    !user.agencyId
   ) {
     return null;
   }
@@ -93,14 +94,21 @@ async function getUser() {
 
 async function loadContent(
   contentId:
+    string,
+
+  agencyId:
     string
 ) {
 
-  return prisma.content.findUnique({
+  return prisma.content.findFirst({
 
     where: {
       id:
         contentId,
+
+      client: {
+        agencyId,
+      },
     },
 
     include: {
@@ -187,7 +195,8 @@ export async function POST(
 
   const content =
     await loadContent(
-      contentId
+      contentId,
+      user.agencyId!
     );
 
 
@@ -550,7 +559,8 @@ export async function DELETE(
 
   const content =
     await loadContent(
-      contentId
+      contentId,
+      user.agencyId!
     );
 
 
@@ -780,7 +790,8 @@ export async function PATCH(
 
   const content =
     await loadContent(
-      contentId
+      contentId,
+      user.agencyId!
     );
 
   let action =
@@ -1154,7 +1165,8 @@ export async function PUT(
 
   const content =
     await loadContent(
-      contentId
+      contentId,
+      user.agencyId!
     );
 
 

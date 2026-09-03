@@ -110,7 +110,8 @@ export async function POST(
 
     if (
       currentUser.status !==
-      'APROVADO'
+      'APROVADO' ||
+      !currentUser.agencyId
     ) {
       return NextResponse.json(
         {
@@ -125,9 +126,14 @@ export async function POST(
 
 
     const content =
-      await prisma.content.findUnique({
+      await prisma.content.findFirst({
         where: {
           id,
+
+          client: {
+            agencyId:
+              currentUser.agencyId,
+          },
         },
       });
 

@@ -96,6 +96,7 @@ export async function POST(
     if (
       currentUser.status !==
         'APROVADO' ||
+      !currentUser.agencyId ||
       !hasPermission(
         currentUser,
         'social.manage'
@@ -114,9 +115,14 @@ export async function POST(
     }
 
     const content =
-      await prisma.content.findUnique({
+      await prisma.content.findFirst({
         where: {
           id,
+
+          client: {
+            agencyId:
+              currentUser.agencyId,
+          },
         },
 
         select: {
