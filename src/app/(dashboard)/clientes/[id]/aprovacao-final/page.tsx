@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { requireAgencyContext } from '@/lib/tenant';
 import { CopyFinalApprovalLinkButton } from './CopyFinalApprovalLinkButton';
 
 import {
@@ -57,11 +58,17 @@ export default async function FinalApprovalManagerPage({
     id: string;
   }>;
 }) {
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
+
   const { id } = await params;
 
-  const client = await prisma.client.findUnique({
+  const client = await prisma.client.findFirst({
     where: {
       id,
+      agencyId,
     },
   });
 
@@ -71,7 +78,12 @@ export default async function FinalApprovalManagerPage({
 
   const contents = await prisma.content.findMany({
     where: {
-      clientId: id,
+      clientId:
+        id,
+
+      client: {
+        agencyId,
+      },
       format: { not: "DEMANDA_EMERGENCIAL" },
       status: {
         in: [
@@ -103,7 +115,13 @@ export default async function FinalApprovalManagerPage({
     await prisma.approval.findFirst({
       where: {
         content: {
-          clientId: id,
+          clientId:
+            id,
+
+          client: {
+            agencyId,
+          },
+
           status: {
             in: [
               'ENVIADO_CLIENTE',

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireAgencyContext } from "@/lib/tenant";
 import Link from "next/link";
 import { randomUUID } from "crypto";
 import { CopyApprovalLinkButton } from "./CopyApprovalLinkButton";
@@ -56,14 +57,21 @@ export default async function ClientMonthlyApprovalPage({
         year?: string;
     }>;
 }) {
+    const {
+        agencyId,
+    } =
+        await requireAgencyContext();
+
     const { id } = await params;
     const query = await searchParams;
 
-    const client = await prisma.client.findUnique({
-        where: {
-            id,
-        },
-    });
+    const client =
+        await prisma.client.findFirst({
+            where: {
+                id,
+                agencyId,
+            },
+        });
 
     if (!client) return notFound();
 
@@ -88,7 +96,12 @@ export default async function ClientMonthlyApprovalPage({
     const pendingPlanningCount =
         await prisma.content.count({
             where: {
-                clientId: id,
+                clientId:
+                    id,
+
+                client: {
+                    agencyId,
+                },
 
                 format: {
                     not: "DEMANDA_EMERGENCIAL",
@@ -206,7 +219,12 @@ export default async function ClientMonthlyApprovalPage({
         firstRange && lastRange
             ? await prisma.content.findMany({
                   where: {
-                      clientId: id,
+                      clientId:
+                          id,
+
+                      client: {
+                          agencyId,
+                      },
 
                       format: {
                           not: "DEMANDA_EMERGENCIAL",

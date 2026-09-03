@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser, isDirector, isSocialMedia } from '@/lib/auth';
+import { isDirector, isSocialMedia } from '@/lib/auth';
+import { requireAgencyContext } from '@/lib/tenant';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -88,7 +89,12 @@ export default async function ClienteCalendarioPage({
     ano?: string;
   }>;
 }) {
-  const currentUser = await requireCurrentUser();
+  const {
+    user:
+      currentUser,
+    agencyId,
+  } =
+    await requireAgencyContext();
 
   const { id } = await params;
   const query = searchParams ? await searchParams : {};
@@ -108,9 +114,10 @@ export default async function ClienteCalendarioPage({
   const daysInMonth = getDaysInMonth(year, month);
   const firstWeekDay = monthStart.getDay();
 
-  const client = await prisma.client.findUnique({
+  const client = await prisma.client.findFirst({
     where: {
       id,
+      agencyId,
     },
     include: {
       contents: {

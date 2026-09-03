@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser, isDirector, isSocialMedia } from '@/lib/auth';
+import { isDirector, isSocialMedia } from '@/lib/auth';
+import { requireAgencyContext } from '@/lib/tenant';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { updateClientAction } from './actions';
@@ -16,7 +17,12 @@ export default async function EditarClientePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const currentUser = await requireCurrentUser();
+  const {
+    user:
+      currentUser,
+    agencyId,
+  } =
+    await requireAgencyContext();
 
   if (
     !isDirector(currentUser.role) &&
@@ -27,9 +33,13 @@ export default async function EditarClientePage({
 
   const { id } = await params;
 
-  const client = await prisma.client.findUnique({
-    where: { id },
-  });
+  const client =
+    await prisma.client.findFirst({
+      where: {
+        id,
+        agencyId,
+      },
+    });
 
   if (!client) {
     notFound();

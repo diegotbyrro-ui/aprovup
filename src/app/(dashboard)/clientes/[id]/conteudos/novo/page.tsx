@@ -1,4 +1,5 @@
 ﻿import { prisma } from '@/lib/prisma';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import { createContent } from '@/app/actions';
 import { inputClasses, labelClasses } from '@/lib/styles';
@@ -11,13 +12,34 @@ export default async function NovoConteudoClientePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ date?: string }>;
 }) {
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
+
   const { id } = await params;
   const { date } = await searchParams;
 
-  const client = await prisma.client.findUnique({ where: { id } });
+  const client =
+    await prisma.client.findFirst({
+      where: {
+        id,
+        agencyId,
+      },
+    });
   if (!client) return notFound();
 
-  const users = await prisma.user.findMany({ orderBy: { name: 'asc' } });
+  const users =
+    await prisma.user.findMany({
+      where: {
+        agencyId,
+      },
+
+      orderBy: {
+        name:
+          'asc',
+      },
+    });
 
   const priorities = [
     { value: 'BAIXA', label: 'Baixa' },
