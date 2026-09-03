@@ -5,11 +5,20 @@ import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/userAccess";
 
 export async function markContentAsPublished(contentId: string) {
-    await requirePermission("social.manage");
+    const currentUser =
+        await requirePermission(
+            "social.manage"
+        );
 
-    const content = await prisma.content.findUnique({
+    const content = await prisma.content.findFirst({
         where: {
-            id: contentId,
+            id:
+                contentId,
+
+            client: {
+                agencyId:
+                    currentUser.agencyId,
+            },
         },
     });
 

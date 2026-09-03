@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
@@ -89,11 +90,20 @@ export default async function EntregasSemanaPage({
         cliente?: string;
     }>;
 }) {
+    const {
+        agencyId,
+    } =
+        await requireAgencyContext();
+
     const params = await searchParams;
 
     const selectedClient = params.cliente || 'TODOS';
 
     const clients = await prisma.client.findMany({
+        where: {
+            agencyId,
+        },
+
         orderBy: {
             name: 'asc',
         },
@@ -115,6 +125,9 @@ export default async function EntregasSemanaPage({
 
     const weekContents = await prisma.content.findMany({
         where: {
+            client: {
+                agencyId,
+            },
             ...clientFilter,
             plannedDate: {
                 gte: start,
@@ -139,6 +152,9 @@ export default async function EntregasSemanaPage({
 
     const lateContents = await prisma.content.findMany({
         where: {
+            client: {
+                agencyId,
+            },
             ...clientFilter,
             plannedDate: {
                 lt: start,

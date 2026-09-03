@@ -1,10 +1,25 @@
 ﻿import { prisma } from '@/lib/prisma';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
 export default async function CalendarioPage() {
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
+
   const contents = await prisma.content.findMany({
-    where: { plannedDate: { not: null } },
+    where: {
+      client: {
+        agencyId,
+      },
+
+      plannedDate: {
+        not:
+          null,
+      },
+    },
     orderBy: { plannedDate: 'asc' }
   });
 

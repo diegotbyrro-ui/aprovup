@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
@@ -82,6 +83,11 @@ export default async function AprovacoesPage({
         prioridade?: string;
     }>;
 }) {
+    const {
+        agencyId,
+    } =
+        await requireAgencyContext();
+
     const params = await searchParams;
 
     const selectedClient = params.cliente || 'TODOS';
@@ -89,6 +95,10 @@ export default async function AprovacoesPage({
     const selectedPriority = params.prioridade || 'TODOS';
 
     const clients = await prisma.client.findMany({
+        where: {
+            agencyId,
+        },
+
         orderBy: {
             name: 'asc',
         },
@@ -96,6 +106,9 @@ export default async function AprovacoesPage({
 
     const contents = await prisma.content.findMany({
         where: {
+            client: {
+                agencyId,
+            },
             status:
                 selectedStatus !== 'TODOS'
                     ? selectedStatus

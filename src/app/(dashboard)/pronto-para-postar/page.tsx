@@ -1,5 +1,6 @@
 import { requireSaasFeature } from '@/lib/saasAccess';
 import { prisma } from '@/lib/prisma';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { markContentAsPublished } from './actions';
@@ -71,10 +72,20 @@ export default async function ProntoParaPostarPage({
     }>;
 }) {
   await requireSaasFeature('socialPosting');
+
+    const {
+        agencyId,
+    } =
+        await requireAgencyContext();
+
     const params = await searchParams;
     const selectedClient = params.cliente || 'TODOS';
 
     const clients = await prisma.client.findMany({
+        where: {
+            agencyId,
+        },
+
         orderBy: {
             name: 'asc',
         },
@@ -85,6 +96,9 @@ export default async function ProntoParaPostarPage({
 
     const contents = await prisma.content.findMany({
         where: {
+            client: {
+                agencyId,
+            },
             status: 'PRONTO_PARA_POSTAR',
             ...(selectedClient !== 'TODOS'
                 ? {

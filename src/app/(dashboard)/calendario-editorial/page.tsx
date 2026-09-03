@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
@@ -145,6 +146,11 @@ export default async function CalendarioEditorialPage({
         prioridade?: string;
     }>;
 }) {
+    const {
+        agencyId,
+    } =
+        await requireAgencyContext();
+
     const params = await searchParams;
 
     const today = new Date();
@@ -159,6 +165,10 @@ export default async function CalendarioEditorialPage({
     const monthEnd = endOfDay(new Date(currentYear, currentMonth + 1, 0));
 
     const clients = await prisma.client.findMany({
+        where: {
+            agencyId,
+        },
+
         orderBy: {
             name: 'asc',
         },
@@ -166,6 +176,9 @@ export default async function CalendarioEditorialPage({
 
     const contents = await prisma.content.findMany({
         where: {
+            client: {
+                agencyId,
+            },
             plannedDate: {
                 gte: monthStart,
                 lte: monthEnd,
@@ -284,7 +297,13 @@ export default async function CalendarioEditorialPage({
             ? await prisma.approval.findFirst({
                   where: {
                       content: {
-                          clientId: selectedClient,
+                          clientId:
+                              selectedClient,
+
+                          client: {
+                              agencyId,
+                          },
+
                           status: {
                               in: [
                                   'ENVIADO_CLIENTE',
