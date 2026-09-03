@@ -566,6 +566,10 @@ function nextStepClasses(color: string) {
   return classes[color] || classes.slate;
 }
 
+
+import {
+  CommentAudioPlayer,
+} from '@/components/aprovup/CommentAudioPlayer';
 export default async function ConteudoDetailPage({
   params,
 }: {
@@ -681,6 +685,14 @@ export default async function ConteudoDetailPage({
     (comment) => comment.authorRole !== 'CLIENTE'
   );
 
+
+  const historyAudioComments =
+    contentSafe.comments.filter(
+      (comment) =>
+        Boolean(
+          comment.audioUrl
+        )
+    );
   const nextStep = getNextStep(contentSafe.status, currentArea);
 
   const contentFeedbackTone =
@@ -990,6 +1002,15 @@ export default async function ConteudoDetailPage({
                       )
                   }
                 </p>
+
+                <CommentAudioPlayer
+                  audioUrl={
+                    comment.audioUrl
+                  }
+                  audioDurationMs={
+                    comment.audioDurationMs
+                  }
+                />
 
               </div>
 
@@ -1362,6 +1383,15 @@ export default async function ConteudoDetailPage({
                     <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
                       {comment.message}
                     </p>
+
+                    <CommentAudioPlayer
+                      audioUrl={
+                        comment.audioUrl
+                      }
+                      audioDurationMs={
+                        comment.audioDurationMs
+                      }
+                    />
                   </div>
                 ))
               )}
@@ -1662,6 +1692,58 @@ export default async function ConteudoDetailPage({
                 ))
               )}
             </div>
+
+            {historyAudioComments.length > 0 ? (
+              <div className="mt-5 border-t border-slate-100 pt-4">
+                <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Áudios do histórico
+                </p>
+
+                <div className="space-y-3">
+                  {historyAudioComments.map(
+                    (comment) => (
+                      <div
+                        key={
+                          `history-audio-${comment.id}`
+                        }
+                        className="rounded-xl border border-slate-100 bg-slate-50 p-3"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-[10px] font-bold text-slate-700">
+                            {comment.authorName ||
+                              comment.authorRole ||
+                              'Equipe'}
+                            {' • '}
+                            {comment.authorRole ||
+                              'COMENTÁRIO'}
+                          </p>
+
+                          <span className="text-[9px] text-slate-400">
+                            {formatDateTime(
+                              comment.createdAt
+                            )}
+                          </span>
+                        </div>
+
+                        <p className="mt-2 line-clamp-2 text-[10px] leading-relaxed text-slate-600">
+                          {comment.message}
+                        </p>
+
+                        <CommentAudioPlayer
+                          audioUrl={
+                            comment.audioUrl
+                          }
+                          audioDurationMs={
+                            comment.audioDurationMs
+                          }
+                          compact
+                        />
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            ) : null}
           </section>
         </aside>
       </div>

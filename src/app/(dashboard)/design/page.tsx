@@ -146,9 +146,57 @@ function getReturnNotice(
               ""
             )
             .trim(),
+
+        audioUrl:
+          item.audioUrl ||
+          "",
+
+        audioMimeType:
+          item.audioMimeType ||
+          "",
+
+        audioDurationMs:
+          item.audioDurationMs ||
+          null,
       };
     }
 
+
+    if (
+      item.authorRole ===
+        "SOCIAL_MEDIA" &&
+      message.startsWith(
+        "AJUSTE INTERNO SOLICITADO PELA SOCIAL MEDIA:"
+      )
+    ) {
+      return {
+        source:
+          "SOCIAL_MEDIA",
+
+        label:
+          "Social Media pediu ajuste",
+
+        message:
+          message
+            .replace(
+              "AJUSTE INTERNO SOLICITADO PELA SOCIAL MEDIA:",
+              ""
+            )
+            .trim(),
+
+        audioUrl:
+          item.audioUrl ||
+          "",
+
+        audioMimeType:
+          item.audioMimeType ||
+          "",
+
+        audioDurationMs:
+          item.audioDurationMs ||
+          null,
+      };
+    }
 
     if (
       item.authorRole ===
@@ -917,6 +965,19 @@ function DesignCard({
             >
               {returnNotice.message}
             </p>
+
+            {returnNotice.audioUrl ? (
+              <audio
+                controls
+                preload="metadata"
+                src={
+                  returnNotice.audioUrl
+                }
+                className="mt-2 h-8 w-full"
+              >
+                Seu navegador não suporta áudio.
+              </audio>
+            ) : null}
           </div>
         ) : null}
 

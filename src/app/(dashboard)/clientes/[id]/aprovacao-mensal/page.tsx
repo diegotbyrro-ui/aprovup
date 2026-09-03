@@ -71,29 +71,73 @@ export default async function ClientMonthlyApprovalPage({
     const currentMonth = Number(query.month) || now.getMonth() + 1;
     const currentYear = Number(query.year) || now.getFullYear();
 
-    const ensuredApproval = await prisma.monthlyApproval.createMany({
-        data: [
-            {
-                clientId: id,
-                month: currentMonth,
-                year: currentYear,
-                token: randomUUID(),
-                status: "PENDENTE",
-            },
-        ],
-        skipDuplicates: true,
-    });
+    /*
+     * Um link mensal só deve existir quando houver
+     * planejamento realmente aguardando aprovação.
+     *
+     * Abrir esta página nunca deve gerar um link vazio.
+     */
+    const {
+        start: currentMonthStart,
+        end: currentMonthEnd,
+    } = getMonthRange(
+        currentYear,
+        currentMonth
+    );
 
-    if (ensuredApproval.count > 0) {
-        await prisma.historyLog.create({
-            data: {
-                entityType: "CLIENT",
-                entityId: id,
-                action: "MONTHLY_APPROVAL_LINK_CREATED",
-                description: `Link mensal de aprovação criado automaticamente para ${client.name} - ${currentMonth}/${currentYear}.`,
-                authorName: "Equipe Level UP",
+    const pendingPlanningCount =
+        await prisma.content.count({
+            where: {
+                clientId: id,
+
+                format: {
+                    not: "DEMANDA_EMERGENCIAL",
+                },
+
+                plannedDate: {
+                    gte: currentMonthStart,
+                    lte: currentMonthEnd,
+                },
+
+                status: {
+                    in: [
+                        "IDEIA",
+                        "ROTEIRO",
+                    ],
+                },
             },
         });
+
+    if (pendingPlanningCount > 0) {
+        const ensuredApproval =
+            await prisma.monthlyApproval.createMany({
+                data: [
+                    {
+                        clientId: id,
+                        month: currentMonth,
+                        year: currentYear,
+                        token: randomUUID(),
+                        status: "PENDENTE",
+                    },
+                ],
+
+                skipDuplicates: true,
+            });
+
+        if (ensuredApproval.count > 0) {
+            await prisma.historyLog.create({
+                data: {
+                    entityType: "CLIENT",
+                    entityId: id,
+                    action:
+                        "MONTHLY_APPROVAL_LINK_CREATED",
+                    description:
+                        `Link mensal de aprovação criado automaticamente para ${client.name} - ${currentMonth}/${currentYear}.`,
+                    authorName:
+                        "Equipe Level UP",
+                },
+            });
+        }
     }
 
     const monthlyApprovals = await prisma.monthlyApproval.findMany({
@@ -263,6 +307,25 @@ export default async function ClientMonthlyApprovalPage({
             }
         );
 
+
+    /*
+     * Esta tela funciona como fila de aprovação,
+     * não como histórico de links.
+     *
+     * O link aparece somente enquanto existir
+     * algo que o cliente ainda precisa decidir.
+     */
+    const activeMonthlyApprovals =
+        monthlyApprovalsWithCounts.filter(
+            (approval) =>
+                approval.status ===
+                    "PENDENTE" &&
+                approval.total > 0 &&
+                (
+                    approval.pending > 0 ||
+                    approval.changesRequested > 0
+                )
+        );
     return (
         <div className="space-y-6">
             <section className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-sm">
@@ -297,27 +360,27 @@ export default async function ClientMonthlyApprovalPage({
             <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="border-b border-slate-100 p-5">
                     <h2 className="text-lg font-bold text-slate-900">
-                        Links mensais já gerados
+                        Aprovações pendentes
                     </h2>
 
                     <p className="mt-1 text-sm text-slate-500">
-                        Consulte os links já criados para este cliente.
+                        Somente links que ainda precisam de uma decisão do cliente aparecem aqui.
                     </p>
                 </div>
 
-                {monthlyApprovalsWithCounts.length === 0 ? (
+                {activeMonthlyApprovals.length === 0 ? (
                     <div className="p-8 text-center">
                         <p className="font-bold text-slate-900">
-                            Nenhum link mensal criado ainda.
+                            Nenhuma aprovação pendente.
                         </p>
 
                         <p className="mt-1 text-sm text-slate-500">
-                            Gere o primeiro link usando o formulário acima.
+                            Quando houver novos conteúdos aguardando aprovação, um novo link será disponibilizado.
                         </p>
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100">
-                        {monthlyApprovalsWithCounts.map((approval) => {
+                        {activeMonthlyApprovals.map((approval) => {
                             const publicUrl = getPublicApprovalUrl(approval.token);
 
                             return (

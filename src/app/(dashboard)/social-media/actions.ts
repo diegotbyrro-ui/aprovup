@@ -2,6 +2,11 @@
 
 import { randomUUID } from 'crypto';
 import { prisma } from '@/lib/prisma';
+
+import {
+  aprovUpFileExists,
+  getAprovUpPublicUrl,
+} from '@/lib/aprovupStorage';
 import { requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -263,29 +268,105 @@ export async function requestInternalAdjustmentAction(
   formData: FormData
 ) {
   const currentUser =
-    await requirePermission('social.manage');
+    await requirePermission(
+      'social.manage'
+    );
 
   const adjustment =
     String(
-      formData.get('adjustment') || ''
+      formData.get(
+        'adjustment'
+      ) ||
+      ''
     ).trim();
 
-  if (!adjustment) {
+  const audioPath =
+    String(
+      formData.get(
+        'audioPath'
+      ) ||
+      ''
+    ).trim();
+
+  const audioMimeType =
+    String(
+      formData.get(
+        'audioMimeType'
+      ) ||
+      ''
+    )
+      .split(';')[0]
+      .trim()
+      .toLowerCase();
+
+  const rawDuration =
+    Number(
+      formData.get(
+        'audioDurationMs'
+      ) ||
+      0
+    );
+
+  const audioDurationMs =
+    Number.isFinite(
+      rawDuration
+    )
+      ? Math.max(
+          0,
+          Math.min(
+            Math.round(
+              rawDuration
+            ),
+            180000
+          )
+        )
+      : 0;
+
+  if (
+    !adjustment &&
+    !audioPath
+  ) {
     throw new Error(
-      'Descreva o ajuste necessário.'
+      'Escreva o ajuste ou grave um áudio.'
     );
   }
 
-  if (adjustment.length > 2000) {
+  if (
+    adjustment.length >
+    2000
+  ) {
     throw new Error(
       'O ajuste deve ter no máximo 2000 caracteres.'
+    );
+  }
+
+  const allowedAudioTypes =
+    new Set([
+      'audio/webm',
+      'audio/ogg',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/wav',
+      'audio/x-m4a',
+    ]);
+
+  if (
+    audioPath &&
+    !allowedAudioTypes.has(
+      audioMimeType
+    )
+  ) {
+    throw new Error(
+      'Formato de áudio não permitido.'
     );
   }
 
   const content =
     await prisma.content.findFirst({
       where: {
-        id: contentId,
+        id:
+          contentId,
+
         clientId,
       },
     });
@@ -306,9 +387,45 @@ export async function requestInternalAdjustmentAction(
     );
   }
 
+  let audioUrl =
+    '';
+
+  if (audioPath) {
+    const expectedPrefix =
+      `review-audio/ajuste-social-${contentId}-`;
+
+    if (
+      !audioPath.startsWith(
+        expectedPrefix
+      )
+    ) {
+      throw new Error(
+        'Caminho do áudio inválido.'
+      );
+    }
+
+    const exists =
+      await aprovUpFileExists(
+        audioPath
+      );
+
+    if (!exists) {
+      throw new Error(
+        'O áudio ainda não chegou ao Storage.'
+      );
+    }
+
+    audioUrl =
+      getAprovUpPublicUrl(
+        audioPath
+      );
+  }
+
   const returnToDesign =
-    content.status === 'DESIGN_ANALISE' ||
-    content.area === 'DESIGN';
+    content.status ===
+      'DESIGN_ANALISE' ||
+    content.area ===
+      'DESIGN';
 
   const targetArea =
     returnToDesign
@@ -330,8 +447,14 @@ export async function requestInternalAdjustmentAction(
     currentUser.email ||
     'Social Media';
 
+  const visibleMessage =
+    adjustment ||
+    'Áudio de revisão anexado.';
+
   await prisma.$transaction(
-    async (transaction) => {
+    async (
+      transaction
+    ) => {
       await transaction.comment.create({
         data: {
           contentId,
@@ -342,13 +465,26 @@ export async function requestInternalAdjustmentAction(
             'SOCIAL_MEDIA',
 
           message:
-            `AJUSTE INTERNO SOLICITADO PELA SOCIAL MEDIA: ${adjustment}`,
+            `AJUSTE INTERNO SOLICITADO PELA SOCIAL MEDIA: ${visibleMessage}`,
+
+          audioUrl:
+            audioUrl ||
+            null,
+
+          audioMimeType:
+            audioMimeType ||
+            null,
+
+          audioDurationMs:
+            audioDurationMs ||
+            null,
         },
       });
 
       await transaction.content.update({
         where: {
-          id: contentId,
+          id:
+            contentId,
         },
 
         data: {
@@ -372,7 +508,7 @@ export async function requestInternalAdjustmentAction(
             'SOCIAL_MEDIA_REQUESTED_INTERNAL_ADJUSTMENT',
 
           description:
-            `Social Media solicitou ajuste interno ao ${targetLabel} antes de enviar o material ao cliente.`,
+            `Social Media solicitou ajuste interno ao ${targetLabel} antes do envio ao cliente.`,
 
           authorName,
         },
@@ -380,9 +516,17 @@ export async function requestInternalAdjustmentAction(
     }
   );
 
-  revalidatePath('/social-media');
-  revalidatePath('/design');
-  revalidatePath('/filmmaker');
+  revalidatePath(
+    '/social-media'
+  );
+
+  revalidatePath(
+    '/design'
+  );
+
+  revalidatePath(
+    '/filmmaker'
+  );
 
   revalidatePath(
     `/conteudos/${contentId}`
@@ -392,11 +536,10 @@ export async function requestInternalAdjustmentAction(
     `/clientes/${clientId}`
   );
 
-  redirect(
-    `/social-media?cliente=${clientId}`
-  );
+  return {
+    ok: true,
+  };
 }
-
 
 export async function sendContentToFinalApprovalAction(
   contentId: string,

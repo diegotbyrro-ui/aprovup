@@ -73,6 +73,10 @@ function InfoCard({
   );
 }
 
+
+import {
+  CommentAudioPlayer,
+} from '@/components/aprovup/CommentAudioPlayer';
 export default async function ViewContentPage({
   params,
 }: {
@@ -418,6 +422,15 @@ export default async function ViewContentPage({
                     <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700">
                       {comment.message}
                     </p>
+
+                    <CommentAudioPlayer
+                      audioUrl={
+                        comment.audioUrl
+                      }
+                      audioDurationMs={
+                        comment.audioDurationMs
+                      }
+                    />
                   </div>
                 ))}
               </div>

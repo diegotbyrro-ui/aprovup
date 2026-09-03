@@ -3,8 +3,11 @@ import { prisma } from '@/lib/prisma';
 
 import {
   approveFinalContentAction,
-  requestFinalChangesAction,
 } from './actions';
+
+import {
+  FinalAdjustmentForm,
+} from './FinalAdjustmentForm';
 
 function statusLabel(status: string) {
   if (status === 'ENVIADO_CLIENTE') {
@@ -479,29 +482,14 @@ export default async function FinalApprovalPage({
                               Descreva abaixo exatamente o que deseja alterar.
                             </p>
 
-                            <form
-                              action={requestFinalChangesAction.bind(
-                                null,
-                                token,
+                            <FinalAdjustmentForm
+                              token={
+                                token
+                              }
+                              contentId={
                                 content.id
-                              )}
-                              className="mt-4 space-y-3"
-                            >
-                              <textarea
-                                name="message"
-                                required
-                                rows={6}
-                                placeholder="Ex.: trocar a foto, ajustar uma palavra da arte, alterar um trecho da legenda..."
-                                className="w-full resize-none rounded-2xl border border-slate-300 bg-white p-4 text-sm leading-relaxed text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
-                              />
-
-                              <button
-                                type="submit"
-                                className="w-full rounded-2xl bg-orange-500 px-5 py-4 text-sm font-black text-white transition hover:bg-orange-600"
-                              >
-                                Enviar pedido de ajuste
-                              </button>
-                            </form>
+                              }
+                            />
                           </div>
                         </div>
                       )}

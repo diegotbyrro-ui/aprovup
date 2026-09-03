@@ -39,13 +39,16 @@ import {
 import {
   answerDesignQuestionAction,
   answerFilmmakerQuestionAction,
-  requestInternalAdjustmentAction,
   sendContentToFinalApprovalAction,
 } from "./actions";
 
 import {
   SocialApprovalLinkButton,
 } from "./SocialApprovalLinkButton";
+
+import {
+  InternalReviewAdjustment,
+} from "./InternalReviewAdjustment";
 
 
 function normalizeText(
@@ -1124,6 +1127,41 @@ const query =
 
 
 
+  /*
+   * Esta lista representa apenas retornos do cliente
+   * que ainda exigem alguma ação.
+   *
+   * Comentarios e audios permanecem salvos no historico.
+   * Aqui filtramos apenas o que deve continuar aparecendo
+   * como pendencia na dashboard da Social Media.
+   */
+  const activeClientQuestions =
+    clientQuestions.filter(
+      (comment) => {
+        const normalized =
+          normalizeText(
+            comment.message
+          );
+
+        const isAdjustment =
+          normalized.includes(
+            "ajuste"
+          ) ||
+          normalized.includes(
+            "alteracao"
+          );
+
+        if (isAdjustment) {
+          return (
+            comment.content?.status ===
+            "ALTERACAO_SOLICITADA"
+          );
+        }
+
+        return true;
+      }
+    );
+
   return (
     <div className="space-y-4">
       <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
@@ -1494,10 +1532,41 @@ const query =
                     key={
                       content.id
                     }
-                    className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                    className="self-start overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
                   >
-                    <div className="grid sm:grid-cols-[150px_minmax(0,1fr)]">
-                      <div className="flex min-h-[160px] items-center justify-center overflow-hidden bg-slate-950">
+                    <div className="grid items-start lg:grid-cols-[280px_minmax(0,1fr)]">
+                      <div className="m-3 self-start overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                      >
+                        <div className="flex h-11 items-center gap-2.5 border-b border-slate-100 px-3">
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-orange-400 text-[9px] font-black text-white">
+                            {selectedClient.name
+                              ?.slice(
+                                0,
+                                1
+                              )
+                              .toUpperCase() ||
+                              "I"}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[9px] font-black text-slate-900">
+                              {cleanDemoName(
+                                selectedClient.name
+                              ) ||
+                                "Cliente"}
+                            </p>
+
+                            <p className="text-[7px] font-medium text-slate-400">
+                              Instagram
+                            </p>
+                          </div>
+
+                          <span className="text-[13px] font-black tracking-[1px] text-slate-700">
+                            •••
+                          </span>
+                        </div>
+
+                        <div className="aspect-[9/16] overflow-hidden bg-black">
                         {mediaUrl ? (
                           content.area ===
                           "FILMMAKER" ? (
@@ -1506,7 +1575,7 @@ const query =
                                 mediaUrl
                               }
                               controls
-                              className="h-full max-h-[210px] w-full object-contain"
+                              className="h-full w-full object-contain"
                             />
                           ) : (
                             <img
@@ -1514,7 +1583,7 @@ const query =
                                 mediaUrl
                               }
                               alt=""
-                              className="h-full max-h-[210px] w-full object-cover"
+                              className="h-full w-full object-cover"
                             />
                           )
                         ) : (
@@ -1538,7 +1607,44 @@ const query =
                       </div>
 
 
-                      <div className="flex min-w-0 flex-col p-3">
+                                            <div className="border-t border-slate-100 bg-white px-3 py-2.5">
+                        <div className="flex items-center gap-3 text-[17px] leading-none text-slate-900">
+                          <span>
+                            ♡
+                          </span>
+
+                          <span className="text-[15px]">
+                            ○
+                          </span>
+
+                          <span className="-rotate-12 text-[16px]">
+                            ↗
+                          </span>
+
+                          <span className="ml-auto text-[15px]">
+                            ▱
+                          </span>
+                        </div>
+
+                        <p className="mt-2 line-clamp-2 text-[8px] leading-relaxed text-slate-600">
+                          <strong className="mr-1 text-slate-900">
+                            {cleanDemoName(
+                              selectedClient.name
+                            ) ||
+                              "Cliente"}
+                          </strong>
+
+                          {content.caption ||
+                            "Prévia da legenda do conteúdo."}
+                        </p>
+
+                        <p className="mt-1.5 text-[7px] uppercase tracking-wide text-slate-400">
+                          Ver todos os comentários
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex min-w-0 flex-col p-4 pt-0 lg:py-4 lg:pl-1 lg:pr-4">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="rounded-md bg-white px-1.5 py-1 text-[7px] font-bold text-slate-600">
                             {content.area ===
@@ -1607,48 +1713,14 @@ const query =
                         <div className="mt-auto pt-3">
                           {canSend ? (
                             <div className="space-y-2">
-                              <form
-                                action={
-                                  requestInternalAdjustmentAction.bind(
-                                    null,
-                                    content.id,
-                                    clientId
-                                  )
+                              <InternalReviewAdjustment
+                                contentId={
+                                  content.id
                                 }
-                                className="rounded-lg border border-orange-100 bg-orange-50/50 p-2.5"
-                              >
-                                <div className="flex items-center gap-1.5">
-                                  <AlertCircle
-                                    size={11}
-                                    className="text-orange-500"
-                                  />
-
-                                  <p className="text-[8px] font-bold text-orange-800">
-                                    Revisão interna
-                                  </p>
-                                </div>
-
-                                <textarea
-                                  name="adjustment"
-                                  required
-                                  maxLength={2000}
-                                  rows={2}
-                                  placeholder="Descreva o ajuste necessário antes de enviar ao cliente..."
-                                  className="mt-2 w-full resize-none rounded-lg border border-orange-100 bg-white px-2.5 py-2 text-[9px] leading-relaxed text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-orange-300 focus:ring-2 focus:ring-orange-100"
-                                />
-
-                                <button
-                                  type="submit"
-                                  className="mt-2 flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-orange-200 bg-white px-3 text-[8px] font-bold text-orange-700 transition hover:bg-orange-100"
-                                >
-                                  <AlertCircle
-                                    size={11}
-                                  />
-
-                                  Solicitar ajuste interno
-                                </button>
-                              </form>
-
+                                clientId={
+                                  clientId
+                                }
+                              />
                               <form
                                 action={
                                   sendContentToFinalApprovalAction.bind(
@@ -1727,6 +1799,8 @@ const query =
           DUVIDAS E RETORNOS DOS CLIENTES
           =================================================== */}
 
+
+
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-7">
           <div className="flex items-center justify-between gap-3">
@@ -1800,9 +1874,9 @@ const query =
                     Dúvidas e ajustes dos clientes
                   </h2>
 
-                  {clientQuestions.length > 0 ? (
+                  {activeClientQuestions.length > 0 ? (
                     <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-600 px-1.5 text-[7px] font-black text-white">
-                      {clientQuestions.length}
+                      {activeClientQuestions.length}
                     </span>
                   ) : null}
                 </div>
@@ -1822,7 +1896,7 @@ const query =
           </div>
 
 
-          {clientQuestions.length === 0 ? (
+          {activeClientQuestions.length === 0 ? (
             <div className="flex min-h-[180px] items-center justify-center p-4">
               <div className="text-center">
                 <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500">
@@ -1842,7 +1916,7 @@ const query =
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
-              {clientQuestions
+              {activeClientQuestions
                 .slice(
                   0,
                   4
@@ -1966,6 +2040,19 @@ const query =
                               "Cliente enviou uma solicitação."}
                           </p>
 
+                          {comment.audioUrl ? (
+                            <audio
+                              controls
+                              preload="metadata"
+                              src={
+                                comment.audioUrl
+                              }
+                              className="mt-2 h-8 w-full"
+                            >
+                              Seu navegador não suporta áudio.
+                            </audio>
+                          ) : null}
+
                           <div className="mt-2 flex items-center gap-1.5 text-[8px] text-slate-400">
                             <span className="font-semibold text-slate-500">
                               {cleanDemoName(
@@ -1995,12 +2082,12 @@ const query =
                   }
                 )}
 
-              {clientQuestions.length > 4 ? (
+              {activeClientQuestions.length > 4 ? (
                 <Link
                   href="/social-media/avisos"
                   className="flex h-10 items-center justify-center text-[8px] font-bold text-blue-600 hover:bg-blue-50/50"
                 >
-                  Ver mais {clientQuestions.length - 4} retorno(s)
+                  Ver mais {activeClientQuestions.length - 4} retorno(s)
                 </Link>
               ) : null}
             </div>

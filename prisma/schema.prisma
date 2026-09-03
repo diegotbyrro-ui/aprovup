@@ -179,6 +179,11 @@ model Comment {
   authorRole String?
   message    String
 
+  // Audio opcional anexado ao comentario.
+  audioUrl        String?
+  audioMimeType   String?
+  audioDurationMs Int?
+
   contentId String
   content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 

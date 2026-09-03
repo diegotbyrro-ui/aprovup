@@ -1,6 +1,11 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+
+import {
+  aprovUpFileExists,
+  getAprovUpPublicUrl,
+} from '@/lib/aprovupStorage';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -130,10 +135,91 @@ export async function requestFinalChangesAction(
     formData.get('message') || ''
   ).trim();
 
-  if (!message) {
-    redirect(
-      `/aprovacao-final/${token}?error=empty`
+  const audioPath =
+    String(
+      formData.get(
+        'audioPath'
+      ) ||
+      ''
+    ).trim();
+
+  const audioMimeType =
+    String(
+      formData.get(
+        'audioMimeType'
+      ) ||
+      ''
+    )
+      .split(';')[0]
+      .trim()
+      .toLowerCase();
+
+  const rawDuration =
+    Number(
+      formData.get(
+        'audioDurationMs'
+      ) ||
+      0
     );
+
+  const audioDurationMs =
+    Number.isFinite(
+      rawDuration
+    )
+      ? Math.max(
+          0,
+          Math.min(
+            Math.round(
+              rawDuration
+            ),
+            180000
+          )
+        )
+      : 0;
+
+  if (
+    !message &&
+    !audioPath
+  ) {
+    return {
+      ok: false,
+      message:
+        'Escreva o ajuste ou grave um áudio.',
+    };
+  }
+
+  if (
+    message.length >
+    2000
+  ) {
+    return {
+      ok: false,
+      message:
+        'O ajuste deve ter no máximo 2000 caracteres.',
+    };
+  }
+
+  const allowedAudioTypes =
+    new Set([
+      'audio/webm',
+      'audio/ogg',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/wav',
+      'audio/x-m4a',
+    ]);
+
+  if (
+    audioPath &&
+    !allowedAudioTypes.has(
+      audioMimeType
+    )
+  ) {
+    return {
+      ok: false,
+      message:
+        'Formato de áudio não permitido.',
+    };
   }
 
   const client = await resolveClientByToken(token);
@@ -168,6 +254,48 @@ export async function requestFinalChangesAction(
       `/aprovacao-final/${token}?error=not-pending`
     );
   }
+
+  let audioUrl =
+    '';
+
+  if (audioPath) {
+    const expectedPrefix =
+      `client-review-audio/ajuste-cliente-${contentId}-`;
+
+    if (
+      !audioPath.startsWith(
+        expectedPrefix
+      )
+    ) {
+      return {
+        ok: false,
+        message:
+          'Caminho do áudio inválido.',
+      };
+    }
+
+    const exists =
+      await aprovUpFileExists(
+        audioPath
+      );
+
+    if (!exists) {
+      return {
+        ok: false,
+        message:
+          'O áudio ainda não chegou ao Storage.',
+      };
+    }
+
+    audioUrl =
+      getAprovUpPublicUrl(
+        audioPath
+      );
+  }
+
+  const visibleMessage =
+    message ||
+    'Áudio de ajuste anexado.';
 
   const normalizedFormat =
     String(
@@ -205,7 +333,7 @@ export async function requestFinalChangesAction(
       },
       data: {
         status: 'ALTERACAO_SOLICITADA',
-        clientComment: message,
+        clientComment: visibleMessage,
       },
     });
 
@@ -235,7 +363,19 @@ export async function requestFinalChangesAction(
         authorName: client.name,
         authorRole: 'CLIENTE',
         message:
-          `ALTERACAO FINAL SOLICITADA PELO CLIENTE: ${message}`,
+          `ALTERACAO FINAL SOLICITADA PELO CLIENTE: ${visibleMessage}`,
+
+        audioUrl:
+          audioUrl ||
+          null,
+
+        audioMimeType:
+          audioMimeType ||
+          null,
+
+        audioDurationMs:
+          audioDurationMs ||
+          null,
       },
     });
 
@@ -265,7 +405,7 @@ export async function requestFinalChangesAction(
   revalidatePath('/social-media/avisos');
   revalidatePath('/pronto-para-postar');
 
-  redirect(
-    `/aprovacao-final/${token}?feedback=alteracao`
-  );
+  return {
+    ok: true,
+  };
 }
