@@ -1,7 +1,8 @@
 import { formatLabel } from '@/lib/formatLabel';
 import { prisma } from '@/lib/prisma';
+import { requireCurrentUser } from '@/lib/auth';
 import Link from 'next/link';
-import { deleteContentAction } from './delete-actions';
+import { deleteContentAction, updateContentPlannedDateAction } from './delete-actions';
 import { notFound } from 'next/navigation';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { updateContent, addComment, addTask, completeTask } from '@/app/actions';
@@ -577,8 +578,17 @@ export default async function ConteudoDetailPage({
 }) {
   const { id } = await params;
 
-  const content = await prisma.content.findUnique({
-    where: { id },
+  const currentUser = await requireCurrentUser();
+
+  const content = await prisma.content.findFirst({
+    where: {
+      id,
+
+      client: {
+        agencyId:
+          currentUser.agencyId,
+      },
+    },
     include: {
       client: true,
       tasks: {
@@ -625,6 +635,11 @@ export default async function ConteudoDetailPage({
   });
 
   const users = await prisma.user.findMany({
+    where: {
+      agencyId:
+        currentUser.agencyId,
+    },
+
     orderBy: {
       name: 'asc',
     },
@@ -637,6 +652,12 @@ export default async function ConteudoDetailPage({
   const latestApproval = contentSafe.approvals[0];
 
   const updateContentAction = updateContent.bind(null, id);
+
+  const updatePlannedDateAction =
+    updateContentPlannedDateAction.bind(
+      null,
+      id
+    );
   const addCommentAction = addComment.bind(null, id);
   const addTaskAction = addTask.bind(null, id);
   const generateApprovalLinkAction = generateApprovalLink.bind(null, id);
@@ -1069,6 +1090,53 @@ export default async function ConteudoDetailPage({
           >
             {formatDate(contentSafe.plannedDate)}
           </p>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-blue-500">
+              Calendário
+            </p>
+
+            <h2 className="mt-1 text-lg font-bold text-slate-900">
+              Alterar data prevista
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              A nova data será atualizada no conteúdo e nos calendários da operação.
+            </p>
+          </div>
+
+          <form
+            action={updatePlannedDateAction}
+            className="flex flex-col gap-2 sm:flex-row sm:items-end"
+          >
+            <div>
+              <label
+                htmlFor="plannedDateQuickEdit"
+                className={labelClasses}
+              >
+                Data prevista
+              </label>
+
+              <input
+                id="plannedDateQuickEdit"
+                name="plannedDate"
+                type="date"
+                defaultValue={formatDateInput(contentSafe.plannedDate)}
+                className={inputClasses}
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="rounded-md bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
+            >
+              Salvar data
+            </button>
+          </form>
         </div>
       </section>
 
@@ -1763,14 +1831,46 @@ export default async function ConteudoDetailPage({
             </p>
           </div>
 
-          <form action={deleteContentAction.bind(null, contentSafe.id)}>
-            <button
-              type="submit"
-              className="rounded-2xl bg-red-600 px-6 py-4 text-sm font-bold text-white shadow-sm transition hover:bg-red-700"
-            >
+          <details className="relative w-full md:w-auto">
+            <summary className="list-none cursor-pointer rounded-2xl bg-red-600 px-6 py-4 text-center text-sm font-bold text-white shadow-sm transition hover:bg-red-700">
               Excluir conteúdo
-            </button>
-          </form>
+            </summary>
+
+            <div className="mt-3 w-full rounded-2xl border border-red-200 bg-white p-4 shadow-lg md:absolute md:right-0 md:z-30 md:w-80">
+              <p className="font-bold text-slate-900">
+                Excluir conteúdo?
+              </p>
+
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Esta exclusão será permanente e não poderá ser desfeita.
+                Tem certeza de que deseja excluir este conteúdo?
+              </p>
+
+              <div className="mt-4 flex gap-2">
+                <Link
+                  href={`/conteudos/${contentSafe.id}`}
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-sm font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  Cancelar
+                </Link>
+
+                <form
+                  action={deleteContentAction.bind(
+                    null,
+                    contentSafe.id
+                  )}
+                  className="flex-1"
+                >
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl bg-red-600 px-3 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                  >
+                    Excluir permanentemente
+                  </button>
+                </form>
+              </div>
+            </div>
+          </details>
         </div>
       </section>
 

@@ -1,101 +1,195 @@
 import { prisma } from "@/lib/prisma";
-import { requirePermission } from "@/lib/userAccess";
+import { requireCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 type DeleteContentButtonProps = {
-    contentId: string;
-    clientId: string;
-    contentTitle: string;
+  contentId: string;
+  clientId: string;
+  contentTitle: string;
 };
 
 async function deleteContent(
-    contentId: string,
-    clientId: string,
-    contentTitle: string
+  contentId: string,
+  clientId: string,
+  contentTitle: string
 ) {
-    "use server";
+  "use server";
 
-    await requirePermission("social.manage");
+  const currentUser =
+    await requireCurrentUser();
 
-    if (!contentId) {
-        throw new Error("Conteúdo não informado.");
-    }
+  const content =
+    await prisma.content.findFirst({
+      where: {
+        id: contentId,
+        clientId,
 
-    await prisma.approval.deleteMany({
-        where: {
-            contentId,
+        client: {
+          agencyId:
+            currentUser.agencyId,
         },
+      },
+
+      select: {
+        id: true,
+        clientId: true,
+        title: true,
+      },
     });
 
-    await prisma.comment.deleteMany({
-        where: {
-            contentId,
-        },
-    });
+  if (!content) {
+    throw new Error(
+      "Conteúdo não encontrado ou acesso não autorizado."
+    );
+  }
 
-    await prisma.task.deleteMany({
-        where: {
-            contentId,
-        },
-    });
+  await prisma.$transaction(
+    async (transaction) => {
 
-    await prisma.content.delete({
+      await transaction.captureSchedule.updateMany({
         where: {
-            id: contentId,
+          contentId:
+            content.id,
         },
-    });
 
-    await prisma.historyLog.create({
         data: {
-            entityType: "CLIENT",
-            entityId: clientId,
-            action: "CONTENT_DELETED",
-            description: `Conteúdo "${contentTitle}" excluído.`,
-            authorName: "Equipe Level UP",
+          contentId: null,
         },
-    });
+      });
 
-    revalidatePath(`/clientes/${clientId}`);
-    revalidatePath("/conteudos");
-    revalidatePath("/calendario");
+      await transaction.approval.deleteMany({
+        where: {
+          contentId:
+            content.id,
+        },
+      });
+
+      await transaction.comment.deleteMany({
+        where: {
+          contentId:
+            content.id,
+        },
+      });
+
+      await transaction.task.deleteMany({
+        where: {
+          contentId:
+            content.id,
+        },
+      });
+
+      await transaction.content.delete({
+        where: {
+          id:
+            content.id,
+
+          clientId:
+            content.clientId,
+        },
+      });
+
+      await transaction.historyLog.create({
+        data: {
+          entityType:
+            "CLIENT",
+
+          entityId:
+            content.clientId,
+
+          action:
+            "CONTENT_DELETED",
+
+          description:
+            `Conteúdo "${
+              content.title ||
+              contentTitle
+            }" excluído permanentemente.`,
+
+          authorName:
+            currentUser.name ||
+            currentUser.email ||
+            "Equipe AprovUp",
+        },
+      });
+    }
+  );
+
+  revalidatePath(
+    `/clientes/${content.clientId}`
+  );
+
+  revalidatePath(
+    `/clientes/${content.clientId}/visao`
+  );
+
+  revalidatePath(
+    `/clientes/${content.clientId}/calendario`
+  );
+
+  revalidatePath("/conteudos");
+  revalidatePath("/calendario");
+  revalidatePath("/calendario-editorial");
+  revalidatePath("/operacao");
+  revalidatePath("/design");
+  revalidatePath("/filmmaker");
+  revalidatePath("/social-media");
 }
 
 export default function DeleteContentButton({
-    contentId,
-    clientId,
-    contentTitle,
+  contentId,
+  clientId,
+  contentTitle,
 }: DeleteContentButtonProps) {
-    const action = deleteContent.bind(null, contentId, clientId, contentTitle);
 
-    return (
-        <details className="relative">
-            <summary className="list-none cursor-pointer rounded-md bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700 transition-colors shadow-sm">
-                Excluir
-            </summary>
-
-            <div className="absolute right-0 z-20 mt-2 w-64 rounded-xl border border-red-100 bg-white p-4 shadow-xl">
-                <p className="text-sm font-bold text-slate-900">
-                    Excluir conteúdo?
-                </p>
-
-                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                    Esta ação vai apagar este conteúdo, comentários, tarefas e aprovações vinculadas.
-                </p>
-
-                <p className="mt-2 text-xs font-medium text-red-600 line-clamp-2">
-                    {contentTitle}
-                </p>
-
-                <form action={action} className="mt-4 flex gap-2">
-                    <button
-                        type="submit"
-                        className="flex-1 rounded-md bg-red-600 px-3 py-2 text-xs font-bold text-white hover:bg-red-700 transition-colors"
-                    >
-                        Confirmar exclusão
-                    </button>
-                </form>
-            </div>
-        </details>
+  const action =
+    deleteContent.bind(
+      null,
+      contentId,
+      clientId,
+      contentTitle
     );
-}
 
+  return (
+    <details className="relative">
+      <summary className="list-none cursor-pointer rounded-md bg-red-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-red-700">
+        Excluir
+      </summary>
+
+      <div className="absolute right-0 z-20 mt-2 w-72 rounded-xl border border-red-100 bg-white p-4 shadow-xl">
+        <p className="text-sm font-bold text-slate-900">
+          Excluir conteúdo?
+        </p>
+
+        <p className="mt-2 text-xs leading-relaxed text-slate-600">
+          Esta exclusão será permanente e não poderá ser desfeita.
+          Tem certeza de que deseja excluir este conteúdo?
+        </p>
+
+        <p className="mt-2 line-clamp-2 text-xs font-semibold text-red-600">
+          {contentTitle}
+        </p>
+
+        <div className="mt-4 flex gap-2">
+          <a
+            href={`/clientes/${clientId}`}
+            className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-center text-xs font-bold text-slate-600 hover:bg-slate-50"
+          >
+            Cancelar
+          </a>
+
+          <form
+            action={action}
+            className="flex-1"
+          >
+            <button
+              type="submit"
+              className="w-full rounded-md bg-red-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-red-700"
+            >
+              Excluir permanentemente
+            </button>
+          </form>
+        </div>
+      </div>
+    </details>
+  );
+}
