@@ -200,6 +200,11 @@ export async function archiveDesignColumnAction(columnId: string) {
   if (targetColumn) {
     await prisma.content.updateMany({
       where: {
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
+
         area: 'DESIGN',
         status: column.statusKey,
       },
@@ -247,9 +252,15 @@ export async function updateDesignStatusAction(contentId: string, nextStatus: st
     redirect('/design');
   }
 
-  const content = await prisma.content.findUnique({
+  const content = await prisma.content.findFirst({
     where: {
-      id: contentId,
+      id:
+        contentId,
+
+      client: {
+        agencyId:
+          currentUser.agencyId,
+      },
     },
   });
 
@@ -291,9 +302,15 @@ export async function sendDesignQuestionAction(contentId: string, formData: Form
     redirect('/design');
   }
 
-  const content = await prisma.content.findUnique({
+  const content = await prisma.content.findFirst({
     where: {
-      id: contentId,
+      id:
+        contentId,
+
+      client: {
+        agencyId:
+          currentUser.agencyId,
+      },
     },
   });
 

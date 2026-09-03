@@ -35,9 +35,15 @@ const answer =
   }
 
   const content =
-    await prisma.content.findUnique({
+    await prisma.content.findFirst({
       where: {
-        id: contentId,
+        id:
+          contentId,
+
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
       },
     });
 
@@ -125,10 +131,15 @@ const answer =
 
 
   const content =
-    await prisma.content.findUnique({
+    await prisma.content.findFirst({
       where: {
         id:
           contentId,
+
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
       },
     });
 
@@ -368,6 +379,11 @@ export async function requestInternalAdjustmentAction(
           contentId,
 
         clientId,
+
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
       },
     });
 
@@ -555,6 +571,11 @@ const content =
           contentId,
 
         clientId,
+
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
       },
     });
 

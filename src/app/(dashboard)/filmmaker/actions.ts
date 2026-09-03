@@ -276,6 +276,11 @@ export async function archiveFilmmakerColumnAction(columnId: string) {
   if (targetColumn) {
     await prisma.content.updateMany({
       where: {
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
+
         area: 'FILMMAKER',
         status: column.statusKey,
       },
@@ -323,9 +328,15 @@ export async function updateFilmmakerStatusAction(contentId: string, nextStatus:
     redirect('/filmmaker');
   }
 
-  const content = await prisma.content.findUnique({
+  const content = await prisma.content.findFirst({
     where: {
-      id: contentId,
+      id:
+        contentId,
+
+      client: {
+        agencyId:
+          currentUser.agencyId,
+      },
     },
   });
 
@@ -368,9 +379,15 @@ export async function sendFilmmakerQuestionAction(contentId: string, formData: F
     redirect('/filmmaker');
   }
 
-  const content = await prisma.content.findUnique({
+  const content = await prisma.content.findFirst({
     where: {
-      id: contentId,
+      id:
+        contentId,
+
+      client: {
+        agencyId:
+          currentUser.agencyId,
+      },
     },
   });
 
