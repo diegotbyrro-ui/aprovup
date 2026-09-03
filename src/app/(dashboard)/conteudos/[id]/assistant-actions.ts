@@ -45,9 +45,14 @@ export async function applyAssistantDraftToContent(
     };
   }
 
-  const content = await prisma.content.findUnique({
+  const content = await prisma.content.findFirst({
     where: {
       id: contentId,
+
+      client: {
+        agencyId:
+          currentUser.agencyId,
+      },
     },
   });
 

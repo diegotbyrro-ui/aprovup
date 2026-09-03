@@ -1,6 +1,6 @@
 import { formatLabel } from '@/lib/formatLabel';
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser } from '@/lib/auth';
+import { requireAgencyContext } from '@/lib/tenant';
 import { requirePermission } from '@/lib/userAccess';
 import Link from 'next/link';
 import { deleteContentAction } from '../delete-actions';
@@ -82,13 +82,20 @@ export default async function ViewContentPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireCurrentUser();
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
 
   const { id } = await params;
 
-  const content = await prisma.content.findUnique({
+  const content = await prisma.content.findFirst({
     where: {
       id,
+
+      client: {
+        agencyId,
+      },
     },
     include: {
       client: true,

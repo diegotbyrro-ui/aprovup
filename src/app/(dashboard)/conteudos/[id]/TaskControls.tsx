@@ -16,7 +16,8 @@ async function updateTaskPriority(
 ) {
     'use server';
 
-    await requireAnyPermission([
+    const currentUser =
+        await requireAnyPermission([
         'social.manage',
         'design.manage',
         'filmmaker.manage',
@@ -29,6 +30,34 @@ async function updateTaskPriority(
     const normalizedPriority = allowedPriorities.includes(priority)
         ? priority
         : 'MEDIA';
+
+    const task =
+        await prisma.task.findFirst({
+            where: {
+                id:
+                    taskId,
+
+                contentId,
+
+                content: {
+                    client: {
+                        agencyId:
+                            currentUser.agencyId,
+                    },
+                },
+            },
+
+            select: {
+                id:
+                    true,
+            },
+        });
+
+    if (!task) {
+        throw new Error(
+            'Tarefa não encontrada.'
+        );
+    }
 
     await prisma.task.update({
         where: {
@@ -59,11 +88,40 @@ async function deleteTask(
 ) {
     'use server';
 
-    await requireAnyPermission([
+    const currentUser =
+        await requireAnyPermission([
         'social.manage',
         'design.manage',
         'filmmaker.manage',
     ]);
+
+    const task =
+        await prisma.task.findFirst({
+            where: {
+                id:
+                    taskId,
+
+                contentId,
+
+                content: {
+                    client: {
+                        agencyId:
+                            currentUser.agencyId,
+                    },
+                },
+            },
+
+            select: {
+                id:
+                    true,
+            },
+        });
+
+    if (!task) {
+        throw new Error(
+            'Tarefa não encontrada.'
+        );
+    }
 
     await prisma.task.delete({
         where: {

@@ -9,6 +9,10 @@ import {
 } from '@/lib/userAccess';
 
 import {
+  requireAgencyContext,
+} from '@/lib/tenant';
+
+import {
   uploadAprovUpFile,
 } from '@/lib/aprovupStorage';
 
@@ -25,6 +29,10 @@ export async function uploadFinalContentFilesAction(
   contentId: string,
   formData: FormData
 ) {
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
   const finalFile =
     formData.get(
       'finalFile'
@@ -38,10 +46,14 @@ export async function uploadFinalContentFilesAction(
 
 
   const content =
-    await prisma.content.findUnique({
+    await prisma.content.findFirst({
       where: {
         id:
           contentId,
+
+        client: {
+          agencyId,
+        },
       },
     });
 

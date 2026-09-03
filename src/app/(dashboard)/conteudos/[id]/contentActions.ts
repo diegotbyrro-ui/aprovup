@@ -6,11 +6,19 @@ import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
 export async function generateApprovalLink(contentId: string) {
-    await requirePermission("social.manage");
+    const currentUser =
+        await requirePermission(
+            "social.manage"
+        );
 
-    const content = await prisma.content.findUnique({
+    const content = await prisma.content.findFirst({
         where: {
             id: contentId,
+
+            client: {
+                agencyId:
+                    currentUser.agencyId,
+            },
         },
     });
 

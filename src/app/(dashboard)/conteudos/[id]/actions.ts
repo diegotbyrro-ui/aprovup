@@ -31,9 +31,14 @@ export async function uploadContentCoverImage(contentId: string, formData: FormD
     'filmmaker.manage',
   ]);
 
-  const content = await prisma.content.findUnique({
+  const content = await prisma.content.findFirst({
     where: {
       id: contentId,
+
+      client: {
+        agencyId:
+          currentUser.agencyId,
+      },
     },
   });
 
