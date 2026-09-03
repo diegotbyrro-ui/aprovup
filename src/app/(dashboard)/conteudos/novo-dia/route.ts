@@ -3,10 +3,13 @@
 } from '@/lib/prisma';
 
 import {
-  requireCurrentUser,
   isDirector,
   isSocialMedia,
 } from '@/lib/auth';
+
+import {
+  requireAgencyContext,
+} from '@/lib/tenant';
 
 import {
   redirect,
@@ -22,8 +25,12 @@ export async function GET(
     NextRequest
 ) {
 
-  const currentUser =
-    await requireCurrentUser();
+  const {
+    user:
+      currentUser,
+    agencyId,
+  } =
+    await requireAgencyContext();
 
 
   if (
@@ -73,11 +80,13 @@ export async function GET(
 
 
   const client =
-    await prisma.client.findUnique({
+    await prisma.client.findFirst({
 
       where: {
         id:
           clientId,
+
+        agencyId,
       },
 
       select: {

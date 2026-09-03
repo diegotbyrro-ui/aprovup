@@ -21,7 +21,8 @@ export async function updateContentStatusFromKanban(
     contentId: string,
     newStatus: string
 ) {
-    await requireAnyPermission([
+    const currentUser =
+        await requireAnyPermission([
         "social.manage",
         "design.manage",
         "filmmaker.manage",
@@ -35,9 +36,14 @@ export async function updateContentStatusFromKanban(
         throw new Error("Novo status não informado.");
     }
 
-    const oldContent = await prisma.content.findUnique({
+    const oldContent = await prisma.content.findFirst({
         where: {
             id: contentId,
+
+            client: {
+                agencyId:
+                    currentUser.agencyId,
+            },
         },
     });
 

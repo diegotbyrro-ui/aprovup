@@ -1,5 +1,6 @@
 import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 import { prisma } from '@/lib/prisma';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import KanbanBoard from '../KanbanBoard';
 
@@ -63,10 +64,17 @@ export default async function DesignKanbanPage({
         cliente?: string;
     }>;
 }) {
+    const { agencyId } =
+        await requireAgencyContext();
+
     const params = await searchParams;
     const selectedClient = params.cliente || 'TODOS';
 
     const clients = await prisma.client.findMany({
+        where: {
+            agencyId,
+        },
+
         orderBy: {
             name: 'asc',
         },
@@ -77,6 +85,10 @@ export default async function DesignKanbanPage({
 
     const contents = await prisma.content.findMany({
         where: {
+            client: {
+                agencyId,
+            },
+
             area: 'SOCIAL_DESIGN',
             ...(selectedClient !== 'TODOS'
                 ? {

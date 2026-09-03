@@ -1,5 +1,6 @@
 import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 import { prisma } from '@/lib/prisma';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import KanbanBoard from '../KanbanBoard';
 
@@ -123,6 +124,9 @@ export default async function FilmmakerKanbanPage({
         cliente?: string;
     }>;
 }) {
+    const { agencyId } =
+        await requireAgencyContext();
+
     const params = await searchParams;
     const selectedClient = params.cliente || 'TODOS';
 
@@ -131,6 +135,10 @@ export default async function FilmmakerKanbanPage({
     const endWeek = endOfDay(addDays(today, 7));
 
     const clients = await prisma.client.findMany({
+        where: {
+            agencyId,
+        },
+
         orderBy: {
             name: 'asc',
         },
@@ -141,6 +149,10 @@ export default async function FilmmakerKanbanPage({
 
     const contents = await prisma.content.findMany({
         where: {
+            client: {
+                agencyId,
+            },
+
             area: 'AUDIOVISUAL',
             status: {
                 not: 'ARQUIVADO',

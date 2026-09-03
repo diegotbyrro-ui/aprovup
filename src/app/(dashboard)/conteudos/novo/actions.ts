@@ -33,7 +33,33 @@ export async function createContentAction(formData: FormData) {
     redirect('/conteudos/novo?error=required');
   }
 
-  const plannedDateValue = String(formData.get('plannedDate') || '').trim();
+  const client =
+    await prisma.client.findFirst({
+      where: {
+        id:
+          clientId,
+
+        agencyId:
+          currentUser.agencyId,
+      },
+
+      select: {
+        id:
+          true,
+      },
+    });
+
+  if (!client) {
+    redirect(
+      '/conteudos/novo?error=client'
+    );
+  }
+
+  const plannedDateValue =
+    String(
+      formData.get('plannedDate') ||
+      ''
+    ).trim();
 
   const content = await prisma.content.create({
     data: {
