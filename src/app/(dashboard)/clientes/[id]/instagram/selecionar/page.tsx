@@ -67,9 +67,12 @@ export default async function SelectInstagramAccountPage({
   const client =
     await prisma
       .client
-      .findUnique({
+      .findFirst({
         where: {
           id,
+
+          agencyId:
+            user.agencyId,
         },
 
         select: {

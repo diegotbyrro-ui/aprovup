@@ -116,6 +116,9 @@ export async function GET(
 
   if (
     !user ||
+    user.status !==
+      'APROVADO' ||
+    !user.agencyId ||
     user.id !==
       session.userId
   ) {
@@ -124,6 +127,40 @@ export async function GET(
         request,
         session.clientId,
         'error=session'
+      )
+    );
+  }
+
+  const client =
+    await prisma.client.findFirst({
+      where: {
+        id:
+          session.clientId,
+
+        agencyId:
+          user.agencyId,
+      },
+
+      select: {
+        id:
+          true,
+      },
+    });
+
+  if (!client) {
+    await prisma
+      .metaOAuthSession
+      .deleteMany({
+        where: {
+          id:
+            session.id,
+        },
+      });
+
+    return NextResponse.redirect(
+      new URL(
+        '/clientes',
+        request.url
       )
     );
   }

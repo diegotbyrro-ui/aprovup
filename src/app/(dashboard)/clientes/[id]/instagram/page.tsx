@@ -525,18 +525,22 @@ export default async function ClientInstagramPage({
     id: string;
   }>;
 }) {
-  await requirePermission(
-    'social.view'
-  );
+  const currentUser =
+    await requirePermission(
+      'social.view'
+    );
 
   const {
     id,
   } = await params;
 
   const client =
-    await prisma.client.findUnique({
+    await prisma.client.findFirst({
       where: {
         id,
+
+        agencyId:
+          currentUser.agencyId,
       },
       select: {
         id: true,

@@ -48,6 +48,15 @@ export async function GET(
     );
   }
 
+  if (!user.agencyId) {
+    return NextResponse.redirect(
+      new URL(
+        '/acesso-bloqueado',
+        request.url
+      )
+    );
+  }
+
   const clientId =
     request.nextUrl
       .searchParams
@@ -65,10 +74,13 @@ export async function GET(
   }
 
   const client =
-    await prisma.client.findUnique({
+    await prisma.client.findFirst({
       where: {
         id:
           clientId,
+
+        agencyId:
+          user.agencyId,
       },
       select: {
         id:

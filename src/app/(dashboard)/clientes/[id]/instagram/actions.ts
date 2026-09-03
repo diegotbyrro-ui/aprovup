@@ -70,6 +70,30 @@ export async function saveInstagramConnectionAction(
     );
   }
 
+  const client =
+    await prisma
+      .client
+      .findFirst({
+        where: {
+          id:
+            clientId,
+
+          agencyId:
+            user.agencyId,
+        },
+
+        select: {
+          id:
+            true,
+        },
+      });
+
+  if (!client) {
+    redirect(
+      '/clientes'
+    );
+  }
+
   const session =
     await prisma
       .metaOAuthSession
