@@ -30,6 +30,10 @@ import {
 } from "./DeleteEmployeeButton";
 
 import {
+  PasswordResetLinkButton,
+} from "../../equipe/PasswordResetLinkButton";
+
+import {
   deactivateEmployeeAction,
   reactivateEmployeeAction,
   regenerateInviteAction,
@@ -172,6 +176,11 @@ export default async function TeamAccessPage({
     await requirePermission(
       "users.manage"
     );
+
+
+  const canResetPasswords =
+    currentUser.role ===
+    "DIRECTOR";
 
 
   const params =
@@ -404,6 +413,25 @@ export default async function TeamAccessPage({
                     Esta é sua conta
                   </p>
                 ) : null}
+                {/* ADMIN_PASSWORD_RESET_BLOCK */}
+                {canResetPasswords &&
+                user.status ===
+                  "APROVADO" ? (
+                  <div className="mt-3">
+                    <PasswordResetLinkButton
+                      userId={
+                        user.id
+                      }
+                      userName={
+                        user.name ||
+                        user.email ||
+                        "Administrador"
+                      }
+                    />
+                  </div>
+                ) : null}
+
+
                 {/* DIRECTOR_INVITE_BLOCK */}
                 {user.status ===
                   "PENDENTE" &&
@@ -540,6 +568,25 @@ export default async function TeamAccessPage({
                         <p className="mt-1 text-[9px] text-slate-400">
                           {user.email}
                         </p>
+
+
+                        {/* EMPLOYEE_PASSWORD_RESET_BLOCK */}
+                        {canResetPasswords &&
+                        user.status ===
+                          "APROVADO" ? (
+                          <div className="mt-3">
+                            <PasswordResetLinkButton
+                              userId={
+                                user.id
+                              }
+                              userName={
+                                user.name ||
+                                user.email ||
+                                "Funcionário"
+                              }
+                            />
+                          </div>
+                        ) : null}
 
 
                         {user.status ===
