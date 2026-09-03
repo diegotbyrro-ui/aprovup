@@ -31,8 +31,8 @@ import {
 } from "@/components/kanban/SyncedHorizontalScroll";
 
 import {
-  requireCurrentUser,
-} from "@/lib/auth";
+  requireAgencyContext,
+} from "@/lib/tenant";
 
 import {
   archiveDesignColumnAction,
@@ -1107,7 +1107,10 @@ function CompactMetric({
 
 
 export default async function DesignPage() {
-  await requireCurrentUser();
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
 
 
   const columnCount =
@@ -1219,6 +1222,9 @@ export default async function DesignPage() {
   const contents =
     await prisma.content.findMany({
       where: {
+        client: {
+          agencyId,
+        },
         area:
           "DESIGN",
 
@@ -1268,6 +1274,10 @@ export default async function DesignPage() {
 
   const clients =
     await prisma.client.findMany({
+      where: {
+        agencyId,
+      },
+
       orderBy: {
         name:
           "asc",

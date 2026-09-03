@@ -766,10 +766,13 @@ const query =
 
 
   const selectedClient =
-    await prisma.client.findUnique({
+    await prisma.client.findFirst({
       where: {
         id:
           clientId,
+
+        agencyId:
+          currentUser.agencyId,
       },
     });
 
@@ -1072,7 +1075,12 @@ const query =
       }),
 
 
-      prisma.client.count(),
+      prisma.client.count({
+        where: {
+          agencyId:
+            currentUser.agencyId,
+        },
+      }),
     ]);
 
 

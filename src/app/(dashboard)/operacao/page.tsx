@@ -25,8 +25,8 @@ import {
 } from "@/lib/prisma";
 
 import {
-  requireCurrentUser,
-} from "@/lib/auth";
+  requireAgencyContext,
+} from "@/lib/tenant";
 
 
 type ContentWithClient =
@@ -671,7 +671,10 @@ function ClientAvatar({
 
 
 export default async function OperacaoPage() {
-  await requireCurrentUser();
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
 
   const now =
     new Date();
@@ -723,6 +726,9 @@ export default async function OperacaoPage() {
     await prisma.$transaction([
       prisma.content.findMany({
         where: {
+          client: {
+            agencyId,
+          },
           plannedDate: {
             gte:
               monthStart,
@@ -746,6 +752,9 @@ export default async function OperacaoPage() {
 
       prisma.content.findMany({
         where: {
+          client: {
+            agencyId,
+          },
           plannedDate: {
             gte:
               previousMonthStart,
@@ -764,6 +773,9 @@ export default async function OperacaoPage() {
 
       prisma.content.findMany({
         where: {
+          client: {
+            agencyId,
+          },
           plannedDate: {
             gte:
               today,
@@ -794,6 +806,9 @@ export default async function OperacaoPage() {
 
       prisma.content.findMany({
         where: {
+          client: {
+            agencyId,
+          },
           status: {
             in: [
               "DESIGN_ANALISE",
@@ -826,6 +841,10 @@ export default async function OperacaoPage() {
 
 
       prisma.client.findMany({
+        where: {
+          agencyId,
+        },
+
         include: {
           _count: {
             select: {
@@ -844,6 +863,11 @@ export default async function OperacaoPage() {
 
       prisma.approval.count({
         where: {
+          content: {
+            client: {
+              agencyId,
+            },
+          },
           status:
             "APROVADO",
 
@@ -860,6 +884,11 @@ export default async function OperacaoPage() {
 
       prisma.approval.count({
         where: {
+          content: {
+            client: {
+              agencyId,
+            },
+          },
           status:
             "APROVADO",
 
@@ -876,6 +905,9 @@ export default async function OperacaoPage() {
 
       prisma.content.count({
         where: {
+          client: {
+            agencyId,
+          },
           status: {
             in:
               planningStatuses,
@@ -886,6 +918,9 @@ export default async function OperacaoPage() {
 
       prisma.content.count({
         where: {
+          client: {
+            agencyId,
+          },
           status: {
             in:
               productionStatuses,
@@ -896,6 +931,9 @@ export default async function OperacaoPage() {
 
       prisma.content.count({
         where: {
+          client: {
+            agencyId,
+          },
           status: {
             in:
               reviewStatuses,
@@ -906,6 +944,9 @@ export default async function OperacaoPage() {
 
       prisma.content.count({
         where: {
+          client: {
+            agencyId,
+          },
           status:
             "ENVIADO_CLIENTE",
         },
@@ -914,6 +955,9 @@ export default async function OperacaoPage() {
 
       prisma.content.count({
         where: {
+          client: {
+            agencyId,
+          },
           status: {
             in:
               completedStatuses,
@@ -924,6 +968,9 @@ export default async function OperacaoPage() {
 
       prisma.content.findMany({
         where: {
+          client: {
+            agencyId,
+          },
           status: {
             in:
               unresolvedStatuses,

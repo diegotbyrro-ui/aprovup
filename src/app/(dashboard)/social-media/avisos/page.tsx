@@ -1,5 +1,5 @@
 ﻿import { prisma } from '@/lib/prisma';
-import { requireCurrentUser } from '@/lib/auth';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -62,10 +62,18 @@ function getTone(message: string) {
 }
 
 export default async function SocialMediaAlertsPage() {
-  await requireCurrentUser();
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
 
   const comments = await prisma.comment.findMany({
     where: {
+      content: {
+        client: {
+          agencyId,
+        },
+      },
       OR: [
         {
           message: {

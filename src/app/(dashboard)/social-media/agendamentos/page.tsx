@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser } from '@/lib/auth';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import { CalendarDays, CheckCircle2, Video, AlertTriangle } from 'lucide-react';
 
@@ -19,9 +19,16 @@ function isApprovedStatus(status: string) {
 }
 
 export default async function SocialMediaAgendamentosPage() {
-  await requireCurrentUser();
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
 
   const clients = await prisma.client.findMany({
+    where: {
+      agencyId,
+    },
+
     include: {
       contents: {
         where: {
@@ -50,8 +57,18 @@ export default async function SocialMediaAgendamentosPage() {
     },
   });
 
+  const clientIds =
+    clients.map(
+      (client) =>
+        client.id
+    );
+
   const schedules = await prisma.captureSchedule.findMany({
     where: {
+      clientId: {
+        in:
+          clientIds,
+      },
       status: {
         not: 'CANCELADO',
       },

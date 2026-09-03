@@ -1297,6 +1297,11 @@ await ensureDefaultFilmmakerColumns();
   ] =
     await Promise.all([
       prisma.client.findMany({
+        where: {
+          agencyId:
+            currentUser.agencyId,
+        },
+
         orderBy: {
           name:
             "asc",
@@ -1329,6 +1334,10 @@ await ensureDefaultFilmmakerColumns();
   const contents =
     await prisma.content.findMany({
       where: {
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
         area:
           "FILMMAKER",
 
