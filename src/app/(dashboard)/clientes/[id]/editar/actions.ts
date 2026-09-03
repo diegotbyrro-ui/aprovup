@@ -8,9 +8,11 @@ import { redirect } from 'next/navigation';
 
 export async function updateClientAction(clientId: string, formData: FormData) {
   const currentUser = await requirePermission('social.manage');
-const client = await prisma.client.findUnique({
+const client = await prisma.client.findFirst({
     where: {
       id: clientId,
+      agencyId:
+        currentUser.agencyId,
     },
   });
 
@@ -50,6 +52,8 @@ const client = await prisma.client.findUnique({
   const updatedClient = await prisma.client.update({
     where: {
       id: clientId,
+      agencyId:
+        currentUser.agencyId,
     },
     data: {
       name: text('name'),

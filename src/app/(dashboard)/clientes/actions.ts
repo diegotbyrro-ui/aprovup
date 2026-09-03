@@ -26,9 +26,11 @@ export async function deleteClientAction(
     );
 
   const client =
-    await prisma.client.findUnique({
+    await prisma.client.findFirst({
       where: {
         id: clientId,
+        agencyId:
+          currentUser.agencyId,
       },
 
       select: {
@@ -74,6 +76,8 @@ export async function deleteClientAction(
     prisma.client.delete({
       where: {
         id: clientId,
+        agencyId:
+          currentUser.agencyId,
       },
     }),
 

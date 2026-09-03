@@ -220,7 +220,17 @@ export async function requirePermission(
   }
 
 
-  return user;
+  if (!user.agencyId) {
+    redirect(
+      "/acesso-bloqueado"
+    );
+  }
+
+  return {
+    ...user,
+    agencyId:
+      user.agencyId,
+  };
 }
 
 
@@ -254,5 +264,15 @@ export async function requireAnyPermission(
     );
   }
 
-  return user;
+  if (!user.agencyId) {
+    redirect(
+      "/acesso-bloqueado"
+    );
+  }
+
+  return {
+    ...user,
+    agencyId:
+      user.agencyId,
+  };
 }

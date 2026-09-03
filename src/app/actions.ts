@@ -24,6 +24,7 @@ export async function createClient(formData: FormData) {
   const client = await prisma.client.create({
     data: {
       name,
+      agencyId: currentUser.agencyId,
       legalName: text('legalName'),
       cnpj: text('cnpj'),
       segment: text('segment'),

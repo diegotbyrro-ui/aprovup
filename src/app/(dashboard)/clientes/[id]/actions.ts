@@ -18,9 +18,11 @@ const month = Number(formData.get('month') || 0);
     redirect(`/clientes/${clientId}`);
   }
 
-  const client = await prisma.client.findUnique({
+  const client = await prisma.client.findFirst({
     where: {
       id: clientId,
+      agencyId:
+        currentUser.agencyId,
     },
   });
 

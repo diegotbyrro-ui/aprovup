@@ -179,6 +179,9 @@ export async function createEmployeeInviteAction(
         name,
         email,
 
+        agencyId:
+          currentUser.agencyId,
+
         password:
           null,
 
@@ -235,10 +238,13 @@ export async function updateEmployeeAccessAction(
 
 
   const target =
-    await prisma.user.findUnique({
+    await prisma.user.findFirst({
       where: {
         id:
           userId,
+
+        agencyId:
+          currentUser.agencyId,
       },
     });
 
@@ -312,6 +318,9 @@ export async function updateEmployeeAccessAction(
     where: {
       id:
         userId,
+
+      agencyId:
+        currentUser.agencyId,
     },
 
     data: {
@@ -361,10 +370,13 @@ export async function deactivateEmployeeAction(
 
 
   const target =
-    await prisma.user.findUnique({
+    await prisma.user.findFirst({
       where: {
         id:
           userId,
+
+        agencyId:
+          currentUser.agencyId,
       },
     });
 
@@ -384,6 +396,9 @@ export async function deactivateEmployeeAction(
     where: {
       id:
         userId,
+
+      agencyId:
+        currentUser.agencyId,
     },
 
     data: {
@@ -410,10 +425,13 @@ export async function reactivateEmployeeAction(
 
 
   const target =
-    await prisma.user.findUnique({
+    await prisma.user.findFirst({
       where: {
         id:
           userId,
+
+        agencyId:
+          currentUser.agencyId,
       },
     });
 
@@ -433,6 +451,9 @@ export async function reactivateEmployeeAction(
     where: {
       id:
         userId,
+
+      agencyId:
+        currentUser.agencyId,
     },
 
     data: {
@@ -468,10 +489,13 @@ export async function regenerateInviteAction(
 
 
   const target =
-    await prisma.user.findUnique({
+    await prisma.user.findFirst({
       where: {
         id:
           userId,
+
+        agencyId:
+          currentUser.agencyId,
       },
     });
 
@@ -516,6 +540,9 @@ export async function regenerateInviteAction(
     where: {
       id:
         userId,
+
+      agencyId:
+        currentUser.agencyId,
     },
 
     data: {
@@ -581,10 +608,13 @@ export async function deleteEmployeeAction(
 
 
   const target =
-    await prisma.user.findUnique({
+    await prisma.user.findFirst({
       where: {
         id:
           userId,
+
+        agencyId:
+          currentUser.agencyId,
       },
     });
 
@@ -621,6 +651,9 @@ export async function deleteEmployeeAction(
       where: {
         id:
           userId,
+
+        agencyId:
+          currentUser.agencyId,
       },
     }),
 

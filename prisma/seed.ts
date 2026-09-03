@@ -5,25 +5,53 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Populando banco...');
 
+  const levelUpAgency = await prisma.agency.upsert({
+    where: { slug: 'level-up' },
+    update: {
+      name: 'Level UP',
+      status: 'ACTIVE',
+    },
+    create: {
+      id: 'agency_level_up',
+      name: 'Level UP',
+      slug: 'level-up',
+      status: 'ACTIVE',
+    },
+  });
+
   // Users (upsert por email)
   const u1 = await prisma.user.upsert({
     where: { email: 'admin@levelup.com' },
-    update: {},
-    create: { name: 'Diego Admin', email: 'admin@levelup.com', role: 'ADMIN' }
+    update: { agencyId: levelUpAgency.id },
+    create: {
+      name: 'Diego Admin',
+      email: 'admin@levelup.com',
+      role: 'ADMIN',
+      agencyId: levelUpAgency.id,
+    }
   });
 
   const u2 = await prisma.user.upsert({
     where: { email: 'joao@levelup.com' },
-    update: {},
-    create: { name: 'João Social', email: 'joao@levelup.com', role: 'SOCIAL_MEDIA' }
+    update: { agencyId: levelUpAgency.id },
+    create: {
+      name: 'João Social',
+      email: 'joao@levelup.com',
+      role: 'SOCIAL_MEDIA',
+      agencyId: levelUpAgency.id,
+    }
   });
 
   // Clients (verifica se existe pelo nome)
-  let c1 = await prisma.client.findFirst({ where: { name: 'Tech Solutions' } });
+  let c1 = await prisma.client.findFirst({ where: {
+    name: 'Tech Solutions',
+    agencyId: levelUpAgency.id,
+  } });
   if (!c1) {
     c1 = await prisma.client.create({
       data: {
         name: 'Tech Solutions',
+        agencyId: levelUpAgency.id,
         segment: 'Tecnologia',
         internalResponsible: u2.id,
         strategicNotes: 'Foco B2B no LinkedIn.',
@@ -31,11 +59,15 @@ async function main() {
     });
   }
 
-  let c2 = await prisma.client.findFirst({ where: { name: 'Burger Kingo' } });
+  let c2 = await prisma.client.findFirst({ where: {
+    name: 'Burger Kingo',
+    agencyId: levelUpAgency.id,
+  } });
   if (!c2) {
     c2 = await prisma.client.create({
       data: {
         name: 'Burger Kingo',
+        agencyId: levelUpAgency.id,
         segment: 'Alimentação',
         strategicNotes: 'Promoções semanais no Instagram e TikTok.',
       }

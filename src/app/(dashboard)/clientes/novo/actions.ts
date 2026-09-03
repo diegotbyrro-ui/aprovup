@@ -43,7 +43,7 @@ export async function createClientAction(formData: FormData) {
     const client = await prisma.client.create({
         data: {
             name,
-
+            agencyId: currentUser.agencyId,
             // Dados basicos
             legalName: text(formData, 'legalName'),
             cnpj: text(formData, 'cnpj'),

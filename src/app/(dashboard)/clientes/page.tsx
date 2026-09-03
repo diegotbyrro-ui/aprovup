@@ -84,6 +84,11 @@ const query = searchParams ? await searchParams : {};
   const order = String(query?.ordem || 'az');
 
   const allClients = await prisma.client.findMany({
+    where: {
+      agencyId:
+        currentUser.agencyId,
+    },
+
     include: {
       contents: true,
     },

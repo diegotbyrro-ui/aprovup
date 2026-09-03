@@ -182,6 +182,11 @@ export default async function TeamAccessPage({
 
   const users =
     await prisma.user.findMany({
+      where: {
+        agencyId:
+          currentUser.agencyId,
+      },
+
       orderBy: [
         {
           role:

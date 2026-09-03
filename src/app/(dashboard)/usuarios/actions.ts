@@ -20,6 +20,8 @@ export async function approveUser(userId: string) {
   await prisma.user.update({
     where: {
       id: userId,
+      agencyId:
+        currentUser.agencyId,
     },
     data: {
       status: 'APROVADO',
@@ -37,6 +39,8 @@ export async function rejectUser(userId: string) {
   await prisma.user.update({
     where: {
       id: userId,
+      agencyId:
+        currentUser.agencyId,
     },
     data: {
       status: 'RECUSADO',
@@ -58,6 +62,8 @@ export async function deactivateUser(userId: string) {
   await prisma.user.update({
     where: {
       id: userId,
+      agencyId:
+        currentUser.agencyId,
     },
     data: {
       status: 'INATIVO',
@@ -84,6 +90,8 @@ export async function updateUserAccess(userId: string, formData: FormData) {
   await prisma.user.update({
     where: {
       id: userId,
+      agencyId:
+        currentUser.agencyId,
     },
     data: {
       role,

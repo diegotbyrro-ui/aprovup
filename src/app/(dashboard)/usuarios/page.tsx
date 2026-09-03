@@ -198,6 +198,11 @@ export default async function UsuariosPage() {
     }
 
     const users = await prisma.user.findMany({
+        where: {
+            agencyId:
+                currentUser.agencyId,
+        },
+
         orderBy: [
             {
                 status: 'asc',

@@ -216,7 +216,17 @@ export async function requireCurrentUser() {
     );
   }
 
-  return user;
+  if (!user.agencyId) {
+    redirect(
+      '/acesso-bloqueado'
+    );
+  }
+
+  return {
+    ...user,
+    agencyId:
+      user.agencyId,
+  };
 }
 
 export function isDirector(

@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/userAccess";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -35,9 +36,12 @@ function normalizeContentArea(area: FormDataEntryValue | null) {
 }
 
 export async function createClient(formData: FormData) {
+    const currentUser = await requirePermission("social.manage");
+
     const client = await prisma.client.create({
         data: {
             name: formData.get("name") as string,
+            agencyId: currentUser.agencyId,
             segment: formData.get("segment") as string,
             postingFrequency: formData.get("postingFrequency") as string,
             toneOfVoice: formData.get("toneOfVoice") as string,

@@ -1,8 +1,25 @@
 ﻿import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/userAccess';
 import Link from 'next/link';
 
 export default async function EquipePage() {
-  const users = await prisma.user.findMany({ orderBy: { name: 'asc' } });
+  const currentUser =
+    await requirePermission(
+      'users.manage'
+    );
+
+  const users =
+    await prisma.user.findMany({
+      where: {
+        agencyId:
+          currentUser.agencyId,
+      },
+
+      orderBy: {
+        name:
+          'asc',
+      },
+    });
 
   return (
     <div className="space-y-6">
