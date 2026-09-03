@@ -87,7 +87,30 @@ export async function createClient(formData: FormData) {
 
 
 export async function createOrUpdateClientPersona(clientId: string, formData: FormData) {
-  await requirePermission('social.manage');
+  const currentUser =
+    await requirePermission(
+      'social.manage'
+    );
+
+  const client =
+    await prisma.client.findFirst({
+      where: {
+        id:
+          clientId,
+
+        agencyId:
+          currentUser.agencyId,
+      },
+
+      select: {
+        id:
+          true,
+      },
+    });
+
+  if (!client) {
+    redirect('/clientes');
+  }
 
   const existingPersona = await prisma.clientPersona.findFirst({
     where: {
@@ -140,7 +163,30 @@ export async function createOrUpdateClientProfileDiagnosis(
   clientId: string,
   formData: FormData
 ) {
-  await requirePermission('social.manage');
+  const currentUser =
+    await requirePermission(
+      'social.manage'
+    );
+
+  const client =
+    await prisma.client.findFirst({
+      where: {
+        id:
+          clientId,
+
+        agencyId:
+          currentUser.agencyId,
+      },
+
+      select: {
+        id:
+          true,
+      },
+    });
+
+  if (!client) {
+    redirect('/clientes');
+  }
 
   const existingDiagnosis = await prisma.clientProfileDiagnosis.findFirst({
     where: {
@@ -187,7 +233,7 @@ export async function createOrUpdateClientProfileDiagnosis(
     "CLIENT",
     clientId,
     "PROFILE_DIAGNOSIS_UPDATED",
-    "DiagnÃ³stico do perfil atualizado.",
+    "Diagnóstico do perfil atualizado.",
     "Equipe Level UP"
   );
 
@@ -196,12 +242,38 @@ export async function createOrUpdateClientProfileDiagnosis(
 }
 
 export async function updateClientStrategy(clientId: string, formData: FormData) {
-  await requirePermission('social.manage');
+  const currentUser =
+    await requirePermission(
+      'social.manage'
+    );
+
+  const client =
+    await prisma.client.findFirst({
+      where: {
+        id:
+          clientId,
+
+        agencyId:
+          currentUser.agencyId,
+      },
+
+      select: {
+        id:
+          true,
+      },
+    });
+
+  if (!client) {
+    redirect('/clientes');
+  }
 
   const monthlyContentGoalValue = Number(formData.get("monthlyContentGoal") || 0);
 
   await prisma.client.update({
-    where: { id: clientId },
+    where: {
+      id:
+        client.id,
+    },
     data: {
       internalResponsible: String(formData.get("internalResponsible") || "").trim(),
       toneOfVoice: String(formData.get("toneOfVoice") || "").trim(),
@@ -219,7 +291,7 @@ export async function updateClientStrategy(clientId: string, formData: FormData)
     "CLIENT",
     clientId,
     "STRATEGY_UPDATED",
-    "EstratÃ©gia da marca atualizada.",
+    "Estratégia da marca atualizada.",
     "Equipe Level UP"
   );
 
@@ -230,7 +302,10 @@ export async function updateClientStrategy(clientId: string, formData: FormData)
 }
 
 export async function createContent(formData: FormData) {
-  await requirePermission('social.manage');
+  const currentUser =
+    await requirePermission(
+      'social.manage'
+    );
 
   const clientId = String(formData.get("clientId") || "").trim();
   const title = String(formData.get("title") || "").trim();
@@ -239,11 +314,32 @@ export async function createContent(formData: FormData) {
     redirect("/conteudos/novo?error=required");
   }
 
+  const client =
+    await prisma.client.findFirst({
+      where: {
+        id:
+          clientId,
+
+        agencyId:
+          currentUser.agencyId,
+      },
+
+      select: {
+        id:
+          true,
+      },
+    });
+
+  if (!client) {
+    redirect('/clientes');
+  }
+
   const plannedDateValue = String(formData.get("plannedDate") || "").trim();
 
   const content = await prisma.content.create({
     data: {
-      clientId,
+      clientId:
+        client.id,
       title,
       objective: String(formData.get("objective") || "").trim(),
       format: String(formData.get("format") || "").trim(),
@@ -266,7 +362,7 @@ export async function createContent(formData: FormData) {
     "CONTENT",
     content.id,
     "CREATED",
-    `ConteÃºdo ${content.title} criado.`,
+    `Conteúdo ${content.title} criado.`,
     "Equipe Level UP"
   );
 
@@ -288,11 +384,18 @@ export async function updateContent(contentId: string, formData: FormData) {
     'filmmaker.manage',
   ]);
 
-  const currentContent = await prisma.content.findUnique({
-    where: {
-      id: contentId,
-    },
-  });
+  const currentContent =
+    await prisma.content.findFirst({
+      where: {
+        id:
+          contentId,
+
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
+      },
+    });
 
   if (!currentContent) {
     redirect('/clientes');
@@ -329,10 +432,12 @@ export async function updateContent(contentId: string, formData: FormData) {
 
   const plannedDateValue = text('plannedDate');
 
-  const updatedContent = await prisma.content.update({
-    where: {
-      id: contentId,
-    },
+  const updatedContent =
+    await prisma.content.update({
+      where: {
+        id:
+          currentContent.id,
+      },
     data: {
       status: text('status', currentContent.status),
       area: normalizeArea(text('area', currentContent.area)),
@@ -357,7 +462,7 @@ export async function updateContent(contentId: string, formData: FormData) {
       entityType: 'CONTENT',
       entityId: contentId,
       action: 'UPDATED',
-      description: `ConteÃºdo atualizado. Ãrea: ${updatedContent.area}. Status: ${updatedContent.status}.`,
+      description: `Conteúdo atualizado. Área: ${updatedContent.area}. Status: ${updatedContent.status}.`,
       authorName: currentUser.name || currentUser.email || 'Equipe Level UP',
     },
   });
@@ -374,7 +479,8 @@ export async function updateContent(contentId: string, formData: FormData) {
 
 
 export async function addComment(contentId: string, formData: FormData) {
-  await requireAnyPermission([
+  const currentUser =
+    await requireAnyPermission([
     'social.manage',
     'design.manage',
     'filmmaker.manage',
@@ -386,9 +492,18 @@ export async function addComment(contentId: string, formData: FormData) {
     redirect(`/conteudos/${contentId}`);
   }
 
-  const content = await prisma.content.findUnique({
-    where: { id: contentId },
-  });
+  const content =
+    await prisma.content.findFirst({
+      where: {
+        id:
+          contentId,
+
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
+      },
+    });
 
   if (!content) {
     redirect("/conteudos/kanban");
@@ -396,7 +511,8 @@ export async function addComment(contentId: string, formData: FormData) {
 
   await prisma.comment.create({
     data: {
-      contentId,
+      contentId:
+        content.id,
       message,
       authorName: String(formData.get("authorName") || "Equipe Level UP").trim(),
       authorRole: String(formData.get("authorRole") || "Interno").trim(),
@@ -407,7 +523,7 @@ export async function addComment(contentId: string, formData: FormData) {
     "CONTENT",
     contentId,
     "COMMENT_ADDED",
-    "ComentÃ¡rio adicionado ao conteÃºdo.",
+    "Comentário adicionado ao conteúdo.",
     "Equipe Level UP"
   );
 
@@ -415,7 +531,8 @@ export async function addComment(contentId: string, formData: FormData) {
 }
 
 export async function addTask(contentId: string, formData: FormData) {
-  await requireAnyPermission([
+  const currentUser =
+    await requireAnyPermission([
     'social.manage',
     'design.manage',
     'filmmaker.manage',
@@ -427,9 +544,18 @@ export async function addTask(contentId: string, formData: FormData) {
     redirect(`/conteudos/${contentId}`);
   }
 
-  const content = await prisma.content.findUnique({
-    where: { id: contentId },
-  });
+  const content =
+    await prisma.content.findFirst({
+      where: {
+        id:
+          contentId,
+
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
+      },
+    });
 
   if (!content) {
     redirect("/conteudos/kanban");
@@ -439,7 +565,8 @@ export async function addTask(contentId: string, formData: FormData) {
 
   await prisma.task.create({
     data: {
-      contentId,
+      contentId:
+        content.id,
       title,
       description: String(formData.get("description") || "").trim(),
       status: String(formData.get("status") || "A_FAZER").trim(),
@@ -463,14 +590,43 @@ export async function addTask(contentId: string, formData: FormData) {
 }
 
 export async function completeTask(taskId: string) {
-  await requireAnyPermission([
+  const currentUser =
+    await requireAnyPermission([
     'social.manage',
     'design.manage',
     'filmmaker.manage',
   ]);
 
-  const task = await prisma.task.update({
-    where: { id: taskId },
+  const ownedTask =
+    await prisma.task.findFirst({
+      where: {
+        id:
+          taskId,
+
+        content: {
+          client: {
+            agencyId:
+              currentUser.agencyId,
+          },
+        },
+      },
+
+      select: {
+        id:
+          true,
+      },
+    });
+
+  if (!ownedTask) {
+    redirect('/tarefas');
+  }
+
+  const task =
+    await prisma.task.update({
+      where: {
+        id:
+          ownedTask.id,
+      },
     data: {
       status: "FINALIZADA",
     },
@@ -493,21 +649,49 @@ export async function completeTask(taskId: string) {
 }
 
 export async function generateDraftLog(...args: any[]) {
-  await requirePermission('social.manage');
+  const currentUser =
+    await requirePermission(
+      'social.manage'
+    );
 
   const contentId = String(args[0] || "").trim();
-  const promptTitle = String(args[1] || "Assistente de ConteÃºdo").trim();
+  const promptTitle = String(args[1] || "Assistente de Conteúdo").trim();
 
   if (!contentId) {
     return {
       success: false,
-      message: "ConteÃºdo nÃ£o informado.",
+      message: "Conteúdo não informado.",
+    };
+  }
+
+  const content =
+    await prisma.content.findFirst({
+      where: {
+        id:
+          contentId,
+
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
+      },
+
+      select: {
+        id:
+          true,
+      },
+    });
+
+  if (!content) {
+    return {
+      success: false,
+      message: "Conteúdo não encontrado.",
     };
   }
 
   await logHistory(
     "CONTENT",
-    contentId,
+    content.id,
     "AI_DRAFT_GENERATED",
     `Rascunho gerado pelo assistente: ${promptTitle}.`,
     "Equipe Level UP"
@@ -522,27 +706,37 @@ export async function generateDraftLog(...args: any[]) {
 }
 
 export async function applyDraftToContent(...args: any[]) {
-  await requirePermission('social.manage');
+  const currentUser =
+    await requirePermission(
+      'social.manage'
+    );
 
   const contentId = String(args[0] || "").trim();
 
   if (!contentId) {
     return {
       success: false,
-      message: "ConteÃºdo nÃ£o informado.",
+      message: "Conteúdo não informado.",
     };
   }
 
-  const existingContent = await prisma.content.findUnique({
-    where: {
-      id: contentId,
-    },
-  });
+  const existingContent =
+    await prisma.content.findFirst({
+      where: {
+        id:
+          contentId,
+
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
+      },
+    });
 
   if (!existingContent) {
     return {
       success: false,
-      message: "ConteÃºdo nÃ£o encontrado.",
+      message: "Conteúdo não encontrado.",
     };
   }
 
@@ -581,13 +775,14 @@ export async function applyDraftToContent(...args: any[]) {
   if (!allowedFields.includes(field)) {
     return {
       success: false,
-      message: "Campo invÃ¡lido para aplicar rascunho.",
+      message: "Campo inválido para aplicar rascunho.",
     };
   }
 
   await prisma.content.update({
     where: {
-      id: contentId,
+      id:
+        existingContent.id,
     },
     data: {
       [field]: value,
