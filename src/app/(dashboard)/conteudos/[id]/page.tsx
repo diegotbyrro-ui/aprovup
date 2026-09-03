@@ -784,6 +784,25 @@ export default async function ConteudoDetailPage({
                 {contentSafe.responsible || 'Não definido'}
               </strong>
             </p>
+
+          <form
+            action={updateContentAction}
+            className="mt-3 flex flex-col gap-2 sm:flex-row"
+          >
+            <input
+              name="plannedDate"
+              type="date"
+              defaultValue={formatDateInput(contentSafe.plannedDate)}
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+
+            <button
+              type="submit"
+              className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-blue-700"
+            >
+              Salvar data
+            </button>
+          </form>
           </div>
 
           <div className="flex flex-wrap gap-2 xl:justify-end">
@@ -1681,14 +1700,46 @@ export default async function ConteudoDetailPage({
             </p>
           </div>
 
-          <form action={deleteContentAction.bind(null, contentSafe.id)}>
-            <button
-              type="submit"
-              className="rounded-2xl bg-red-600 px-6 py-4 text-sm font-bold text-white shadow-sm transition hover:bg-red-700"
-            >
+                    <details className="relative w-full md:w-auto">
+            <summary className="list-none cursor-pointer rounded-2xl bg-red-600 px-6 py-4 text-center text-sm font-bold text-white shadow-sm transition hover:bg-red-700">
               Excluir conteúdo
-            </button>
-          </form>
+            </summary>
+
+            <div className="mt-3 w-full rounded-2xl border border-red-200 bg-white p-4 shadow-lg md:absolute md:right-0 md:z-30 md:w-80">
+              <p className="font-bold text-slate-900">
+                Excluir conteúdo?
+              </p>
+
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Esta exclusão será permanente e não poderá ser desfeita.
+                Tem certeza de que deseja excluir este conteúdo?
+              </p>
+
+              <div className="mt-4 flex gap-2">
+                <Link
+                  href={`/conteudos/${contentSafe.id}`}
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-sm font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  Cancelar
+                </Link>
+
+                <form
+                  action={deleteContentAction.bind(
+                    null,
+                    contentSafe.id
+                  )}
+                  className="flex-1"
+                >
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl bg-red-600 px-3 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                  >
+                    Excluir permanentemente
+                  </button>
+                </form>
+              </div>
+            </div>
+          </details>
         </div>
       </section>
 
