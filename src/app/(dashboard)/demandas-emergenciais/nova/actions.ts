@@ -85,9 +85,13 @@ export async function createEmergencyDemandAction(
   }
 
   const client =
-    await prisma.client.findUnique({
+    await prisma.client.findFirst({
       where: {
-        id: clientId,
+        id:
+          clientId,
+
+        agencyId:
+          currentUser.agencyId,
       },
     });
 

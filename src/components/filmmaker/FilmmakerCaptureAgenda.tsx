@@ -6,6 +6,7 @@ import {
   Video,
 } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
+import { requireAgencyContext } from '@/lib/tenant';
 
 function formatDateTime(date: Date) {
   return {
@@ -23,12 +24,39 @@ function formatDateTime(date: Date) {
 }
 
 export async function FilmmakerCaptureAgenda() {
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
+
+  const clients =
+    await prisma.client.findMany({
+      where: {
+        agencyId,
+      },
+
+      select: {
+        id:
+          true,
+      },
+    });
+
+  const clientIds =
+    clients.map(
+      (client) => client.id
+    );
+
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
   const schedules =
     await prisma.captureSchedule.findMany({
       where: {
+        clientId: {
+          in:
+            clientIds,
+        },
+
         status: {
           not: 'CANCELADO',
         },

@@ -27,6 +27,11 @@ export default async function NovaDemandaEmergencialPage({
 
   const clients =
     await prisma.client.findMany({
+      where: {
+        agencyId:
+          currentUser.agencyId,
+      },
+
       orderBy: {
         name: "asc",
       },

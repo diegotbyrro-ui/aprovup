@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { requireCurrentUser } from '@/lib/auth';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import { createCaptureScheduleAction } from './actions';
 import { CalendarDays, AlertTriangle } from 'lucide-react';
@@ -28,20 +28,36 @@ export default async function NovaCaptacaoPage({
     error?: string;
   }>;
 }) {
-  await requireCurrentUser();
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
 
   const params = searchParams ? await searchParams : {};
   const selectedClientId = String(params?.cliente || '');
   const errorMessage = getErrorMessage(params?.error);
 
   const clients = await prisma.client.findMany({
+    where: {
+      agencyId,
+    },
+
     orderBy: {
       name: 'asc',
     },
   });
 
+  const clientIds =
+    clients.map(
+      (client) => client.id
+    );
+
   const upcomingSchedules = await prisma.captureSchedule.findMany({
     where: {
+      clientId: {
+        in:
+          clientIds,
+      },
       status: {
         not: 'CANCELADO',
       },

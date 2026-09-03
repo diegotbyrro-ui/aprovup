@@ -74,15 +74,37 @@ export async function createCaptureScheduleAction(
     );
   }
 
-  const client = await prisma.client.findUnique({
+  const client = await prisma.client.findFirst({
     where: {
-      id: clientId,
+      id:
+        clientId,
+
+      agencyId:
+        currentUser.agencyId,
     },
   });
 
   if (!client) {
     redirect('/clientes');
   }
+
+  const tenantClients =
+    await prisma.client.findMany({
+      where: {
+        agencyId:
+          currentUser.agencyId,
+      },
+
+      select: {
+        id:
+          true,
+      },
+    });
+
+  const tenantClientIds =
+    tenantClients.map(
+      (item) => item.id
+    );
 
   const scheduledAt = new Date(`${date}T${time}:00`);
 
@@ -100,7 +122,11 @@ export async function createCaptureScheduleAction(
           not: 'CANCELADO',
         },
         clientId: {
-          not: clientId,
+          in:
+            tenantClientIds,
+
+          not:
+            clientId,
         },
       },
     });
