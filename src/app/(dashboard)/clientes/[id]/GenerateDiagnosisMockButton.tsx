@@ -1,4 +1,5 @@
 ﻿import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/userAccess";
 import { revalidatePath } from "next/cache";
 
 type GenerateDiagnosisMockButtonProps = {
@@ -8,11 +9,22 @@ type GenerateDiagnosisMockButtonProps = {
 async function generateMockDiagnosis(clientId: string) {
     "use server";
 
-    const client = await prisma.client.findUnique({
-        where: {
-            id: clientId,
-        },
-        include: {
+    const currentUser =
+        await requirePermission(
+            "social.manage"
+        );
+
+    const client =
+        await prisma.client.findFirst({
+            where: {
+                id:
+                    clientId,
+
+                agencyId:
+                    currentUser.agencyId,
+            },
+
+            include: {
             personas: true,
             diagnoses: true,
         },
@@ -103,7 +115,9 @@ async function generateMockDiagnosis(clientId: string) {
         await prisma.clientProfileDiagnosis.create({
             data: {
                 ...data,
-                clientId,
+
+                clientId:
+                    client.id,
             },
         });
     }
@@ -111,14 +125,18 @@ async function generateMockDiagnosis(clientId: string) {
     await prisma.historyLog.create({
         data: {
             entityType: "CLIENT",
-            entityId: clientId,
+
+            entityId:
+                client.id,
             action: "DIAGNOSIS_MOCK_GENERATED",
             description: "Diagnóstico de perfil mockado gerado automaticamente.",
             authorName: "Assistente Mock",
         },
     });
 
-    revalidatePath(`/clientes/${clientId}`);
+    revalidatePath(
+        `/clientes/${client.id}`
+    );
 }
 
 export default function GenerateDiagnosisMockButton({

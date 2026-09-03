@@ -1,5 +1,6 @@
 import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/userAccess";
 import { revalidatePath } from "next/cache";
 
 type GenerateContentIdeasMockButtonProps = {
@@ -15,11 +16,22 @@ function addDays(date: Date, days: number) {
 async function generateContentIdeas(clientId: string) {
     "use server";
 
-    const client = await prisma.client.findUnique({
-        where: {
-            id: clientId,
-        },
-        include: {
+    const currentUser =
+        await requirePermission(
+            "social.manage"
+        );
+
+    const client =
+        await prisma.client.findFirst({
+            where: {
+                id:
+                    clientId,
+
+                agencyId:
+                    currentUser.agencyId,
+            },
+
+            include: {
             personas: true,
             diagnoses: true,
         },
@@ -103,7 +115,7 @@ async function generateContentIdeas(clientId: string) {
             platform: "Instagram",
             caption: `Uma marca forte não é lembrada apenas pelo que vende, mas pela forma como se posiciona. Este conteúdo deve reforçar os diferenciais da ${client.name} e mostrar por que ela é uma escolha segura para o público.`,
             artText:
-                "Texto na tela: Não é só sobre vender. Ã‰ sobre entregar valor com clareza.",
+                "Texto na tela: Não é só sobre vender. É sobre entregar valor com clareza.",
             script:
                 "Abrir com uma frase de posicionamento, mostrar diferenciais reais, conectar com a dor da audiência e finalizar com uma chamada institucional.",
             briefing:
@@ -138,7 +150,9 @@ async function generateContentIdeas(clientId: string) {
                     .filter(Boolean)
                     .join("\n"),
                 status: "IDEIA",
-                clientId,
+
+                clientId:
+                    client.id,
             },
         });
     }
@@ -146,7 +160,9 @@ async function generateContentIdeas(clientId: string) {
     await prisma.historyLog.create({
         data: {
             entityType: "CLIENT",
-            entityId: clientId,
+
+            entityId:
+                client.id,
             action: "CONTENT_IDEAS_GENERATED",
             description:
                 "5 ideias de conteúdo foram geradas automaticamente com base no diagnóstico, persona e estratégia da marca.",
@@ -154,7 +170,9 @@ async function generateContentIdeas(clientId: string) {
         },
     });
 
-    revalidatePath(`/clientes/${clientId}`);
+    revalidatePath(
+        `/clientes/${client.id}`
+    );
     revalidatePath("/conteudos");
     revalidatePath("/calendario");
 }

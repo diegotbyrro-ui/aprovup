@@ -10,7 +10,10 @@ export async function createMonthlyApprovalLink(
     clientId: string,
     formData: FormData
 ) {
-    await requirePermission("social.manage");
+    const currentUser =
+        await requirePermission(
+            "social.manage"
+        );
 
     const month = Number(formData.get("month"));
     const year = Number(formData.get("year"));
@@ -19,29 +22,41 @@ export async function createMonthlyApprovalLink(
         throw new Error("Informe mês e ano para gerar o link.");
     }
 
-    const client = await prisma.client.findUnique({
-        where: {
-            id: clientId,
-        },
-    });
+    const client =
+        await prisma.client.findFirst({
+            where: {
+                id:
+                    clientId,
+
+                agencyId:
+                    currentUser.agencyId,
+            },
+        });
 
     if (!client) {
-        throw new Error("Cliente não encontrado.");
+        throw new Error(
+            "Cliente não encontrado."
+        );
     }
+
+    const safeClientId =
+        client.id;
 
     const existingMonthlyApproval = await prisma.monthlyApproval.findFirst({
         where: {
-            clientId,
+            clientId:
+                safeClientId,
+
             month,
             year,
         },
     });
 
     if (existingMonthlyApproval) {
-        revalidatePath(`/clientes/${clientId}/aprovacao-mensal`);
+        revalidatePath(`/clientes/${safeClientId}/aprovacao-mensal`);
 
         redirect(
-            `/clientes/${clientId}/aprovacao-mensal?token=${existingMonthlyApproval.token}&month=${month}&year=${year}`
+            `/clientes/${safeClientId}/aprovacao-mensal?token=${existingMonthlyApproval.token}&month=${month}&year=${year}`
         );
     }
 
@@ -49,7 +64,9 @@ export async function createMonthlyApprovalLink(
 
     await prisma.monthlyApproval.create({
         data: {
-            clientId,
+            clientId:
+                safeClientId,
+
             month,
             year,
             token,
@@ -60,20 +77,22 @@ export async function createMonthlyApprovalLink(
     await prisma.historyLog.create({
         data: {
             entityType: "CLIENT",
-            entityId: clientId,
+
+            entityId:
+                safeClientId,
             action: "MONTHLY_APPROVAL_LINK_CREATED",
             description: `Link mensal de aprovação criado para ${client.name} - ${month}/${year}.`,
             authorName: "Equipe Level UP",
         },
     });
 
-    revalidatePath(`/clientes/${clientId}`);
-    revalidatePath(`/clientes/${clientId}/visao`);
-    revalidatePath(`/clientes/${clientId}/aprovacao-mensal`);
+    revalidatePath(`/clientes/${safeClientId}`);
+    revalidatePath(`/clientes/${safeClientId}/visao`);
+    revalidatePath(`/clientes/${safeClientId}/aprovacao-mensal`);
     revalidatePath("/clientes");
 
     redirect(
-        `/clientes/${clientId}/aprovacao-mensal?token=${token}&month=${month}&year=${year}`
+        `/clientes/${safeClientId}/aprovacao-mensal?token=${token}&month=${month}&year=${year}`
     );
 }
 

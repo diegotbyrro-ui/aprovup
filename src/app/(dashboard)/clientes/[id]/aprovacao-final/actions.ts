@@ -14,12 +14,19 @@ const READY_STATUSES = [
 async function sendContentToClient(
   contentId: string,
   clientId: string,
+  agencyId: string,
   authorName: string
 ) {
   const content = await prisma.content.findFirst({
     where: {
-      id: contentId,
+      id:
+        contentId,
+
       clientId,
+
+      client: {
+        agencyId,
+      },
     },
   });
 
@@ -42,15 +49,20 @@ async function sendContentToClient(
   const existingPendingApproval =
     await prisma.approval.findFirst({
       where: {
-        contentId,
-        status: 'PENDENTE',
+        contentId:
+          content.id,
+
+        status:
+          'PENDENTE',
       },
     });
 
   if (!existingPendingApproval) {
     await prisma.approval.create({
       data: {
-        contentId,
+        contentId:
+          content.id,
+
         token: randomUUID(),
         status: 'PENDENTE',
       },
@@ -59,7 +71,8 @@ async function sendContentToClient(
 
   await prisma.content.update({
     where: {
-      id: contentId,
+      id:
+        content.id,
     },
     data: {
       status: 'ENVIADO_CLIENTE',
@@ -69,7 +82,9 @@ async function sendContentToClient(
   await prisma.historyLog.create({
     data: {
       entityType: 'CONTENT',
-      entityId: contentId,
+
+      entityId:
+        content.id,
       action: 'FINAL_APPROVAL_SENT',
       description:
         `Material final enviado para a 2\u00aa Etapa de Aprova\u00e7\u00e3o: ${content.title}.`,
@@ -88,6 +103,7 @@ export async function sendContentToFinalApprovalAction(
   await sendContentToClient(
     contentId,
     clientId,
+    currentUser.agencyId,
     currentUser.name ||
       currentUser.email ||
       'Equipe AprovUp'
@@ -110,6 +126,11 @@ export async function sendAllReadyToFinalApprovalAction(
   const contents = await prisma.content.findMany({
     where: {
       clientId,
+
+      client: {
+        agencyId:
+          currentUser.agencyId,
+      },
       format: { not: "DEMANDA_EMERGENCIAL" },
       status: {
         in: READY_STATUSES,
@@ -121,6 +142,7 @@ export async function sendAllReadyToFinalApprovalAction(
     await sendContentToClient(
       content.id,
       clientId,
+      currentUser.agencyId,
       currentUser.name ||
         currentUser.email ||
         'Equipe AprovUp'

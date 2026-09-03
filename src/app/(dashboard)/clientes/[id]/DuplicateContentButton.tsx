@@ -16,17 +16,41 @@ function addDays(date: Date, days: number) {
 async function duplicateContent(contentId: string, clientId: string) {
     "use server";
 
-    await requirePermission("social.manage");
+    const currentUser =
+        await requirePermission(
+            "social.manage"
+        );
 
-    const originalContent = await prisma.content.findUnique({
-        where: {
-            id: contentId,
-        },
-    });
+    const originalContent =
+        await prisma.content.findFirst({
+            where: {
+                id:
+                    contentId,
+
+                client: {
+                    agencyId:
+                        currentUser.agencyId,
+                },
+            },
+        });
 
     if (!originalContent) {
-        throw new Error("Conteúdo original não encontrado.");
+        throw new Error(
+            "Conteúdo original não encontrado."
+        );
     }
+
+    if (
+        originalContent.clientId !==
+        clientId
+    ) {
+        throw new Error(
+            "Conteúdo não pertence ao cliente informado."
+        );
+    }
+
+    const safeClientId =
+        originalContent.clientId;
 
     const duplicatedContent = await prisma.content.create({
         data: {
@@ -45,14 +69,18 @@ async function duplicateContent(contentId: string, clientId: string) {
             fileLinks: originalContent.fileLinks,
             coverImageUrl: originalContent.coverImageUrl,
             status: "IDEIA",
-            clientId,
+
+            clientId:
+                safeClientId,
         },
     });
 
     await prisma.historyLog.create({
         data: {
             entityType: "CLIENT",
-            entityId: clientId,
+
+            entityId:
+                safeClientId,
             action: "CONTENT_DUPLICATED",
             description: `Conteúdo "${originalContent.title}" duplicado como "${duplicatedContent.title}".`,
             authorName: "Equipe Level UP",
@@ -69,7 +97,9 @@ async function duplicateContent(contentId: string, clientId: string) {
         },
     });
 
-    revalidatePath(`/clientes/${clientId}`);
+    revalidatePath(
+        `/clientes/${safeClientId}`
+    );
     revalidatePath("/conteudos");
     revalidatePath("/calendario");
 }
