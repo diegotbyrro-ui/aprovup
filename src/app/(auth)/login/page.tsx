@@ -45,6 +45,7 @@ export default async function LoginPage({
     error?: string;
     registered?: string;
     invite?: string;
+    passwordReset?: string;
   }>;
 }) {
   const params =
@@ -60,6 +61,11 @@ export default async function LoginPage({
   const registered =
     params?.registered ===
     "true";
+
+  const passwordReset =
+    params?.passwordReset ===
+    "true";
+
 
   const inviteRequired =
     params?.invite ===
@@ -86,6 +92,13 @@ export default async function LoginPage({
             Entre para continuar sua operação no AprovUp.
           </p>
         </div>
+
+
+        {passwordReset ? (
+          <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm font-bold text-emerald-700">
+            Senha redefinida com sucesso. Entre com sua nova senha.
+          </div>
+        ) : null}
 
 
         {registered ? (
