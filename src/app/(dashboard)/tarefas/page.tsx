@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import {
     updateTaskFromTasksPage,
@@ -171,6 +172,11 @@ export default async function TarefasPage({
         tipo?: string;
     }>;
 }) {
+    const {
+        agencyId,
+    } =
+        await requireAgencyContext();
+
     const params = await searchParams;
 
     const selectedClient = params.cliente || 'TODOS';
@@ -179,6 +185,10 @@ export default async function TarefasPage({
     const selectedType = params.tipo || 'TODOS';
 
     const clients = await prisma.client.findMany({
+        where: {
+            agencyId,
+        },
+
         orderBy: {
             name: 'asc',
         },
@@ -186,24 +196,34 @@ export default async function TarefasPage({
 
     const tasks = await prisma.task.findMany({
         where: {
+            content: {
+                client: {
+                    agencyId,
+                },
+
+                ...(selectedClient !== 'TODOS'
+                    ? {
+                        clientId:
+                            selectedClient,
+                    }
+                    : {}),
+            },
+
             ...(selectedStatus !== 'TODOS'
                 ? {
-                    status: selectedStatus,
+                    status:
+                        selectedStatus,
                 }
                 : {}),
+
             ...(selectedPriority !== 'TODOS'
                 ? {
-                    priority: selectedPriority,
-                }
-                : {}),
-            ...(selectedClient !== 'TODOS'
-                ? {
-                    content: {
-                        clientId: selectedClient,
-                    },
+                    priority:
+                        selectedPriority,
                 }
                 : {}),
         },
+
         include: {
             content: {
                 include: {

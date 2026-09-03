@@ -3,8 +3,8 @@ import {
 } from "@/lib/prisma";
 
 import {
-  requireCurrentUser,
-} from "@/lib/auth";
+  requireAgencyContext,
+} from "@/lib/tenant";
 
 import {
   AppHeaderClient,
@@ -12,13 +12,22 @@ import {
 
 
 export async function AppHeader() {
-  const user =
-    await requireCurrentUser();
+  const {
+    user,
+    agencyId,
+  } =
+    await requireAgencyContext();
 
 
   const notificationCount =
     await prisma.comment.count({
       where: {
+        content: {
+          client: {
+            agencyId,
+          },
+        },
+
         OR: [
           {
             message: {

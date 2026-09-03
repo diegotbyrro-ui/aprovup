@@ -9,7 +9,8 @@ const allowedRoles = ['DIRECTOR', 'SOCIAL_MEDIA', 'DESIGN', 'FILMMAKER'];
 const allowedStatuses = ['PENDENTE', 'APROVADO', 'RECUSADO', 'INATIVO'];
 
 async function requireDirectorUser() {
-    const currentUser = await requireCurrentUser();
+    const currentUser =
+        await requireCurrentUser();
 
     if (!isDirector(currentUser.role)) {
         redirect('/clientes');
@@ -18,12 +19,45 @@ async function requireDirectorUser() {
     return currentUser;
 }
 
+async function requireAgencyUser(
+    userId: string,
+    agencyId: string
+) {
+    const targetUser =
+        await prisma.user.findFirst({
+            where: {
+                id:
+                    userId,
+
+                agencyId,
+            },
+
+            select: {
+                id:
+                    true,
+            },
+        });
+
+    if (!targetUser) {
+        redirect('/usuarios?error=notfound');
+    }
+
+    return targetUser;
+}
+
 export async function approveUser(userId: string) {
     const currentUser = await requireDirectorUser();
 
+    const targetUser =
+        await requireAgencyUser(
+            userId,
+            currentUser.agencyId
+        );
+
     await prisma.user.update({
         where: {
-            id: userId,
+            id:
+                targetUser.id,
         },
         data: {
             status: 'APROVADO',
@@ -38,9 +72,16 @@ export async function approveUser(userId: string) {
 export async function rejectUser(userId: string) {
     const currentUser = await requireDirectorUser();
 
+    const targetUser =
+        await requireAgencyUser(
+            userId,
+            currentUser.agencyId
+        );
+
     await prisma.user.update({
         where: {
-            id: userId,
+            id:
+                targetUser.id,
         },
         data: {
             status: 'RECUSADO',
@@ -55,13 +96,20 @@ export async function rejectUser(userId: string) {
 export async function deactivateUser(userId: string) {
     const currentUser = await requireDirectorUser();
 
+    const targetUser =
+        await requireAgencyUser(
+            userId,
+            currentUser.agencyId
+        );
+
     if (currentUser.id === userId) {
         redirect('/usuarios?error=self');
     }
 
     await prisma.user.update({
         where: {
-            id: userId,
+            id:
+                targetUser.id,
         },
         data: {
             status: 'INATIVO',
@@ -73,6 +121,12 @@ export async function deactivateUser(userId: string) {
 
 export async function updateUserAccess(userId: string, formData: FormData) {
     const currentUser = await requireDirectorUser();
+
+    const targetUser =
+        await requireAgencyUser(
+            userId,
+            currentUser.agencyId
+        );
 
     const role = String(formData.get('role') || '').trim();
     const status = String(formData.get('status') || '').trim();
@@ -87,7 +141,8 @@ export async function updateUserAccess(userId: string, formData: FormData) {
 
     await prisma.user.update({
         where: {
-            id: userId,
+            id:
+                targetUser.id,
         },
         data: {
             role,

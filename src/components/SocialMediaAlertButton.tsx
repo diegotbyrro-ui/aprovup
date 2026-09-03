@@ -1,10 +1,22 @@
 ﻿import { prisma } from '@/lib/prisma';
+import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
 
 export default async function SocialMediaAlertButton() {
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
+
   const count = await prisma.comment.count({
     where: {
+      content: {
+        client: {
+          agencyId,
+        },
+      },
+
       OR: [
         {
           message: {

@@ -29,18 +29,29 @@ function normalizeTaskPriority(priority: FormDataEntryValue | null) {
 }
 
 export async function updateTaskFromTasksPage(taskId: string, formData: FormData) {
-    await requireAnyPermission([
+    const currentUser =
+        await requireAnyPermission([
         "social.manage",
         "design.manage",
         "filmmaker.manage",
     ]);
 
-    const task = await prisma.task.findUnique({
+    const task = await prisma.task.findFirst({
         where: {
-            id: taskId,
+            id:
+                taskId,
+
+            content: {
+                client: {
+                    agencyId:
+                        currentUser.agencyId,
+                },
+            },
         },
+
         include: {
-            content: true,
+            content:
+                true,
         },
     });
 
@@ -76,15 +87,24 @@ export async function updateTaskFromTasksPage(taskId: string, formData: FormData
 }
 
 export async function deleteTaskFromTasksPage(taskId: string) {
-    await requireAnyPermission([
+    const currentUser =
+        await requireAnyPermission([
         "social.manage",
         "design.manage",
         "filmmaker.manage",
     ]);
 
-    const task = await prisma.task.findUnique({
+    const task = await prisma.task.findFirst({
         where: {
-            id: taskId,
+            id:
+                taskId,
+
+            content: {
+                client: {
+                    agencyId:
+                        currentUser.agencyId,
+                },
+            },
         },
     });
 

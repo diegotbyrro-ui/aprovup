@@ -1,6 +1,7 @@
 ﻿"use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireAnyPermission } from "@/lib/userAccess";
 import { revalidatePath } from "next/cache";
 
 const statusLabels: Record<string, string> = {
@@ -20,6 +21,13 @@ export async function updateContentStatusFromKanban(
     contentId: string,
     newStatus: string
 ) {
+    const currentUser =
+        await requireAnyPermission([
+            "social.manage",
+            "design.manage",
+            "filmmaker.manage",
+        ]);
+
     if (!contentId) {
         throw new Error("Conteúdo não informado.");
     }
@@ -28,9 +36,15 @@ export async function updateContentStatusFromKanban(
         throw new Error("Novo status não informado.");
     }
 
-    const oldContent = await prisma.content.findUnique({
+    const oldContent = await prisma.content.findFirst({
         where: {
-            id: contentId,
+            id:
+                contentId,
+
+            client: {
+                agencyId:
+                    currentUser.agencyId,
+            },
         },
     });
 
