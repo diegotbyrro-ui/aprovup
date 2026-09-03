@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/userAccess';
+import { requireAgencyContext } from '@/lib/tenant';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -45,12 +46,23 @@ function slugify(value: string) {
 }
 
 export async function ensureDefaultFilmmakerColumns() {
+  const {
+    agencyId,
+  } =
+    await requireAgencyContext();
+
   for (const column of defaultColumns) {
     await prisma.filmmakerKanbanColumn.upsert({
       where: {
-        statusKey: column.statusKey,
+        agencyId_statusKey: {
+          agencyId,
+          statusKey:
+            column.statusKey,
+        },
       },
       create: {
+        agencyId,
+
         title: column.title,
         statusKey: column.statusKey,
         order: column.order,
@@ -74,6 +86,9 @@ export async function createFilmmakerColumnAction(formData: FormData) {
 
   const lastColumn = await prisma.filmmakerKanbanColumn.findFirst({
     where: {
+      agencyId:
+        currentUser.agencyId,
+
       isActive: true,
     },
     orderBy: {
@@ -83,6 +98,8 @@ export async function createFilmmakerColumnAction(formData: FormData) {
 
   await prisma.filmmakerKanbanColumn.create({
     data: {
+      agencyId:
+        currentUser.agencyId,
       title,
       statusKey,
       order: (lastColumn?.order || 0) + 10,
@@ -113,9 +130,30 @@ export async function updateFilmmakerColumnTitleAction(columnId: string, formDat
     redirect('/filmmaker');
   }
 
+  const ownedColumn =
+    await prisma.filmmakerKanbanColumn.findFirst({
+      where: {
+        id:
+          columnId,
+
+        agencyId:
+          currentUser.agencyId,
+      },
+
+      select: {
+        id:
+          true,
+      },
+    });
+
+  if (!ownedColumn) {
+    redirect('/filmmaker');
+  }
+
   const column = await prisma.filmmakerKanbanColumn.update({
     where: {
-      id: columnId,
+      id:
+        ownedColumn.id,
     },
     data: {
       title,
@@ -141,6 +179,9 @@ export async function moveFilmmakerColumnAction(columnId: string, direction: 'le
 
   const columns = await prisma.filmmakerKanbanColumn.findMany({
     where: {
+      agencyId:
+        currentUser.agencyId,
+
       isActive: true,
     },
     orderBy: {
@@ -204,6 +245,9 @@ export async function reorderFilmmakerColumnAction(draggedColumnId: string, targ
 
   const columns = await prisma.filmmakerKanbanColumn.findMany({
     where: {
+      agencyId:
+        currentUser.agencyId,
+
       isActive: true,
     },
     orderBy: {
@@ -251,9 +295,13 @@ export async function reorderFilmmakerColumnAction(draggedColumnId: string, targ
 export async function archiveFilmmakerColumnAction(columnId: string) {
   const currentUser = await checkAccess();
 
-  const column = await prisma.filmmakerKanbanColumn.findUnique({
+  const column = await prisma.filmmakerKanbanColumn.findFirst({
     where: {
-      id: columnId,
+      id:
+        columnId,
+
+      agencyId:
+        currentUser.agencyId,
     },
   });
 
@@ -263,6 +311,9 @@ export async function archiveFilmmakerColumnAction(columnId: string) {
 
   const targetColumn = await prisma.filmmakerKanbanColumn.findFirst({
     where: {
+      agencyId:
+        currentUser.agencyId,
+
       isActive: true,
       id: {
         not: columnId,
@@ -318,9 +369,13 @@ export async function archiveFilmmakerColumnAction(columnId: string) {
 export async function updateFilmmakerStatusAction(contentId: string, nextStatus: string) {
   const currentUser = await checkAccess();
 
-  const column = await prisma.filmmakerKanbanColumn.findUnique({
+  const column = await prisma.filmmakerKanbanColumn.findFirst({
     where: {
-      statusKey: nextStatus,
+      agencyId:
+        currentUser.agencyId,
+
+      statusKey:
+        nextStatus,
     },
   });
 

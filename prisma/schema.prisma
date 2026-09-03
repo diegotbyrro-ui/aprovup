@@ -18,6 +18,9 @@ model Agency {
   users   User[]
   clients Client[]
 
+  designKanbanColumns    DesignKanbanColumn[]
+  filmmakerKanbanColumns FilmmakerKanbanColumn[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -393,23 +396,37 @@ model HistoryLog {
 }
 
 model DesignKanbanColumn {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   title     String
-  statusKey String   @unique
-  order     Int      @default(0)
-  isActive  Boolean  @default(true)
+  statusKey String
+  order     Int     @default(0)
+  isActive  Boolean @default(true)
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([agencyId, statusKey])
+  @@index([agencyId])
 }
 
 model FilmmakerKanbanColumn {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   title     String
-  statusKey String   @unique
-  order     Int      @default(0)
-  isActive  Boolean  @default(true)
+  statusKey String
+  order     Int     @default(0)
+  isActive  Boolean @default(true)
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([agencyId, statusKey])
+  @@index([agencyId])
 }
 
 model CaptureSchedule {

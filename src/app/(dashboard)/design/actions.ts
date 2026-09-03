@@ -44,6 +44,11 @@ export async function createDesignColumnAction(formData: FormData) {
   }
 
   const lastColumn = await prisma.designKanbanColumn.findFirst({
+    where: {
+      agencyId:
+        currentUser.agencyId,
+    },
+
     orderBy: {
       order: 'desc',
     },
@@ -51,8 +56,11 @@ export async function createDesignColumnAction(formData: FormData) {
 
   const statusKey = slugifyStatus(title);
 
-  const existing = await prisma.designKanbanColumn.findUnique({
+  const existing = await prisma.designKanbanColumn.findFirst({
     where: {
+      agencyId:
+        currentUser.agencyId,
+
       statusKey,
     },
   });
@@ -70,6 +78,8 @@ export async function createDesignColumnAction(formData: FormData) {
   } else {
     await prisma.designKanbanColumn.create({
       data: {
+        agencyId:
+          currentUser.agencyId,
         title,
         statusKey,
         order: (lastColumn?.order || 0) + 1,
@@ -100,9 +110,30 @@ export async function updateDesignColumnTitleAction(columnId: string, formData: 
     redirect('/design');
   }
 
+  const ownedColumn =
+    await prisma.designKanbanColumn.findFirst({
+      where: {
+        id:
+          columnId,
+
+        agencyId:
+          currentUser.agencyId,
+      },
+
+      select: {
+        id:
+          true,
+      },
+    });
+
+  if (!ownedColumn) {
+    redirect('/design');
+  }
+
   await prisma.designKanbanColumn.update({
     where: {
-      id: columnId,
+      id:
+        ownedColumn.id,
     },
     data: {
       title,
@@ -124,11 +155,15 @@ export async function updateDesignColumnTitleAction(columnId: string, formData: 
 }
 
 export async function moveDesignColumnAction(columnId: string, direction: 'left' | 'right') {
-  await checkAccess();
+  const currentUser = await checkAccess();
 
   const columns = await prisma.designKanbanColumn.findMany({
     where: {
-      isActive: true,
+      agencyId:
+        currentUser.agencyId,
+
+      isActive:
+        true,
     },
     orderBy: {
       order: 'asc',
@@ -175,9 +210,13 @@ export async function moveDesignColumnAction(columnId: string, direction: 'left'
 export async function archiveDesignColumnAction(columnId: string) {
   const currentUser = await checkAccess();
 
-  const column = await prisma.designKanbanColumn.findUnique({
+  const column = await prisma.designKanbanColumn.findFirst({
     where: {
-      id: columnId,
+      id:
+        columnId,
+
+      agencyId:
+        currentUser.agencyId,
     },
   });
 
@@ -187,6 +226,9 @@ export async function archiveDesignColumnAction(columnId: string) {
 
   const targetColumn = await prisma.designKanbanColumn.findFirst({
     where: {
+      agencyId:
+        currentUser.agencyId,
+
       isActive: true,
       id: {
         not: columnId,
@@ -229,8 +271,8 @@ export async function archiveDesignColumnAction(columnId: string) {
       entityId: columnId,
       action: 'DELETED',
       description: targetColumn
-        ? `Coluna excluída: ${column.title}. Demandas movidas para ${targetColumn.title}.`
-        : `Coluna excluída: ${column.title}.`,
+        ? `Coluna excluÃ­da: ${column.title}. Demandas movidas para ${targetColumn.title}.`
+        : `Coluna excluÃ­da: ${column.title}.`,
       authorName: currentUser.name || currentUser.email || 'Equipe Level UP',
     },
   });
@@ -242,9 +284,13 @@ export async function archiveDesignColumnAction(columnId: string) {
 export async function updateDesignStatusAction(contentId: string, nextStatus: string) {
   const currentUser = await checkAccess();
 
-  const column = await prisma.designKanbanColumn.findUnique({
+  const column = await prisma.designKanbanColumn.findFirst({
     where: {
-      statusKey: nextStatus,
+      agencyId:
+        currentUser.agencyId,
+
+      statusKey:
+        nextStatus,
     },
   });
 
@@ -323,7 +369,7 @@ export async function sendDesignQuestionAction(contentId: string, formData: Form
       contentId,
       authorName: currentUser.name || currentUser.email || 'Design',
       authorRole: 'DESIGN',
-      message: `DÚVIDA DO DESIGN: ${message}`,
+      message: `DÃšVIDA DO DESIGN: ${message}`,
     },
   });
 
@@ -342,7 +388,7 @@ export async function sendDesignQuestionAction(contentId: string, formData: Form
       entityType: 'CONTENT',
       entityId: contentId,
       action: 'DESIGN_QUESTION_SENT',
-      description: `Design enviou uma dúvida para Social Media.`,
+      description: `Design enviou uma dÃºvida para Social Media.`,
       authorName: currentUser.name || currentUser.email || 'Design',
     },
   });

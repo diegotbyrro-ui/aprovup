@@ -1114,7 +1114,11 @@ export default async function DesignPage() {
 
 
   const columnCount =
-    await prisma.designKanbanColumn.count();
+    await prisma.designKanbanColumn.count({
+      where: {
+        agencyId,
+      },
+    });
 
 
   if (
@@ -1191,7 +1195,12 @@ export default async function DesignPage() {
           isActive:
             true,
         },
-      ],
+      ].map(
+        (column) => ({
+          ...column,
+          agencyId,
+        })
+      ),
     });
   }
 
@@ -1199,6 +1208,8 @@ export default async function DesignPage() {
   const columns =
     await prisma.designKanbanColumn.findMany({
       where: {
+        agencyId,
+
         isActive:
           true,
       },

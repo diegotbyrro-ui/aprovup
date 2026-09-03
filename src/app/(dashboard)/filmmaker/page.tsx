@@ -1310,6 +1310,9 @@ await ensureDefaultFilmmakerColumns();
 
       prisma.filmmakerKanbanColumn.findMany({
         where: {
+          agencyId:
+            currentUser.agencyId,
+
           isActive:
             true,
         },
