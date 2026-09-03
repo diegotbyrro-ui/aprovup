@@ -271,8 +271,8 @@ export async function archiveDesignColumnAction(columnId: string) {
       entityId: columnId,
       action: 'DELETED',
       description: targetColumn
-        ? `Coluna excluÃ­da: ${column.title}. Demandas movidas para ${targetColumn.title}.`
-        : `Coluna excluÃ­da: ${column.title}.`,
+        ? `Coluna excluída: ${column.title}. Demandas movidas para ${targetColumn.title}.`
+        : `Coluna excluída: ${column.title}.`,
       authorName: currentUser.name || currentUser.email || 'Equipe Level UP',
     },
   });
@@ -369,7 +369,7 @@ export async function sendDesignQuestionAction(contentId: string, formData: Form
       contentId,
       authorName: currentUser.name || currentUser.email || 'Design',
       authorRole: 'DESIGN',
-      message: `DÃšVIDA DO DESIGN: ${message}`,
+      message: `DÚVIDA DO DESIGN: ${message}`,
     },
   });
 
@@ -388,7 +388,7 @@ export async function sendDesignQuestionAction(contentId: string, formData: Form
       entityType: 'CONTENT',
       entityId: contentId,
       action: 'DESIGN_QUESTION_SENT',
-      description: `Design enviou uma dÃºvida para Social Media.`,
+      description: `Design enviou uma dúvida para Social Media.`,
       authorName: currentUser.name || currentUser.email || 'Design',
     },
   });
