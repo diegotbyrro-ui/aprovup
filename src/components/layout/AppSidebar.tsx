@@ -214,10 +214,15 @@ export async function AppSidebar() {
 
       <div className="ap-sidebar-brand">
 
-        <AprovUpLogo
-          size="sm"
-          className="w-[158px]"
-        />
+        <div className="mx-auto flex w-[172px] items-center justify-center overflow-hidden rounded-xl bg-white px-3 py-2 shadow-sm">
+
+          <AprovUpLogo
+            size="sm"
+            center
+            className="w-full"
+          />
+
+        </div>
 
       </div>
 
