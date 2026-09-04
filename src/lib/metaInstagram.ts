@@ -1,12 +1,9 @@
 export const META_INSTAGRAM_SCOPES = [
   'pages_show_list',
-  'business_management',
+  'pages_read_engagement',
   'instagram_basic',
-  'instagram_manage_comments',
   'instagram_manage_insights',
   'instagram_content_publish',
-  'instagram_manage_messages',
-  'pages_read_engagement',
 ] as const;
 
 

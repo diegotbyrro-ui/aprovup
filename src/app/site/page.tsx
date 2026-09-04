@@ -503,11 +503,45 @@ export default function AprovUpSitePage() {
 
       <footer className="border-t border-slate-200 bg-white px-6 py-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row">
-          <AprovUpLogo size="sm" showTagline={false} />
 
-          <p className="text-sm font-semibold text-slate-500">
-            AprovUp — aprovação, produção e resultados para agências criativas.
-          </p>
+          <AprovUpLogo
+            size="sm"
+            showTagline={false}
+          />
+
+          <div className="text-center md:text-right">
+
+            <p className="text-sm font-semibold text-slate-500">
+              AprovUp — aprovação, produção e resultados para agências criativas.
+            </p>
+
+            <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs font-bold text-slate-400 md:justify-end">
+
+              <Link
+                href="/site/politica-de-privacidade"
+                className="hover:text-slate-700"
+              >
+                Privacidade
+              </Link>
+
+              <Link
+                href="/site/termos"
+                className="hover:text-slate-700"
+              >
+                Termos
+              </Link>
+
+              <Link
+                href="/site/exclusao-de-dados"
+                className="hover:text-slate-700"
+              >
+                Exclusão de dados
+              </Link>
+
+            </div>
+
+          </div>
+
         </div>
       </footer>
     </main>
