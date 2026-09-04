@@ -2245,3 +2245,646 @@ img {
       4px;
   }
 }
+
+
+/* =========================================================
+   APROVUP_UI_V2_RESPONSIVE_STAGE_8
+   MOBILE + TABLET
+   ========================================================= */
+
+
+/* Botao hamburguer: invisivel no desktop */
+.ap-mobile-menu-button {
+  display:
+    none;
+
+  align-items:
+    center;
+
+  justify-content:
+    center;
+
+  width:
+    40px;
+
+  height:
+    40px;
+
+  flex:
+    0 0 auto;
+
+  padding:
+    0;
+
+  border:
+    1px solid
+    var(--ap-border);
+
+  border-radius:
+    9px;
+
+  background:
+    var(--ap-surface);
+
+  color:
+    var(--ap-text);
+
+  box-shadow:
+    var(--ap-shadow-xs);
+
+  cursor:
+    pointer;
+}
+
+
+/* Backdrop invisivel no desktop */
+.ap-mobile-nav-backdrop {
+  display:
+    none;
+}
+
+
+/* Elementos de midia nunca ultrapassam a tela */
+.ap-app-main img,
+.ap-app-main video,
+.ap-app-main canvas {
+  max-width:
+    100%;
+}
+
+
+/* Evita filhos flex/grid forcarem largura */
+.ap-app-main *,
+.ap-topbar * {
+  min-width:
+    0;
+}
+
+
+/* =========================================================
+   TABLET / MOBILE
+   1024px ou menor
+   ========================================================= */
+
+@media (max-width: 1024px) {
+
+  /*
+   * Sidebar vira gaveta.
+   */
+  .ap-sidebar-v2 {
+    position:
+      fixed;
+
+    left:
+      0;
+
+    top:
+      0;
+
+    bottom:
+      0;
+
+    z-index:
+      100;
+
+    width:
+      min(300px, 86vw);
+
+    min-width:
+      0;
+
+    height:
+      100dvh;
+
+    transform:
+      translateX(-102%);
+
+    box-shadow:
+      20px 0 50px
+      rgba(0, 0, 0, 0.22);
+
+    transition:
+      transform 220ms
+      cubic-bezier(
+        0.22,
+        1,
+        0.36,
+        1
+      );
+
+    will-change:
+      transform;
+  }
+
+
+  body.ap-mobile-nav-open
+  .ap-sidebar-v2 {
+    transform:
+      translateX(0);
+  }
+
+
+  body.ap-mobile-nav-open {
+    overflow:
+      hidden;
+  }
+
+
+  /*
+   * Fundo escuro ao abrir menu.
+   */
+  .ap-mobile-nav-backdrop {
+    position:
+      fixed;
+
+    inset:
+      0;
+
+    z-index:
+      90;
+
+    display:
+      block;
+
+    border:
+      0;
+
+    padding:
+      0;
+
+    background:
+      rgba(2, 6, 23, 0.52);
+
+    opacity:
+      0;
+
+    pointer-events:
+      none;
+
+    cursor:
+      pointer;
+
+    backdrop-filter:
+      blur(2px);
+
+    -webkit-backdrop-filter:
+      blur(2px);
+
+    transition:
+      opacity 180ms ease;
+  }
+
+
+  .ap-mobile-nav-backdrop.is-open {
+    opacity:
+      1;
+
+    pointer-events:
+      auto;
+  }
+
+
+  .ap-mobile-menu-button {
+    display:
+      inline-flex;
+  }
+
+
+  /*
+   * Header mais compacto.
+   */
+  .ap-topbar {
+    height:
+      64px;
+
+    min-height:
+      64px;
+  }
+
+
+  .ap-topbar-inner {
+    gap:
+      12px;
+
+    padding:
+      0 16px;
+  }
+
+
+  .ap-topbar-context {
+    min-width:
+      0;
+
+    flex:
+      1;
+  }
+
+
+  .ap-topbar-actions {
+    gap:
+      6px;
+  }
+
+
+  /*
+   * Busca deixa de ocupar espaco.
+   * O usuario continua podendo acessar
+   * Conteudos pelo menu.
+   */
+  .ap-topbar-search {
+    display:
+      none;
+  }
+
+
+  /*
+   * Mais espaco util no workspace.
+   */
+  .ap-app-main {
+    overflow-x:
+      auto !important;
+
+    overscroll-behavior:
+      contain;
+
+    -webkit-overflow-scrolling:
+      touch;
+  }
+
+
+  /*
+   * Sidebar com areas confortaveis para toque.
+   */
+  .ap-sidebar-nav-link {
+    min-height:
+      46px;
+
+    font-size:
+      13px;
+  }
+
+
+  .ap-sidebar-footer-link {
+    min-height:
+      44px;
+
+    font-size:
+      12px;
+  }
+
+
+  .ap-sidebar-brand {
+    min-height:
+      76px;
+  }
+}
+
+
+/* =========================================================
+   TABLET PEQUENO / CELULAR
+   767px ou menor
+   ========================================================= */
+
+@media (max-width: 767px) {
+
+  .ap-topbar-inner {
+    padding:
+      0 12px;
+
+    gap:
+      8px;
+  }
+
+
+  .ap-topbar-eyebrow {
+    display:
+      none;
+  }
+
+
+  .ap-topbar-title {
+    overflow:
+      hidden;
+
+    font-size:
+      13px;
+
+    text-overflow:
+      ellipsis;
+
+    white-space:
+      nowrap;
+  }
+
+
+  .ap-topbar-actions {
+    gap:
+      5px;
+  }
+
+
+  .ap-header-icon-button,
+  .ap-theme-compact {
+    width:
+      38px;
+
+    height:
+      38px;
+  }
+
+
+  /*
+   * No mobile basta avatar.
+   */
+  .ap-user-copy,
+  .ap-user-chevron {
+    display:
+      none;
+  }
+
+
+  .ap-user-summary {
+    min-height:
+      40px;
+
+    padding:
+      3px;
+  }
+
+
+  /*
+   * Dropdown nunca sai da tela.
+   */
+  .ap-user-dropdown {
+    position:
+      fixed;
+
+    right:
+      12px;
+
+    top:
+      58px;
+
+    width:
+      min(
+        280px,
+        calc(100vw - 24px)
+      );
+
+    max-width:
+      calc(100vw - 24px);
+  }
+
+
+  /*
+   * Tabelas grandes passam a deslizar
+   * horizontalmente em vez de quebrar layout.
+   */
+  .ap-app-main table {
+    display:
+      block;
+
+    width:
+      100%;
+
+    max-width:
+      100%;
+
+    overflow-x:
+      auto;
+
+    -webkit-overflow-scrolling:
+      touch;
+  }
+
+
+  /*
+   * iOS nao aplica zoom automatico
+   * nos campos com fonte >= 16px.
+   */
+  .ap-app-main input,
+  .ap-app-main select,
+  .ap-app-main textarea {
+    max-width:
+      100%;
+
+    font-size:
+      16px;
+  }
+
+
+  /*
+   * Botoes ficam mais confortaveis
+   * para toque sem alterar botoes pequenos
+   * de icone do header.
+   */
+  .ap-app-main button,
+  .ap-app-main a {
+    -webkit-tap-highlight-color:
+      transparent;
+  }
+
+
+  /*
+   * Dialogs e modais nunca ultrapassam
+   * o viewport do celular.
+   */
+  .ap-app-main [role="dialog"] {
+    width:
+      calc(100vw - 24px) !important;
+
+    max-width:
+      calc(100vw - 24px) !important;
+
+    max-height:
+      calc(100dvh - 24px);
+
+    overflow:
+      auto;
+  }
+
+
+  /*
+   * Textos longos e URLs nao quebram a tela.
+   */
+  .ap-app-main p,
+  .ap-app-main span,
+  .ap-app-main a {
+    overflow-wrap:
+      anywhere;
+  }
+}
+
+
+/* =========================================================
+   CELULARES PEQUENOS
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+  .ap-mobile-menu-button {
+    width:
+      38px;
+
+    height:
+      38px;
+  }
+
+
+  .ap-topbar-inner {
+    padding:
+      0 10px;
+  }
+
+
+  .ap-topbar-context {
+    max-width:
+      105px;
+  }
+
+
+  .ap-header-icon-button,
+  .ap-theme-compact {
+    width:
+      36px;
+
+    height:
+      36px;
+  }
+
+
+  .ap-user-avatar {
+    width:
+      30px;
+
+    height:
+      30px;
+  }
+
+
+  .ap-sidebar-v2 {
+    width:
+      min(286px, 88vw);
+  }
+
+
+  .ap-sidebar-body {
+    padding:
+      14px 10px;
+  }
+
+
+  .ap-sidebar-footer {
+    padding:
+      10px;
+  }
+
+
+  /*
+   * Evita cards e paineis terem
+   * padding exagerado em celulares pequenos.
+   */
+  .ap-app-main .p-8 {
+    padding:
+      20px !important;
+  }
+
+
+  .ap-app-main .p-6 {
+    padding:
+      18px !important;
+  }
+
+
+  .ap-app-main .p-5 {
+    padding:
+      16px !important;
+  }
+}
+
+
+/* =========================================================
+   SAFE AREAS - IPHONE / TABLETS
+   ========================================================= */
+
+@supports (
+  padding:
+    max(0px)
+) {
+
+  @media (max-width: 1024px) {
+
+    .ap-sidebar-v2 {
+      padding-left:
+        env(
+          safe-area-inset-left
+        );
+
+      padding-bottom:
+        env(
+          safe-area-inset-bottom
+        );
+    }
+
+
+    .ap-topbar-inner {
+      padding-left:
+        max(
+          12px,
+          env(
+            safe-area-inset-left
+          )
+        );
+
+      padding-right:
+        max(
+          12px,
+          env(
+            safe-area-inset-right
+          )
+        );
+    }
+  }
+}
+
+
+/* =========================================================
+   ORIENTACAO HORIZONTAL EM CELULAR
+   ========================================================= */
+
+@media (
+  max-width: 900px
+)
+and (
+  max-height: 520px
+)
+and (
+  orientation: landscape
+) {
+
+  .ap-sidebar-brand {
+    min-height:
+      62px;
+
+    padding-top:
+      10px;
+
+    padding-bottom:
+      10px;
+  }
+
+
+  .ap-sidebar-body {
+    padding-top:
+      10px;
+
+    padding-bottom:
+      10px;
+  }
+
+
+  .ap-sidebar-nav-link {
+    min-height:
+      40px;
+  }
+}

@@ -1,13 +1,20 @@
 "use client";
 
+import {
+  useEffect,
+  useState,
+} from "react";
+
 import Link from "next/link";
 
 import {
   Bell,
   ChevronDown,
   LogOut,
+  Menu,
   Search,
   UserRound,
+  X,
 } from "lucide-react";
 
 import {
@@ -216,6 +223,93 @@ export function AppHeaderClient({
   const pathname =
     usePathname();
 
+
+  const [
+    mobileMenuOpen,
+    setMobileMenuOpen,
+  ] =
+    useState(false);
+
+
+  /*
+   * Ao navegar para outra pagina,
+   * fecha automaticamente a gaveta mobile.
+   */
+  useEffect(
+    () => {
+
+      setMobileMenuOpen(
+        false
+      );
+
+    },
+    [
+      pathname,
+    ]
+  );
+
+
+  /*
+   * Controla a sidebar mobile e impede
+   * que o conteudo de tras role quando
+   * o menu estiver aberto.
+   */
+  useEffect(
+    () => {
+
+      const body =
+        document.body;
+
+
+      body.classList.toggle(
+        "ap-mobile-nav-open",
+        mobileMenuOpen
+      );
+
+
+      function handleKeyDown(
+        event:
+          KeyboardEvent
+      ) {
+
+        if (
+          event.key ===
+          "Escape"
+        ) {
+
+          setMobileMenuOpen(
+            false
+          );
+        }
+      }
+
+
+      window.addEventListener(
+        "keydown",
+        handleKeyDown
+      );
+
+
+      return () => {
+
+        window.removeEventListener(
+          "keydown",
+          handleKeyDown
+        );
+
+
+        body.classList.remove(
+          "ap-mobile-nav-open"
+        );
+      };
+
+    },
+    [
+      mobileMenuOpen,
+    ]
+  );
+
+
   const meta =
     resolveMeta(
       pathname
@@ -238,9 +332,48 @@ export function AppHeaderClient({
 
 
   return (
-    <header className="ap-topbar">
-      <div className="ap-topbar-inner">
-        <div className="ap-topbar-context">
+    <>
+      <header className="ap-topbar">
+        <div className="ap-topbar-inner">
+
+          <button
+            type="button"
+            className="ap-mobile-menu-button"
+            onClick={
+              () =>
+                setMobileMenuOpen(
+                  (current) =>
+                    !current
+                )
+            }
+            aria-label={
+              mobileMenuOpen
+                ? "Fechar menu"
+                : "Abrir menu"
+            }
+            aria-expanded={
+              mobileMenuOpen
+            }
+          >
+
+            {mobileMenuOpen ? (
+
+              <X
+                size={20}
+              />
+
+            ) : (
+
+              <Menu
+                size={20}
+              />
+
+            )}
+
+          </button>
+
+
+          <div className="ap-topbar-context">
           <p className="ap-topbar-eyebrow">
             {meta.description}
           </p>
@@ -364,7 +497,32 @@ export function AppHeaderClient({
             </div>
           </details>
         </div>
-      </div>
-    </header>
+        </div>
+      </header>
+
+
+      <button
+        type="button"
+        className={[
+          "ap-mobile-nav-backdrop",
+          mobileMenuOpen
+            ? "is-open"
+            : "",
+        ].join(" ")}
+        onClick={
+          () =>
+            setMobileMenuOpen(
+              false
+            )
+        }
+        aria-label="Fechar menu"
+        tabIndex={
+          mobileMenuOpen
+            ? 0
+            : -1
+        }
+      />
+
+    </>
   );
 }
