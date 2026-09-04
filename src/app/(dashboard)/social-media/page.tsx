@@ -26,6 +26,10 @@ import {
 } from "@/lib/prisma";
 
 import {
+  canAccessClient,
+} from "@/lib/clientAccess";
+
+import {
   hasPermission,
   requirePermission,
 } from "@/lib/userAccess";
@@ -778,6 +782,19 @@ const query =
 
 
   if (!selectedClient) {
+    redirect(
+      "/clientes"
+    );
+  }
+
+
+  // CLIENT_RESPONSIBLE_ACCESS
+  if (
+    !canAccessClient(
+      currentUser,
+      selectedClient
+    )
+  ) {
     redirect(
       "/clientes"
     );

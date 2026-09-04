@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { requireClientAccess } from '@/lib/clientAccess';
 import { requirePermission } from '@/lib/userAccess';
 import { uploadAprovUpFile } from '@/lib/aprovupStorage';
 import { revalidatePath } from 'next/cache';
@@ -8,6 +9,8 @@ import { redirect } from 'next/navigation';
 
 export async function updateClientAction(clientId: string, formData: FormData) {
   const currentUser = await requirePermission('social.manage');
+
+  await requireClientAccess(currentUser, clientId);
 const client = await prisma.client.findFirst({
     where: {
       id: clientId,
@@ -58,7 +61,9 @@ const client = await prisma.client.findFirst({
     data: {
       name: text('name'),
       segment: text('segment'),
-      internalResponsible: text('internalResponsible'),
+      ...(currentUser.role === 'DIRECTOR' ? {
+        internalResponsible: text('internalResponsible'),
+      } : {}),
       postingFrequency: text('postingFrequency'),
       monthlyContentGoal: Number.isFinite(monthlyContentGoalNumber) ? monthlyContentGoalNumber : 0,
       toneOfVoice: text('toneOfVoice'),

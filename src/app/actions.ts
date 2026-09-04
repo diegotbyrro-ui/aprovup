@@ -33,7 +33,17 @@ export async function createClient(formData: FormData) {
       contactEmail: text('contactEmail'),
       companyAddress: text('companyAddress'),
 
-      internalResponsible: text('internalResponsible'),
+      internalResponsible:
+        currentUser.role ===
+        "DIRECTOR"
+          ? text(
+              "internalResponsible"
+            )
+          : (
+              currentUser.name ||
+              currentUser.email ||
+              ""
+            ),
       postingFrequency: text('postingFrequency'),
       monthlyContentGoal: Number.isFinite(monthlyContentGoal) ? monthlyContentGoal : 12,
       toneOfVoice: text('toneOfVoice'),

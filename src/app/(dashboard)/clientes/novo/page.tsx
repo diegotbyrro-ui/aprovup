@@ -1,4 +1,7 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
+import { prisma } from '@/lib/prisma';
+import { requirePermission } from '@/lib/userAccess';
+import { isDirector } from '@/lib/auth';
 import { createClient } from '@/app/actions';
 
 const inputClasses =
@@ -7,7 +10,57 @@ const inputClasses =
 const labelClasses =
   'mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500';
 
-export default function NovoClientePage() {
+export default async function NovoClientePage() {
+
+  const currentUser =
+    await requirePermission(
+      "social.manage"
+    );
+
+
+  const director =
+    isDirector(
+      currentUser.role
+    );
+
+
+  const socialMediaUsers =
+    director
+      ? await prisma.user.findMany({
+          where: {
+            agencyId:
+              currentUser.agencyId,
+
+            role:
+              "SOCIAL_MEDIA",
+
+            status:
+              "APROVADO",
+          },
+
+          select: {
+            id:
+              true,
+
+            name:
+              true,
+
+            email:
+              true,
+          },
+
+          orderBy: {
+            name:
+              "asc",
+          },
+        })
+      : [];
+
+
+  const currentResponsible =
+    currentUser.name ||
+    currentUser.email ||
+    "";
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <section className="rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-sm">
@@ -88,8 +141,58 @@ export default function NovoClientePage() {
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
-              <label className={labelClasses}>Responsável interno</label>
-              <input name="internalResponsible" placeholder="Ex: Raysa Test" className={inputClasses} />
+              <label className={labelClasses}>
+                Social Media responsável
+              </label>
+
+              {director ? (
+                <select
+                  name="internalResponsible"
+                  className={inputClasses}
+                  defaultValue=""
+                >
+                  <option value="">
+                    Selecione uma Social Media
+                  </option>
+
+                  {socialMediaUsers.map(
+                    (member) => {
+                      const value =
+                        member.name ||
+                        member.email ||
+                        "";
+
+                      return (
+                        <option
+                          key={member.id}
+                          value={value}
+                        >
+                          {member.name ||
+                            member.email}
+                        </option>
+                      );
+                    }
+                  )}
+                </select>
+              ) : (
+                <>
+                  <input
+                    type="hidden"
+                    name="internalResponsible"
+                    value={
+                      currentResponsible
+                    }
+                  />
+
+                  <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700">
+                    {currentResponsible}
+                  </div>
+                </>
+              )}
+
+              <p className="mt-1.5 text-xs text-slate-400">
+                O cliente ficará visível apenas para esta Social Media e para a diretoria.
+              </p>
             </div>
 
             <div>

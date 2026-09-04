@@ -45,6 +45,37 @@ export default async function EditarClientePage({
     notFound();
   }
 
+
+  const socialMediaUsers =
+    await prisma.user.findMany({
+      where: {
+        agencyId,
+
+        role:
+          "SOCIAL_MEDIA",
+
+        status:
+          "APROVADO",
+      },
+
+      select: {
+        id:
+          true,
+
+        name:
+          true,
+
+        email:
+          true,
+      },
+
+      orderBy: {
+        name:
+          "asc",
+      },
+    });
+
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <section className="rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-sm">
@@ -81,8 +112,84 @@ export default async function EditarClientePage({
           </div>
 
           <div>
-            <label className={labelClasses}>Responsável interno</label>
-            <input name="internalResponsible" defaultValue={client.internalResponsible || ''} className={inputClasses} />
+            <label className={labelClasses}>
+              Social Media responsável
+            </label>
+
+            {isDirector(
+              currentUser.role
+            ) ? (
+              <select
+                name="internalResponsible"
+                defaultValue={
+                  client.internalResponsible ||
+                  ""
+                }
+                className={inputClasses}
+              >
+                <option value="">
+                  Sem responsável
+                </option>
+
+                {client.internalResponsible &&
+                !socialMediaUsers.some(
+                  (member) =>
+                    (
+                      member.name ||
+                      member.email ||
+                      ""
+                    ) ===
+                    client.internalResponsible
+                ) ? (
+                  <option
+                    value={
+                      client.internalResponsible
+                    }
+                  >
+                    {client.internalResponsible} (atual)
+                  </option>
+                ) : null}
+
+                {socialMediaUsers.map(
+                  (member) => {
+                    const value =
+                      member.name ||
+                      member.email ||
+                      "";
+
+                    return (
+                      <option
+                        key={member.id}
+                        value={value}
+                      >
+                        {member.name ||
+                          member.email}
+                      </option>
+                    );
+                  }
+                )}
+              </select>
+            ) : (
+              <>
+                <input
+                  type="hidden"
+                  name="internalResponsible"
+                  value={
+                    client.internalResponsible ||
+                    ""
+                  }
+                />
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+                  {client.internalResponsible ||
+                    "Sem responsável"}
+                </div>
+              </>
+            )}
+
+            <p className="mt-1.5 text-xs text-slate-400">
+              Esta pessoa será a única Social Media que verá este cliente.
+            </p>
           </div>
 
           <div>

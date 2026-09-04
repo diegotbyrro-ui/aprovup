@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { canAccessClient } from '@/lib/clientAccess';
 
 import { InstagramIcon } from '@/components/icons/InstagramIcon';
 import {
@@ -97,15 +98,14 @@ const query = searchParams ? await searchParams : {};
     },
   });
 
-  const userName = normalize(currentUser.name);
-  const userEmail = normalize(currentUser.email);
-
-  const visibleClients = allClients.filter((client) => {
-    if (director || canManageSocial) return true;
-
-    const responsible = normalize(client.internalResponsible);
-    return responsible.includes(userName) || responsible.includes(userEmail);
-  });
+  const visibleClients =
+    allClients.filter(
+      (client) =>
+        canAccessClient(
+          currentUser,
+          client
+        )
+    );
 
   const filteredClients = visibleClients.filter((client) => {
     if (!search) return true;
