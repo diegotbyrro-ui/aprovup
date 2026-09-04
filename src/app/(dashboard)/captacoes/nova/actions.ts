@@ -255,6 +255,9 @@ export async function createCaptureScheduleAction(
   );
 
   await createGoogleCalendarEvent({
+    agencyId:
+      currentUser.agencyId,
+
     title: `Captação - ${client.name}`,
     description: [
       'Agendamento criado pelo AprovUp.',

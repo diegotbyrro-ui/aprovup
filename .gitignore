@@ -24,3 +24,5 @@ CHECKLIST-APROVUP.md
 CLAUDE.md
 AGENTS.md
 .backup-*
+.logs/
+*.backup-*

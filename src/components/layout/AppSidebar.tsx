@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import {
+  CalendarDays,
   CircleHelp,
   CreditCard,
   Settings,
@@ -47,8 +48,10 @@ type MenuDefinition = {
 
 
 export async function AppSidebar() {
+
   const user =
     await requireCurrentUser();
+
 
   const access =
     await getCurrentUserSaasAccess();
@@ -56,50 +59,96 @@ export async function AppSidebar() {
 
   const definitions: MenuDefinition[] = [
     {
-      name: "Dashboard",
-      icon: "dashboard",
-      path: "/operacao",
-      permission: "dashboard.view",
+      name:
+        "Dashboard",
+
+      icon:
+        "dashboard",
+
+      path:
+        "/operacao",
+
+      permission:
+        "dashboard.view",
+
       activePrefixes: [
         "/operacao",
       ],
     },
+
     {
-      name: "Social Media",
-      icon: "social",
-      path: "/clientes",
-      permission: "social.view",
+      name:
+        "Social Media",
+
+      icon:
+        "social",
+
+      path:
+        "/clientes",
+
+      permission:
+        "social.view",
+
       activePrefixes: [
         "/clientes",
         "/social-media",
         "/calendario-editorial",
       ],
     },
+
     {
-      name: "Filmaker",
-      icon: "filmmaker",
-      path: "/filmmaker",
-      permission: "filmmaker.view",
+      name:
+        "Filmaker",
+
+      icon:
+        "filmmaker",
+
+      path:
+        "/filmmaker",
+
+      permission:
+        "filmmaker.view",
+
       activePrefixes: [
         "/filmmaker",
         "/captacoes",
       ],
     },
+
     {
-      name: "Design",
-      icon: "design",
-      path: "/design",
-      permission: "design.view",
+      name:
+        "Design",
+
+      icon:
+        "design",
+
+      path:
+        "/design",
+
+      permission:
+        "design.view",
+
       activePrefixes: [
         "/design",
       ],
     },
+
     {
-      name: "CRM",
-      icon: "crm",
-      path: "/crm",
-      permission: "crm.view",
-      requiredFeature: "crm",
+      name:
+        "CRM",
+
+      icon:
+        "crm",
+
+      path:
+        "/crm",
+
+      permission:
+        "crm.view",
+
+      requiredFeature:
+        "crm",
+
       activePrefixes: [
         "/crm",
       ],
@@ -116,88 +165,143 @@ export async function AppSidebar() {
             item.permission
           )
       )
-      .map((item) => {
-        const blocked =
-          item.requiredFeature
-            ? !canUseFeature(
-                access,
-                item.requiredFeature
-              )
-            : false;
+      .map(
+        (item) => {
 
-        return {
-          name: item.name,
-          path: item.path,
-          href: blocked
-            ? "/acesso-bloqueado"
-            : item.path,
-          blocked,
-          icon: item.icon,
-          activePrefixes:
-            item.activePrefixes,
-        };
-      });
+          const blocked =
+            item.requiredFeature
+              ? !canUseFeature(
+                  access,
+                  item.requiredFeature
+                )
+              : false;
+
+
+          return {
+            name:
+              item.name,
+
+            path:
+              item.path,
+
+            href:
+              blocked
+                ? "/acesso-bloqueado"
+                : item.path,
+
+            blocked,
+
+            icon:
+              item.icon,
+
+            activePrefixes:
+              item.activePrefixes,
+          };
+        }
+      );
+
+
+  const canManageSettings =
+    hasPermission(
+      user,
+      "settings.manage"
+    );
 
 
   return (
+
     <aside className="ap-sidebar ap-sidebar-v2">
+
       <div className="ap-sidebar-brand">
+
         <AprovUpLogo
           size="sm"
           className="w-[158px]"
         />
+
       </div>
 
+
       <div className="ap-sidebar-body">
+
         <p className="ap-sidebar-section-label">
           Workspace
         </p>
 
+
         <AppSidebarNav
           items={items}
         />
+
       </div>
 
-      <div className="ap-sidebar-footer">
-        {hasPermission(
-          user,
-          "settings.manage"
-        ) ? (
-          <Link
-            href="/configuracoes/equipe"
-            className="ap-sidebar-footer-link"
-          >
-            <Settings size={16} />
 
-            <span>
-              Equipe e acessos
-            </span>
-          </Link>
+      <div className="ap-sidebar-footer">
+
+        {canManageSettings ? (
+
+          <>
+            <Link
+              href="/configuracoes/equipe"
+              className="ap-sidebar-footer-link"
+            >
+              <Settings
+                size={16}
+              />
+
+              <span>
+                Equipe e acessos
+              </span>
+            </Link>
+
+
+            <Link
+              href="/configuracoes/integracoes"
+              className="ap-sidebar-footer-link"
+            >
+              <CalendarDays
+                size={16}
+              />
+
+              <span>
+                Integrações
+              </span>
+            </Link>
+          </>
+
         ) : null}
+
 
         <Link
           href="/minha-assinatura"
           className="ap-sidebar-footer-link"
         >
-          <CreditCard size={16} />
+          <CreditCard
+            size={16}
+          />
 
           <span>
             Minha assinatura
           </span>
         </Link>
 
+
         <Link
           href="/central"
           className="ap-sidebar-footer-link"
         >
-          <CircleHelp size={16} />
+          <CircleHelp
+            size={16}
+          />
 
           <span>
             Central de ajuda
           </span>
         </Link>
 
+
         <div className="ap-sidebar-product">
+
           <span>
             AprovUp
           </span>
@@ -207,8 +311,11 @@ export async function AppSidebar() {
           <span>
             Operação
           </span>
+
         </div>
+
       </div>
+
     </aside>
   );
 }
