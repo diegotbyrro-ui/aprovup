@@ -1,6 +1,7 @@
 export const META_INSTAGRAM_SCOPES = [
   'pages_show_list',
   'pages_read_engagement',
+  'business_management',
   'instagram_basic',
   'instagram_manage_insights',
   'instagram_content_publish',
@@ -146,21 +147,40 @@ export function buildMetaLoginUrl({
     'code'
   );
 
-  url.searchParams.set(
-    'scope',
-    META_INSTAGRAM_SCOPES.join(
-      ','
-    )
-  );
-
   const configId =
     process.env
       .META_FACEBOOK_LOGIN_CONFIG_ID;
 
+
   if (configId) {
+
+    /*
+     * Facebook Login for Business:
+     * a configuracao criada na Meta define
+     * as permissoes solicitadas.
+     */
     url.searchParams.set(
       'config_id',
       configId
+    );
+
+    url.searchParams.set(
+      'override_default_response_type',
+      'true'
+    );
+
+  }
+  else {
+
+    /*
+     * Fallback para desenvolvimento sem
+     * Business Login configuration.
+     */
+    url.searchParams.set(
+      'scope',
+      META_INSTAGRAM_SCOPES.join(
+        ','
+      )
     );
   }
 
