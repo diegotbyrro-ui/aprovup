@@ -1,4 +1,4 @@
-/* =========================================================
+﻿/* =========================================================
    APROVUP UI V2
    DESIGN SYSTEM
    ========================================================= */
@@ -906,7 +906,7 @@ textarea:focus {
 
 /* =========================================================
    CRM LEGADO - COMPATIBILIDADE
-   ETAPA 6 FARÁ O REDESIGN COMPLETO
+   ETAPA 6 FARÃ O REDESIGN COMPLETO
    ========================================================= */
 
 :root[data-aprovup-theme="light"]
@@ -2888,3 +2888,23 @@ and (
       40px;
   }
 }
+
+
+/* APROVUP_MOBILE_CALENDAR_SAFE_AREA */
+@media (max-width: 1024px) {
+  [data-mobile-safe-area="true"] {
+    padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;
+    scroll-padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  }
+
+  [data-mobile-safe-area="true"] .ap-mobile-bottom-safe {
+    height: calc(120px + env(safe-area-inset-bottom, 0px));
+    flex: 0 0 auto;
+  }
+
+  [data-mobile-safe-area="true"] .ap-fab,
+  [data-mobile-safe-area="true"] [data-fab="true"] {
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 
@@ -35,7 +35,7 @@ const weekDays =
     "QUA",
     "QUI",
     "SEX",
-    "SÁB",
+    "SÃB",
   ];
 
 
@@ -43,7 +43,7 @@ const monthNames =
   [
     "Janeiro",
     "Fevereiro",
-    "Março",
+    "MarÃ§o",
     "Abril",
     "Maio",
     "Junho",
@@ -77,7 +77,7 @@ const priorityLabels:
       "BAIXA",
 
     MEDIA:
-      "MÉDIA",
+      "MÃ‰DIA",
 
     ALTA:
       "ALTA",
@@ -97,10 +97,10 @@ const statusLabels:
       "Rascunho",
 
     EM_PRODUCAO:
-      "Em produção",
+      "Em produÃ§Ã£o",
 
     EM_REVISAO:
-      "Em revisão",
+      "Em revisÃ£o",
 
     AGUARDANDO_CLIENTE:
       "Aguardando cliente",
@@ -115,7 +115,7 @@ const statusLabels:
       "Aprovado",
 
     AGENDAMENTO_PRODUCAO:
-      "Produção agendada",
+      "ProduÃ§Ã£o agendada",
 
     PRONTO_PARA_POSTAR:
       "Pronto para postar",
@@ -457,8 +457,7 @@ export function MobileEditorialCalendar({
 
 
   return (
-
-    <div className="mt-5 lg:hidden">
+    <div data-mobile-safe-area="true" className="mt-5 lg:hidden">
 
       {/* ===================================================
           SELETOR DE VISAO
@@ -470,7 +469,7 @@ export function MobileEditorialCalendar({
 
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
 
-            Calendário
+            CalendÃ¡rio
 
           </p>
 
@@ -525,7 +524,7 @@ export function MobileEditorialCalendar({
             ].join(" ")}
           >
 
-            Mês
+            MÃªs
 
           </button>
 
@@ -669,8 +668,8 @@ export function MobileEditorialCalendar({
 
                   {selectedContents.length ===
                   1
-                    ? "1 conteúdo planejado"
-                    : `${selectedContents.length} conteúdos planejados`}
+                    ? "1 conteÃºdo planejado"
+                    : `${selectedContents.length} conteÃºdos planejados`}
 
                 </p>
 
@@ -731,7 +730,7 @@ export function MobileEditorialCalendar({
 
                         <span className="shrink-0 text-lg text-slate-300">
 
-                          ›
+                          â€º
 
                         </span>
 
@@ -811,7 +810,7 @@ export function MobileEditorialCalendar({
 
                 <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg shadow-sm">
 
-                  ✓
+                  âœ“
 
                 </div>
 
@@ -825,7 +824,7 @@ export function MobileEditorialCalendar({
 
                 <p className="mt-1 text-xs leading-relaxed text-slate-400">
 
-                  Nenhum conteúdo planejado para esta data.
+                  Nenhum conteÃºdo planejado para esta data.
 
                 </p>
 
@@ -835,7 +834,7 @@ export function MobileEditorialCalendar({
                   className="mt-4 inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-blue-700 shadow-sm"
                 >
 
-                  + Adicionar conteúdo
+                  + Adicionar conteÃºdo
 
                 </Link>
 
@@ -1004,7 +1003,7 @@ export function MobileEditorialCalendar({
 
             <p className="mt-1 text-[11px] text-slate-400">
 
-              Os pontos azuis indicam dias com conteúdo planejado.
+              Os pontos azuis indicam dias com conteÃºdo planejado.
 
             </p>
 
