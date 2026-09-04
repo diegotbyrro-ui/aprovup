@@ -95,7 +95,7 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         "/acesso-bloqueado",
-        request.url
+        appOrigin(request)
       )
     );
   }
@@ -110,7 +110,7 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         "/configuracoes/integracoes?google=server-config",
-        request.url
+        appOrigin(request)
       )
     );
   }
@@ -127,7 +127,7 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         "/configuracoes/integracoes?google=credentials-required",
-        request.url
+        appOrigin(request)
       )
     );
   }
@@ -179,7 +179,7 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         "/configuracoes/integracoes?google=state",
-        request.url
+        appOrigin(request)
       )
     );
   }
@@ -246,7 +246,7 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         "/configuracoes/integracoes?google=token",
-        request.url
+        appOrigin(request)
       )
     );
   }
@@ -259,7 +259,7 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         "/configuracoes/integracoes?google=refresh",
-        request.url
+        appOrigin(request)
       )
     );
   }
@@ -368,7 +368,7 @@ export async function GET(
     NextResponse.redirect(
       new URL(
         "/configuracoes/integracoes?google=connected",
-        request.url
+        appOrigin(request)
       )
     );
 
