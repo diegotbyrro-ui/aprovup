@@ -21,6 +21,7 @@ model Agency {
   designKanbanColumns      DesignKanbanColumn[]
   filmmakerKanbanColumns   FilmmakerKanbanColumn[]
   googleCalendarConnection GoogleCalendarConnection?
+  reportTemplates          ReportTemplate[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -44,6 +45,30 @@ model GoogleCalendarConnection {
   connectedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model ReportTemplate {
+  id String @id @default(cuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  name             String
+  sourceFileUrl    String
+  originalFileName String
+  fileSize         Int
+
+  pageCount Int?
+  elements  Json?
+
+  isDefault Boolean @default(false)
+  status    String  @default("ATIVO")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+  @@index([agencyId, isDefault])
 }
 
 model User {

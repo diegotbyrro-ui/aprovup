@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CircleHelp,
   CreditCard,
+  FileText,
   Settings,
 } from "lucide-react";
 
@@ -270,6 +271,19 @@ export async function AppSidebar() {
 
               <span>
                 Integrações
+              </span>
+            </Link>
+
+            <Link
+              href="/configuracoes/relatorios"
+              className="ap-sidebar-footer-link"
+            >
+              <FileText
+                size={16}
+              />
+
+              <span>
+                Modelos de relatório
               </span>
             </Link>
           </>
