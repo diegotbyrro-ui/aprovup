@@ -1,39 +1,39 @@
 {
-    "name": "aprovup",
-    "version": "0.1.0",
-    "private": true,
-    "scripts": {
-        "dev": "next dev",
-        "build": "prisma generate && next build",
-        "start": "next start -H 0.0.0.0",
-        "lint": "eslint"
-    },
-    "dependencies": {
-        "@prisma/client": "^5.10.0",
-        "@supabase/ssr": "^0.12.3",
-        "@supabase/supabase-js": "^2.110.7",
-        "bcryptjs": "^2.4.3",
-        "googleapis": "^173.0.0",
-        "lucide-react": "^1.14.0",
-        "next": "^16.3.1",
-        "prisma": "^5.10.0",
-        "react": "19.2.4",
-        "react-dom": "19.2.4"
-    },
-    "devDependencies": {
-        "@tailwindcss/postcss": "^4",
-        "@types/bcryptjs": "^2.4.6",
-        "@types/node": "^20",
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
-        "eslint": "^9",
-        "eslint-config-next": "^16.3.1",
-        "tailwindcss": "^4",
-        "tsx": "^4.23.12",
-        "typescript": "^5"
-    },
-    "prisma": {
-        "seed": "tsx prisma/seed.ts"
-    },
-    "description": "AprovaÃ§Ã£o, produÃ§Ã£o e gestÃ£o criativa em um sÃ³ lugar."
+  "name": "aprovup",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start -H 0.0.0.0",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.7",
+    "bcryptjs": "^2.4.3",
+    "googleapis": "^173.0.0",
+    "lucide-react": "^1.14.0",
+    "next": "^16.3.1",
+    "prisma": "^5.10.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "^16.3.1",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.12",
+    "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "description": "Aprovação, produção e gestão criativa em um só lugar."
 }

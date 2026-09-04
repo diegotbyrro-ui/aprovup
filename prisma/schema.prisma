@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Nota: estamos usando campos String para representar status, perfis e categorias no cÃ³digo.
+// Nota: estamos usando campos String para representar status, perfis e categorias no código.
 
 model Agency {
   id     String @id @default(cuid())

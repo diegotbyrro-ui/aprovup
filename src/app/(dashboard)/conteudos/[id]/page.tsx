@@ -1637,7 +1637,7 @@ export default async function ConteudoDetailPage({
                               : 'border-slate-300 bg-white text-slate-400'
                             }`}
                         >
-                          {task.status === 'FINALIZADO' ? 'Ã¢Å“â€œ' : ''}
+                          {task.status === 'FINALIZADO' ? '\u2713' : ''}
                         </button>
                       </form>
 

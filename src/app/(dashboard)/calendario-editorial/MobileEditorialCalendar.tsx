@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 
@@ -35,7 +35,7 @@ const weekDays =
     "QUA",
     "QUI",
     "SEX",
-    "SÃB",
+    "SÁB",
   ];
 
 
@@ -43,7 +43,7 @@ const monthNames =
   [
     "Janeiro",
     "Fevereiro",
-    "MarÃ§o",
+    "Março",
     "Abril",
     "Maio",
     "Junho",
@@ -77,7 +77,7 @@ const priorityLabels:
       "BAIXA",
 
     MEDIA:
-      "MÃ‰DIA",
+      "MÉDIA",
 
     ALTA:
       "ALTA",
@@ -97,10 +97,10 @@ const statusLabels:
       "Rascunho",
 
     EM_PRODUCAO:
-      "Em produÃ§Ã£o",
+      "Em produção",
 
     EM_REVISAO:
-      "Em revisÃ£o",
+      "Em revisão",
 
     AGUARDANDO_CLIENTE:
       "Aguardando cliente",
@@ -115,7 +115,7 @@ const statusLabels:
       "Aprovado",
 
     AGENDAMENTO_PRODUCAO:
-      "ProduÃ§Ã£o agendada",
+      "Produção agendada",
 
     PRONTO_PARA_POSTAR:
       "Pronto para postar",
@@ -457,6 +457,7 @@ export function MobileEditorialCalendar({
 
 
   return (
+
     <div data-mobile-safe-area="true" className="mt-5 lg:hidden">
 
       {/* ===================================================
@@ -469,7 +470,7 @@ export function MobileEditorialCalendar({
 
           <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
 
-            CalendÃ¡rio
+            Calendário
 
           </p>
 
@@ -524,7 +525,7 @@ export function MobileEditorialCalendar({
             ].join(" ")}
           >
 
-            MÃªs
+            Mês
 
           </button>
 
@@ -591,7 +592,7 @@ export function MobileEditorialCalendar({
 
                     <span
                       className={[
-                        "text-[10px] font-bold",
+                        "whitespace-nowrap text-[10px] font-bold",
                         selected
                           ? "text-blue-100"
                           : "text-slate-400",
@@ -603,7 +604,7 @@ export function MobileEditorialCalendar({
                     </span>
 
 
-                    <span className="mt-1 text-lg font-black">
+                    <span className="mt-1 whitespace-nowrap text-lg font-black">
 
                       {item.day}
 
@@ -668,8 +669,8 @@ export function MobileEditorialCalendar({
 
                   {selectedContents.length ===
                   1
-                    ? "1 conteÃºdo planejado"
-                    : `${selectedContents.length} conteÃºdos planejados`}
+                    ? "1 conteúdo planejado"
+                    : `${selectedContents.length} conteúdos planejados`}
 
                 </p>
 
@@ -730,7 +731,7 @@ export function MobileEditorialCalendar({
 
                         <span className="shrink-0 text-lg text-slate-300">
 
-                          â€º
+                          ›
 
                         </span>
 
@@ -810,7 +811,7 @@ export function MobileEditorialCalendar({
 
                 <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg shadow-sm">
 
-                  âœ“
+                  ✓
 
                 </div>
 
@@ -824,7 +825,7 @@ export function MobileEditorialCalendar({
 
                 <p className="mt-1 text-xs leading-relaxed text-slate-400">
 
-                  Nenhum conteÃºdo planejado para esta data.
+                  Nenhum conteúdo planejado para esta data.
 
                 </p>
 
@@ -834,7 +835,7 @@ export function MobileEditorialCalendar({
                   className="mt-4 inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-blue-700 shadow-sm"
                 >
 
-                  + Adicionar conteÃºdo
+                  + Adicionar conteúdo
 
                 </Link>
 
@@ -865,7 +866,7 @@ export function MobileEditorialCalendar({
                   key={
                     day
                   }
-                  className="py-2 text-center text-[9px] font-black text-slate-400"
+                  className="whitespace-nowrap py-2 text-center text-[9px] font-black text-slate-400"
                 >
 
                   {day}
@@ -1003,7 +1004,7 @@ export function MobileEditorialCalendar({
 
             <p className="mt-1 text-[11px] text-slate-400">
 
-              Os pontos azuis indicam dias com conteÃºdo planejado.
+              Os pontos azuis indicam dias com conteúdo planejado.
 
             </p>
 
