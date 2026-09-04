@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
 import { CalendarBackButton } from './CalendarBackButton';
+import { MobileEditorialCalendar } from './MobileEditorialCalendar';
 const monthNames = [
     'Janeiro',
     'Fevereiro',
@@ -458,7 +459,24 @@ export default async function CalendarioEditorialPage({
                     </div>
                 </div>
 
-                <div className="mt-5 grid grid-cols-7 gap-2">
+                <MobileEditorialCalendar
+                    month={currentMonth}
+                    year={currentYear}
+                    contents={contents.map((content) => ({
+                        id: content.id,
+                        title: content.title,
+                        clientName: content.client.name,
+                        dateKey: content.plannedDate
+                            ? getDateKey(new Date(content.plannedDate))
+                            : '',
+                        format: content.format,
+                        area: content.area,
+                        priority: content.priority,
+                        status: content.status,
+                    }))}
+                />
+
+                <div className="mt-5 hidden grid-cols-7 gap-2 lg:grid">
                     {weekDays.map((day) => (
                         <div
                             key={day}
