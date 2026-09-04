@@ -414,6 +414,18 @@ export default async function ReportTemplatesPage({
                     </a>
 
 
+                    <a
+                      href={
+                        '/configuracoes/relatorios/' +
+                        template.id +
+                        '/editar'
+                      }
+                      className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700"
+                    >
+                      Configurar campos
+                    </a>
+
+
                     {!template.isDefault ? (
 
                       <form
@@ -440,7 +452,26 @@ export default async function ReportTemplatesPage({
 
 
                   <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-white/70 px-3 py-2 text-[11px] font-medium text-slate-400">
-                    Campos dinâmicos ainda não configurados
+
+                    {Array.isArray(
+                      template.elements
+                    ) &&
+                    template.elements.length > 0
+                      ? template.elements.length +
+                        ' campo' +
+                        (
+                          template.elements.length === 1
+                            ? ''
+                            : 's'
+                        ) +
+                        ' configurado' +
+                        (
+                          template.elements.length === 1
+                            ? ''
+                            : 's'
+                        )
+                      : 'Campos dinâmicos ainda não configurados'}
+
                   </div>
 
                 </article>
