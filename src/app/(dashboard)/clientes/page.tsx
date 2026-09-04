@@ -289,12 +289,12 @@ const query = searchParams ? await searchParams : {};
                 >
                   <div className="relative p-5 pt-0">
                     <div className="-mt-9 flex items-end justify-between">
-                      <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-slate-950 text-2xl font-bold text-white shadow-sm">
+                      <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-white text-2xl font-bold text-slate-800 shadow-sm">
                         {client.logoUrl ? (
                           <img
                             src={client.logoUrl}
                             alt={client.name}
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-contain p-1"
                           />
                         ) : (
                           getInitial(client.name)

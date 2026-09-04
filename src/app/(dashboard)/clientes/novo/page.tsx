@@ -73,19 +73,19 @@ export default async function NovoClientePage() {
         </p>
 
         <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">
-          Cadastro e briefing estratÃ©gico
+          Cadastro e briefing estratégico
         </h1>
 
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
-          Preencha os dados principais para organizar o cliente e orientar a criaÃ§Ã£o de conteÃºdo, benchmarking e planejamento mensal.
+          Preencha os dados principais para organizar o cliente e orientar a criação de conteúdo, benchmarking e planejamento mensal.
         </p>
       </section>
 
       <form action={createClient} className="space-y-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <section className="space-y-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Dados bÃ¡sicos</h2>
-            <p className="mt-1 text-sm text-slate-500">InformaÃ§Ãµes principais do cliente.</p>
+            <h2 className="text-xl font-bold text-slate-900">Dados básicos</h2>
+            <p className="mt-1 text-sm text-slate-500">Informações principais do cliente.</p>
           </div>
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -95,8 +95,8 @@ export default async function NovoClientePage() {
             </div>
 
             <div>
-              <label className={labelClasses}>RazÃ£o social</label>
-              <input name="legalName" placeholder="Nome jurÃ­dico da empresa" className={inputClasses} />
+              <label className={labelClasses}>Razão social</label>
+              <input name="legalName" placeholder="Nome jurídico da empresa" className={inputClasses} />
             </div>
 
             <div>
@@ -106,12 +106,12 @@ export default async function NovoClientePage() {
 
             <div>
               <label className={labelClasses}>Segmento</label>
-              <input name="segment" placeholder="Ex: ClÃ­nica, escola, hotel, imobiliÃ¡ria..." className={inputClasses} />
+              <input name="segment" placeholder="Ex: Clínica, escola, hotel, imobiliária..." className={inputClasses} />
             </div>
 
             <div>
               <label className={labelClasses}>Contato principal</label>
-              <input name="mainContact" placeholder="Nome do responsÃ¡vel do cliente" className={inputClasses} />
+              <input name="mainContact" placeholder="Nome do responsável do cliente" className={inputClasses} />
             </div>
 
             <div>
@@ -125,8 +125,8 @@ export default async function NovoClientePage() {
             </div>
 
             <div>
-              <label className={labelClasses}>EndereÃ§o</label>
-              <input name="companyAddress" placeholder="Cidade, bairro ou endereÃ§o completo" className={inputClasses} />
+              <label className={labelClasses}>Endereço</label>
+              <input name="companyAddress" placeholder="Cidade, bairro ou endereço completo" className={inputClasses} />
             </div>
           </div>
         </section>
@@ -135,14 +135,14 @@ export default async function NovoClientePage() {
 
         <section className="space-y-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Contrato e operaÃ§Ã£o</h2>
-            <p className="mt-1 text-sm text-slate-500">Defina a rotina de conteÃºdo e o responsÃ¡vel interno.</p>
+            <h2 className="text-xl font-bold text-slate-900">Contrato e operação</h2>
+            <p className="mt-1 text-sm text-slate-500">Defina a rotina de conteúdo e o responsável interno.</p>
           </div>
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
               <label className={labelClasses}>
-                Social Media responsÃ¡vel
+                Social Media responsável
               </label>
 
               {director ? (
@@ -191,32 +191,32 @@ export default async function NovoClientePage() {
               )}
 
               <p className="mt-1.5 text-xs text-slate-400">
-                O cliente ficarÃ¡ visÃ­vel apenas para esta Social Media e para a diretoria.
+                O cliente ficará visível apenas para esta Social Media e para a diretoria.
               </p>
             </div>
 
             <div>
-              <label className={labelClasses}>Meta mensal de conteÃºdos</label>
+              <label className={labelClasses}>Meta mensal de conteúdos</label>
               <input name="monthlyContentGoal" type="number" defaultValue={12} min={0} className={inputClasses} />
             </div>
 
             <div>
-              <label className={labelClasses}>FrequÃªncia de postagem</label>
+              <label className={labelClasses}>Frequência de postagem</label>
               <input name="postingFrequency" placeholder="Ex: 3 posts por semana" className={inputClasses} />
             </div>
 
             <div>
               <label className={labelClasses}>Tom de voz</label>
-              <input name="toneOfVoice" placeholder="Ex: Acolhedor, tÃ©cnico, jovem, premium..." className={inputClasses} />
+              <input name="toneOfVoice" placeholder="Ex: Acolhedor, técnico, jovem, premium..." className={inputClasses} />
             </div>
           </div>
 
           <div>
-            <label className={labelClasses}>ServiÃ§os contratados</label>
+            <label className={labelClasses}>Serviços contratados</label>
             <textarea
               name="contractedServices"
               rows={3}
-              placeholder="Ex: Social media, design, trÃ¡fego pago, audiovisual, landing page..."
+              placeholder="Ex: Social media, design, tráfego pago, audiovisual, landing page..."
               className={inputClasses}
             />
           </div>
@@ -230,7 +230,7 @@ export default async function NovoClientePage() {
             <p className="mt-1 text-sm text-slate-500">Esses links ajudam Social Media, Design e Filmmaker.</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3 bg-white p-1\.5">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
             <div>
               <label className={labelClasses}>Banco de dados</label>
               <input name="databaseLink" type="url" placeholder="https://..." className={inputClasses} />
@@ -248,11 +248,11 @@ export default async function NovoClientePage() {
           </div>
 
           <div>
-            <label className={labelClasses}>Links Ãºteis gerais</label>
+            <label className={labelClasses}>Links úteis gerais</label>
             <textarea
               name="usefulLinks"
               rows={3}
-              placeholder="Outros links importantes: site, Instagram, referÃªncias, arquivos, contratos..."
+              placeholder="Outros links importantes: site, Instagram, referências, arquivos, contratos..."
               className={inputClasses}
             />
           </div>
@@ -262,26 +262,26 @@ export default async function NovoClientePage() {
 
         <section className="space-y-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Briefing estratÃ©gico</h2>
-            <p className="mt-1 text-sm text-slate-500">Base para criaÃ§Ã£o de conteÃºdo, calendÃ¡rio, legenda e benchmarking.</p>
+            <h2 className="text-xl font-bold text-slate-900">Briefing estratégico</h2>
+            <p className="mt-1 text-sm text-slate-500">Base para criação de conteúdo, calendário, legenda e benchmarking.</p>
           </div>
 
           <div>
-            <label className={labelClasses}>DescriÃ§Ã£o da empresa</label>
+            <label className={labelClasses}>Descrição da empresa</label>
             <textarea
               name="businessDescription"
               rows={4}
-              placeholder="O que a empresa faz, onde atua, principais serviÃ§os/produtos e contexto de mercado."
+              placeholder="O que a empresa faz, onde atua, principais serviços/produtos e contexto de mercado."
               className={inputClasses}
             />
           </div>
 
           <div>
-            <label className={labelClasses}>PÃºblico-alvo / persona</label>
+            <label className={labelClasses}>Público-alvo / persona</label>
             <textarea
               name="targetAudience"
               rows={4}
-              placeholder="Quem compra, quem decide, dores, desejos, objeÃ§Ãµes, regiÃ£o, perfil financeiro e comportamento."
+              placeholder="Quem compra, quem decide, dores, desejos, objeções, região, perfil financeiro e comportamento."
               className={inputClasses}
             />
           </div>
@@ -291,7 +291,7 @@ export default async function NovoClientePage() {
             <textarea
               name="brandDifferentials"
               rows={4}
-              placeholder="O que torna esse cliente diferente: atendimento, localizaÃ§Ã£o, estrutura, mÃ©todo, preÃ§o, experiÃªncia, autoridade..."
+              placeholder="O que torna esse cliente diferente: atendimento, localização, estrutura, método, preço, experiência, autoridade..."
               className={inputClasses}
             />
           </div>
@@ -301,17 +301,17 @@ export default async function NovoClientePage() {
             <textarea
               name="marketingGoals"
               rows={4}
-              placeholder="Ex: gerar autoridade, atrair leads, vender mais, divulgar matrÃ­culas, fortalecer posicionamento, aumentar procura..."
+              placeholder="Ex: gerar autoridade, atrair leads, vender mais, divulgar matrículas, fortalecer posicionamento, aumentar procura..."
               className={inputClasses}
             />
           </div>
 
           <div>
-            <label className={labelClasses}>Concorrentes e referÃªncias</label>
+            <label className={labelClasses}>Concorrentes e referências</label>
             <textarea
               name="competitors"
               rows={4}
-              placeholder="Liste concorrentes, perfis de referÃªncia, marcas similares ou empresas que o cliente gosta."
+              placeholder="Liste concorrentes, perfis de referência, marcas similares ou empresas que o cliente gosta."
               className={inputClasses}
             />
           </div>
@@ -321,27 +321,27 @@ export default async function NovoClientePage() {
             <textarea
               name="benchmarkNotes"
               rows={4}
-              placeholder="O que observar nos concorrentes: tipos de post, linguagem, ofertas, diferenciais, frequÃªncia, oportunidades e falhas."
+              placeholder="O que observar nos concorrentes: tipos de post, linguagem, ofertas, diferenciais, frequência, oportunidades e falhas."
               className={inputClasses}
             />
           </div>
 
           <div>
-            <label className={labelClasses}>Pilares de conteÃºdo</label>
+            <label className={labelClasses}>Pilares de conteúdo</label>
             <textarea
               name="contentPillars"
               rows={4}
-              placeholder="Ex: educativo, bastidores, prova social, institucional, vendas, autoridade, dicas, objeÃ§Ãµes, datas comerciais..."
+              placeholder="Ex: educativo, bastidores, prova social, institucional, vendas, autoridade, dicas, objeções, datas comerciais..."
               className={inputClasses}
             />
           </div>
 
           <div>
-            <label className={labelClasses}>RestriÃ§Ãµes e cuidados</label>
+            <label className={labelClasses}>Restrições e cuidados</label>
             <textarea
               name="contentRestrictions"
               rows={4}
-              placeholder="O que evitar falar, promessas proibidas, termos sensÃ­veis, regras do segmento, pontos de aprovaÃ§Ã£o..."
+              placeholder="O que evitar falar, promessas proibidas, termos sensíveis, regras do segmento, pontos de aprovação..."
               className={inputClasses}
             />
           </div>
@@ -351,7 +351,7 @@ export default async function NovoClientePage() {
             <textarea
               name="clientBriefing"
               rows={5}
-              placeholder="Resumo final para orientar o time na criaÃ§Ã£o dos conteÃºdos."
+              placeholder="Resumo final para orientar o time na criação dos conteúdos."
               className={inputClasses}
             />
           </div>
