@@ -17,21 +17,7 @@ export const GOOGLE_CALENDAR_SCOPES = [
 ];
 
 
-export function getGoogleCalendarOAuthConfig() {
-
-  const clientId =
-    String(
-      process.env.GOOGLE_CALENDAR_CLIENT_ID ||
-      ""
-    ).trim();
-
-
-  const clientSecret =
-    String(
-      process.env.GOOGLE_CALENDAR_CLIENT_SECRET ||
-      ""
-    ).trim();
-
+export function getGoogleCalendarSystemConfig() {
 
   const encryptionSecret =
     String(
@@ -41,14 +27,10 @@ export function getGoogleCalendarOAuthConfig() {
 
 
   return {
-    clientId,
-    clientSecret,
     encryptionSecret,
 
     ready:
       Boolean(
-        clientId &&
-        clientSecret &&
         encryptionSecret
       ),
   };
@@ -60,10 +42,11 @@ function getEncryptionKey() {
   const {
     encryptionSecret,
   } =
-    getGoogleCalendarOAuthConfig();
+    getGoogleCalendarSystemConfig();
 
 
   if (!encryptionSecret) {
+
     throw new Error(
       "APROVUP_INTEGRATION_ENCRYPTION_KEY nao configurada."
     );
@@ -154,7 +137,7 @@ export function decryptGoogleToken(
   ) {
 
     throw new Error(
-      "Token Google invalido."
+      "Segredo Google invalido."
     );
   }
 
@@ -198,6 +181,47 @@ export function decryptGoogleToken(
 }
 
 
+export async function getAgencyGoogleOAuthCredentials(
+  agencyId: string
+) {
+
+  const connection =
+    await prisma.googleCalendarConnection.findUnique({
+      where: {
+        agencyId,
+      },
+
+      select: {
+        googleClientId:
+          true,
+
+        encryptedClientSecret:
+          true,
+      },
+    });
+
+
+  if (
+    !connection?.googleClientId ||
+    !connection.encryptedClientSecret
+  ) {
+
+    return null;
+  }
+
+
+  return {
+    clientId:
+      connection.googleClientId,
+
+    clientSecret:
+      decryptGoogleToken(
+        connection.encryptedClientSecret
+      ),
+  };
+}
+
+
 export async function getGoogleCalendarAccessTokenForAgency(
   agencyId: string
 ) {
@@ -210,25 +234,21 @@ export async function getGoogleCalendarAccessTokenForAgency(
     });
 
 
-  if (!connection) {
+  if (
+    !connection ||
+    !connection.googleClientId ||
+    !connection.encryptedClientSecret ||
+    !connection.encryptedRefreshToken
+  ) {
 
     return null;
   }
 
 
-  const config =
-    getGoogleCalendarOAuthConfig();
-
-
-  if (
-    !config.clientId ||
-    !config.clientSecret
-  ) {
-
-    throw new Error(
-      "Credenciais OAuth do Google Calendar nao configuradas."
+  const clientSecret =
+    decryptGoogleToken(
+      connection.encryptedClientSecret
     );
-  }
 
 
   const refreshToken =
@@ -252,10 +272,10 @@ export async function getGoogleCalendarAccessTokenForAgency(
         body:
           new URLSearchParams({
             client_id:
-              config.clientId,
+              connection.googleClientId,
 
             client_secret:
-              config.clientSecret,
+              clientSecret,
 
             refresh_token:
               refreshToken,
@@ -329,13 +349,6 @@ export async function createGoogleCalendarEvent({
   endDate,
 }: CreateGoogleCalendarEventInput) {
 
-  /*
-   * Cada evento usa a conexao da propria agencia.
-   *
-   * Se a agencia ainda nao conectou o Calendar,
-   * o agendamento interno do AprovUp continua
-   * funcionando normalmente.
-   */
   const auth =
     await getGoogleCalendarAccessTokenForAgency(
       agencyId
@@ -345,7 +358,7 @@ export async function createGoogleCalendarEvent({
   if (!auth) {
 
     console.log(
-      `[GOOGLE CALENDAR] Agencia ${agencyId} ainda nao conectou calendario.`
+      `[GOOGLE CALENDAR] Agencia ${agencyId} sem Calendar conectado.`
     );
 
     return null;
@@ -415,6 +428,7 @@ export async function createGoogleCalendarEvent({
     await response.json() as {
       id?: string;
       htmlLink?: string;
+
       error?: {
         message?: string;
       };

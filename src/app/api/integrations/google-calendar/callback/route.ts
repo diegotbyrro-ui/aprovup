@@ -17,7 +17,8 @@ import {
 
 import {
   encryptGoogleToken,
-  getGoogleCalendarOAuthConfig,
+  getAgencyGoogleOAuthCredentials,
+  getGoogleCalendarSystemConfig,
 } from "@/lib/googleCalendar";
 
 
@@ -38,21 +39,30 @@ function appOrigin(
 
 
 function sameState(
-  first: string,
-  second: string
+  first:
+    string,
+
+  second:
+    string
 ) {
 
   const a =
-    Buffer.from(first);
+    Buffer.from(
+      first
+    );
+
 
   const b =
-    Buffer.from(second);
+    Buffer.from(
+      second
+    );
 
 
   if (
     a.length !==
     b.length
   ) {
+
     return false;
   }
 
@@ -85,6 +95,38 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         "/acesso-bloqueado",
+        request.url
+      )
+    );
+  }
+
+
+  const system =
+    getGoogleCalendarSystemConfig();
+
+
+  if (!system.ready) {
+
+    return NextResponse.redirect(
+      new URL(
+        "/configuracoes/integracoes?google=server-config",
+        request.url
+      )
+    );
+  }
+
+
+  const credentials =
+    await getAgencyGoogleOAuthCredentials(
+      user.agencyId
+    );
+
+
+  if (!credentials) {
+
+    return NextResponse.redirect(
+      new URL(
+        "/configuracoes/integracoes?google=credentials-required",
         request.url
       )
     );
@@ -143,21 +185,6 @@ export async function GET(
   }
 
 
-  const config =
-    getGoogleCalendarOAuthConfig();
-
-
-  if (!config.ready) {
-
-    return NextResponse.redirect(
-      new URL(
-        "/configuracoes/integracoes?google=config",
-        request.url
-      )
-    );
-  }
-
-
   const redirectUri =
     `${appOrigin(
       request
@@ -181,10 +208,10 @@ export async function GET(
             code,
 
             client_id:
-              config.clientId,
+              credentials.clientId,
 
             client_secret:
-              config.clientSecret,
+              credentials.clientSecret,
 
             redirect_uri:
               redirectUri,
@@ -201,6 +228,7 @@ export async function GET(
       access_token?: string;
       refresh_token?: string;
       error?: string;
+      error_description?: string;
     };
 
 
@@ -210,7 +238,7 @@ export async function GET(
   ) {
 
     console.error(
-      "[GOOGLE CALENDAR] Token exchange:",
+      "[GOOGLE CALENDAR] OAuth token:",
       tokenData
     );
 
@@ -218,6 +246,19 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         "/configuracoes/integracoes?google=token",
+        request.url
+      )
+    );
+  }
+
+
+  if (
+    !tokenData.refresh_token
+  ) {
+
+    return NextResponse.redirect(
+      new URL(
+        "/configuracoes/integracoes?google=refresh",
         request.url
       )
     );
@@ -269,75 +310,13 @@ export async function GET(
   }
 
 
-  let encryptedRefreshToken =
-    "";
-
-
-  if (
-    tokenData.refresh_token
-  ) {
-
-    encryptedRefreshToken =
-      encryptGoogleToken(
-        tokenData.refresh_token
-      );
-
-  }
-  else {
-
-    const current =
-      await prisma.googleCalendarConnection.findUnique({
-        where: {
-          agencyId:
-            user.agencyId,
-        },
-      });
-
-
-    if (current) {
-      encryptedRefreshToken =
-        current.encryptedRefreshToken;
-    }
-  }
-
-
-  if (
-    !encryptedRefreshToken
-  ) {
-
-    return NextResponse.redirect(
-      new URL(
-        "/configuracoes/integracoes?google=refresh",
-        request.url
-      )
-    );
-  }
-
-
-  await prisma.googleCalendarConnection.upsert({
+  await prisma.googleCalendarConnection.update({
     where: {
       agencyId:
         user.agencyId,
     },
 
-    update: {
-      googleAccountEmail:
-        email ||
-        undefined,
-
-      calendarId:
-        "primary",
-
-      encryptedRefreshToken,
-
-      connectedAt:
-        new Date(),
-    },
-
-    create: {
-      agencyId:
-        user.agencyId,
-
+    data: {
       googleAccountEmail:
         email ||
         null,
@@ -345,9 +324,44 @@ export async function GET(
       calendarId:
         "primary",
 
-      encryptedRefreshToken,
+      encryptedRefreshToken:
+        encryptGoogleToken(
+          tokenData.refresh_token
+        ),
+
+      connectedAt:
+        new Date(),
     },
   });
+
+
+  await prisma.historyLog.create({
+    data: {
+      entityType:
+        "AGENCY",
+
+      entityId:
+        user.agencyId,
+
+      action:
+        "GOOGLE_CALENDAR_CONNECTED",
+
+      description:
+        `Google Calendar conectado${
+          email
+            ? `: ${email}`
+            : "."
+        }`,
+
+      authorName:
+        user.name ||
+        user.email ||
+        "Diretoria",
+    },
+  }).catch(
+    () =>
+      null
+  );
 
 
   const response =

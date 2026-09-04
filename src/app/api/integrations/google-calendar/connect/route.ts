@@ -12,7 +12,8 @@ import {
 } from "@/lib/auth";
 
 import {
-  getGoogleCalendarOAuthConfig,
+  getAgencyGoogleOAuthCredentials,
+  getGoogleCalendarSystemConfig,
   GOOGLE_CALENDAR_SCOPES,
 } from "@/lib/googleCalendar";
 
@@ -50,6 +51,7 @@ export async function GET(
       "DIRECTOR" ||
     !user.agencyId
   ) {
+
     return NextResponse.redirect(
       new URL(
         "/acesso-bloqueado",
@@ -59,15 +61,32 @@ export async function GET(
   }
 
 
-  const config =
-    getGoogleCalendarOAuthConfig();
+  const system =
+    getGoogleCalendarSystemConfig();
 
 
-  if (!config.ready) {
+  if (!system.ready) {
 
     return NextResponse.redirect(
       new URL(
-        "/configuracoes/integracoes?google=config",
+        "/configuracoes/integracoes?google=server-config",
+        request.url
+      )
+    );
+  }
+
+
+  const credentials =
+    await getAgencyGoogleOAuthCredentials(
+      user.agencyId
+    );
+
+
+  if (!credentials) {
+
+    return NextResponse.redirect(
+      new URL(
+        "/configuracoes/integracoes?google=credentials-required",
         request.url
       )
     );
@@ -94,7 +113,7 @@ export async function GET(
   googleUrl.search =
     new URLSearchParams({
       client_id:
-        config.clientId,
+        credentials.clientId,
 
       redirect_uri:
         redirectUri,

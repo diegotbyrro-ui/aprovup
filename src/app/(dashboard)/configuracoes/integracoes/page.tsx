@@ -3,7 +3,9 @@ import Link from "next/link";
 import {
   CalendarDays,
   CheckCircle2,
+  KeyRound,
   Link2,
+  LockKeyhole,
   ShieldCheck,
   Unplug,
 } from "lucide-react";
@@ -21,12 +23,17 @@ import {
 } from "@/lib/prisma";
 
 import {
-  getGoogleCalendarOAuthConfig,
+  getGoogleCalendarSystemConfig,
 } from "@/lib/googleCalendar";
 
 import {
   disconnectGoogleCalendarAction,
+  saveGoogleCalendarCredentialsAction,
 } from "./actions";
+
+
+const inputClass =
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50";
 
 
 export default async function IntegracoesPage({
@@ -46,6 +53,7 @@ export default async function IntegracoesPage({
     user.role !==
     "DIRECTOR"
   ) {
+
     redirect(
       "/acesso-bloqueado"
     );
@@ -58,8 +66,8 @@ export default async function IntegracoesPage({
       : {};
 
 
-  const config =
-    getGoogleCalendarOAuthConfig();
+  const system =
+    getGoogleCalendarSystemConfig();
 
 
   const connection =
@@ -69,6 +77,76 @@ export default async function IntegracoesPage({
           user.agencyId,
       },
     });
+
+
+  const credentialsConfigured =
+    Boolean(
+      connection?.googleClientId &&
+      connection?.encryptedClientSecret
+    );
+
+
+  const connected =
+    Boolean(
+      connection?.encryptedRefreshToken &&
+      connection?.connectedAt
+    );
+
+
+  const appOrigin =
+    String(
+      process.env.APP_ORIGIN ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://aprovup.com.br"
+    ).replace(
+      /\/$/,
+      ""
+    );
+
+
+  const redirectUri =
+    `${appOrigin}/api/integrations/google-calendar/callback`;
+
+
+  const successMessages:
+    Record<string, string> = {
+
+      "credentials-saved":
+        "Credenciais Google salvas. Agora conecte a conta Google Calendar da agência.",
+
+      connected:
+        "Google Calendar conectado com sucesso.",
+
+      disconnected:
+        "Conta Google Calendar desconectada.",
+    };
+
+
+  const errorMessages:
+    Record<string, string> = {
+
+      "server-config":
+        "A chave de criptografia do AprovUp ainda não foi configurada no servidor.",
+
+      "credentials-required":
+        "Informe o Client ID e o Client Secret da agência antes de conectar.",
+
+      state:
+        "A sessão de conexão com o Google expirou. Tente conectar novamente.",
+
+      token:
+        "O Google recusou a autenticação. Confira Client ID, Client Secret e Redirect URI.",
+
+      refresh:
+        "O Google não forneceu um token permanente. Tente conectar novamente.",
+    };
+
+
+  const googleStatus =
+    String(
+      params?.google ||
+      ""
+    );
 
 
   return (
@@ -86,29 +164,59 @@ export default async function IntegracoesPage({
         </h1>
 
         <p className="mt-2 text-sm text-slate-500">
-          Conecte os serviços utilizados pela sua agência.
+          Cada agência conecta suas próprias ferramentas e credenciais.
         </p>
 
       </section>
 
 
-      {params?.google ===
-      "connected" ? (
+      {successMessages[
+        googleStatus
+      ] ? (
 
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
-          Google Calendar conectado com sucesso.
+          {successMessages[
+            googleStatus
+          ]}
         </div>
 
       ) : null}
 
 
-      {params?.google &&
-      params.google !==
-        "connected" ? (
+      {errorMessages[
+        googleStatus
+      ] ? (
 
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
-          Não foi possível concluir a conexão com o Google Calendar.
+          {errorMessages[
+            googleStatus
+          ]}
         </div>
+
+      ) : null}
+
+
+      {!system.ready ? (
+
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+
+          <p className="font-bold text-amber-900">
+            Configuração técnica pendente
+          </p>
+
+          <p className="mt-2 text-sm leading-relaxed text-amber-800">
+            O administrador do AprovUp precisa configurar somente uma chave global na Hostinger:
+          </p>
+
+          <div className="mt-3 rounded-lg border border-amber-200 bg-white/70 px-3 py-2 font-mono text-xs font-bold text-amber-900">
+            APROVUP_INTEGRATION_ENCRYPTION_KEY
+          </div>
+
+          <p className="mt-2 text-xs text-amber-700">
+            Client ID e Client Secret não ficam mais na Hostinger. Cada agência cadastra os seus abaixo.
+          </p>
+
+        </section>
 
       ) : null}
 
@@ -122,9 +230,11 @@ export default async function IntegracoesPage({
             <div className="flex items-start gap-4">
 
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+
                 <CalendarDays
                   size={22}
                 />
+
               </div>
 
 
@@ -135,7 +245,7 @@ export default async function IntegracoesPage({
                 </h2>
 
                 <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">
-                  Conecte o calendário principal da agência para sincronizar gravações, reuniões e agendamentos do AprovUp.
+                  Use o projeto Google Cloud da própria agência para conectar o calendário ao AprovUp.
                 </p>
 
               </div>
@@ -143,7 +253,7 @@ export default async function IntegracoesPage({
             </div>
 
 
-            {connection ? (
+            {connected ? (
 
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
 
@@ -155,10 +265,16 @@ export default async function IntegracoesPage({
 
               </span>
 
+            ) : credentialsConfigured ? (
+
+              <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
+                Credenciais salvas
+              </span>
+
             ) : (
 
               <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-500">
-                Não conectado
+                Não configurado
               </span>
 
             )}
@@ -168,122 +284,270 @@ export default async function IntegracoesPage({
         </div>
 
 
-        <div className="p-6">
+        <div className="space-y-6 p-6">
 
-          {connection ? (
+          <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
 
-            <div className="space-y-5">
+            <div className="flex items-start gap-3">
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-blue-600 shadow-sm">
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                    Conta Google
-                  </p>
-
-                  <p className="mt-1 text-sm font-bold text-slate-800">
-                    {connection.googleAccountEmail ||
-                      "Conta conectada"}
-                  </p>
-
-                </div>
-
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                    Calendário
-                  </p>
-
-                  <p className="mt-1 text-sm font-bold text-slate-800">
-                    Calendário principal
-                  </p>
-
-                </div>
+                <KeyRound
+                  size={17}
+                />
 
               </div>
 
 
-              <div className="flex flex-wrap gap-3">
+              <div>
 
-                <Link
-                  href="/api/integrations/google-calendar/connect"
-                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-bold text-blue-700 hover:bg-blue-100"
-                >
-                  <Link2
-                    size={15}
-                  />
+                <p className="text-sm font-bold text-slate-900">
+                  1. Credenciais Google da agência
+                </p>
 
-                  Reconectar conta
-                </Link>
-
-
-                <form
-                  action={
-                    disconnectGoogleCalendarAction
-                  }
-                >
-
-                  <button
-                    type="submit"
-                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-red-600 hover:bg-red-50"
-                  >
-                    <Unplug
-                      size={15}
-                    />
-
-                    Desconectar
-                  </button>
-
-                </form>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  Crie um OAuth Client do tipo Aplicativo da Web no Google Cloud da agência e informe as credenciais abaixo.
+                </p>
 
               </div>
 
             </div>
 
-          ) : (
 
-            <div className="space-y-5">
+            <form
+              action={
+                saveGoogleCalendarCredentialsAction
+              }
+              className="mt-5 space-y-4"
+            >
 
-              {!config.ready ? (
+              <div>
 
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <label className="mb-1.5 block text-xs font-bold text-slate-600">
+                  OAuth Client ID
+                </label>
 
-                  <p className="font-bold text-amber-800">
-                    Integração ainda não configurada no servidor
+                <input
+                  name="googleClientId"
+                  required
+                  defaultValue={
+                    connection?.googleClientId ||
+                    ""
+                  }
+                  placeholder="000000000000-xxxxxxxx.apps.googleusercontent.com"
+                  className={inputClass}
+                  disabled={
+                    !system.ready
+                  }
+                />
+
+              </div>
+
+
+              <div>
+
+                <label className="mb-1.5 block text-xs font-bold text-slate-600">
+                  OAuth Client Secret
+                </label>
+
+                <input
+                  name="googleClientSecret"
+                  type="password"
+                  placeholder={
+                    connection?.encryptedClientSecret
+                      ? "••••••••••••••••  (deixe vazio para manter o atual)"
+                      : "GOCSPX-..."
+                  }
+                  className={inputClass}
+                  disabled={
+                    !system.ready
+                  }
+                />
+
+                {connection?.encryptedClientSecret ? (
+
+                  <p className="mt-1.5 text-xs text-slate-400">
+                    Já existe um Client Secret protegido. Deixe o campo vazio para manter o atual.
                   </p>
 
-                  <p className="mt-2 text-sm leading-relaxed text-amber-700">
-                    Configure as credenciais OAuth do AprovUp na Hostinger antes de conectar uma conta.
-                  </p>
+                ) : null}
 
-                  <div className="mt-3 space-y-1 font-mono text-xs text-amber-800">
-                    <div>GOOGLE_CALENDAR_CLIENT_ID</div>
-                    <div>GOOGLE_CALENDAR_CLIENT_SECRET</div>
-                    <div>APROVUP_INTEGRATION_ENCRYPTION_KEY</div>
+              </div>
+
+
+              <div>
+
+                <label className="mb-1.5 block text-xs font-bold text-slate-600">
+                  URI de redirecionamento
+                </label>
+
+                <div className="break-all rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-xs text-slate-600">
+                  {redirectUri}
+                </div>
+
+                <p className="mt-1.5 text-xs text-slate-400">
+                  Copie exatamente esta URL para “Authorized redirect URIs” no Google Cloud.
+                </p>
+
+              </div>
+
+
+              <button
+                type="submit"
+                disabled={
+                  !system.ready
+                }
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+
+                <LockKeyhole
+                  size={15}
+                />
+
+                {credentialsConfigured
+                  ? "Atualizar credenciais"
+                  : "Salvar credenciais"}
+
+              </button>
+
+            </form>
+
+          </section>
+
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5">
+
+            <div className="flex items-start gap-3">
+
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+
+                <CalendarDays
+                  size={17}
+                />
+
+              </div>
+
+
+              <div>
+
+                <p className="text-sm font-bold text-slate-900">
+                  2. Conectar conta Google Calendar
+                </p>
+
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  Depois de salvar as credenciais, autorize a conta Google que será utilizada pela agência.
+                </p>
+
+              </div>
+
+            </div>
+
+
+            {connected ? (
+
+              <div className="mt-5 space-y-4">
+
+                <div className="grid gap-3 sm:grid-cols-2">
+
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-600">
+                      Conta conectada
+                    </p>
+
+                    <p className="mt-1 text-sm font-bold text-emerald-900">
+                      {connection?.googleAccountEmail ||
+                        "Conta Google conectada"}
+                    </p>
+
+                  </div>
+
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      Calendário
+                    </p>
+
+                    <p className="mt-1 text-sm font-bold text-slate-800">
+                      Calendário principal
+                    </p>
+
                   </div>
 
                 </div>
 
-              ) : (
+
+                <div className="flex flex-wrap gap-3">
+
+                  <Link
+                    href="/api/integrations/google-calendar/connect"
+                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-bold text-blue-700 hover:bg-blue-100"
+                  >
+
+                    <Link2
+                      size={15}
+                    />
+
+                    Reconectar conta
+
+                  </Link>
+
+
+                  <form
+                    action={
+                      disconnectGoogleCalendarAction
+                    }
+                  >
+
+                    <button
+                      type="submit"
+                      className="inline-flex h-10 items-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-red-600 hover:bg-red-50"
+                    >
+
+                      <Unplug
+                        size={15}
+                      />
+
+                      Desconectar
+
+                    </button>
+
+                  </form>
+
+                </div>
+
+              </div>
+
+            ) : credentialsConfigured &&
+                system.ready ? (
+
+              <div className="mt-5">
 
                 <Link
                   href="/api/integrations/google-calendar/connect"
                   className="inline-flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white hover:bg-blue-700"
                 >
+
                   <CalendarDays
                     size={16}
                   />
 
                   Conectar Google Calendar
+
                 </Link>
 
-              )}
+              </div>
 
-            </div>
+            ) : (
 
-          )}
+              <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+                Salve primeiro o Client ID e o Client Secret da agência.
+              </div>
+
+            )}
+
+          </section>
 
         </div>
 
@@ -300,11 +564,11 @@ export default async function IntegracoesPage({
         <div>
 
           <p className="text-sm font-bold text-slate-800">
-            Conexão por agência
+            Credenciais isoladas por agência
           </p>
 
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            Cada agência possui sua própria autorização do Google Calendar. Uma agência não tem acesso ao calendário de outra.
+            Client Secret e autorização do Google são armazenados criptografados e vinculados ao agencyId. Nenhuma agência acessa as credenciais ou o calendário de outra.
           </p>
 
         </div>
