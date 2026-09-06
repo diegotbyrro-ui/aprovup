@@ -478,7 +478,7 @@ export default async function IntegracoesPage({
                 disabled={
                   !system.ready
                 }
-                className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-bold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <LockKeyhole size={15} />
 
