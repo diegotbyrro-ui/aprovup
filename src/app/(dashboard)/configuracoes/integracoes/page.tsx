@@ -26,6 +26,11 @@ import {
   getGoogleCalendarSystemConfig,
 } from "@/lib/googleCalendar";
 
+
+import {
+  IntegrationHealthPanel,
+} from "@/components/integrations/IntegrationHealthPanel";
+
 import {
   disconnectGoogleCalendarAction,
   saveGoogleCalendarCredentialsAction,
@@ -194,6 +199,13 @@ export default async function IntegracoesPage({
         </div>
 
       ) : null}
+
+
+      <IntegrationHealthPanel
+        agencyId={
+          user.agencyId
+        }
+      />
 
 
       {!system.ready ? (
