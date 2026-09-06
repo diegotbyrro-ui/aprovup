@@ -18,7 +18,8 @@ export type IntegrationHealthItem = {
   key:
     | "meta"
     | "google"
-    | "openai";
+    | "openai"
+    | "anthropic";
 
   name:
     string;
@@ -1112,6 +1113,327 @@ async function getOpenAiHealth(
 }
 
 
+async function getAnthropicHealth(
+  live:
+    boolean
+): Promise<
+  IntegrationHealthItem
+> {
+  const apiKey =
+    String(
+      process.env
+        .ANTHROPIC_API_KEY ||
+      ""
+    ).trim();
+
+  const model =
+    String(
+      process.env
+        .ANTHROPIC_MODEL ||
+      "claude-sonnet-4-6"
+    ).trim();
+
+  if (
+    !apiKey
+  ) {
+    return {
+      key:
+        "anthropic",
+
+      name:
+        "IA / Claude",
+
+      status:
+        "inactive",
+
+      summary:
+        "Claude ainda nao possui uma API Key configurada no AprovUp.",
+
+      details: [
+        {
+          label:
+            "Modelo configurado",
+
+          value:
+            model,
+        },
+
+        {
+          label:
+            "API Key",
+
+          value:
+            "Nao configurada",
+        },
+      ],
+
+      actionHref:
+        "https://platform.claude.com/docs/en/api/models",
+
+      actionLabel:
+        "Ver modelos do Claude",
+    };
+  }
+
+  if (
+    !live
+  ) {
+    return {
+      key:
+        "anthropic",
+
+      name:
+        "IA / Claude",
+
+      status:
+        "healthy",
+
+      summary:
+        "Chave da Anthropic configurada.",
+
+      details: [
+        {
+          label:
+            "Modelo configurado",
+
+          value:
+            model,
+        },
+
+        {
+          label:
+            "API Key",
+
+          value:
+            "Configurada",
+        },
+      ],
+
+      actionHref:
+        "https://platform.claude.com/docs/en/api/models",
+
+      actionLabel:
+        "Ver modelos do Claude",
+    };
+  }
+
+  const controller =
+    new AbortController();
+
+  const timeout =
+    setTimeout(
+      () =>
+        controller.abort(),
+      8000
+    );
+
+  try {
+    const response =
+      await fetch(
+        `https://api.anthropic.com/v1/models/${encodeURIComponent(
+          model
+        )}`,
+        {
+          method:
+            "GET",
+
+          cache:
+            "no-store",
+
+          signal:
+            controller.signal,
+
+          headers: {
+            "x-api-key":
+              apiKey,
+
+            "anthropic-version":
+              "2023-06-01",
+          },
+        }
+      );
+
+    const payload =
+      await response.json() as {
+        id?:
+          string;
+
+        display_name?:
+          string;
+
+        created_at?:
+          string;
+
+        type?:
+          string;
+
+        error?: {
+          type?:
+            string;
+
+          message?:
+            string;
+        };
+      };
+
+    if (
+      !response.ok
+    ) {
+      return {
+        key:
+          "anthropic",
+
+        name:
+          "IA / Claude",
+
+        status:
+          "error",
+
+        summary:
+          payload
+            .error
+            ?.message ||
+          "A Anthropic recusou o teste da integracao.",
+
+        details: [
+          {
+            label:
+              "Modelo configurado",
+
+            value:
+              model,
+          },
+
+          {
+            label:
+              "API Key",
+
+            value:
+              "Configurada, mas o teste falhou",
+          },
+
+          {
+            label:
+              "HTTP",
+
+            value:
+              String(
+                response.status
+              ),
+          },
+        ],
+
+        actionHref:
+          "https://status.anthropic.com/",
+
+        actionLabel:
+          "Ver status da Anthropic",
+      };
+    }
+
+    return {
+      key:
+        "anthropic",
+
+      name:
+        "IA / Claude",
+
+      status:
+        "healthy",
+
+      summary:
+        "Anthropic respondendo normalmente e o modelo configurado esta disponivel.",
+
+      details: [
+        {
+          label:
+            "Modelo",
+
+          value:
+            payload.id ||
+            model,
+        },
+
+        {
+          label:
+            "Nome",
+
+          value:
+            payload.display_name ||
+            "Claude",
+        },
+
+        {
+          label:
+            "API Key",
+
+          value:
+            "Valida",
+        },
+
+        {
+          label:
+            "API",
+
+          value:
+            "Anthropic v1",
+        },
+      ],
+
+      actionHref:
+        "https://docs.anthropic.com/en/docs/about-claude/model-deprecations",
+
+      actionLabel:
+        "Ver ciclo de vida dos modelos",
+    };
+  }
+  catch {
+    return {
+      key:
+        "anthropic",
+
+      name:
+        "IA / Claude",
+
+      status:
+        "error",
+
+      summary:
+        "Nao foi possivel validar a conexao com a Anthropic.",
+
+      details: [
+        {
+          label:
+            "Modelo configurado",
+
+          value:
+            model,
+        },
+
+        {
+          label:
+            "API Key",
+
+          value:
+            "Configurada",
+        },
+      ],
+
+      actionHref:
+        "https://status.anthropic.com/",
+
+      actionLabel:
+        "Ver status da Anthropic",
+    };
+  }
+  finally {
+    clearTimeout(
+      timeout
+    );
+  }
+}
+
+
 export async function getIntegrationHealthSummary(
   agencyId:
     string,
@@ -1133,6 +1455,10 @@ export async function getIntegrationHealthSummary(
       ),
 
       getOpenAiHealth(
+        live
+      ),
+
+      getAnthropicHealth(
         live
       ),
     ]);
@@ -1201,6 +1527,15 @@ export async function getDirectorIntegrationAlerts(
   ) {
     alerts.push(
       "IA Comercial sem chave da OpenAI"
+    );
+  }
+
+  if (
+    !process.env
+      .ANTHROPIC_API_KEY
+  ) {
+    alerts.push(
+      "Claude sem chave da Anthropic"
     );
   }
 

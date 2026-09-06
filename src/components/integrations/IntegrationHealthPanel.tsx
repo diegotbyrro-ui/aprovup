@@ -7,6 +7,7 @@ import {
   ExternalLink,
   Camera,
   MinusCircle,
+  Sparkles,
   XCircle,
 } from "lucide-react";
 
@@ -110,6 +111,17 @@ function IntegrationIcon({
     );
   }
 
+  if (
+    integration ===
+    "anthropic"
+  ) {
+    return (
+      <Sparkles
+        size={22}
+      />
+    );
+  }
+
   return (
     <Bot
       size={22}
@@ -184,7 +196,7 @@ export async function IntegrationHealthPanel({
               {
                 hasProblem
                   ? "Existe pelo menos uma integra\u00e7\u00e3o que precisa de aten\u00e7\u00e3o."
-                  : "Meta, Google e IA s\u00e3o monitorados para antecipar falhas."
+                  : "Meta, Google, OpenAI e Claude s\u00e3o monitorados para antecipar falhas."
               }
             </p>
           </div>
@@ -203,7 +215,7 @@ export async function IntegrationHealthPanel({
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
         {health.items.map(
           (
             item
