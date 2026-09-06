@@ -21,6 +21,7 @@ model Agency {
   designKanbanColumns      DesignKanbanColumn[]
   filmmakerKanbanColumns   FilmmakerKanbanColumn[]
   googleCalendarConnection GoogleCalendarConnection?
+  aiProviderConnection     AiProviderConnection?
   reportTemplates          ReportTemplate[]
 
   createdAt DateTime @default(now())
@@ -45,6 +46,22 @@ model GoogleCalendarConnection {
   connectedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model AiProviderConnection {
+  id String @id @default(cuid())
+
+  agencyId String @unique
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  encryptedOpenAiApiKey String?
+  openAiModel           String  @default("gpt-5.6-luna")
+
+  encryptedAnthropicApiKey String?
+  anthropicModel           String  @default("claude-sonnet-4-6")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ReportTemplate {

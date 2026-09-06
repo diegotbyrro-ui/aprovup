@@ -6,6 +6,11 @@ import {
   getGoogleCalendarAccessTokenForAgency,
 } from "@/lib/googleCalendar";
 
+import {
+  getAnthropicConfigForAgency,
+  getOpenAiConfigForAgency,
+} from "@/lib/aiProviderCredentials";
+
 
 export type IntegrationHealthStatus =
   | "healthy"
@@ -756,24 +761,24 @@ async function getGoogleHealth(
 
 
 async function getOpenAiHealth(
+  agencyId:
+    string,
   live:
     boolean
 ): Promise<
   IntegrationHealthItem
 > {
+  const config =
+    await getOpenAiConfigForAgency(
+      agencyId
+    );
+
   const apiKey =
-    String(
-      process.env
-        .OPENAI_API_KEY ||
-      ""
-    ).trim();
+    config.apiKey ||
+    "";
 
   const model =
-    String(
-      process.env
-        .OPENAI_MODEL ||
-      "gpt-5.6-luna"
-    ).trim();
+    config.model;
 
   if (
     !apiKey
@@ -1114,24 +1119,24 @@ async function getOpenAiHealth(
 
 
 async function getAnthropicHealth(
+  agencyId:
+    string,
   live:
     boolean
 ): Promise<
   IntegrationHealthItem
 > {
+  const config =
+    await getAnthropicConfigForAgency(
+      agencyId
+    );
+
   const apiKey =
-    String(
-      process.env
-        .ANTHROPIC_API_KEY ||
-      ""
-    ).trim();
+    config.apiKey ||
+    "";
 
   const model =
-    String(
-      process.env
-        .ANTHROPIC_MODEL ||
-      "claude-sonnet-4-6"
-    ).trim();
+    config.model;
 
   if (
     !apiKey
@@ -1455,10 +1460,12 @@ export async function getIntegrationHealthSummary(
       ),
 
       getOpenAiHealth(
+        agencyId,
         live
       ),
 
       getAnthropicHealth(
+        agencyId,
         live
       ),
     ]);
@@ -1521,9 +1528,22 @@ export async function getDirectorIntegrationAlerts(
     );
   }
 
+  const [
+    openAiConfig,
+    anthropicConfig,
+  ] =
+    await Promise.all([
+      getOpenAiConfigForAgency(
+        agencyId
+      ),
+
+      getAnthropicConfigForAgency(
+        agencyId
+      ),
+    ]);
+
   if (
-    !process.env
-      .OPENAI_API_KEY
+    !openAiConfig.apiKey
   ) {
     alerts.push(
       "IA Comercial sem chave da OpenAI"
@@ -1531,8 +1551,7 @@ export async function getDirectorIntegrationAlerts(
   }
 
   if (
-    !process.env
-      .ANTHROPIC_API_KEY
+    !anthropicConfig.apiKey
   ) {
     alerts.push(
       "Claude sem chave da Anthropic"

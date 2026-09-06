@@ -2,6 +2,10 @@
 
 import { requireCrmAiManageAccess } from "@/lib/crmAccess";
 
+import {
+  getOpenAiConfigForAgency,
+} from "@/lib/aiProviderCredentials";
+
 import { createClient } from "@/lib/crm-supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -220,7 +224,8 @@ export async function generateAiAnalysisAction(
   _previousState: AiAnalysisActionResult,
   formData: FormData
 ): Promise<AiAnalysisActionResult> {
-  await requireCrmAiManageAccess();
+  const accessUser =
+    await requireCrmAiManageAccess();
 
   try {
     const leadId = readText(
@@ -236,18 +241,32 @@ export async function generateAiAnalysisAction(
       };
     }
 
+    if (
+      !accessUser.agencyId
+    ) {
+      return {
+        success: false,
+        message:
+          "A agência do usuário não foi identificada.",
+      };
+    }
+
+    const openAiConfig =
+      await getOpenAiConfigForAgency(
+        accessUser.agencyId
+      );
+
     const apiKey =
-      process.env.OPENAI_API_KEY;
+      openAiConfig.apiKey;
 
     const model =
-      process.env.OPENAI_MODEL ??
-      "gpt-5.6-luna";
+      openAiConfig.model;
 
     if (!apiKey) {
       return {
         success: false,
         message:
-          "A chave OPENAI_API_KEY não foi configurada.",
+          "Configure a chave da OpenAI em Configurações > Integrações.",
       };
     }
 

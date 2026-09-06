@@ -1,12 +1,14 @@
 import Link from "next/link";
 
 import {
+  Bot,
   CalendarDays,
   CheckCircle2,
   KeyRound,
   Link2,
   LockKeyhole,
   ShieldCheck,
+  Sparkles,
   Unplug,
 } from "lucide-react";
 
@@ -33,7 +35,9 @@ import {
 
 import {
   disconnectGoogleCalendarAction,
+  saveAnthropicCredentialsAction,
   saveGoogleCalendarCredentialsAction,
+  saveOpenAiCredentialsAction,
 } from "./actions";
 
 
@@ -47,6 +51,7 @@ export default async function IntegracoesPage({
   searchParams?:
     Promise<{
       google?: string;
+      ai?: string;
     }>;
 }) {
 
@@ -82,6 +87,29 @@ export default async function IntegracoesPage({
           user.agencyId,
       },
     });
+
+
+  const aiConnection =
+    await prisma.aiProviderConnection.findUnique({
+      where: {
+        agencyId:
+          user.agencyId,
+      },
+    });
+
+
+  const openAiConfigured =
+    Boolean(
+      aiConnection
+        ?.encryptedOpenAiApiKey
+    );
+
+
+  const anthropicConfigured =
+    Boolean(
+      aiConnection
+        ?.encryptedAnthropicApiKey
+    );
 
 
   const credentialsConfigured =
@@ -124,6 +152,12 @@ export default async function IntegracoesPage({
 
       disconnected:
         "Conta Google Calendar desconectada.",
+
+      "openai-saved":
+        "Credenciais da OpenAI salvas com sucesso.",
+
+      "anthropic-saved":
+        "Credenciais do Claude salvas com sucesso.",
     };
 
 
@@ -144,11 +178,18 @@ export default async function IntegracoesPage({
 
       refresh:
         "O Google não forneceu um token permanente. Tente conectar novamente.",
+
+      "openai-key-required":
+        "Informe uma API Key da OpenAI.",
+
+      "anthropic-key-required":
+        "Informe uma API Key da Anthropic.",
     };
 
 
-  const googleStatus =
+  const integrationStatus =
     String(
+      params?.ai ||
       params?.google ||
       ""
     );
@@ -176,12 +217,12 @@ export default async function IntegracoesPage({
 
 
       {successMessages[
-        googleStatus
+        integrationStatus
       ] ? (
 
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
           {successMessages[
-            googleStatus
+            integrationStatus
           ]}
         </div>
 
@@ -189,12 +230,12 @@ export default async function IntegracoesPage({
 
 
       {errorMessages[
-        googleStatus
+        integrationStatus
       ] ? (
 
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
           {errorMessages[
-            googleStatus
+            integrationStatus
           ]}
         </div>
 
@@ -206,6 +247,253 @@ export default async function IntegracoesPage({
           user.agencyId
         }
       />
+
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+        <div className="border-b border-slate-100 p-6">
+
+          <div>
+
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-violet-600">
+              Inteligência artificial
+            </p>
+
+            <h2 className="mt-1 text-lg font-bold text-slate-900">
+              Credenciais de IA da agência
+            </h2>
+
+            <p className="mt-1 text-sm leading-relaxed text-slate-500">
+              Cadastre as chaves da própria agência. Elas são criptografadas e nunca são exibidas novamente.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div className="grid gap-6 p-6 lg:grid-cols-2">
+
+          <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+
+            <div className="flex items-start justify-between gap-3">
+
+              <div className="flex items-start gap-3">
+
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-700 shadow-sm">
+                  <Bot size={19} />
+                </div>
+
+                <div>
+
+                  <p className="text-sm font-bold text-slate-900">
+                    OpenAI
+                  </p>
+
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    Utilizada atualmente pela IA Comercial do CRM.
+                  </p>
+
+                </div>
+
+              </div>
+
+              <span className={
+                openAiConfigured
+                  ? "rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700"
+                  : "rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-500"
+              }>
+                {openAiConfigured
+                  ? "Configurada"
+                  : "Não configurada"}
+              </span>
+
+            </div>
+
+
+            <form
+              action={
+                saveOpenAiCredentialsAction
+              }
+              className="mt-5 space-y-4"
+            >
+
+              <div>
+
+                <label className="mb-1.5 block text-xs font-bold text-slate-600">
+                  OpenAI API Key
+                </label>
+
+                <input
+                  name="openAiApiKey"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder={
+                    openAiConfigured
+                      ? "••••••••••••••••  (deixe vazio para manter)"
+                      : "sk-..."
+                  }
+                  className={inputClass}
+                  disabled={
+                    !system.ready
+                  }
+                />
+
+              </div>
+
+
+              <div>
+
+                <label className="mb-1.5 block text-xs font-bold text-slate-600">
+                  Modelo
+                </label>
+
+                <input
+                  name="openAiModel"
+                  defaultValue={
+                    aiConnection?.openAiModel ||
+                    process.env.OPENAI_MODEL ||
+                    "gpt-5.6-luna"
+                  }
+                  className={inputClass}
+                  disabled={
+                    !system.ready
+                  }
+                />
+
+              </div>
+
+
+              <button
+                type="submit"
+                disabled={
+                  !system.ready
+                }
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <LockKeyhole size={15} />
+
+                {openAiConfigured
+                  ? "Atualizar OpenAI"
+                  : "Salvar OpenAI"}
+              </button>
+
+            </form>
+
+          </section>
+
+
+          <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+
+            <div className="flex items-start justify-between gap-3">
+
+              <div className="flex items-start gap-3">
+
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm">
+                  <Sparkles size={19} />
+                </div>
+
+                <div>
+
+                  <p className="text-sm font-bold text-slate-900">
+                    Claude / Anthropic
+                  </p>
+
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    Deixa o Claude pronto para recursos e automações do AprovUp.
+                  </p>
+
+                </div>
+
+              </div>
+
+              <span className={
+                anthropicConfigured
+                  ? "rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700"
+                  : "rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-500"
+              }>
+                {anthropicConfigured
+                  ? "Configurada"
+                  : "Não configurada"}
+              </span>
+
+            </div>
+
+
+            <form
+              action={
+                saveAnthropicCredentialsAction
+              }
+              className="mt-5 space-y-4"
+            >
+
+              <div>
+
+                <label className="mb-1.5 block text-xs font-bold text-slate-600">
+                  Anthropic API Key
+                </label>
+
+                <input
+                  name="anthropicApiKey"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder={
+                    anthropicConfigured
+                      ? "••••••••••••••••  (deixe vazio para manter)"
+                      : "sk-ant-..."
+                  }
+                  className={inputClass}
+                  disabled={
+                    !system.ready
+                  }
+                />
+
+              </div>
+
+
+              <div>
+
+                <label className="mb-1.5 block text-xs font-bold text-slate-600">
+                  Modelo
+                </label>
+
+                <input
+                  name="anthropicModel"
+                  defaultValue={
+                    aiConnection?.anthropicModel ||
+                    process.env.ANTHROPIC_MODEL ||
+                    "claude-sonnet-4-6"
+                  }
+                  className={inputClass}
+                  disabled={
+                    !system.ready
+                  }
+                />
+
+              </div>
+
+
+              <button
+                type="submit"
+                disabled={
+                  !system.ready
+                }
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-bold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <LockKeyhole size={15} />
+
+                {anthropicConfigured
+                  ? "Atualizar Claude"
+                  : "Salvar Claude"}
+              </button>
+
+            </form>
+
+          </section>
+
+        </div>
+
+      </section>
 
 
       {!system.ready ? (

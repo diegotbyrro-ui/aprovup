@@ -22,6 +22,11 @@ import {
   getGoogleCalendarSystemConfig,
 } from "@/lib/googleCalendar";
 
+import {
+  encryptAiSecret,
+  getAiProviderSystemConfig,
+} from "@/lib/aiProviderCredentials";
+
 
 async function requireDirector() {
 
@@ -319,5 +324,269 @@ export async function disconnectGoogleCalendarAction() {
 
   redirect(
     "/configuracoes/integracoes?google=disconnected"
+  );
+}
+
+
+export async function saveOpenAiCredentialsAction(
+  formData:
+    FormData
+) {
+  const user =
+    await requireDirector();
+
+  const system =
+    getAiProviderSystemConfig();
+
+  if (
+    !system.ready
+  ) {
+    redirect(
+      "/configuracoes/integracoes?ai=server-config"
+    );
+  }
+
+  const apiKey =
+    String(
+      formData.get(
+        "openAiApiKey"
+      ) ||
+      ""
+    ).trim();
+
+  const model =
+    String(
+      formData.get(
+        "openAiModel"
+      ) ||
+      "gpt-5.6-luna"
+    ).trim();
+
+  const existing =
+    await prisma
+      .aiProviderConnection
+      .findUnique({
+        where: {
+          agencyId:
+            user.agencyId,
+        },
+      });
+
+  let encryptedApiKey =
+    existing
+      ?.encryptedOpenAiApiKey ||
+    null;
+
+  if (
+    apiKey
+  ) {
+    encryptedApiKey =
+      encryptAiSecret(
+        apiKey
+      );
+  }
+
+  if (
+    !encryptedApiKey
+  ) {
+    redirect(
+      "/configuracoes/integracoes?ai=openai-key-required"
+    );
+  }
+
+  await prisma
+    .aiProviderConnection
+    .upsert({
+      where: {
+        agencyId:
+          user.agencyId,
+      },
+
+      update: {
+        encryptedOpenAiApiKey:
+          encryptedApiKey,
+
+        openAiModel:
+          model ||
+          "gpt-5.6-luna",
+      },
+
+      create: {
+        agencyId:
+          user.agencyId,
+
+        encryptedOpenAiApiKey:
+          encryptedApiKey,
+
+        openAiModel:
+          model ||
+          "gpt-5.6-luna",
+      },
+    });
+
+  await prisma.historyLog
+    .create({
+      data: {
+        entityType:
+          "AGENCY",
+
+        entityId:
+          user.agencyId,
+
+        action:
+          "OPENAI_CREDENTIALS_SAVED",
+
+        description:
+          "Credenciais OpenAI configuradas para a agencia.",
+
+        authorName:
+          user.name ||
+          user.email ||
+          "Diretoria",
+      },
+    })
+    .catch(
+      () =>
+        null
+    );
+
+  revalidatePath(
+    "/configuracoes/integracoes"
+  );
+
+  redirect(
+    "/configuracoes/integracoes?ai=openai-saved"
+  );
+}
+
+
+export async function saveAnthropicCredentialsAction(
+  formData:
+    FormData
+) {
+  const user =
+    await requireDirector();
+
+  const system =
+    getAiProviderSystemConfig();
+
+  if (
+    !system.ready
+  ) {
+    redirect(
+      "/configuracoes/integracoes?ai=server-config"
+    );
+  }
+
+  const apiKey =
+    String(
+      formData.get(
+        "anthropicApiKey"
+      ) ||
+      ""
+    ).trim();
+
+  const model =
+    String(
+      formData.get(
+        "anthropicModel"
+      ) ||
+      "claude-sonnet-4-6"
+    ).trim();
+
+  const existing =
+    await prisma
+      .aiProviderConnection
+      .findUnique({
+        where: {
+          agencyId:
+            user.agencyId,
+        },
+      });
+
+  let encryptedApiKey =
+    existing
+      ?.encryptedAnthropicApiKey ||
+    null;
+
+  if (
+    apiKey
+  ) {
+    encryptedApiKey =
+      encryptAiSecret(
+        apiKey
+      );
+  }
+
+  if (
+    !encryptedApiKey
+  ) {
+    redirect(
+      "/configuracoes/integracoes?ai=anthropic-key-required"
+    );
+  }
+
+  await prisma
+    .aiProviderConnection
+    .upsert({
+      where: {
+        agencyId:
+          user.agencyId,
+      },
+
+      update: {
+        encryptedAnthropicApiKey:
+          encryptedApiKey,
+
+        anthropicModel:
+          model ||
+          "claude-sonnet-4-6",
+      },
+
+      create: {
+        agencyId:
+          user.agencyId,
+
+        encryptedAnthropicApiKey:
+          encryptedApiKey,
+
+        anthropicModel:
+          model ||
+          "claude-sonnet-4-6",
+      },
+    });
+
+  await prisma.historyLog
+    .create({
+      data: {
+        entityType:
+          "AGENCY",
+
+        entityId:
+          user.agencyId,
+
+        action:
+          "ANTHROPIC_CREDENTIALS_SAVED",
+
+        description:
+          "Credenciais Claude Anthropic configuradas para a agencia.",
+
+        authorName:
+          user.name ||
+          user.email ||
+          "Diretoria",
+      },
+    })
+    .catch(
+      () =>
+        null
+    );
+
+  revalidatePath(
+    "/configuracoes/integracoes"
+  );
+
+  redirect(
+    "/configuracoes/integracoes?ai=anthropic-saved"
   );
 }
