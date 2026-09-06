@@ -326,7 +326,7 @@ export async function AppSidebar() {
             />
 
             <span>
-              Central de ajuda
+              Central administrativa
             </span>
           </Link>
 
