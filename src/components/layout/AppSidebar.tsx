@@ -2,10 +2,11 @@ import Link from "next/link";
 
 import {
   CalendarDays,
-  CircleHelp,
   CreditCard,
   FileText,
+  Headphones,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 
 import {
@@ -315,13 +316,27 @@ export async function AppSidebar() {
         </Link>
 
 
+        <Link
+          href="/ajuda"
+          className="ap-sidebar-footer-link"
+        >
+          <Headphones
+            size={16}
+          />
+
+          <span>
+            Central de ajuda
+          </span>
+        </Link>
+
+
         {isSaasAdmin ? (
 
           <Link
             href="/central"
             className="ap-sidebar-footer-link"
           >
-            <CircleHelp
+            <ShieldCheck
               size={16}
             />
 
