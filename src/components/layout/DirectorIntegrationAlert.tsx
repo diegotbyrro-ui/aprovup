@@ -10,6 +10,10 @@ import {
 } from "@/lib/auth";
 
 import {
+  isCommanderUser,
+} from "@/lib/commanderAccess";
+
+import {
   getDirectorIntegrationAlerts,
 } from "@/lib/integrationHealth";
 
@@ -34,7 +38,10 @@ export async function DirectorIntegrationAlert() {
   try {
     alerts =
       await getDirectorIntegrationAlerts(
-        user.agencyId
+        user.agencyId,
+        isCommanderUser(
+          user
+        )
       );
   }
   catch {

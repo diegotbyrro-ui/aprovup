@@ -21,6 +21,10 @@ import {
 } from "@/lib/auth";
 
 import {
+  isCommanderUser,
+} from "@/lib/commanderAccess";
+
+import {
   prisma,
 } from "@/lib/prisma";
 
@@ -68,6 +72,12 @@ export default async function IntegracoesPage({
       "/acesso-bloqueado"
     );
   }
+
+
+  const isSaasAdmin =
+    isCommanderUser(
+      user
+    );
 
 
   const params =
@@ -245,6 +255,9 @@ export default async function IntegracoesPage({
       <IntegrationHealthPanel
         agencyId={
           user.agencyId
+        }
+        showMetaStatus={
+          isSaasAdmin
         }
       />
 

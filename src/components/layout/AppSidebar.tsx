@@ -22,6 +22,10 @@ import {
 } from "@/lib/auth";
 
 import {
+  isCommanderUser,
+} from "@/lib/commanderAccess";
+
+import {
   hasPermission,
   type PermissionKey,
 } from "@/lib/userAccess";
@@ -56,6 +60,12 @@ export async function AppSidebar() {
 
   const access =
     await getCurrentUserSaasAccess();
+
+
+  const isSaasAdmin =
+    isCommanderUser(
+      user
+    );
 
 
   const definitions: MenuDefinition[] = [
@@ -305,18 +315,22 @@ export async function AppSidebar() {
         </Link>
 
 
-        <Link
-          href="/central"
-          className="ap-sidebar-footer-link"
-        >
-          <CircleHelp
-            size={16}
-          />
+        {isSaasAdmin ? (
 
-          <span>
-            Central de ajuda
-          </span>
-        </Link>
+          <Link
+            href="/central"
+            className="ap-sidebar-footer-link"
+          >
+            <CircleHelp
+              size={16}
+            />
+
+            <span>
+              Central de ajuda
+            </span>
+          </Link>
+
+        ) : null}
 
 
         <div className="ap-sidebar-product">

@@ -154,14 +154,18 @@ function formatCheckedAt(
 
 export async function IntegrationHealthPanel({
   agencyId,
+  showMetaStatus = false,
 }: {
   agencyId:
     string;
+  showMetaStatus?:
+    boolean;
 }) {
   const health =
     await getIntegrationHealthSummary(
       agencyId,
-      true
+      true,
+      showMetaStatus
     );
 
   const hasProblem =
@@ -196,7 +200,9 @@ export async function IntegrationHealthPanel({
               {
                 hasProblem
                   ? "Existe pelo menos uma integra\u00e7\u00e3o que precisa de aten\u00e7\u00e3o."
-                  : "Meta, Google, OpenAI e Claude s\u00e3o monitorados para antecipar falhas."
+                  : showMetaStatus
+                  ? "Meta, Google, OpenAI e Claude s\u00e3o monitorados para antecipar falhas."
+                  : "Google, OpenAI e Claude s\u00e3o monitorados para antecipar falhas."
               }
             </p>
           </div>

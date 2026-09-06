@@ -1443,32 +1443,55 @@ export async function getIntegrationHealthSummary(
   agencyId:
     string,
   live =
+    true,
+  includeMeta =
     true
 ): Promise<
   IntegrationHealthSummary
 > {
-  const items =
-    await Promise.all([
+  const checks:
+    Array<
+      Promise<
+        IntegrationHealthItem
+      >
+    > =
+      [];
+
+
+  if (
+    includeMeta
+  ) {
+    checks.push(
       getMetaHealth(
         agencyId,
         live
-      ),
+      )
+    );
+  }
 
-      getGoogleHealth(
-        agencyId,
-        live
-      ),
 
-      getOpenAiHealth(
-        agencyId,
-        live
-      ),
+  checks.push(
+    getGoogleHealth(
+      agencyId,
+      live
+    ),
 
-      getAnthropicHealth(
-        agencyId,
-        live
-      ),
-    ]);
+    getOpenAiHealth(
+      agencyId,
+      live
+    ),
+
+    getAnthropicHealth(
+      agencyId,
+      live
+    )
+  );
+
+
+  const items =
+    await Promise.all(
+      checks
+    );
 
   const hasError =
     items.some(
@@ -1502,30 +1525,36 @@ export async function getIntegrationHealthSummary(
 
 export async function getDirectorIntegrationAlerts(
   agencyId:
-    string
+    string,
+  includeGlobalMetaStatus =
+    false
 ) {
   const alerts:
     string[] =
       [];
 
-  const metaReady =
-    Boolean(
-      process.env
-        .META_APP_ID &&
-      process.env
-        .META_APP_SECRET &&
-      process.env
-        .META_TOKEN_ENCRYPTION_KEY &&
-      process.env
-        .META_FACEBOOK_LOGIN_CONFIG_ID
-    );
-
   if (
-    !metaReady
+    includeGlobalMetaStatus
   ) {
-    alerts.push(
-      "Configuracao da Meta incompleta"
-    );
+    const metaReady =
+      Boolean(
+        process.env
+          .META_APP_ID &&
+        process.env
+          .META_APP_SECRET &&
+        process.env
+          .META_TOKEN_ENCRYPTION_KEY &&
+        process.env
+          .META_FACEBOOK_LOGIN_CONFIG_ID
+      );
+
+    if (
+      !metaReady
+    ) {
+      alerts.push(
+        "Configuracao da Meta incompleta"
+      );
+    }
   }
 
   const [
