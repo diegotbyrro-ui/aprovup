@@ -20,6 +20,10 @@ import {
 } from '@/lib/metaAccess';
 
 import {
+  isCommanderUser,
+} from '@/lib/commanderAccess';
+
+import {
   requirePermission,
 } from '@/lib/userAccess';
 
@@ -29,6 +33,7 @@ import {
 
 import type {
   ManagedInstagramAccount,
+  MetaInstagramDiscoveryDiagnostics,
 } from '@/lib/metaInstagram';
 
 import {
@@ -60,6 +65,12 @@ export default async function SelectInstagramAccountPage({
   const {
     id,
   } = await params;
+
+
+  const isSaasAdmin =
+    isCommanderUser(
+      user
+    );
 
   if (
     !canUseMetaIntegration(
@@ -141,6 +152,9 @@ export default async function SelectInstagramAccountPage({
     ) as {
       accounts:
         ManagedInstagramAccount[];
+
+      diagnostics?:
+        MetaInstagramDiscoveryDiagnostics;
     };
 
   return (
@@ -162,6 +176,299 @@ export default async function SelectInstagramAccountPage({
         </p>
 
       </section>
+
+
+      {
+        isSaasAdmin &&
+        payload.diagnostics
+          ? (
+
+            <section className="rounded-3xl border border-blue-200 bg-blue-50 p-6">
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+
+                <div>
+
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-600">
+                    Commander
+                  </p>
+
+                  <h2 className="mt-1 text-lg font-black text-slate-900">
+                    Diagnóstico de descoberta Meta
+                  </h2>
+
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    Esta área é visível somente para o administrador do AprovUp.
+                  </p>
+
+                </div>
+
+
+                <span className="w-fit rounded-full bg-white px-3 py-1.5 text-xs font-bold text-blue-700 shadow-sm">
+                  {
+                    payload
+                      .diagnostics
+                      .profilesLoaded
+                  } Instagram(s) elegível(is)
+                </span>
+
+              </div>
+
+
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+
+                  <p className="text-2xl font-black text-slate-900">
+                    {
+                      payload
+                        .diagnostics
+                        .directPages
+                    }
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Páginas diretas
+                  </p>
+
+                </div>
+
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+
+                  <p className="text-2xl font-black text-slate-900">
+                    {
+                      payload
+                        .diagnostics
+                        .businesses
+                    }
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Portfólios
+                  </p>
+
+                </div>
+
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+
+                  <p className="text-2xl font-black text-slate-900">
+                    {
+                      payload
+                        .diagnostics
+                        .ownedPages +
+                      payload
+                        .diagnostics
+                        .clientPages
+                    }
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Páginas dos portfólios
+                  </p>
+
+                </div>
+
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+
+                  <p className="text-2xl font-black text-slate-900">
+                    {
+                      payload
+                        .diagnostics
+                        .uniquePages
+                    }
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Páginas únicas
+                  </p>
+
+                </div>
+
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+
+                  <p className="text-2xl font-black text-emerald-700">
+                    {
+                      payload
+                        .diagnostics
+                        .eligiblePages
+                    }
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Aptas para Instagram
+                  </p>
+
+                </div>
+
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+
+                  <p className="text-2xl font-black text-slate-900">
+                    {
+                      payload
+                        .diagnostics
+                        .hydratedPages
+                    }
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Consultadas por ID
+                  </p>
+
+                </div>
+
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+
+                  <p className="text-2xl font-black text-amber-700">
+                    {
+                      payload
+                        .diagnostics
+                        .pagesWithoutInstagram
+                    }
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Sem Instagram vinculado
+                  </p>
+
+                </div>
+
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+
+                  <p className="text-2xl font-black text-amber-700">
+                    {
+                      payload
+                        .diagnostics
+                        .pagesWithoutAccessToken
+                    }
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Sem Page Token
+                  </p>
+
+                </div>
+
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+
+                  <p className="text-2xl font-black text-slate-900">
+                    {
+                      payload
+                        .diagnostics
+                        .profilesLoaded
+                    }
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Perfis carregados
+                  </p>
+
+                </div>
+
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm">
+
+                  <p className="text-2xl font-black text-red-600">
+                    {
+                      payload
+                        .diagnostics
+                        .profileErrors
+                    }
+                  </p>
+
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Falhas de perfil
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              {
+                payload
+                  .diagnostics
+                  .graphErrors
+                  .length >
+                  0
+                    ? (
+
+                      <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+
+                        <p className="text-xs font-black text-amber-900">
+                          A Meta recusou algumas consultas
+                        </p>
+
+                        <div className="mt-2 space-y-1">
+
+                          {
+                            payload
+                              .diagnostics
+                              .graphErrors
+                              .slice(
+                                0,
+                                6
+                              )
+                              .map(
+                                (
+                                  error,
+                                  index
+                                ) => (
+
+                                  <p
+                                    key={`${index}-${error}`}
+                                    className="break-words text-[11px] leading-relaxed text-amber-800"
+                                  >
+                                    {error}
+                                  </p>
+
+                                )
+                              )
+                          }
+
+                        </div>
+
+                      </div>
+
+                    )
+                    : null
+              }
+
+            </section>
+
+          )
+          : null
+      }
+
+
+      {
+        payload.accounts.length ===
+          0
+            ? (
+
+              <section className="rounded-3xl border border-amber-200 bg-amber-50 p-8 text-center">
+
+                <p className="text-lg font-black text-amber-900">
+                  Nenhuma conta profissional elegível foi encontrada
+                </p>
+
+                <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-amber-700">
+                  A Meta autenticou a conta, mas nenhuma combinação de Página com Page Token e Instagram profissional vinculado pôde ser carregada.
+                  Consulte o diagnóstico acima para identificar o motivo.
+                </p>
+
+              </section>
+
+            )
+            : null
+      }
 
 
       <section className="space-y-4">
@@ -294,6 +601,33 @@ export default async function SelectInstagramAccountPage({
                         account.facebookPageName
                       }
                     </p>
+
+
+                    {
+                      isSaasAdmin
+                        ? (
+
+                          <p className="mt-1 text-[10px] font-semibold text-blue-500">
+                            Origem Meta: {
+                              account.discoverySource ===
+                                'BUSINESS_OWNED'
+                                  ? 'Portfólio próprio'
+                                  : account.discoverySource ===
+                                      'BUSINESS_CLIENT'
+                                    ? 'Portfólio de cliente'
+                                    : 'Acesso direto'
+                            }
+
+                            {
+                              account.businessName
+                                ? ` • ${account.businessName}`
+                                : ''
+                            }
+                          </p>
+
+                        )
+                        : null
+                    }
 
                   </div>
 

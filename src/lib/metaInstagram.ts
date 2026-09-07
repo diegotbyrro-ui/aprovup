@@ -35,6 +35,16 @@ export type ManagedInstagramAccount = {
 
   mediaCount:
     number | null;
+  discoverySource?:
+    | 'DIRECT'
+    | 'BUSINESS_OWNED'
+    | 'BUSINESS_CLIENT';
+
+  businessId?:
+    string | null;
+
+  businessName?:
+    string | null;
 };
 
 
@@ -316,70 +326,917 @@ export async function exchangeMetaCode({
 }
 
 
-export async function getManagedInstagramAccounts(
-  userAccessToken: string
+export type MetaInstagramDiscoveryDiagnostics = {
+  directPages:
+    number;
+
+  businesses:
+    number;
+
+  ownedPages:
+    number;
+
+  clientPages:
+    number;
+
+  uniquePages:
+    number;
+
+  hydratedPages:
+    number;
+
+  pagesWithoutAccessToken:
+    number;
+
+  pagesWithoutInstagram:
+    number;
+
+  eligiblePages:
+    number;
+
+  profilesLoaded:
+    number;
+
+  profileErrors:
+    number;
+
+  graphErrors:
+    string[];
+};
+
+
+export type MetaInstagramDiscoveryResult = {
+  accounts:
+    ManagedInstagramAccount[];
+
+  diagnostics:
+    MetaInstagramDiscoveryDiagnostics;
+};
+
+
+type MetaPageCandidate = {
+  id:
+    string;
+
+  name:
+    string;
+
+  access_token?:
+    string;
+
+  tasks?:
+    string[];
+
+  instagram_business_account?: {
+    id:
+      string;
+  };
+
+  discoverySource:
+    | 'DIRECT'
+    | 'BUSINESS_OWNED'
+    | 'BUSINESS_CLIENT';
+
+  businessId?:
+    string | null;
+
+  businessName?:
+    string | null;
+};
+
+
+type MetaPageApiItem = {
+  id:
+    string;
+
+  name:
+    string;
+
+  access_token?:
+    string;
+
+  tasks?:
+    string[];
+
+  instagram_business_account?: {
+    id:
+      string;
+  };
+};
+
+
+type MetaBusinessApiItem = {
+  id:
+    string;
+
+  name:
+    string;
+};
+
+
+function safeMetaDiscoveryError(
+  error:
+    unknown
 ) {
-  const pagesUrl =
-    new URL(
-      `https://graph.facebook.com/${graphVersion()}/me/accounts`
+
+  const raw =
+    error instanceof Error
+      ? error.message
+      : String(
+          error ||
+          'Erro desconhecido'
+        );
+
+
+  return raw
+    .replace(
+      /access_token=[^&\s]+/gi,
+      'access_token=[protegido]'
+    )
+    .slice(
+      0,
+      220
+    );
+}
+
+
+function metaCollectionUrl({
+  path,
+  accessToken,
+  fields,
+}: {
+  path:
+    string;
+
+  accessToken:
+    string;
+
+  fields:
+    string[];
+}) {
+
+  const cleanPath =
+    path.replace(
+      /^\/+/,
+      ''
     );
 
-  pagesUrl.searchParams.set(
+
+  const url =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${cleanPath}`
+    );
+
+
+  url.searchParams.set(
     'fields',
-    [
-      'id',
-      'name',
-      'access_token',
-      'tasks',
-      'instagram_business_account',
-    ].join(',')
+    fields.join(
+      ','
+    )
   );
 
-  pagesUrl.searchParams.set(
+
+  url.searchParams.set(
     'limit',
     '100'
   );
 
-  pagesUrl.searchParams.set(
+
+  url.searchParams.set(
     'access_token',
-    userAccessToken
+    accessToken
   );
 
-  const pagesResponse =
+
+  return url;
+}
+
+
+function metaObjectUrl({
+  id,
+  accessToken,
+  fields,
+}: {
+  id:
+    string;
+
+  accessToken:
+    string;
+
+  fields:
+    string[];
+}) {
+
+  const url =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${id}`
+    );
+
+
+  url.searchParams.set(
+    'fields',
+    fields.join(
+      ','
+    )
+  );
+
+
+  url.searchParams.set(
+    'access_token',
+    accessToken
+  );
+
+
+  return url;
+}
+
+
+async function fetchMetaCollection<T>(
+  initialUrl:
+    URL
+) {
+
+  const items:
+    T[] =
+    [];
+
+
+  let nextUrl:
+    string | null =
+    initialUrl.toString();
+
+
+  let pageCount =
+    0;
+
+
+  while (
+    nextUrl &&
+    pageCount <
+      20
+  ) {
+
+    const response:
+      Response =
+      await fetch(
+        nextUrl,
+        {
+          cache:
+            'no-store',
+        }
+      );
+
+
+    const payload: {
+      data?:
+        T[];
+
+      paging?: {
+        next?:
+          string;
+      };
+    } =
+      await parseMeta<{
+        data?:
+          T[];
+
+        paging?: {
+          next?:
+            string;
+        };
+      }>(
+        response
+      );
+
+
+    if (
+      Array.isArray(
+        payload.data
+      )
+    ) {
+      items.push(
+        ...payload.data
+      );
+    }
+
+
+    nextUrl =
+      payload
+        .paging
+        ?.next ||
+      null;
+
+
+    pageCount +=
+      1;
+  }
+
+
+  return items;
+}
+
+
+async function fetchMetaObject<T>(
+  url:
+    URL
+) {
+
+  const response =
     await fetch(
-      pagesUrl,
+      url,
       {
         cache:
           'no-store',
       }
     );
 
-  const pages =
-    await parseMeta<{
-      data: Array<{
-        id:
-          string;
 
-        name:
-          string;
+  return parseMeta<T>(
+    response
+  );
+}
 
-        access_token?:
-          string;
 
-        tasks?:
-          string[];
+function mergePageCandidate(
+  map:
+    Map<
+      string,
+      MetaPageCandidate
+    >,
+  incoming:
+    MetaPageCandidate
+) {
 
-        instagram_business_account?: {
-          id:
-            string;
-        };
-      }>;
-    }>(
-      pagesResponse
+  const existing =
+    map.get(
+      incoming.id
     );
 
+
+  if (
+    !existing
+  ) {
+
+    map.set(
+      incoming.id,
+      incoming
+    );
+
+    return;
+  }
+
+
+  const incomingBusinessSource =
+    incoming.discoverySource !==
+      'DIRECT';
+
+
+  const existingBusinessSource =
+    existing.discoverySource !==
+      'DIRECT';
+
+
+  map.set(
+    incoming.id,
+    {
+      ...existing,
+
+      name:
+        incoming.name ||
+        existing.name,
+
+      access_token:
+        incoming.access_token ||
+        existing.access_token,
+
+      tasks:
+        (
+          incoming.tasks &&
+          incoming.tasks.length >
+            0
+        )
+          ? incoming.tasks
+          : existing.tasks,
+
+      instagram_business_account:
+        incoming
+          .instagram_business_account ||
+        existing
+          .instagram_business_account,
+
+      discoverySource:
+        (
+          incomingBusinessSource ||
+          !existingBusinessSource
+        )
+          ? incoming.discoverySource
+          : existing.discoverySource,
+
+      businessId:
+        incoming.businessId ||
+        existing.businessId ||
+        null,
+
+      businessName:
+        incoming.businessName ||
+        existing.businessName ||
+        null,
+    }
+  );
+}
+
+
+export async function discoverManagedInstagramAccounts(
+  userAccessToken:
+    string
+): Promise<
+  MetaInstagramDiscoveryResult
+> {
+
+  const diagnostics:
+    MetaInstagramDiscoveryDiagnostics = {
+
+    directPages:
+      0,
+
+    businesses:
+      0,
+
+    ownedPages:
+      0,
+
+    clientPages:
+      0,
+
+    uniquePages:
+      0,
+
+    hydratedPages:
+      0,
+
+    pagesWithoutAccessToken:
+      0,
+
+    pagesWithoutInstagram:
+      0,
+
+    eligiblePages:
+      0,
+
+    profilesLoaded:
+      0,
+
+    profileErrors:
+      0,
+
+    graphErrors:
+      [],
+  };
+
+
+  const pageFields = [
+    'id',
+    'name',
+    'access_token',
+    'tasks',
+    'instagram_business_account',
+  ];
+
+
+  const pageMap =
+    new Map<
+      string,
+      MetaPageCandidate
+    >();
+
+
+  /*
+   * 1. Fluxo tradicional da Meta.
+   *
+   * Mantemos /me/accounts porque ele continua
+   * sendo o caminho oficial para paginas
+   * diretamente administradas pelo usuario.
+   */
+  try {
+
+    const directPages =
+      await fetchMetaCollection<
+        MetaPageApiItem
+      >(
+        metaCollectionUrl({
+          path:
+            'me/accounts',
+
+          accessToken:
+            userAccessToken,
+
+          fields:
+            pageFields,
+        })
+      );
+
+
+    diagnostics.directPages =
+      directPages.length;
+
+
+    for (
+      const page
+      of directPages
+    ) {
+
+      mergePageCandidate(
+        pageMap,
+        {
+          ...page,
+
+          discoverySource:
+            'DIRECT',
+
+          businessId:
+            null,
+
+          businessName:
+            null,
+        }
+      );
+    }
+
+  }
+  catch (
+    error
+  ) {
+
+    diagnostics
+      .graphErrors
+      .push(
+        `me/accounts: ${safeMetaDiscoveryError(
+          error
+        )}`
+      );
+  }
+
+
+  /*
+   * 2. Descoberta dos portfolios empresariais.
+   *
+   * Isso cobre paginas que aparecem no
+   * Business Suite, mas podem nao aparecer
+   * em /me/accounts.
+   */
+  let businesses:
+    MetaBusinessApiItem[] =
+    [];
+
+
+  try {
+
+    businesses =
+      await fetchMetaCollection<
+        MetaBusinessApiItem
+      >(
+        metaCollectionUrl({
+          path:
+            'me/businesses',
+
+          accessToken:
+            userAccessToken,
+
+          fields: [
+            'id',
+            'name',
+          ],
+        })
+      );
+
+
+    diagnostics.businesses =
+      businesses.length;
+
+  }
+  catch (
+    error
+  ) {
+
+    diagnostics
+      .graphErrors
+      .push(
+        `me/businesses: ${safeMetaDiscoveryError(
+          error
+        )}`
+      );
+  }
+
+
+  for (
+    const business
+    of businesses
+  ) {
+
+    const ownedPromise =
+      fetchMetaCollection<
+        MetaPageApiItem
+      >(
+        metaCollectionUrl({
+          path:
+            `${business.id}/owned_pages`,
+
+          accessToken:
+            userAccessToken,
+
+          fields:
+            pageFields,
+        })
+      );
+
+
+    const clientPromise =
+      fetchMetaCollection<
+        MetaPageApiItem
+      >(
+        metaCollectionUrl({
+          path:
+            `${business.id}/client_pages`,
+
+          accessToken:
+            userAccessToken,
+
+          fields:
+            pageFields,
+        })
+      );
+
+
+    const [
+      ownedResult,
+      clientResult,
+    ] =
+      await Promise.allSettled([
+        ownedPromise,
+        clientPromise,
+      ]);
+
+
+    if (
+      ownedResult.status ===
+      'fulfilled'
+    ) {
+
+      diagnostics.ownedPages +=
+        ownedResult
+          .value
+          .length;
+
+
+      for (
+        const page
+        of ownedResult.value
+      ) {
+
+        mergePageCandidate(
+          pageMap,
+          {
+            ...page,
+
+            discoverySource:
+              'BUSINESS_OWNED',
+
+            businessId:
+              business.id,
+
+            businessName:
+              business.name,
+          }
+        );
+      }
+
+    }
+    else {
+
+      diagnostics
+        .graphErrors
+        .push(
+          `owned_pages ${business.name}: ${safeMetaDiscoveryError(
+            ownedResult.reason
+          )}`
+        );
+    }
+
+
+    if (
+      clientResult.status ===
+      'fulfilled'
+    ) {
+
+      diagnostics.clientPages +=
+        clientResult
+          .value
+          .length;
+
+
+      for (
+        const page
+        of clientResult.value
+      ) {
+
+        mergePageCandidate(
+          pageMap,
+          {
+            ...page,
+
+            discoverySource:
+              'BUSINESS_CLIENT',
+
+            businessId:
+              business.id,
+
+            businessName:
+              business.name,
+          }
+        );
+      }
+
+    }
+    else {
+
+      diagnostics
+        .graphErrors
+        .push(
+          `client_pages ${business.name}: ${safeMetaDiscoveryError(
+            clientResult.reason
+          )}`
+        );
+    }
+
+  }
+
+
+  diagnostics.uniquePages =
+    pageMap.size;
+
+
+  /*
+   * 3. Algumas edges do Business Portfolio
+   * retornam apenas o ID da pagina ou nao
+   * trazem access_token / Instagram no mesmo
+   * payload.
+   *
+   * Quando isso acontecer, consultamos a
+   * pagina diretamente pelo ID usando o mesmo
+   * token do usuario.
+   */
+  const pages =
+    Array.from(
+      pageMap.values()
+    );
+
+
+  const pagesToHydrate =
+    pages.filter(
+      (
+        page
+      ) =>
+        !page.access_token ||
+        !page
+          .instagram_business_account
+          ?.id
+    );
+
+
+  const hydrationChunkSize =
+    6;
+
+
+  for (
+    let index =
+      0;
+    index <
+      pagesToHydrate.length;
+    index +=
+      hydrationChunkSize
+  ) {
+
+    const chunk =
+      pagesToHydrate.slice(
+        index,
+        index +
+          hydrationChunkSize
+      );
+
+
+    const hydrated =
+      await Promise.allSettled(
+        chunk.map(
+          (
+            page
+          ) =>
+            fetchMetaObject<
+              MetaPageApiItem
+            >(
+              metaObjectUrl({
+                id:
+                  page.id,
+
+                accessToken:
+                  userAccessToken,
+
+                fields:
+                  pageFields,
+              })
+            )
+        )
+      );
+
+
+    hydrated.forEach(
+      (
+        result,
+        resultIndex
+      ) => {
+
+        const original =
+          chunk[
+            resultIndex
+          ];
+
+
+        if (
+          result.status ===
+          'fulfilled'
+        ) {
+
+          diagnostics
+            .hydratedPages +=
+            1;
+
+
+          mergePageCandidate(
+            pageMap,
+            {
+              ...result.value,
+
+              discoverySource:
+                original
+                  .discoverySource,
+
+              businessId:
+                original
+                  .businessId ||
+                null,
+
+              businessName:
+                original
+                  .businessName ||
+                null,
+            }
+          );
+
+        }
+        else {
+
+          diagnostics
+            .graphErrors
+            .push(
+              `pagina ${original.name}: ${safeMetaDiscoveryError(
+                result.reason
+              )}`
+            );
+        }
+
+      }
+    );
+
+  }
+
+
+  const finalPages =
+    Array.from(
+      pageMap.values()
+    );
+
+
+  diagnostics.pagesWithoutAccessToken =
+    finalPages.filter(
+      (
+        page
+      ) =>
+        !page.access_token
+    ).length;
+
+
+  diagnostics.pagesWithoutInstagram =
+    finalPages.filter(
+      (
+        page
+      ) =>
+        !page
+          .instagram_business_account
+          ?.id
+    ).length;
+
+
   const eligiblePages =
-    pages.data.filter(
+    finalPages.filter(
       (
         page
       ) =>
@@ -391,121 +1248,261 @@ export async function getManagedInstagramAccounts(
         )
     );
 
-  const accounts:
-    ManagedInstagramAccount[] =
-    [];
+
+  diagnostics.eligiblePages =
+    eligiblePages.length;
+
+
+  /*
+   * 4. Carrega dados do Instagram.
+   */
+  const accountMap =
+    new Map<
+      string,
+      ManagedInstagramAccount
+    >();
+
+
+  const profileChunkSize =
+    6;
+
 
   for (
-    const page
-    of eligiblePages
+    let index =
+      0;
+    index <
+      eligiblePages.length;
+    index +=
+      profileChunkSize
   ) {
-    const instagramUserId =
-      page
-        .instagram_business_account!
-        .id;
 
-    const pageAccessToken =
-      page.access_token!;
-
-    const profileUrl =
-      new URL(
-        `https://graph.facebook.com/${graphVersion()}/${instagramUserId}`
+    const chunk =
+      eligiblePages.slice(
+        index,
+        index +
+          profileChunkSize
       );
 
-    profileUrl.searchParams.set(
-      'fields',
-      [
-        'id',
-        'username',
-        'name',
-        'followers_count',
-        'media_count',
-      ].join(',')
-    );
 
-    profileUrl.searchParams.set(
-      'access_token',
-      pageAccessToken
-    );
+    const results =
+      await Promise.allSettled(
+        chunk.map(
+          async (
+            page
+          ) => {
 
-    try {
-      const profileResponse =
-        await fetch(
-          profileUrl,
-          {
-            cache:
-              'no-store',
+            const instagramUserId =
+              page
+                .instagram_business_account!
+                .id;
+
+
+            const pageAccessToken =
+              page.access_token!;
+
+
+            const profileUrl =
+              metaObjectUrl({
+                id:
+                  instagramUserId,
+
+                accessToken:
+                  pageAccessToken,
+
+                fields: [
+                  'id',
+                  'username',
+                  'name',
+                  'followers_count',
+                  'media_count',
+                ],
+              });
+
+
+            const profile =
+              await fetchMetaObject<{
+                id:
+                  string;
+
+                username?:
+                  string;
+
+                name?:
+                  string;
+
+                followers_count?:
+                  number;
+
+                media_count?:
+                  number;
+              }>(
+                profileUrl
+              );
+
+
+            const account:
+              ManagedInstagramAccount = {
+
+              facebookPageId:
+                page.id,
+
+              facebookPageName:
+                page.name,
+
+              pageAccessToken,
+
+              tasks:
+                page.tasks ||
+                [],
+
+              instagramUserId:
+                profile.id,
+
+              username:
+                profile.username ||
+                null,
+
+              displayName:
+                profile.name ||
+                null,
+
+              followersCount:
+                profile
+                  .followers_count ??
+                null,
+
+              mediaCount:
+                profile
+                  .media_count ??
+                null,
+
+              discoverySource:
+                page
+                  .discoverySource,
+
+              businessId:
+                page
+                  .businessId ||
+                null,
+
+              businessName:
+                page
+                  .businessName ||
+                null,
+            };
+
+
+            return account;
           }
-        );
-
-      const profile =
-        await parseMeta<{
-          id:
-            string;
-
-          username?:
-            string;
-
-          name?:
-            string;
-
-          followers_count?:
-            number;
-
-          media_count?:
-            number;
-        }>(
-          profileResponse
-        );
-
-      accounts.push({
-        facebookPageId:
-          page.id,
-
-        facebookPageName:
-          page.name,
-
-        pageAccessToken,
-
-        tasks:
-          page.tasks ||
-          [],
-
-        instagramUserId:
-          profile.id,
-
-        username:
-          profile.username ||
-          null,
-
-        displayName:
-          profile.name ||
-          null,
-
-        followersCount:
-          profile
-            .followers_count ??
-          null,
-
-        mediaCount:
-          profile
-            .media_count ??
-          null,
-      });
-    }
-    catch (
-      error
-    ) {
-      console.error(
-        'Instagram profile read error',
-        error
+        )
       );
-    }
+
+
+    results.forEach(
+      (
+        result
+      ) => {
+
+        if (
+          result.status ===
+          'fulfilled'
+        ) {
+
+          const account =
+            result.value;
+
+
+          const previous =
+            accountMap.get(
+              account
+                .instagramUserId
+            );
+
+
+          if (
+            !previous ||
+            previous.discoverySource ===
+              'DIRECT'
+          ) {
+
+            accountMap.set(
+              account
+                .instagramUserId,
+              account
+            );
+          }
+
+        }
+        else {
+
+          diagnostics
+            .profileErrors +=
+            1;
+
+
+          diagnostics
+            .graphErrors
+            .push(
+              `perfil Instagram: ${safeMetaDiscoveryError(
+                result.reason
+              )}`
+            );
+        }
+
+      }
+    );
+
   }
 
-  return accounts;
+
+  const accounts =
+    Array.from(
+      accountMap.values()
+    )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          (
+            a.username ||
+            a.displayName ||
+            a.facebookPageName
+          ).localeCompare(
+            (
+              b.username ||
+              b.displayName ||
+              b.facebookPageName
+            ),
+            'pt-BR'
+          )
+      );
+
+
+  diagnostics.profilesLoaded =
+    accounts.length;
+
+
+  return {
+    accounts,
+    diagnostics,
+  };
 }
 
+
+export async function getManagedInstagramAccounts(
+  userAccessToken:
+    string
+) {
+
+  const discovery =
+    await discoverManagedInstagramAccounts(
+      userAccessToken
+    );
+
+
+  return discovery.accounts;
+}
 
 
 export type InstagramDashboardMetrics = {

@@ -19,8 +19,8 @@ import {
 } from '@/lib/metaCrypto';
 
 import {
+  discoverManagedInstagramAccounts,
   exchangeMetaCode,
-  getManagedInstagramAccounts,
   getMetaRedirectUri,
 } from '@/lib/metaInstagram';
 
@@ -286,23 +286,14 @@ export async function GET(
         redirectUri,
       });
 
-    const accounts =
-      await getManagedInstagramAccounts(
+    const discovery =
+      await discoverManagedInstagramAccounts(
         token.accessToken
       );
 
-    if (
-      accounts.length ===
-      0
-    ) {
-      return NextResponse.redirect(
-        instagramUrl(
-          request,
-          session.clientId,
-          'error=no_accounts'
-        )
-      );
-    }
+
+    const accounts =
+      discovery.accounts;
 
     const tokenExpiresAt =
       token.expiresIn
@@ -322,6 +313,10 @@ export async function GET(
           tokenExpiresAt,
 
           accounts,
+
+          diagnostics:
+            discovery
+              .diagnostics,
         })
       );
 
