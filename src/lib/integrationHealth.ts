@@ -1572,18 +1572,11 @@ export async function getDirectorIntegrationAlerts(
     ]);
 
   if (
-    !openAiConfig.apiKey
-  ) {
-    alerts.push(
-      "IA Comercial sem chave da OpenAI"
-    );
-  }
-
-  if (
+    !openAiConfig.apiKey &&
     !anthropicConfig.apiKey
   ) {
     alerts.push(
-      "Claude sem chave da Anthropic"
+      "IA Comercial sem provedor configurado"
     );
   }
 

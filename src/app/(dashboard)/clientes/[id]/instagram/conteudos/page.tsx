@@ -1,4 +1,4 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 
 import {
   notFound,
@@ -526,7 +526,7 @@ export default async function InstagramContentsPage({
 
             <div className="flex items-center gap-4">
 
-              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/10 text-xl font-bold text-white">
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white bg-white text-xl font-bold text-slate-900 shadow-sm">
 
                 {client.logoUrl ? (
                   <img
