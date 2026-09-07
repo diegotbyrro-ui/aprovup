@@ -51,8 +51,12 @@ export default async function EditarClientePage({
       where: {
         agencyId,
 
-        role:
-          "SOCIAL_MEDIA",
+        role: {
+          in: [
+            "SOCIAL_MEDIA",
+            "DIRECTOR",
+          ],
+        },
 
         status:
           "APROVADO",
@@ -113,7 +117,7 @@ export default async function EditarClientePage({
 
           <div>
             <label className={labelClasses}>
-              Social Media responsável
+              Responsável pelo cliente
             </label>
 
             {isDirector(
@@ -188,7 +192,7 @@ export default async function EditarClientePage({
             )}
 
             <p className="mt-1.5 text-xs text-slate-400">
-              Esta pessoa será a única Social Media que verá este cliente.
+              Escolha a Social Media ou o Diretor responsável por acompanhar este cliente.
             </p>
           </div>
 

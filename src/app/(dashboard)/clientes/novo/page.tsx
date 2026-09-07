@@ -31,8 +31,12 @@ export default async function NovoClientePage() {
             agencyId:
               currentUser.agencyId,
 
-            role:
-              "SOCIAL_MEDIA",
+            role: {
+              in: [
+                "SOCIAL_MEDIA",
+                "DIRECTOR",
+              ],
+            },
 
             status:
               "APROVADO",
@@ -142,7 +146,7 @@ export default async function NovoClientePage() {
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
               <label className={labelClasses}>
-                Social Media responsável
+                Responsável pelo cliente
               </label>
 
               {director ? (
@@ -152,7 +156,7 @@ export default async function NovoClientePage() {
                   defaultValue=""
                 >
                   <option value="">
-                    Selecione uma Social Media
+                    Selecione um responsável
                   </option>
 
                   {socialMediaUsers.map(
@@ -191,7 +195,7 @@ export default async function NovoClientePage() {
               )}
 
               <p className="mt-1.5 text-xs text-slate-400">
-                O cliente ficará visível apenas para esta Social Media e para a diretoria.
+                Escolha a Social Media ou o Diretor responsável. A diretoria continua com acesso aos clientes da agência.
               </p>
             </div>
 
