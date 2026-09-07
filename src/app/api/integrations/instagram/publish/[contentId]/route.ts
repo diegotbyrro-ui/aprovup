@@ -1,4 +1,4 @@
-﻿import {
+import {
   NextRequest,
   NextResponse,
 } from 'next/server';
@@ -6,6 +6,9 @@
 import {
   getCurrentUser,
 } from '@/lib/auth';
+import {
+  canUseMetaIntegration,
+} from '@/lib/metaAccess';
 
 import {
   prisma,
@@ -168,6 +171,26 @@ export async function POST(
     );
   }
 
+
+  if (
+    !canUseMetaIntegration(
+      currentUser
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok:
+          false,
+
+        message:
+          'A integração com a Meta ainda está em liberação controlada.',
+      },
+      {
+        status:
+          403,
+      }
+    );
+  }
 
   const {
     contentId,

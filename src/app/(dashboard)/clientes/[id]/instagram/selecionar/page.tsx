@@ -15,6 +15,9 @@ import {
 import {
   prisma,
 } from '@/lib/prisma';
+import {
+  canUseMetaIntegration,
+} from '@/lib/metaAccess';
 
 import {
   requirePermission,
@@ -57,6 +60,16 @@ export default async function SelectInstagramAccountPage({
   const {
     id,
   } = await params;
+
+  if (
+    !canUseMetaIntegration(
+      user
+    )
+  ) {
+    redirect(
+      `/clientes/${id}/instagram?error=meta_review`
+    );
+  }
 
   const query =
     await searchParams;

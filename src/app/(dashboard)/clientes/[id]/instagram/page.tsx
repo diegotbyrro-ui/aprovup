@@ -23,6 +23,9 @@ BarChart3,
 import {
   prisma,
 } from '@/lib/prisma';
+import {
+  canUseMetaIntegration,
+} from '@/lib/metaAccess';
 
 import {
   decryptMetaSecret,
@@ -570,8 +573,19 @@ export default async function ClientInstagramPage({
   const connection =
     client.instagramConnection;
 
-  const configured =
+  const metaConfigured =
     isMetaConfigured();
+
+
+  const metaAccessAllowed =
+    canUseMetaIntegration(
+      currentUser
+    );
+
+
+  const configured =
+    metaConfigured &&
+    metaAccessAllowed;
 
 
   let dashboardMetrics:
@@ -909,6 +923,23 @@ export default async function ClientInstagramPage({
         </div>
       </section>
 
+
+      {!metaAccessAllowed ? (
+
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+
+          <p className="text-sm font-bold text-amber-900">
+            Integração Meta em processo de aprovação
+          </p>
+
+          <p className="mt-1 text-sm leading-relaxed text-amber-800">
+            A integração com o Instagram está em processo de aprovação pela Meta.
+            Assim que a liberação for concluída, os recursos serão disponibilizados para sua agência.
+          </p>
+
+        </section>
+
+      ) : null}
 
       {/* STATUS CONEXAO */}
 

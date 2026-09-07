@@ -6,6 +6,9 @@ import {
 import {
   getCurrentUser,
 } from '@/lib/auth';
+import {
+  canUseMetaIntegration,
+} from '@/lib/metaAccess';
 
 import {
   prisma,
@@ -127,6 +130,31 @@ export async function GET(
         request,
         session.clientId,
         'error=session'
+      )
+    );
+  }
+
+  if (
+    !canUseMetaIntegration(
+      user
+    )
+  ) {
+
+    await prisma
+      .metaOAuthSession
+      .deleteMany({
+        where: {
+          id:
+            session.id,
+        },
+      });
+
+
+    return NextResponse.redirect(
+      instagramUrl(
+        request,
+        session.clientId,
+        'error=meta_review'
       )
     );
   }

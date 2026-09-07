@@ -11,6 +11,9 @@ import {
 import {
   prisma,
 } from '@/lib/prisma';
+import {
+  canUseMetaIntegration,
+} from '@/lib/metaAccess';
 
 import {
   requirePermission,
@@ -67,6 +70,16 @@ export async function saveInstagramConnectionAction(
   ) {
     redirect(
       '/clientes'
+    );
+  }
+
+  if (
+    !canUseMetaIntegration(
+      user
+    )
+  ) {
+    redirect(
+      `/clientes/${clientId}/instagram?error=meta_review`
     );
   }
 

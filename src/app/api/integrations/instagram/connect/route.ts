@@ -10,6 +10,9 @@ import {
 import {
   getCurrentUser,
 } from '@/lib/auth';
+import {
+  canUseMetaIntegration,
+} from '@/lib/metaAccess';
 
 import {
   hasPermission,
@@ -92,6 +95,19 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         '/clientes',
+        request.url
+      )
+    );
+  }
+
+  if (
+    !canUseMetaIntegration(
+      user
+    )
+  ) {
+    return NextResponse.redirect(
+      new URL(
+        `/clientes/${clientId}/instagram?error=meta_review`,
         request.url
       )
     );

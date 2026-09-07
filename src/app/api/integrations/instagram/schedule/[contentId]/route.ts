@@ -1,4 +1,4 @@
-﻿import {
+import {
   NextRequest,
   NextResponse,
 } from 'next/server';
@@ -6,6 +6,9 @@
 import {
   getCurrentUser,
 } from '@/lib/auth';
+import {
+  canUseMetaIntegration,
+} from '@/lib/metaAccess';
 
 import {
   prisma,
@@ -121,6 +124,15 @@ async function currentAuthorizedUser() {
 
     return null;
 
+  }
+
+
+  if (
+    !canUseMetaIntegration(
+      user
+    )
+  ) {
+    return null;
   }
 
 
