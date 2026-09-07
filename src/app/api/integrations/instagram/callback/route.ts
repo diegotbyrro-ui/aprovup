@@ -25,6 +25,63 @@ import {
 } from '@/lib/metaInstagram';
 
 
+function publicOrigin(
+  request:
+    NextRequest
+) {
+
+  const metaRedirectUri =
+    process.env
+      .META_INSTAGRAM_REDIRECT_URI;
+
+
+  if (
+    metaRedirectUri
+  ) {
+
+    try {
+
+      return new URL(
+        metaRedirectUri
+      ).origin;
+
+    }
+    catch {
+      // continua para o proximo fallback
+    }
+
+  }
+
+
+  const siteUrl =
+    process.env
+      .NEXT_PUBLIC_SITE_URL;
+
+
+  if (
+    siteUrl
+  ) {
+
+    try {
+
+      return new URL(
+        siteUrl
+      ).origin;
+
+    }
+    catch {
+      // continua para a origem recebida
+    }
+
+  }
+
+
+  return request
+    .nextUrl
+    .origin;
+}
+
+
 function instagramUrl(
   request:
     NextRequest,
@@ -35,7 +92,7 @@ function instagramUrl(
 ) {
   return new URL(
     `/clientes/${clientId}/instagram?${params}`,
-    request.url
+    publicOrigin(request)
   );
 }
 
@@ -68,7 +125,7 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         '/clientes',
-        request.url
+        publicOrigin(request)
       )
     );
   }
@@ -87,7 +144,7 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         '/clientes',
-        request.url
+        publicOrigin(request)
       )
     );
   }
@@ -188,7 +245,7 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         '/clientes',
-        request.url
+        publicOrigin(request)
       )
     );
   }
@@ -292,7 +349,7 @@ export async function GET(
     return NextResponse.redirect(
       new URL(
         `/clientes/${session.clientId}/instagram/selecionar?session=${session.id}`,
-        request.url
+        publicOrigin(request)
       )
     );
   }
