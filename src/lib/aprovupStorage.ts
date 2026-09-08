@@ -275,3 +275,107 @@ export async function aprovUpFileExists(
 
   return data === true;
 }
+
+
+export async function deleteAprovUpPublicFile(
+  publicUrl: string
+) {
+  if (!publicUrl) {
+    return false;
+  }
+
+
+  let parsed:
+    URL;
+
+
+  try {
+    parsed =
+      new URL(
+        publicUrl
+      );
+  }
+  catch {
+    return false;
+  }
+
+
+  const marker =
+    '/storage/v1/object/public/' +
+    BUCKET +
+    '/';
+
+
+  const markerIndex =
+    parsed.pathname.indexOf(
+      marker
+    );
+
+
+  if (
+    markerIndex ===
+    -1
+  ) {
+    return false;
+  }
+
+
+  let objectPath =
+    parsed.pathname.slice(
+      markerIndex +
+      marker.length
+    );
+
+
+  try {
+    objectPath =
+      decodeURIComponent(
+        objectPath
+      );
+  }
+  catch {
+    return false;
+  }
+
+
+  if (
+    !objectPath ||
+    !objectPath.startsWith(
+      'final-content/'
+    )
+  ) {
+    return false;
+  }
+
+
+  const supabase =
+    storageClient();
+
+
+  const {
+    error,
+  } =
+    await supabase.storage
+      .from(
+        BUCKET
+      )
+      .remove([
+        objectPath,
+      ]);
+
+
+  if (error) {
+    console.error(
+      'AprovUp Storage remove:',
+      error
+    );
+
+
+    throw new Error(
+      'Nao foi possivel remover o arquivo do Storage.'
+    );
+  }
+
+
+  return true;
+}

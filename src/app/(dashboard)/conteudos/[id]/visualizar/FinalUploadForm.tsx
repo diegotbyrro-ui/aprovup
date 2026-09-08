@@ -12,6 +12,7 @@ import {
   LayoutTemplate,
   Smartphone,
   UploadCloud,
+  X,
 } from 'lucide-react';
 
 import {
@@ -107,6 +108,10 @@ function CurrentAsset({
   coverUrl,
   mediaType,
   story,
+  mediaKind,
+  coverKind,
+  deletingKind,
+  onDelete,
 }: {
   title: string;
 
@@ -117,6 +122,18 @@ function CurrentAsset({
   mediaType?: string | null;
 
   story?: boolean;
+
+  mediaKind: UploadKind;
+
+  coverKind: UploadKind;
+
+  deletingKind:
+    | UploadKind
+    | null;
+
+  onDelete: (
+    kind: UploadKind
+  ) => void;
 }) {
   const type =
     String(
@@ -145,6 +162,14 @@ function CurrentAsset({
       : '';
 
 
+  const separateCover =
+    Boolean(
+      coverUrl &&
+      coverUrl !==
+        mediaUrl
+    );
+
+
   if (
     !mediaUrl &&
     !coverUrl
@@ -160,21 +185,23 @@ function CurrentAsset({
   return (
     <div className="space-y-2">
 
-      {imageUrl ? (
-        <div
-          className={[
-            'overflow-hidden',
-            'rounded-xl',
-            'border',
-            'border-slate-200',
-            'bg-slate-100',
-            story
-              ? 'mx-auto max-w-[150px]'
-              : '',
-          ].join(
-            ' '
-          )}
-        >
+      <div
+        className={[
+          'relative',
+          'overflow-hidden',
+          'rounded-xl',
+          'border',
+          'border-slate-200',
+          'bg-slate-100',
+          story
+            ? 'mx-auto max-w-[170px]'
+            : '',
+        ].join(
+          ' '
+        )}
+      >
+
+        {imageUrl ? (
           <img
             src={
               imageUrl
@@ -192,43 +219,133 @@ function CurrentAsset({
               ' '
             )}
           />
+        ) : videoUrl ? (
+          <video
+            src={
+              videoUrl
+            }
+            controls
+            preload="metadata"
+            className={[
+              'w-full',
+              'bg-black',
+              story
+                ? 'aspect-[9/16]'
+                : 'aspect-video',
+            ].join(
+              ' '
+            )}
+          />
+        ) : (
+          <div className="flex min-h-[130px] items-center justify-center px-5 text-center text-xs font-bold text-slate-400">
+            Arquivo enviado. Use o link abaixo para abrir.
+          </div>
+        )}
+
+
+        <div className="absolute right-2 top-2 flex flex-col items-end gap-1">
+
+          {mediaUrl ? (
+            <button
+              type="button"
+              title={
+                'Excluir arquivo atual de ' +
+                title
+              }
+              aria-label={
+                'Excluir arquivo atual de ' +
+                title
+              }
+              disabled={
+                deletingKind !==
+                null
+              }
+              onClick={
+                () =>
+                  onDelete(
+                    mediaKind
+                  )
+              }
+              className="inline-flex h-7 items-center gap-1 rounded-full border border-red-100 bg-white/95 px-2 text-[9px] font-black text-red-600 shadow-md backdrop-blur transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <X
+                size={11}
+                strokeWidth={2.8}
+              />
+
+              {deletingKind ===
+              mediaKind
+                ? 'Excluindo...'
+                : 'Arquivo'}
+            </button>
+          ) : null}
+
+
+          {separateCover ? (
+            <button
+              type="button"
+              title="Excluir thumbnail atual"
+              aria-label="Excluir thumbnail atual"
+              disabled={
+                deletingKind !==
+                null
+              }
+              onClick={
+                () =>
+                  onDelete(
+                    coverKind
+                  )
+              }
+              className="inline-flex h-7 items-center gap-1 rounded-full border border-red-100 bg-white/95 px-2 text-[9px] font-black text-red-600 shadow-md backdrop-blur transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <X
+                size={11}
+                strokeWidth={2.8}
+              />
+
+              {deletingKind ===
+              coverKind
+                ? 'Excluindo...'
+                : 'Thumbnail'}
+            </button>
+          ) : null}
+
         </div>
-      ) : null}
+
+      </div>
 
 
-      {videoUrl ? (
-        <video
-          src={
-            videoUrl
-          }
-          controls
-          preload="metadata"
-          className={[
-            'w-full',
-            'rounded-xl',
-            'bg-black',
-            story
-              ? 'mx-auto aspect-[9/16] max-w-[150px]'
-              : 'aspect-video',
-          ].join(
-            ' '
-          )}
-        />
-      ) : null}
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+
+        {mediaUrl ? (
+          <a
+            href={
+              mediaUrl
+            }
+            target="_blank"
+            rel="noreferrer"
+            className="text-center text-xs font-bold text-blue-700 hover:underline"
+          >
+            Abrir arquivo atual
+          </a>
+        ) : null}
 
 
-      {mediaUrl ? (
-        <a
-          href={
-            mediaUrl
-          }
-          target="_blank"
-          rel="noreferrer"
-          className="block text-center text-xs font-bold text-blue-700 hover:underline"
-        >
-          Abrir arquivo atual
-        </a>
-      ) : null}
+        {separateCover ? (
+          <a
+            href={
+              coverUrl ||
+              ''
+            }
+            target="_blank"
+            rel="noreferrer"
+            className="text-center text-xs font-bold text-slate-500 hover:underline"
+          >
+            Abrir thumbnail
+          </a>
+        ) : null}
+
+      </div>
 
     </div>
   );
@@ -257,6 +374,18 @@ export default function FinalUploadForm({
   ] =
     useState(
       false
+    );
+
+
+  const [
+    deletingKind,
+    setDeletingKind,
+  ] =
+    useState<
+      UploadKind |
+      null
+    >(
+      null
     );
 
 
@@ -410,6 +539,168 @@ export default function FinalUploadForm({
     )
       ? value
       : null;
+  }
+
+
+  async function handleDelete(
+    kind: UploadKind
+  ) {
+    const copy:
+      Record<
+        UploadKind,
+        {
+          question: string;
+          progress: string;
+          success: string;
+        }
+      > = {
+        final: isDesign
+          ? {
+              question:
+                'o arquivo final do Feed',
+              progress:
+                'Excluindo arquivo final do Feed...',
+              success:
+                'Arquivo final do Feed removido com sucesso.',
+            }
+          : {
+              question:
+                'o arquivo final',
+              progress:
+                'Excluindo arquivo final...',
+              success:
+                'Arquivo final removido com sucesso.',
+            },
+
+        cover: isDesign
+          ? {
+              question:
+                'a thumbnail do Feed',
+              progress:
+                'Excluindo thumbnail do Feed...',
+              success:
+                'Thumbnail do Feed removida com sucesso.',
+            }
+          : {
+              question:
+                'a capa / thumbnail',
+              progress:
+                'Excluindo capa / thumbnail...',
+              success:
+                'Capa / thumbnail removida com sucesso.',
+            },
+
+        story: {
+          question:
+            'o arquivo final dos Stories',
+          progress:
+            'Excluindo arquivo final dos Stories...',
+          success:
+            'Arquivo final dos Stories removido com sucesso.',
+        },
+
+        storyCover: {
+          question:
+            'a thumbnail dos Stories',
+          progress:
+            'Excluindo thumbnail dos Stories...',
+          success:
+            'Thumbnail dos Stories removida com sucesso.',
+        },
+      };
+
+
+    const selected =
+      copy[
+        kind
+      ];
+
+
+    const confirmed =
+      window.confirm(
+        'Excluir ' +
+        selected.question +
+        '? Esta acao remove somente este material.'
+      );
+
+
+    if (!confirmed) {
+      return;
+    }
+
+
+    setDeletingKind(
+      kind
+    );
+
+    setMessage(
+      selected.progress
+    );
+
+
+    try {
+      const response =
+        await fetch(
+          '/api/conteudos/' +
+            contentId +
+            '/upload-final',
+          {
+            method:
+              'DELETE',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+
+            body:
+              JSON.stringify({
+                kind,
+              }),
+          }
+        );
+
+
+      const result =
+        await response.json();
+
+
+      if (
+        !response.ok ||
+        !result.ok
+      ) {
+        throw new Error(
+          result.message ||
+          'Nao foi possivel excluir o arquivo.'
+        );
+      }
+
+
+      setMessage(
+        result.message ||
+        selected.success
+      );
+
+
+      router.refresh();
+    }
+    catch (error) {
+      console.error(
+        error
+      );
+
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Erro ao excluir arquivo. Tente novamente.'
+      );
+    }
+    finally {
+      setDeletingKind(
+        null
+      );
+    }
   }
 
 
@@ -648,6 +939,28 @@ export default function FinalUploadForm({
         className="mt-5 space-y-4"
       >
 
+        <CurrentAsset
+          title="Arquivo final"
+          mediaUrl={
+            currentFinalMediaUrl
+          }
+          coverUrl={
+            currentFinalCoverUrl
+          }
+          mediaType={
+            currentFinalMediaType
+          }
+          mediaKind="final"
+          coverKind="cover"
+          deletingKind={
+            deletingKind
+          }
+          onDelete={
+            handleDelete
+          }
+        />
+
+
         <div>
           <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-blue-700">
             Arquivo final
@@ -658,7 +971,9 @@ export default function FinalUploadForm({
             name="finalFile"
             accept="image/*,video/*,.pdf"
             disabled={
-              isUploading
+              isUploading ||
+              deletingKind !==
+                null
             }
             className="block w-full cursor-pointer rounded-2xl border border-blue-100 bg-white text-sm font-medium text-slate-700 file:mr-4 file:border-0 file:bg-blue-600 file:px-4 file:py-3 file:text-sm file:font-bold file:text-white hover:file:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           />
@@ -675,7 +990,9 @@ export default function FinalUploadForm({
             name="coverFile"
             accept="image/*"
             disabled={
-              isUploading
+              isUploading ||
+              deletingKind !==
+                null
             }
             className="block w-full cursor-pointer rounded-2xl border border-blue-100 bg-white text-sm font-medium text-slate-700 file:mr-4 file:border-0 file:bg-slate-900 file:px-4 file:py-3 file:text-sm file:font-bold file:text-white hover:file:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           />
@@ -692,8 +1009,10 @@ export default function FinalUploadForm({
         <button
           type="submit"
           disabled={
-            isUploading
-          }
+              isUploading ||
+              deletingKind !==
+                null
+            }
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <UploadCloud
@@ -782,6 +1101,14 @@ export default function FinalUploadForm({
                 mediaType={
                   currentFinalMediaType
                 }
+                mediaKind="final"
+                coverKind="cover"
+                deletingKind={
+                  deletingKind
+                }
+                onDelete={
+                  handleDelete
+                }
               />
             </div>
 
@@ -798,8 +1125,10 @@ export default function FinalUploadForm({
                   name="finalFile"
                   accept="image/*,video/*,.pdf"
                   disabled={
-                    isUploading
-                  }
+              isUploading ||
+              deletingKind !==
+                null
+            }
                   className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-blue-600 file:px-3 file:py-2.5 file:text-xs file:font-bold file:text-white hover:file:bg-blue-700 disabled:opacity-60"
                 />
               </div>
@@ -815,8 +1144,10 @@ export default function FinalUploadForm({
                   name="coverFile"
                   accept="image/*"
                   disabled={
-                    isUploading
-                  }
+              isUploading ||
+              deletingKind !==
+                null
+            }
                   className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-slate-900 file:px-3 file:py-2.5 file:text-xs file:font-bold file:text-white hover:file:bg-slate-800 disabled:opacity-60"
                 />
               </div>
@@ -862,6 +1193,14 @@ export default function FinalUploadForm({
                 currentStoryMediaType
               }
               story
+              mediaKind="story"
+              coverKind="storyCover"
+              deletingKind={
+                deletingKind
+              }
+              onDelete={
+                handleDelete
+              }
             />
           </div>
 
@@ -878,8 +1217,10 @@ export default function FinalUploadForm({
                 name="storyFile"
                 accept="image/*,video/*"
                 disabled={
-                  isUploading
-                }
+              isUploading ||
+              deletingKind !==
+                null
+            }
                 className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-violet-600 file:px-3 file:py-2.5 file:text-xs file:font-bold file:text-white hover:file:bg-violet-700 disabled:opacity-60"
               />
             </div>
@@ -895,8 +1236,10 @@ export default function FinalUploadForm({
                 name="storyCoverFile"
                 accept="image/*"
                 disabled={
-                  isUploading
-                }
+              isUploading ||
+              deletingKind !==
+                null
+            }
                 className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-slate-900 file:px-3 file:py-2.5 file:text-xs file:font-bold file:text-white hover:file:bg-slate-800 disabled:opacity-60"
               />
             </div>
@@ -923,8 +1266,10 @@ export default function FinalUploadForm({
       <button
         type="submit"
         disabled={
-          isUploading
-        }
+              isUploading ||
+              deletingKind !==
+                null
+            }
         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <UploadCloud

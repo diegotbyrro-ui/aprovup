@@ -687,7 +687,7 @@ function ClientResource({
     "";
 
   return (
-    <div className="flex min-w-[260px] max-w-[300px] flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+    <div className="flex w-full min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5">
       <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
         {visualLogo ? (
           <img
@@ -1590,7 +1590,7 @@ await ensureDefaultFilmmakerColumns();
         </div>
 
 
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {clients.map(
             (
               client

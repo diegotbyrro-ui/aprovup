@@ -19,6 +19,7 @@ import {
 import {
   aprovUpFileExists,
   createAprovUpSignedUpload,
+  deleteAprovUpPublicFile,
   getAprovUpPublicUrl,
 } from '@/lib/aprovupStorage';
 
@@ -632,6 +633,463 @@ export async function POST(
         ok: false,
         message:
           'Erro ao enviar arquivo.',
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}
+
+
+export async function DELETE(
+  request: NextRequest,
+  context: {
+    params: Promise<{
+      id: string;
+    }>;
+  }
+) {
+  try {
+    const {
+      id,
+    } =
+      await context.params;
+
+
+    const currentUser =
+      await getCurrentUser();
+
+
+    if (!currentUser) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            'Sessão expirada. Entre novamente.',
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+
+    if (
+      currentUser.status !==
+        'APROVADO' ||
+      !currentUser.agencyId
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            'Usuário sem acesso ao AprovUp.',
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+
+    const content =
+      await prisma.content.findFirst({
+        where: {
+          id,
+
+          client: {
+            agencyId:
+              currentUser.agencyId,
+          },
+        },
+
+        include: {
+          instagramPublication:
+            true,
+
+          instagramMediaAssets:
+            true,
+        },
+      });
+
+
+    if (!content) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            'Conteúdo não encontrado.',
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+
+    const requiredPermission =
+      permissionForArea(
+        content.area
+      );
+
+
+    if (
+      !hasPermission(
+        currentUser,
+        requiredPermission
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            'Você não tem permissão para excluir este material.',
+        },
+        {
+          status: 403,
+        }
+      );
+    }
+
+
+    if (
+      [
+        'PUBLICADO',
+        'PUBLICADO_MANUALMENTE',
+      ].includes(
+        String(
+          content.status ||
+          ''
+        )
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            'Este conteúdo já foi publicado e o material final não pode ser excluído por esta tela.',
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+
+    if (
+      [
+        'AGENDADO',
+        'PUBLICANDO',
+        'PUBLICADO',
+      ].includes(
+        String(
+          content.instagramPublication?.status ||
+          ''
+        )
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            'Existe uma publicação do Instagram agendada ou em andamento. Cancele essa publicação antes de excluir o material.',
+        },
+        {
+          status: 409,
+        }
+      );
+    }
+
+
+    const body =
+      await request.json();
+
+
+    const kind =
+      parseUploadKind(
+        body?.kind
+      );
+
+
+    if (!kind) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            'Tipo de arquivo inválido.',
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+
+    let nextFinalMediaUrl =
+      content.finalMediaUrl;
+
+    let nextFinalCoverUrl =
+      content.finalCoverUrl;
+
+    let nextStoryMediaUrl =
+      content.storyMediaUrl;
+
+    let nextStoryCoverUrl =
+      content.storyCoverUrl;
+
+    let removedUrl =
+      '';
+
+    const updateData:
+      Record<
+        string,
+        unknown
+      > = {};
+
+
+    if (
+      kind ===
+      'final'
+    ) {
+      removedUrl =
+        content.finalMediaUrl ||
+        '';
+
+      nextFinalMediaUrl =
+        null;
+
+      updateData.finalMediaUrl =
+        null;
+
+      updateData.finalMediaType =
+        null;
+
+
+      if (
+        content.finalCoverUrl &&
+        content.finalCoverUrl ===
+          content.finalMediaUrl
+      ) {
+        nextFinalCoverUrl =
+          null;
+
+        updateData.finalCoverUrl =
+          null;
+      }
+
+
+      if (
+        content.area ===
+        'FILMMAKER'
+      ) {
+        updateData.status =
+          'FILMMAKER_EDICAO';
+      }
+      else if (
+        content.area ===
+          'DESIGN' ||
+        content.area ===
+          'SOCIAL_DESIGN'
+      ) {
+        updateData.status =
+          'DESIGN_FAZENDO';
+      }
+    }
+
+
+    if (
+      kind ===
+      'cover'
+    ) {
+      removedUrl =
+        content.finalCoverUrl ||
+        '';
+
+      nextFinalCoverUrl =
+        null;
+
+      updateData.finalCoverUrl =
+        null;
+    }
+
+
+    if (
+      kind ===
+      'story'
+    ) {
+      removedUrl =
+        content.storyMediaUrl ||
+        '';
+
+      nextStoryMediaUrl =
+        null;
+
+      updateData.storyMediaUrl =
+        null;
+
+      updateData.storyMediaType =
+        null;
+
+
+      if (
+        content.storyCoverUrl &&
+        content.storyCoverUrl ===
+          content.storyMediaUrl
+      ) {
+        nextStoryCoverUrl =
+          null;
+
+        updateData.storyCoverUrl =
+          null;
+      }
+    }
+
+
+    if (
+      kind ===
+      'storyCover'
+    ) {
+      removedUrl =
+        content.storyCoverUrl ||
+        '';
+
+      nextStoryCoverUrl =
+        null;
+
+      updateData.storyCoverUrl =
+        null;
+    }
+
+
+    await prisma.content.update({
+      where: {
+        id,
+      },
+
+      data:
+        updateData,
+    });
+
+
+    const remainingReferences =
+      [
+        nextFinalMediaUrl,
+        nextFinalCoverUrl,
+        nextStoryMediaUrl,
+        nextStoryCoverUrl,
+
+        content.instagramPublication
+          ?.mediaUrl,
+
+        content.instagramPublication
+          ?.coverUrl,
+
+        ...content.instagramMediaAssets.map(
+          (
+            asset
+          ) =>
+            asset.url
+        ),
+      ]
+        .filter(
+          Boolean
+        )
+        .map(
+          (
+            value
+          ) =>
+            String(
+              value
+            )
+        );
+
+
+    if (
+      removedUrl &&
+      !remainingReferences.includes(
+        removedUrl
+      )
+    ) {
+      await deleteAprovUpPublicFile(
+        removedUrl
+      ).catch(
+        (
+          error
+        ) => {
+          console.error(
+            'AprovUp remove arquivo final:',
+            error
+          );
+        }
+      );
+    }
+
+
+    const successMessages:
+      Record<
+        UploadKind,
+        string
+      > = {
+        final:
+          'Arquivo final removido com sucesso.',
+
+        cover:
+          'Thumbnail removida com sucesso.',
+
+        story:
+          'Arquivo dos Stories removido com sucesso.',
+
+        storyCover:
+          'Thumbnail dos Stories removida com sucesso.',
+      };
+
+
+    await prisma.comment.create({
+      data: {
+        contentId:
+          id,
+
+        authorName:
+          currentUser.name ||
+          currentUser.email ||
+          'Equipe AprovUp',
+
+        authorRole:
+          currentUser.role ||
+          'EQUIPE',
+
+        message:
+          successMessages[
+            kind
+          ],
+      },
+    }).catch(
+      () => null
+    );
+
+
+    return NextResponse.json({
+      ok: true,
+
+      message:
+        successMessages[
+          kind
+        ],
+    });
+  }
+  catch (error) {
+    console.error(
+      'AprovUp delete upload-final:',
+      error
+    );
+
+
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          'Erro ao excluir arquivo.',
       },
       {
         status: 500,
