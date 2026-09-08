@@ -66,6 +66,97 @@ function refreshPipeline() {
   revalidatePath("/crm/cockpit");
 }
 
+async function applyStageOrderSafely({
+  supabase,
+  organizationId,
+  orderedStageIds,
+  currentPositions,
+}: {
+  supabase: any;
+  organizationId: string;
+  orderedStageIds: string[];
+  currentPositions: number[];
+}) {
+  const currentMaxPosition =
+    currentPositions.length > 0
+      ? Math.max(...currentPositions)
+      : 0;
+
+  /*
+   * Primeiro movemos todas as colunas para uma faixa
+   * temporária que não conflita com posições existentes.
+   */
+  const temporaryBase =
+    currentMaxPosition +
+    orderedStageIds.length +
+    1000;
+
+  for (
+    let index = 0;
+    index < orderedStageIds.length;
+    index += 1
+  ) {
+    const stageId =
+      orderedStageIds[index];
+
+    const { error } =
+      await supabase
+        .from("pipeline_stages")
+        .update({
+          position:
+            temporaryBase + index,
+        })
+        .eq(
+          "organization_id",
+          organizationId
+        )
+        .eq(
+          "id",
+          stageId
+        );
+
+    if (error) {
+      throw new Error(
+        error.message
+      );
+    }
+  }
+
+  /*
+   * Agora que 0, 1, 2... estão livres,
+   * aplicamos a ordem definitiva.
+   */
+  for (
+    let position = 0;
+    position < orderedStageIds.length;
+    position += 1
+  ) {
+    const stageId =
+      orderedStageIds[position];
+
+    const { error } =
+      await supabase
+        .from("pipeline_stages")
+        .update({
+          position,
+        })
+        .eq(
+          "organization_id",
+          organizationId
+        )
+        .eq(
+          "id",
+          stageId
+        );
+
+    if (error) {
+      throw new Error(
+        error.message
+      );
+    }
+  }
+}
+
 export async function createPipelineStageAction(
   input: StageInput
 ): Promise<PipelineStageActionResult> {
@@ -242,7 +333,7 @@ export async function reorderPipelineStagesAction(
     const { data: existingStages, error: existingError } =
       await supabase
         .from("pipeline_stages")
-        .select("id")
+        .select("id,position")
         .eq("organization_id", organizationId);
 
     if (existingError) {
@@ -264,25 +355,18 @@ export async function reorderPipelineStagesAction(
       };
     }
 
-    for (
-      let position = 0;
-      position < orderedStageIds.length;
-      position += 1
-    ) {
-      const stageId = orderedStageIds[position];
-
-      const { error } = await supabase
-        .from("pipeline_stages")
-        .update({
-          position,
-        })
-        .eq("organization_id", organizationId)
-        .eq("id", stageId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-    }
+    await applyStageOrderSafely({
+      supabase,
+      organizationId,
+      orderedStageIds,
+      currentPositions:
+        (existingStages ?? []).map(
+          (stage) =>
+            Number(
+              stage.position ?? 0
+            )
+        ),
+    });
 
     refreshPipeline();
 
@@ -411,26 +495,32 @@ export async function deletePipelineStageAction(
       throw new Error(deleteError.message);
     }
 
-    const remainingStages = currentStages.filter(
-      (stage) => stage.id !== stageId
-    );
+    const remainingStages =
+      currentStages.filter(
+        (stage) =>
+          stage.id !== stageId
+      );
 
-    for (
-      let position = 0;
-      position < remainingStages.length;
-      position += 1
+    if (
+      remainingStages.length >
+      0
     ) {
-      const { error: positionError } = await supabase
-        .from("pipeline_stages")
-        .update({
-          position,
-        })
-        .eq("organization_id", organizationId)
-        .eq("id", remainingStages[position].id);
-
-      if (positionError) {
-        throw new Error(positionError.message);
-      }
+      await applyStageOrderSafely({
+        supabase,
+        organizationId,
+        orderedStageIds:
+          remainingStages.map(
+            (stage) =>
+              stage.id
+          ),
+        currentPositions:
+          remainingStages.map(
+            (stage) =>
+              Number(
+                stage.position ?? 0
+              )
+          ),
+      });
     }
 
     refreshPipeline();
