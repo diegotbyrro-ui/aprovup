@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { PreserveApprovalScroll } from '@/components/approval/PreserveApprovalScroll';
 import {
   approveClientContentAction,
   requestClientAdjustmentAction,
@@ -197,6 +198,7 @@ export default async function ApprovalPage({
 
   return (
     <main className="min-h-screen bg-slate-100 p-4 md:p-8">
+      <PreserveApprovalScroll />
       <div className="mx-auto max-w-6xl space-y-6">
         <section className="rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-sm">
           <p className="text-sm font-bold uppercase tracking-wider text-blue-300">
@@ -284,6 +286,7 @@ export default async function ApprovalPage({
               return (
                 <article
                   key={content.id}
+                  data-approval-item={content.id}
                   className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
                   <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_360px]">

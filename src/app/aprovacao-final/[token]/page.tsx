@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { PreserveApprovalScroll } from '@/components/approval/PreserveApprovalScroll';
 
 import {
   approveFinalContentAction,
@@ -139,6 +140,7 @@ export default async function FinalApprovalPage({
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-8">
+      <PreserveApprovalScroll />
       <div className="mx-auto max-w-6xl space-y-6">
         <section className="rounded-3xl bg-slate-950 p-8 text-white">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-300">
@@ -279,6 +281,7 @@ export default async function FinalApprovalPage({
               return (
                                 <article
                   key={content.id}
+                  data-approval-item={content.id}
                   className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
                 >
                   <div className="grid xl:grid-cols-[minmax(0,1fr)_360px]">

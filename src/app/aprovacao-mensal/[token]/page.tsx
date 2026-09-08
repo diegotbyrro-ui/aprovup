@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { PreserveApprovalScroll } from '@/components/approval/PreserveApprovalScroll';
 import {
   approveMonthlyContentItemAction,
   requestMonthlyContentAdjustmentAction,
@@ -214,6 +215,7 @@ export default async function MonthlyApprovalPage({
 
   return (
     <main className="min-h-screen bg-slate-100 p-4 md:p-8">
+      <PreserveApprovalScroll />
       <div className="mx-auto max-w-6xl space-y-6">
         <section className="rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-sm">
           <p className="text-sm font-bold uppercase tracking-wider text-blue-300">
@@ -289,6 +291,7 @@ export default async function MonthlyApprovalPage({
                 return (
                   <details
                     key={content.id}
+                    data-approval-item={content.id}
                     className="group rounded-2xl border border-slate-200 bg-slate-50 p-4 open:bg-white open:shadow-sm"
                   >
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">

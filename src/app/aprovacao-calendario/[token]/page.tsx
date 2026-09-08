@@ -1,4 +1,5 @@
 import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
+import { PreserveApprovalScroll } from '@/components/approval/PreserveApprovalScroll';
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import {
@@ -201,6 +202,7 @@ export default async function MonthlyApprovalCalendarPage({
 
     return (
         <main className="min-h-screen bg-slate-100 px-4 py-8 text-slate-900">
+      <PreserveApprovalScroll />
             <div className="mx-auto max-w-6xl space-y-6">
                 <section className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-sm">
                     <div className="absolute -right-10 -top-10 h-52 w-52 rounded-full bg-blue-500/20 blur-3xl"></div>
@@ -340,7 +342,7 @@ export default async function MonthlyApprovalCalendarPage({
                                             const priority = content.priority || "MEDIA";
 
                                             return (
-                                                <div key={content.id} className="p-5">
+                                                <div key={content.id} data-approval-item={content.id} className="p-5">
                                                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                                                         <div className="space-y-4 lg:col-span-2">
                                                             <div>
