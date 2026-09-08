@@ -233,6 +233,21 @@ export default async function FinalApprovalPage({
                 content.coverImageUrl ||
                 '';
 
+              const storyApprovalUrl =
+                content.storyMediaUrl ||
+                content.storyCoverUrl ||
+                '';
+
+              const storyApprovalIsVideo =
+                String(
+                  content.storyMediaType ||
+                  ''
+                )
+                  .toLowerCase()
+                  .startsWith(
+                    'video/'
+                  );
+
               const normalizedFormat =
                 String(
                   content.format ||
@@ -422,6 +437,54 @@ export default async function FinalApprovalPage({
                           </div>
                         </div>
                       </div>
+
+
+                      {storyApprovalUrl ? (
+                        <div className="mt-5 rounded-3xl border border-violet-200 bg-violet-50 p-5">
+
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-500">
+                                Stories
+                              </p>
+
+                              <h3 className="mt-1 font-black text-violet-950">
+                                Versão vertical para aprovação
+                              </h3>
+                            </div>
+
+                            <span className="rounded-full border border-violet-200 bg-white px-3 py-1 text-[10px] font-black uppercase text-violet-700">
+                              9:16
+                            </span>
+                          </div>
+
+
+                          <div className="mx-auto mt-4 max-w-[260px] overflow-hidden rounded-2xl border border-violet-200 bg-black shadow-sm">
+
+                            {storyApprovalIsVideo ? (
+                              <video
+                                src={
+                                  storyApprovalUrl
+                                }
+                                controls
+                                preload="metadata"
+                                className="aspect-[9/16] w-full bg-black object-contain"
+                              />
+                            ) : (
+                              <img
+                                src={
+                                  storyApprovalUrl
+                                }
+                                alt={`${content.title} - Stories`}
+                                className="aspect-[9/16] w-full object-cover"
+                              />
+                            )}
+
+                          </div>
+
+                        </div>
+                      ) : null}
+
                     </div>
 
                     <aside className="border-t border-slate-200 bg-slate-50 p-6 xl:border-l xl:border-t-0 xl:pt-16">

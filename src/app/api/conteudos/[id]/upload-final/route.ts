@@ -30,18 +30,46 @@ export const dynamic =
   'force-dynamic';
 
 
+type UploadKind =
+  | 'final'
+  | 'cover'
+  | 'story'
+  | 'storyCover';
+
+
+const uploadPrefixes:
+  Record<
+    UploadKind,
+    string
+  > = {
+    final:
+      'material-final',
+
+    cover:
+      'capa',
+
+    story:
+      'story-final',
+
+    storyCover:
+      'story-capa',
+  };
+
+
 function permissionForArea(
   area: string
 ): PermissionKey {
   if (
-    area === 'FILMMAKER'
+    area ===
+    'FILMMAKER'
   ) {
     return 'filmmaker.manage';
   }
 
 
   if (
-    area === 'DESIGN'
+    area ===
+    'DESIGN'
   ) {
     return 'design.manage';
   }
@@ -51,9 +79,26 @@ function permissionForArea(
 }
 
 
+function parseUploadKind(
+  value: unknown
+): UploadKind | null {
+  if (
+    value === 'final' ||
+    value === 'cover' ||
+    value === 'story' ||
+    value === 'storyCover'
+  ) {
+    return value;
+  }
+
+
+  return null;
+}
+
+
 function validObjectPath(
   contentId: string,
-  kind: 'final' | 'cover',
+  kind: UploadKind,
   value: unknown
 ) {
   if (
@@ -65,13 +110,25 @@ function validObjectPath(
 
 
   const expectedPrefix =
-    kind === 'final'
-      ? `final-content/material-final-${contentId}-`
-      : `final-content/capa-${contentId}-`;
+    `final-content/${uploadPrefixes[kind]}-${contentId}-`;
 
 
   return value.startsWith(
     expectedPrefix
+  );
+}
+
+
+async function storagePathExists(
+  path: string
+) {
+  if (!path) {
+    return true;
+  }
+
+
+  return aprovUpFileExists(
+    path
   );
 }
 
@@ -99,7 +156,8 @@ export async function POST(
       return NextResponse.json(
         {
           ok: false,
-          message: 'Sessão expirada. Entre novamente.',
+          message:
+            'Sessão expirada. Entre novamente.',
         },
         {
           status: 401,
@@ -110,13 +168,14 @@ export async function POST(
 
     if (
       currentUser.status !==
-      'APROVADO' ||
+        'APROVADO' ||
       !currentUser.agencyId
     ) {
       return NextResponse.json(
         {
           ok: false,
-          message: 'Usuário sem acesso ao AprovUp.',
+          message:
+            'Usuário sem acesso ao AprovUp.',
         },
         {
           status: 403,
@@ -142,7 +201,8 @@ export async function POST(
       return NextResponse.json(
         {
           ok: false,
-          message: 'Conteúdo não encontrado.',
+          message:
+            'Conteúdo não encontrado.',
         },
         {
           status: 404,
@@ -166,7 +226,8 @@ export async function POST(
       return NextResponse.json(
         {
           ok: false,
-          message: 'Você não tem permissão para enviar este material.',
+          message:
+            'Você não tem permissão para enviar este material.',
         },
         {
           status: 403,
@@ -184,18 +245,17 @@ export async function POST(
       'prepare'
     ) {
       const kind =
-        body.kind === 'cover'
-          ? 'cover'
-          : body.kind === 'final'
-            ? 'final'
-            : null;
+        parseUploadKind(
+          body.kind
+        );
 
 
       if (!kind) {
         return NextResponse.json(
           {
             ok: false,
-            message: 'Tipo de upload inválido.',
+            message:
+              'Tipo de upload inválido.',
           },
           {
             status: 400,
@@ -205,15 +265,10 @@ export async function POST(
 
 
       const fileName =
-        typeof body.fileName === 'string'
+        typeof body.fileName ===
+        'string'
           ? body.fileName
           : 'arquivo.bin';
-
-
-      const prefix =
-        kind === 'final'
-          ? `material-final-${id}`
-          : `capa-${id}`;
 
 
       const prepared =
@@ -221,7 +276,8 @@ export async function POST(
           folder:
             'final-content',
 
-          prefix,
+          prefix:
+            `${uploadPrefixes[kind]}-${id}`,
 
           fileName,
         });
@@ -263,14 +319,31 @@ export async function POST(
           : '';
 
 
+      const storyPath =
+        typeof body.storyPath ===
+        'string'
+          ? body.storyPath
+          : '';
+
+
+      const storyCoverPath =
+        typeof body.storyCoverPath ===
+        'string'
+          ? body.storyCoverPath
+          : '';
+
+
       if (
         !finalPath &&
-        !coverPath
+        !coverPath &&
+        !storyPath &&
+        !storyCoverPath
       ) {
         return NextResponse.json(
           {
             ok: false,
-            message: 'Nenhum arquivo foi enviado.',
+            message:
+              'Nenhum arquivo foi enviado.',
           },
           {
             status: 400,
@@ -279,71 +352,78 @@ export async function POST(
       }
 
 
-      if (
-        finalPath &&
-        !validObjectPath(
-          id,
-          'final',
-          finalPath
-        )
+      const pathsToValidate: Array<{
+        path: string;
+        kind: UploadKind;
+        label: string;
+      }> = [
+        {
+          path:
+            finalPath,
+          kind:
+            'final',
+          label:
+            'material final do feed',
+        },
+        {
+          path:
+            coverPath,
+          kind:
+            'cover',
+          label:
+            'thumbnail do feed',
+        },
+        {
+          path:
+            storyPath,
+          kind:
+            'story',
+          label:
+            'material final dos Stories',
+        },
+        {
+          path:
+            storyCoverPath,
+          kind:
+            'storyCover',
+          label:
+            'thumbnail dos Stories',
+        },
+      ];
+
+
+      for (
+        const item
+        of pathsToValidate
       ) {
-        return NextResponse.json(
-          {
-            ok: false,
-            message: 'Caminho do material final inválido.',
-          },
-          {
-            status: 400,
-          }
-        );
-      }
+        if (!item.path) {
+          continue;
+        }
 
 
-      if (
-        coverPath &&
-        !validObjectPath(
-          id,
-          'cover',
-          coverPath
-        )
-      ) {
-        return NextResponse.json(
-          {
-            ok: false,
-            message: 'Caminho da capa inválido.',
-          },
-          {
-            status: 400,
-          }
-        );
-      }
-
-
-      if (finalPath) {
-        const exists =
-          await aprovUpFileExists(
-            finalPath
-          );
-
-
-        if (!exists) {
+        if (
+          !validObjectPath(
+            id,
+            item.kind,
+            item.path
+          )
+        ) {
           return NextResponse.json(
             {
               ok: false,
-              message: 'O material final ainda não chegou ao Storage.',
+              message:
+                `Caminho inválido para ${item.label}.`,
             },
             {
               status: 400,
             }
           );
         }
-      }
 
 
-      if (coverPath) {
         const exists =
-          await aprovUpFileExists(
-            coverPath
+          await storagePathExists(
+            item.path
           );
 
 
@@ -351,7 +431,8 @@ export async function POST(
           return NextResponse.json(
             {
               ok: false,
-              message: 'A capa ainda não chegou ao Storage.',
+              message:
+                `O arquivo de ${item.label} ainda não chegou ao Storage.`,
             },
             {
               status: 400,
@@ -377,6 +458,22 @@ export async function POST(
           : '';
 
 
+      const storyMediaUrl =
+        storyPath
+          ? getAprovUpPublicUrl(
+              storyPath
+            )
+          : '';
+
+
+      const storyCoverUrl =
+        storyCoverPath
+          ? getAprovUpPublicUrl(
+              storyCoverPath
+            )
+          : '';
+
+
       const reviewStatus =
         content.area ===
         'FILMMAKER'
@@ -387,31 +484,36 @@ export async function POST(
             : 'REVISAO_INTERNA';
 
 
-      const updateData: any = {
-        status:
-          reviewStatus,
+      const updateData:
+        Record<
+          string,
+          unknown
+        > = {
+          status:
+            reviewStatus,
 
-        finalUploadedAt:
-          new Date(),
-      };
+          finalUploadedAt:
+            new Date(),
+        };
 
 
       if (finalMediaUrl) {
-        updateData.finalMediaUrl =
-          finalMediaUrl;
-
-        updateData.finalMediaType =
+        const finalMediaType =
           typeof body.finalMediaType ===
           'string'
             ? body.finalMediaType
             : '';
 
 
+        updateData.finalMediaUrl =
+          finalMediaUrl;
+
+        updateData.finalMediaType =
+          finalMediaType;
+
+
         if (
-          String(
-            body.finalMediaType ||
-            ''
-          ).startsWith(
+          finalMediaType.startsWith(
             'image/'
           ) &&
           !coverUrl
@@ -425,6 +527,39 @@ export async function POST(
       if (coverUrl) {
         updateData.finalCoverUrl =
           coverUrl;
+      }
+
+
+      if (storyMediaUrl) {
+        const storyMediaType =
+          typeof body.storyMediaType ===
+          'string'
+            ? body.storyMediaType
+            : '';
+
+
+        updateData.storyMediaUrl =
+          storyMediaUrl;
+
+        updateData.storyMediaType =
+          storyMediaType;
+
+
+        if (
+          storyMediaType.startsWith(
+            'image/'
+          ) &&
+          !storyCoverUrl
+        ) {
+          updateData.storyCoverUrl =
+            storyMediaUrl;
+        }
+      }
+
+
+      if (storyCoverUrl) {
+        updateData.storyCoverUrl =
+          storyCoverUrl;
       }
 
 
@@ -453,7 +588,7 @@ export async function POST(
             'EQUIPE',
 
           message:
-            'Material final enviado para conferência interna antes da 2ª Etapa de Aprovação.',
+            'Materiais finais enviados para conferência interna antes da 2ª Etapa de Aprovação.',
         },
       }).catch(
         () => null
@@ -466,6 +601,10 @@ export async function POST(
         finalMediaUrl,
 
         coverUrl,
+
+        storyMediaUrl,
+
+        storyCoverUrl,
       });
     }
 
@@ -473,7 +612,8 @@ export async function POST(
     return NextResponse.json(
       {
         ok: false,
-        message: 'Ação de upload inválida.',
+        message:
+          'Ação de upload inválida.',
       },
       {
         status: 400,
@@ -490,7 +630,8 @@ export async function POST(
     return NextResponse.json(
       {
         ok: false,
-        message: 'Erro ao enviar arquivo.',
+        message:
+          'Erro ao enviar arquivo.',
       },
       {
         status: 500,

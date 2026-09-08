@@ -169,6 +169,29 @@ export default async function ViewContentPage({
   const finalCoverUrl = item.finalCoverUrl || '';
   const finalMediaType = item.finalMediaType || '';
 
+  const storyMediaUrl =
+    item.storyMediaUrl ||
+    '';
+
+  const storyCoverUrl =
+    item.storyCoverUrl ||
+    '';
+
+  const storyMediaType =
+    item.storyMediaType ||
+    '';
+
+  const isDesignContent =
+    [
+      'DESIGN',
+      'SOCIAL_DESIGN',
+    ].includes(
+      String(
+        item.area ||
+        ''
+      ).toUpperCase()
+    );
+
   const normalizedFormat =
     String(
       item.format ||
@@ -303,23 +326,26 @@ export default async function ViewContentPage({
             <h2 className="mt-2 text-lg font-bold text-blue-950">
               {
                 isDesignCarousel
-                  ? 'Montar carrossel para conferência'
-                  : 'Enviar arquivo pronto para conferência'
+                  ? 'Carrossel + Stories'
+                  : isDesignContent
+                    ? 'Entregar Feed + Stories'
+                    : 'Enviar arquivo pronto para conferência'
               }
             </h2>
 
             <p className="mt-2 text-sm leading-relaxed text-blue-800">
               {
                 isDesignCarousel
-                  ? 'Adicione todas as páginas na ordem correta. O carrossel completo seguirá para conferência interna e depois para a 2ª Etapa de aprovação do cliente.'
-                  : 'Suba aqui a arte final, vídeo editado ou capa do vídeo. Depois do envio, o material segue para conferência interna antes de avançar para a Etapa 2 de aprovação do cliente.'
+                  ? 'Monte o carrossel na ordem correta e, quando existir uma versão vertical, envie também o material dos Stories.'
+                  : isDesignContent
+                    ? 'Envie separadamente o arquivo final e a thumbnail do Feed e dos Stories. Você pode atualizar cada formato sem apagar o outro.'
+                    : 'Suba aqui o vídeo editado ou a capa do vídeo. Depois do envio, o material segue para conferência interna.'
               }
             </p>
 
-            {isDesignCarousel && (
 
+            {isDesignCarousel ? (
               <div className="mt-5">
-
                 <CarouselFinalUpload
                   contentId={
                     item.id
@@ -330,82 +356,115 @@ export default async function ViewContentPage({
                   assets={
                     item.instagramMediaAssets.map(
                       (asset: any) => ({
-                        id: asset.id,
-                        url: asset.url,
-                        mimeType: asset.mimeType,
-                        position: asset.position,
+                        id:
+                          asset.id,
+
+                        url:
+                          asset.url,
+
+                        mimeType:
+                          asset.mimeType,
+
+                        position:
+                          asset.position,
                       })
                     )
                   }
                 />
-
               </div>
+            ) : null}
 
-            )}
 
-            {!isDesignCarousel && (finalMediaUrl || finalCoverUrl) && (
-              <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
-                Material enviado para conferência interna.
-              </div>
-            )}
-
-            {!isDesignCarousel && imagePreviewUrl && (
-              <div className="mt-4 overflow-hidden rounded-2xl border border-blue-100 bg-white">
-                <img
-                  src={imagePreviewUrl}
-                  alt="Preview do material final"
-                  className="h-44 w-full object-cover"
-                />
-              </div>
-            )}
-
-            {!isDesignCarousel && videoPreviewUrl && (
-              <div className="mt-4 overflow-hidden rounded-2xl border border-blue-100 bg-black">
-                <video
-                  src={videoPreviewUrl}
-                  controls
-                  preload="metadata"
-                  className="aspect-video w-full bg-black"
-                >
-                  Seu navegador não conseguiu reproduzir este vídeo.
-                </video>
-              </div>
-            )}
-
-            {!isDesignCarousel &&
-              finalMediaUrl &&
-              !imagePreviewUrl &&
-              !videoPreviewUrl && (
-                <div className="mt-4 rounded-2xl border border-blue-100 bg-white p-4 text-center">
-                  <p className="text-sm font-bold text-slate-700">
-                    Arquivo final enviado.
-                  </p>
-
-                  <p className="mt-1 text-xs text-slate-500">
-                    Use o botão abaixo para visualizar o arquivo.
-                  </p>
+            {!isDesignContent &&
+              !isDesignCarousel &&
+              (finalMediaUrl || finalCoverUrl) ? (
+                <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
+                  Material enviado para conferência interna.
                 </div>
-              )}
+              ) : null}
 
-            {!isDesignCarousel && finalMediaUrl && (
-              <a
-                href={finalMediaUrl}
-                target="_blank"
-                className="mt-3 block rounded-2xl bg-white px-4 py-3 text-center text-sm font-bold text-blue-700 shadow-sm hover:bg-blue-100"
-              >
-                Abrir arquivo final enviado
-              </a>
-            )}
 
-            {!isDesignCarousel && (
-              <FinalUploadForm
-                contentId={
-                  item.id
-                }
-              />
-            )}
+            {!isDesignContent &&
+              !isDesignCarousel &&
+              imagePreviewUrl ? (
+                <div className="mt-4 overflow-hidden rounded-2xl border border-blue-100 bg-white">
+                  <img
+                    src={
+                      imagePreviewUrl
+                    }
+                    alt="Preview do material final"
+                    className="h-44 w-full object-cover"
+                  />
+                </div>
+              ) : null}
+
+
+            {!isDesignContent &&
+              !isDesignCarousel &&
+              videoPreviewUrl ? (
+                <div className="mt-4 overflow-hidden rounded-2xl border border-blue-100 bg-black">
+                  <video
+                    src={
+                      videoPreviewUrl
+                    }
+                    controls
+                    preload="metadata"
+                    className="aspect-video w-full bg-black"
+                  >
+                    Seu navegador não conseguiu reproduzir este vídeo.
+                  </video>
+                </div>
+              ) : null}
+
+
+            {!isDesignContent &&
+              !isDesignCarousel &&
+              finalMediaUrl ? (
+                <a
+                  href={
+                    finalMediaUrl
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 block rounded-2xl bg-white px-4 py-3 text-center text-sm font-bold text-blue-700 shadow-sm hover:bg-blue-100"
+                >
+                  Abrir arquivo final enviado
+                </a>
+              ) : null}
+
+
+            <FinalUploadForm
+              contentId={
+                item.id
+              }
+              area={
+                item.area
+              }
+              feedMode={
+                isDesignCarousel
+                  ? 'carousel'
+                  : 'single'
+              }
+              currentFinalMediaUrl={
+                finalMediaUrl
+              }
+              currentFinalCoverUrl={
+                finalCoverUrl
+              }
+              currentFinalMediaType={
+                finalMediaType
+              }
+              currentStoryMediaUrl={
+                storyMediaUrl
+              }
+              currentStoryCoverUrl={
+                storyCoverUrl
+              }
+              currentStoryMediaType={
+                storyMediaType
+              }
+            />
           </section>
-
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
               <MessageSquare size={18} className="text-slate-500" />

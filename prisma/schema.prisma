@@ -249,6 +249,9 @@ model Content {
   finalCoverUrl   String?
   finalMediaType  String?
   finalUploadedAt DateTime?
+  storyMediaUrl  String?
+  storyCoverUrl  String?
+  storyMediaType String?
 }
 
 model Task {
