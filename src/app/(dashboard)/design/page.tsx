@@ -528,102 +528,198 @@ function ClientResource({
     client.logoUrl ||
     "";
 
+  const resources = [
+    databaseLink
+      ? {
+          href:
+            databaseLink,
+
+          label:
+            "Banco",
+
+          title:
+            "Abrir banco de dados",
+
+          icon:
+            Database,
+        }
+      : null,
+
+    driveLink
+      ? {
+          href:
+            driveLink,
+
+          label:
+            "Drive",
+
+          title:
+            "Abrir pasta no Drive",
+
+          icon:
+            FolderOpen,
+        }
+      : null,
+
+    logoLink
+      ? {
+          href:
+            logoLink,
+
+          label:
+            "Logo",
+
+          title:
+            "Abrir arquivos da marca",
+
+          icon:
+            ImageIcon,
+        }
+      : null,
+  ].filter(
+    Boolean
+  ) as Array<{
+    href:
+      string;
+
+    label:
+      string;
+
+    title:
+      string;
+
+    icon:
+      typeof Database;
+  }>;
+
   return (
-    <div className="flex min-w-[260px] max-w-[300px] flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-        {visualLogo ? (
-          <img
-            src={
-              visualLogo
-            }
-            alt=""
-            className="h-full w-full object-cover"
-          />
+    <div className="w-[340px] shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md sm:w-[370px]">
+
+      <div className="p-4">
+
+        <div className="flex items-center gap-4">
+
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
+
+            {visualLogo ? (
+              <img
+                src={
+                  visualLogo
+                }
+                alt={
+                  `Logo de ${cleanDemoName(
+                    client.name
+                  )}`
+                }
+                className="h-full w-full object-contain p-1.5"
+              />
+            ) : (
+              <span className="text-sm font-black text-slate-500">
+                {getInitials(
+                  client.name
+                )}
+              </span>
+            )}
+
+          </div>
+
+
+          <div className="min-w-0 flex-1">
+
+            <div className="flex min-w-0 items-center gap-2">
+
+              <p className="truncate text-sm font-black text-slate-900">
+                {cleanDemoName(
+                  client.name
+                )}
+              </p>
+
+
+              {isDemoName(
+                client.name
+              ) ? (
+                <span className="shrink-0 rounded-full border border-violet-100 bg-violet-50 px-2 py-0.5 text-[8px] font-black uppercase tracking-wide text-violet-700">
+                  Demo
+                </span>
+              ) : null}
+
+            </div>
+
+
+            <p className="mt-1 truncate text-[11px] font-medium text-slate-400">
+              {client.segment ||
+                "Segmento não informado"}
+            </p>
+
+
+            <p className="mt-2 text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">
+              Recursos rápidos
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div className="my-4 h-px bg-slate-100" />
+
+
+        {resources.length >
+        0 ? (
+
+          <div className="grid grid-cols-3 gap-2">
+
+            {resources.map(
+              (
+                resource
+              ) => {
+
+                const Icon =
+                  resource.icon;
+
+                return (
+                  <a
+                    key={
+                      resource.label
+                    }
+                    href={
+                      resource.href
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    title={
+                      resource.title
+                    }
+                    className="group flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-[10px] font-black text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                  >
+
+                    <Icon
+                      size={14}
+                      className="shrink-0 transition group-hover:scale-110"
+                    />
+
+
+                    <span className="truncate">
+                      {resource.label}
+                    </span>
+
+                  </a>
+                );
+              }
+            )}
+
+          </div>
+
         ) : (
-          <span className="text-[10px] font-bold text-slate-500">
-            {getInitials(
-              client.name
-            )}
-          </span>
+
+          <div className="flex min-h-11 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 text-center text-[10px] font-semibold text-slate-400">
+            Nenhum recurso cadastrado para este cliente.
+          </div>
+
         )}
+
       </div>
 
-
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <p className="truncate text-[11px] font-bold text-slate-900">
-            {cleanDemoName(
-              client.name
-            )}
-          </p>
-
-          {isDemoName(
-            client.name
-          ) ? (
-            <span className="rounded bg-violet-50 px-1.5 py-0.5 text-[7px] font-bold text-violet-700">
-              DEMO
-            </span>
-          ) : null}
-        </div>
-
-        <p className="mt-0.5 truncate text-[9px] text-slate-400">
-          {client.segment ||
-            "Sem segmento"}
-        </p>
-
-
-        <div className="mt-2 flex items-center gap-1">
-          {databaseLink ? (
-            <a
-              href={
-                databaseLink
-              }
-              target="_blank"
-              rel="noreferrer"
-              title="Banco de dados"
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
-            >
-              <Database
-                size={12}
-              />
-            </a>
-          ) : null}
-
-
-          {driveLink ? (
-            <a
-              href={
-                driveLink
-              }
-              target="_blank"
-              rel="noreferrer"
-              title="Drive"
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
-            >
-              <FolderOpen
-                size={12}
-              />
-            </a>
-          ) : null}
-
-
-          {logoLink ? (
-            <a
-              href={
-                logoLink
-              }
-              target="_blank"
-              rel="noreferrer"
-              title="Logo"
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
-            >
-              <ImageIcon
-                size={12}
-              />
-            </a>
-          ) : null}
-        </div>
-      </div>
     </div>
   );
 }
