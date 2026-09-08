@@ -2146,3 +2146,50 @@
     height: 44px;
   }
 }
+
+
+
+
+/* =========================================================
+   CRM HEADER COLOR FIX V2
+   ========================================================= */
+
+.top-header h1 {
+  color: #17325c !important;
+  background: transparent !important;
+  text-shadow: none !important;
+}
+
+.top-header p {
+  color: #6b7a90 !important;
+  background: transparent !important;
+}
+
+.top-header .search-field {
+  background: #ffffff !important;
+  border: 1px solid #cfd8e3 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+}
+
+.top-header .search-field input {
+  color: #142033 !important;
+  background: transparent !important;
+}
+
+.top-header .search-field input::placeholder {
+  color: #7b8ba3 !important;
+  opacity: 1 !important;
+}
+
+.top-header .search-field svg {
+  color: #2563eb !important;
+}
+
+.top-header .icon-button {
+  background: #0f172a !important;
+  border: 1px solid #1e293b !important;
+}
+
+.top-header .icon-button svg {
+  color: #ffffff !important;
+}
