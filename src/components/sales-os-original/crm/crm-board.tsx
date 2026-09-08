@@ -4,9 +4,13 @@ import {
   deleteLeadAction,
   moveLeadAction,
 } from "@/app/(sales)/crm/actions/lead-actions";
+
 import {
   Building2,
+  CalendarClock,
   Camera,
+  CircleDollarSign,
+  Flame,
   Globe2,
   GripVertical,
   Mail,
@@ -17,196 +21,599 @@ import {
   Search,
   Trash2,
   UserRound,
+  X,
 } from "lucide-react";
+
 import Link from "next/link";
+
 import {
+  type CSSProperties,
   useMemo,
   useState,
   useTransition,
 } from "react";
-import { EditLeadForm } from "./edit-lead-form";
+
+import {
+  EditLeadForm,
+} from "./edit-lead-form";
+
 
 export type PipelineStage = {
-  id: string;
-  name: string;
-  position: number;
-  color: string | null;
-  is_closed: boolean;
+  id:
+    string;
+
+  name:
+    string;
+
+  position:
+    number;
+
+  color:
+    string | null;
+
+  is_closed:
+    boolean;
 };
+
 
 export type Lead = {
-  id: string;
-  company_name: string;
-  segment: string | null;
-  website: string | null;
-  instagram: string | null;
-  phone: string | null;
-  whatsapp: string | null;
-  email: string | null;
-  city: string | null;
-  state: string | null;
-  decision_maker_name: string | null;
-  decision_maker_role: string | null;
-  estimated_value: number;
-  temperature: "cold" | "warm" | "hot";
-  priority: "low" | "medium" | "high";
-  next_action: string | null;
-  notes: string | null;
-  stage_id: string | null;
-  created_at: string;
+  id:
+    string;
+
+  company_name:
+    string;
+
+  segment:
+    string | null;
+
+  website:
+    string | null;
+
+  instagram:
+    string | null;
+
+  phone:
+    string | null;
+
+  whatsapp:
+    string | null;
+
+  email:
+    string | null;
+
+  city:
+    string | null;
+
+  state:
+    string | null;
+
+  decision_maker_name:
+    string | null;
+
+  decision_maker_role:
+    string | null;
+
+  estimated_value:
+    number;
+
+  temperature:
+    "cold" |
+    "warm" |
+    "hot";
+
+  priority:
+    "low" |
+    "medium" |
+    "high";
+
+  next_action:
+    string | null;
+
+  notes:
+    string | null;
+
+  stage_id:
+    string | null;
+
+  created_at:
+    string;
 };
+
 
 type CrmBoardProps = {
-  stages: PipelineStage[];
-  leads: Lead[];
+  stages:
+    PipelineStage[];
+
+  leads:
+    Lead[];
 };
 
-function formatMoney(value: number) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    maximumFractionDigits: 0,
-  }).format(value);
+
+type TemperatureFilter =
+  "all" |
+  Lead["temperature"];
+
+
+type PriorityFilter =
+  "all" |
+  Lead["priority"];
+
+
+function formatMoney(
+  value:
+    number
+) {
+
+  return new Intl.NumberFormat(
+    "pt-BR",
+    {
+      style:
+        "currency",
+
+      currency:
+        "BRL",
+
+      maximumFractionDigits:
+        0,
+    }
+  ).format(
+    value
+  );
 }
+
 
 function getTemperatureLabel(
-  temperature: Lead["temperature"]
+  temperature:
+    Lead["temperature"]
 ) {
+
   const labels = {
-    cold: "Frio",
-    warm: "Morno",
-    hot: "Quente",
+    cold:
+      "Frio",
+
+    warm:
+      "Morno",
+
+    hot:
+      "Quente",
   };
 
-  return labels[temperature];
+
+  return labels[
+    temperature
+  ];
 }
 
-function getPriorityLabel(priority: Lead["priority"]) {
+
+function getPriorityLabel(
+  priority:
+    Lead["priority"]
+) {
+
   const labels = {
-    low: "Baixa",
-    medium: "Média",
-    high: "Alta",
+    low:
+      "Baixa",
+
+    medium:
+      "Média",
+
+    high:
+      "Alta",
   };
 
-  return labels[priority];
+
+  return labels[
+    priority
+  ];
 }
 
-function normalizeSearchText(value: string | null) {
-  return (value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+
+function normalizeSearchText(
+  value:
+    string | null
+) {
+
+  return (
+    value ??
+    ""
+  )
+    .normalize(
+      "NFD"
+    )
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
     .toLowerCase();
 }
+
+
+function companyInitials(
+  value:
+    string
+) {
+
+  const words =
+    value
+      .trim()
+      .split(
+        /\s+/
+      )
+      .filter(
+        Boolean
+      );
+
+
+  if (
+    words.length ===
+    0
+  ) {
+    return "??";
+  }
+
+
+  if (
+    words.length ===
+    1
+  ) {
+    return words[0]
+      .slice(
+        0,
+        2
+      )
+      .toUpperCase();
+  }
+
+
+  return (
+    words[0][0] +
+    words[
+      words.length -
+      1
+    ][0]
+  ).toUpperCase();
+}
+
 
 export function CrmBoard({
   stages,
   leads,
 }: CrmBoardProps) {
-  const [localLeads, setLocalLeads] = useState(leads);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [editingLead, setEditingLead] =
-    useState<Lead | null>(null);
 
-  const [draggedLeadId, setDraggedLeadId] =
-    useState<string | null>(null);
+  const [
+    localLeads,
+    setLocalLeads,
+  ] =
+    useState(
+      leads
+    );
 
-  const [dragOverStageId, setDragOverStageId] =
-    useState<string | null>(null);
 
-  const [isMoving, startMoving] = useTransition();
-const filteredLeads = useMemo(() => {
-    const normalizedTerm = normalizeSearchText(searchTerm);
+  const [
+    searchTerm,
+    setSearchTerm,
+  ] =
+    useState(
+      ""
+    );
 
-    if (!normalizedTerm) {
-      return localLeads;
-    }
 
-    return localLeads.filter((lead) => {
-      const searchableContent = [
-        lead.company_name,
-        lead.segment,
-        lead.city,
-        lead.state,
-        lead.decision_maker_name,
-        lead.decision_maker_role,
-        lead.email,
-        lead.phone,
-        lead.whatsapp,
+  const [
+    temperatureFilter,
+    setTemperatureFilter,
+  ] =
+    useState<TemperatureFilter>(
+      "all"
+    );
+
+
+  const [
+    priorityFilter,
+    setPriorityFilter,
+  ] =
+    useState<PriorityFilter>(
+      "all"
+    );
+
+
+  const [
+    editingLead,
+    setEditingLead,
+  ] =
+    useState<Lead | null>(
+      null
+    );
+
+
+  const [
+    draggedLeadId,
+    setDraggedLeadId,
+  ] =
+    useState<string | null>(
+      null
+    );
+
+
+  const [
+    dragOverStageId,
+    setDragOverStageId,
+  ] =
+    useState<string | null>(
+      null
+    );
+
+
+  const [
+    isMoving,
+    startMoving,
+  ] =
+    useTransition();
+
+
+  const filteredLeads =
+    useMemo(
+      () => {
+
+        const normalizedTerm =
+          normalizeSearchText(
+            searchTerm
+          );
+
+
+        return localLeads.filter(
+          (
+            lead
+          ) => {
+
+            if (
+              temperatureFilter !==
+                "all" &&
+              lead.temperature !==
+                temperatureFilter
+            ) {
+              return false;
+            }
+
+
+            if (
+              priorityFilter !==
+                "all" &&
+              lead.priority !==
+                priorityFilter
+            ) {
+              return false;
+            }
+
+
+            if (
+              !normalizedTerm
+            ) {
+              return true;
+            }
+
+
+            const searchableContent =
+              [
+                lead.company_name,
+                lead.segment,
+                lead.city,
+                lead.state,
+                lead.decision_maker_name,
+                lead.decision_maker_role,
+                lead.email,
+                lead.phone,
+                lead.whatsapp,
+              ]
+                .map(
+                  normalizeSearchText
+                )
+                .join(
+                  " "
+                );
+
+
+            return searchableContent.includes(
+              normalizedTerm
+            );
+          }
+        );
+      },
+      [
+        localLeads,
+        priorityFilter,
+        searchTerm,
+        temperatureFilter,
       ]
-        .map(normalizeSearchText)
-        .join(" ");
+    );
 
-      return searchableContent.includes(normalizedTerm);
-    });
-  }, [localLeads, searchTerm]);
+
+  const filteredValue =
+    useMemo(
+      () =>
+        filteredLeads.reduce(
+          (
+            total,
+            lead
+          ) =>
+            total +
+            Number(
+              lead.estimated_value ??
+              0
+            ),
+          0
+        ),
+      [
+        filteredLeads,
+      ]
+    );
+
+
+  const hasFilters =
+    Boolean(
+      searchTerm.trim()
+    ) ||
+    temperatureFilter !==
+      "all" ||
+    priorityFilter !==
+      "all";
+
+
+  function clearFilters() {
+
+    setSearchTerm(
+      ""
+    );
+
+    setTemperatureFilter(
+      "all"
+    );
+
+    setPriorityFilter(
+      "all"
+    );
+  }
+
 
   function moveLeadLocally(
-    leadId: string,
-    stageId: string
+    leadId:
+      string,
+
+    stageId:
+      string
   ) {
-    setLocalLeads((currentLeads) =>
-      currentLeads.map((lead) =>
-        lead.id === leadId
-          ? {
-              ...lead,
-              stage_id: stageId,
-            }
-          : lead
-      )
+
+    setLocalLeads(
+      (
+        currentLeads
+      ) =>
+        currentLeads.map(
+          (
+            lead
+          ) =>
+            lead.id ===
+            leadId
+              ? {
+                  ...lead,
+
+                  stage_id:
+                    stageId,
+                }
+              : lead
+        )
     );
   }
+
 
   function persistLeadStage(
-    leadId: string,
-    stageId: string,
-    previousStageId: string | null
+    leadId:
+      string,
+
+    stageId:
+      string,
+
+    previousStageId:
+      string | null
   ) {
-    moveLeadLocally(leadId, stageId);
 
-    startMoving(async () => {
-      try {
-        const formData = new FormData();
-
-        formData.set("lead_id", leadId);
-        formData.set("stage_id", stageId);
-
-        await moveLeadAction(formData);
-      } catch (error) {
-        moveLeadLocally(
-          leadId,
-          previousStageId ?? stageId
-        );
-
-        console.error(
-          "Não foi possível mover o lead:",
-          error
-        );
-
-        window.alert(
-          "Não foi possível salvar a nova etapa. Tente novamente."
-        );
-      }
-    });
-  }
-
-  function handleDrop(stageId: string) {
-    if (!draggedLeadId) {
-      return;
-    }
-
-    const draggedLead = localLeads.find(
-      (lead) => lead.id === draggedLeadId
+    moveLeadLocally(
+      leadId,
+      stageId
     );
 
-    setDragOverStageId(null);
-    setDraggedLeadId(null);
+
+    startMoving(
+      async () => {
+
+        try {
+
+          const formData =
+            new FormData();
+
+
+          formData.set(
+            "lead_id",
+            leadId
+          );
+
+          formData.set(
+            "stage_id",
+            stageId
+          );
+
+
+          await moveLeadAction(
+            formData
+          );
+
+        }
+        catch (
+          error
+        ) {
+
+          if (
+            previousStageId
+          ) {
+            moveLeadLocally(
+              leadId,
+              previousStageId
+            );
+          }
+
+
+          console.error(
+            "Não foi possível mover o lead:",
+            error
+          );
+
+
+          window.alert(
+            "Não foi possível salvar a nova etapa. Tente novamente."
+          );
+        }
+      }
+    );
+  }
+
+
+  function handleDrop(
+    stageId:
+      string
+  ) {
 
     if (
-      !draggedLead ||
-      draggedLead.stage_id === stageId
+      !draggedLeadId
     ) {
       return;
     }
+
+
+    const draggedLead =
+      localLeads.find(
+        (
+          lead
+        ) =>
+          lead.id ===
+          draggedLeadId
+      );
+
+
+    setDragOverStageId(
+      null
+    );
+
+    setDraggedLeadId(
+      null
+    );
+
+
+    if (
+      !draggedLead ||
+      draggedLead.stage_id ===
+        stageId
+    ) {
+      return;
+    }
+
 
     persistLeadStage(
       draggedLead.id,
@@ -215,441 +622,929 @@ const filteredLeads = useMemo(() => {
     );
   }
 
-  return (
-    <>
-      <section className="crm-search-panel">
-        <Search size={18} />
 
-        <input
-          aria-label="Pesquisar empresas"
-          onChange={(event) =>
-            setSearchTerm(event.target.value)
-          }
-          placeholder="Pesquisar por empresa, segmento, cidade ou decisor..."
-          type="search"
-          value={searchTerm}
-        />
+  async function removeLead(
+    lead:
+      Lead
+  ) {
 
-        {isMoving && (
-          <span className="kanban-saving-status">
-            Salvando...
-          </span>
-        )}
+    const confirmed =
+      window.confirm(
+        `Excluir definitivamente a empresa "${lead.company_name}"?`
+      );
 
-        {searchTerm && (
-          <span className="crm-search-result-count">
-            {filteredLeads.length} resultado(s)
-          </span>
-        )}
-      </section>
 
-      {filteredLeads.length === 0 ? (
-        <section className="crm-empty-state">
-          <div className="crm-empty-icon">
-            <Building2 size={27} />
-          </div>
-
-          <span className="panel-kicker">
-            NENHUM RESULTADO
-          </span>
-
-          <h3>Nenhuma empresa encontrada.</h3>
-
-          <p>
-            Tente pesquisar usando outro nome, segmento,
-            cidade ou decisor.
-          </p>
-        </section>
-      ) : (
-        <section className="real-kanban-board">
-          {stages.map((stage) => {
-            const stageLeads = filteredLeads.filter(
-              (lead) => lead.stage_id === stage.id
-            );
-
-            const stageValue = stageLeads.reduce(
-              (total, lead) =>
-                total +
-                Number(lead.estimated_value ?? 0),
-              0
-            );
-
-            const isDragTarget =
-              dragOverStageId === stage.id;
-
-            return (
-              <div
-                className={`real-kanban-column ${
-                  isDragTarget
-                    ? "kanban-column-drag-over"
-                    : ""
-                }`}
-                key={stage.id}
-                onDragEnter={(event) => {
-                  event.preventDefault();
-                  setDragOverStageId(stage.id);
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault();
-
-                  event.dataTransfer.dropEffect =
-                    "move";
-
-                  setDragOverStageId(stage.id);
-                }}
-                onDragLeave={(event) => {
-                  if (
-                    event.currentTarget.contains(
-                      event.relatedTarget as Node
-                    )
-                  ) {
-                    return;
-                  }
-
-                  setDragOverStageId(null);
-                }}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  handleDrop(stage.id);
-                }}
-              >
-                <div className="real-kanban-header">
-                  <div>
-                    <span
-                      className="stage-color"
-                      style={{
-                        backgroundColor:
-                          stage.color ?? "#64748b",
-                      }}
-                    />
-
-                    <strong>{stage.name}</strong>
-                  </div>
-
-                  <span className="stage-counter">
-                    {stageLeads.length}
-                  </span>
-                </div>
-
-                <div className="stage-total">
-                  {formatMoney(stageValue)}
-                </div>
-
-                <div className="real-kanban-list">
-                  {stageLeads.map((lead) => {
-                    const isDragging =
-                      draggedLeadId === lead.id;
-
-                    return (
-                      <article
-                        className={`real-lead-card ${
-                          isDragging
-                            ? "lead-card-dragging"
-                            : ""
-                        }`}
-                        draggable
-                        key={lead.id}
-                        onDragEnd={() => {
-                          setDraggedLeadId(null);
-                          setDragOverStageId(null);
-                        }}
-                        onDragStart={(event) => {
-                          setDraggedLeadId(lead.id);
-
-                          event.dataTransfer.effectAllowed =
-                            "move";
-
-                          event.dataTransfer.setData(
-                            "text/plain",
-                            lead.id
-                          );
-                        }}
-                      >
-                        <div className="lead-drag-handle">
-                          <GripVertical size={15} />
-                          <span>
-                            Arraste para mudar de etapa
-                          </span>
-                        </div>
-
-                        <div className="real-lead-card-top">
-                          <div className="real-lead-logo">
-                            {lead.company_name
-                              .slice(0, 2)
-                              .toUpperCase()}
-                          </div>
-
-                          <div className="lead-card-title">
-                            <strong>
-                              {lead.company_name}
-                            </strong>
-
-                            <span>
-                              {lead.segment ??
-                                "Segmento não informado"}
-                            </span>
-                          </div>
-
-                          <div className="lead-card-actions">
-                            <button
-                              aria-label={`Editar ${lead.company_name}`}
-                              className="delete-lead-button"
-                              onClick={() =>
-                                setEditingLead(lead)
-                              }
-                              title="Editar empresa"
-                              type="button"
-                            >
-                              <Pencil size={15} />
-                            </button>
-
-                            <button
-  aria-label={`Excluir ${lead.company_name}`}
-  className="delete-lead-button"
-  onClick={async () => {
-    const confirmed = window.confirm(
-      `Excluir definitivamente a empresa "${lead.company_name}"?`
-    );
-
-    if (!confirmed) {
+    if (
+      !confirmed
+    ) {
       return;
     }
 
-    const formData = new FormData();
-    formData.set("lead_id", lead.id);
+
+    const formData =
+      new FormData();
+
+
+    formData.set(
+      "lead_id",
+      lead.id
+    );
+
 
     try {
-      await deleteLeadAction(formData);
-      window.location.reload();
-    } catch (error) {
-      console.error("Erro ao excluir empresa:", error);
+
+      await deleteLeadAction(
+        formData
+      );
+
+
+      setLocalLeads(
+        (
+          current
+        ) =>
+          current.filter(
+            (
+              item
+            ) =>
+              item.id !==
+              lead.id
+          )
+      );
+
+    }
+    catch (
+      error
+    ) {
+
+      console.error(
+        "Erro ao excluir empresa:",
+        error
+      );
+
 
       window.alert(
         "Não foi possível excluir a empresa. Tente novamente."
       );
     }
-  }}
-  title="Excluir empresa"
-  type="button"
->
-  <Trash2 size={15} />
-</button>
-                          </div>
-                        </div>
+  }
 
-                        <div className="lead-badges">
-                          <span
-                            className={`temperature-badge ${lead.temperature}`}
-                          >
-                            {getTemperatureLabel(
-                              lead.temperature
-                            )}
-                          </span>
 
-                          <span
-                            className={`lead-priority ${lead.priority}`}
-                          >
-                            Prioridade{" "}
-                            {getPriorityLabel(
-                              lead.priority
-                            )}
-                          </span>
-                        </div>
+  return (
+    <>
 
-                        <div className="lead-detail-list">
-                          {lead.decision_maker_name && (
-                            <span>
-                              <UserRound size={14} />
+      <section className="crm-board-v2">
 
-                              {lead.decision_maker_name}
+        <div className="crm-board-toolbar-v2">
 
-                              {lead.decision_maker_role
-                                ? ` · ${lead.decision_maker_role}`
-                                : ""}
-                            </span>
+          <div className="crm-board-search-v2">
+
+            <Search size={18} />
+
+            <input
+              aria-label="Pesquisar oportunidades"
+              onChange={
+                (
+                  event
+                ) =>
+                  setSearchTerm(
+                    event.target.value
+                  )
+              }
+              placeholder="Buscar empresa, decisor, segmento ou cidade..."
+              type="search"
+              value={searchTerm}
+            />
+
+          </div>
+
+
+          <select
+            aria-label="Filtrar por temperatura"
+            className="crm-board-filter-v2"
+            onChange={
+              (
+                event
+              ) =>
+                setTemperatureFilter(
+                  event.target.value as
+                    TemperatureFilter
+                )
+            }
+            value={temperatureFilter}
+          >
+
+            <option value="all">
+              Todas as temperaturas
+            </option>
+
+            <option value="hot">
+              🔥 Quentes
+            </option>
+
+            <option value="warm">
+              Mornos
+            </option>
+
+            <option value="cold">
+              Frios
+            </option>
+
+          </select>
+
+
+          <select
+            aria-label="Filtrar por prioridade"
+            className="crm-board-filter-v2"
+            onChange={
+              (
+                event
+              ) =>
+                setPriorityFilter(
+                  event.target.value as
+                    PriorityFilter
+                )
+            }
+            value={priorityFilter}
+          >
+
+            <option value="all">
+              Todas as prioridades
+            </option>
+
+            <option value="high">
+              Prioridade alta
+            </option>
+
+            <option value="medium">
+              Prioridade média
+            </option>
+
+            <option value="low">
+              Prioridade baixa
+            </option>
+
+          </select>
+
+
+          {
+            hasFilters
+              ? (
+                  <button
+                    className="crm-clear-filters-v2"
+                    onClick={
+                      clearFilters
+                    }
+                    type="button"
+                  >
+
+                    <X size={15} />
+
+                    Limpar
+
+                  </button>
+                )
+              : null
+          }
+
+
+          <div className="crm-board-result-v2">
+
+            <strong>
+              {filteredLeads.length}
+            </strong>
+
+            <span>
+              oportunidades
+            </span>
+
+            <i />
+
+            <strong>
+              {formatMoney(
+                filteredValue
+              )}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        {
+          isMoving
+            ? (
+                <div className="crm-saving-v2">
+                  Salvando alteração...
+                </div>
+              )
+            : null
+        }
+
+
+        {
+          hasFilters &&
+          filteredLeads.length ===
+            0
+            ? (
+                <div className="crm-filter-empty-v2">
+
+                  <Search size={17} />
+
+                  Nenhuma oportunidade corresponde aos filtros selecionados.
+
+                </div>
+              )
+            : null
+        }
+
+
+        <div className="crm-kanban-v2">
+
+          {
+            stages.map(
+              (
+                stage
+              ) => {
+
+                const stageLeads =
+                  filteredLeads.filter(
+                    (
+                      lead
+                    ) =>
+                      lead.stage_id ===
+                      stage.id
+                  );
+
+
+                const stageValue =
+                  stageLeads.reduce(
+                    (
+                      total,
+                      lead
+                    ) =>
+                      total +
+                      Number(
+                        lead.estimated_value ??
+                        0
+                      ),
+                    0
+                  );
+
+
+                const isDragTarget =
+                  dragOverStageId ===
+                  stage.id;
+
+
+                const stageStyle = {
+                  "--crm-stage-color":
+                    stage.color ??
+                    "#2f6df6",
+                } as CSSProperties;
+
+
+                return (
+                  <section
+                    className={[
+                      "crm-stage-v2",
+                      isDragTarget
+                        ? "crm-stage-drag-over-v2"
+                        : "",
+                      stage.is_closed
+                        ? "crm-stage-closed-v2"
+                        : "",
+                    ].join(
+                      " "
+                    )}
+                    key={stage.id}
+                    onDragEnter={
+                      (
+                        event
+                      ) => {
+
+                        event.preventDefault();
+
+                        setDragOverStageId(
+                          stage.id
+                        );
+                      }
+                    }
+                    onDragLeave={
+                      (
+                        event
+                      ) => {
+
+                        if (
+                          event.currentTarget.contains(
+                            event.relatedTarget as
+                              Node
+                          )
+                        ) {
+                          return;
+                        }
+
+
+                        setDragOverStageId(
+                          null
+                        );
+                      }
+                    }
+                    onDragOver={
+                      (
+                        event
+                      ) => {
+
+                        event.preventDefault();
+
+                        event.dataTransfer.dropEffect =
+                          "move";
+
+                        setDragOverStageId(
+                          stage.id
+                        );
+                      }
+                    }
+                    onDrop={
+                      (
+                        event
+                      ) => {
+
+                        event.preventDefault();
+
+                        handleDrop(
+                          stage.id
+                        );
+                      }
+                    }
+                    style={stageStyle}
+                  >
+
+                    <div className="crm-stage-accent-v2" />
+
+
+                    <header className="crm-stage-header-v2">
+
+                      <div className="crm-stage-name-v2">
+
+                        <span className="crm-stage-dot-v2" />
+
+                        <strong>
+                          {stage.name}
+                        </strong>
+
+                        <span className="crm-stage-count-v2">
+                          {stageLeads.length}
+                        </span>
+
+                      </div>
+
+
+                      <div className="crm-stage-total-v2">
+
+                        <span>
+                          Potencial
+                        </span>
+
+                        <strong>
+                          {formatMoney(
+                            stageValue
                           )}
+                        </strong>
 
-                          {(lead.city || lead.state) && (
-                            <span>
-                              <MapPin size={14} />
+                      </div>
 
-                              {[lead.city, lead.state]
-                                .filter(Boolean)
-                                .join(" - ")}
-                            </span>
-                          )}
+                    </header>
 
-                          {lead.phone && (
-                            <span>
-                              <Phone size={14} />
-                              {lead.phone}
-                            </span>
-                          )}
 
-                          {lead.email && (
-                            <span>
-                              <Mail size={14} />
-                              {lead.email}
-                            </span>
-                          )}
-                        </div>
+                    <div className="crm-stage-list-v2">
 
-                        <Link
-                          className="lead-open-company-button"
-                          href={`/crm/${lead.id}`}
-                        >
-                          <Building2 size={14} />
-                          Ver empresa
-                        </Link>
+                      {
+                        stageLeads.map(
+                          (
+                            lead
+                          ) => {
 
-                        <div className="lead-social-actions">
-                          {lead.whatsapp && (
-                            <a
-                              href={`https://wa.me/${lead.whatsapp.replace(/\D/g, "")}`}
-                              rel="noreferrer"
-                              target="_blank"
-                              title="Abrir WhatsApp"
-                            >
-                              <MessageCircle size={16} />
-                            </a>
-                          )}
+                            const isDragging =
+                              draggedLeadId ===
+                              lead.id;
 
-                          {lead.instagram && (
-                            <a
-                              href={
-                                lead.instagram.startsWith(
-                                  "http"
-                                )
-                                  ? lead.instagram
-                                  : `https://instagram.com/${lead.instagram.replace("@", "")}`
-                              }
-                              rel="noreferrer"
-                              target="_blank"
-                              title="Abrir Instagram"
-                            >
-                              <Camera size={16} />
-                            </a>
-                          )}
 
-                          {lead.website && (
-                            <a
-                              href={lead.website}
-                              rel="noreferrer"
-                              target="_blank"
-                              title="Abrir site"
-                            >
-                              <Globe2 size={16} />
-                            </a>
-                          )}
-                        </div>
+                            return (
+                              <article
+                                className={[
+                                  "crm-lead-card-v2",
+                                  isDragging
+                                    ? "crm-lead-dragging-v2"
+                                    : "",
+                                ].join(
+                                  " "
+                                )}
+                                draggable
+                                key={lead.id}
+                                onDragEnd={
+                                  () => {
 
-                        <form
-                          action={moveLeadAction}
-                          className="pipeline-stage-form"
-                        >
-                          <input
-                            name="lead_id"
-                            type="hidden"
-                            value={lead.id}
-                          />
+                                    setDraggedLeadId(
+                                      null
+                                    );
 
-                          <label>
-                            Etapa do pipeline
+                                    setDragOverStageId(
+                                      null
+                                    );
+                                  }
+                                }
+                                onDragStart={
+                                  (
+                                    event
+                                  ) => {
 
-                            <select
-                              key={lead.stage_id}
-                              defaultValue={
-                                lead.stage_id ?? ""
-                              }
-                              disabled={isMoving}
-                              name="stage_id"
-                              onChange={(event) => {
-                                const nextStageId =
-                                  event.currentTarget.value;
+                                    setDraggedLeadId(
+                                      lead.id
+                                    );
 
-                                const previousStageId =
-                                  lead.stage_id;
+                                    event.dataTransfer.effectAllowed =
+                                      "move";
 
-                                persistLeadStage(
-                                  lead.id,
-                                  nextStageId,
-                                  previousStageId
-                                );
-                              }}
-                            >
-                              {stages.map(
-                                (availableStage) => (
-                                  <option
-                                    key={
-                                      availableStage.id
+                                    event.dataTransfer.setData(
+                                      "text/plain",
+                                      lead.id
+                                    );
+                                  }
+                                }
+                              >
+
+                                <div className="crm-card-drag-v2">
+
+                                  <GripVertical size={14} />
+
+                                  arraste para mover
+
+                                </div>
+
+
+                                <div className="crm-card-header-v2">
+
+                                  <div className="crm-company-avatar-v2">
+
+                                    {
+                                      companyInitials(
+                                        lead.company_name
+                                      )
+                                    }
+
+                                  </div>
+
+
+                                  <div className="crm-company-title-v2">
+
+                                    <Link
+                                      href={`/crm/${lead.id}`}
+                                    >
+                                      {lead.company_name}
+                                    </Link>
+
+                                    <span>
+                                      {
+                                        lead.segment ??
+                                        "Segmento não informado"
+                                      }
+                                    </span>
+
+                                  </div>
+
+
+                                  <div className="crm-card-actions-v2">
+
+                                    <button
+                                      aria-label={`Editar ${lead.company_name}`}
+                                      onClick={
+                                        () =>
+                                          setEditingLead(
+                                            lead
+                                          )
+                                      }
+                                      title="Editar"
+                                      type="button"
+                                    >
+
+                                      <Pencil size={14} />
+
+                                    </button>
+
+
+                                    <button
+                                      aria-label={`Excluir ${lead.company_name}`}
+                                      className="danger"
+                                      onClick={
+                                        () =>
+                                          removeLead(
+                                            lead
+                                          )
+                                      }
+                                      title="Excluir"
+                                      type="button"
+                                    >
+
+                                      <Trash2 size={14} />
+
+                                    </button>
+
+                                  </div>
+
+                                </div>
+
+
+                                <div className="crm-card-chips-v2">
+
+                                  <span
+                                    className={`crm-temperature-v2 ${lead.temperature}`}
+                                  >
+
+                                    {
+                                      lead.temperature ===
+                                        "hot"
+                                        ? (
+                                            <Flame size={12} />
+                                          )
+                                        : null
+                                    }
+
+                                    {
+                                      getTemperatureLabel(
+                                        lead.temperature
+                                      )
+                                    }
+
+                                  </span>
+
+
+                                  <span
+                                    className={`crm-priority-v2 ${lead.priority}`}
+                                  >
+
+                                    Prioridade{" "}
+                                    {
+                                      getPriorityLabel(
+                                        lead.priority
+                                      )
+                                    }
+
+                                  </span>
+
+                                </div>
+
+
+                                <div className="crm-card-value-v2">
+
+                                  <div>
+
+                                    <CircleDollarSign size={15} />
+
+                                    <span>
+                                      Potencial mensal
+                                    </span>
+
+                                  </div>
+
+                                  <strong>
+                                    {
+                                      formatMoney(
+                                        Number(
+                                          lead.estimated_value ??
+                                          0
+                                        )
+                                      )
+                                    }
+                                  </strong>
+
+                                </div>
+
+
+                                {
+                                  lead.decision_maker_name ||
+                                  lead.city ||
+                                  lead.state
+                                    ? (
+                                        <div className="crm-card-meta-v2">
+
+                                          {
+                                            lead.decision_maker_name
+                                              ? (
+                                                  <span>
+
+                                                    <UserRound size={14} />
+
+                                                    <b>
+                                                      {lead.decision_maker_name}
+                                                    </b>
+
+                                                    {
+                                                      lead.decision_maker_role
+                                                        ? ` · ${lead.decision_maker_role}`
+                                                        : ""
+                                                    }
+
+                                                  </span>
+                                                )
+                                              : null
+                                          }
+
+
+                                          {
+                                            lead.city ||
+                                            lead.state
+                                              ? (
+                                                  <span>
+
+                                                    <MapPin size={14} />
+
+                                                    {
+                                                      [
+                                                        lead.city,
+                                                        lead.state,
+                                                      ]
+                                                        .filter(
+                                                          Boolean
+                                                        )
+                                                        .join(
+                                                          " - "
+                                                        )
+                                                    }
+
+                                                  </span>
+                                                )
+                                              : null
+                                          }
+
+                                        </div>
+                                      )
+                                    : null
+                                }
+
+
+                                <div
+                                  className={[
+                                    "crm-next-action-v2",
+                                    lead.next_action
+                                      ? "has-action"
+                                      : "",
+                                  ].join(
+                                    " "
+                                  )}
+                                >
+
+                                  <CalendarClock size={16} />
+
+                                  <div>
+
+                                    <span>
+                                      Próxima ação
+                                    </span>
+
+                                    <strong>
+                                      {
+                                        lead.next_action ??
+                                        "Ainda não definida"
+                                      }
+                                    </strong>
+
+                                  </div>
+
+                                </div>
+
+
+                                <div className="crm-card-footer-v2">
+
+                                  <div className="crm-quick-actions-v2">
+
+                                    {
+                                      lead.whatsapp
+                                        ? (
+                                            <a
+                                              href={`https://wa.me/${lead.whatsapp.replace(/\D/g, "")}`}
+                                              rel="noreferrer"
+                                              target="_blank"
+                                              title="WhatsApp"
+                                            >
+                                              <MessageCircle size={15} />
+                                            </a>
+                                          )
+                                        : null
+                                    }
+
+
+                                    {
+                                      lead.phone
+                                        ? (
+                                            <a
+                                              href={`tel:${lead.phone.replace(/[^\d+]/g, "")}`}
+                                              title="Ligar"
+                                            >
+                                              <Phone size={15} />
+                                            </a>
+                                          )
+                                        : null
+                                    }
+
+
+                                    {
+                                      lead.email
+                                        ? (
+                                            <a
+                                              href={`mailto:${lead.email}`}
+                                              title="E-mail"
+                                            >
+                                              <Mail size={15} />
+                                            </a>
+                                          )
+                                        : null
+                                    }
+
+
+                                    {
+                                      lead.instagram
+                                        ? (
+                                            <a
+                                              href={
+                                                lead.instagram.startsWith(
+                                                  "http"
+                                                )
+                                                  ? lead.instagram
+                                                  : `https://instagram.com/${lead.instagram.replace("@", "")}`
+                                              }
+                                              rel="noreferrer"
+                                              target="_blank"
+                                              title="Instagram"
+                                            >
+                                              <Camera size={15} />
+                                            </a>
+                                          )
+                                        : null
+                                    }
+
+
+                                    {
+                                      lead.website
+                                        ? (
+                                            <a
+                                              href={
+                                                lead.website.startsWith(
+                                                  "http"
+                                                )
+                                                  ? lead.website
+                                                  : `https://${lead.website}`
+                                              }
+                                              rel="noreferrer"
+                                              target="_blank"
+                                              title="Site"
+                                            >
+                                              <Globe2 size={15} />
+                                            </a>
+                                          )
+                                        : null
+                                    }
+
+
+                                    <Link
+                                      href={`/crm/${lead.id}`}
+                                      title="Abrir empresa"
+                                    >
+                                      <Building2 size={15} />
+                                    </Link>
+
+                                  </div>
+
+
+                                  <select
+                                    aria-label={`Mover ${lead.company_name} para outra etapa`}
+                                    disabled={isMoving}
+                                    onChange={
+                                      (
+                                        event
+                                      ) => {
+
+                                        const nextStageId =
+                                          event.currentTarget.value;
+
+                                        const previousStageId =
+                                          lead.stage_id;
+
+
+                                        persistLeadStage(
+                                          lead.id,
+                                          nextStageId,
+                                          previousStageId
+                                        );
+                                      }
                                     }
                                     value={
-                                      availableStage.id
+                                      lead.stage_id ??
+                                      ""
                                     }
                                   >
+
+                                    <option
+                                      disabled
+                                      value=""
+                                    >
+                                      Etapa
+                                    </option>
+
                                     {
-                                      availableStage.name
+                                      stages.map(
+                                        (
+                                          availableStage
+                                        ) => (
+                                          <option
+                                            key={availableStage.id}
+                                            value={availableStage.id}
+                                          >
+                                            {availableStage.name}
+                                          </option>
+                                        )
+                                      )
                                     }
-                                  </option>
-                                )
-                              )}
-                            </select>
-                          </label>
-                        </form>
 
-                        <div className="lead-card-footer">
-                          <div>
-                            <span>Valor estimado</span>
+                                  </select>
 
-                            <strong>
-                              {formatMoney(
-                                Number(
-                                  lead.estimated_value ??
-                                    0
-                                )
-                              )}
-                            </strong>
-                          </div>
+                                </div>
 
-                          <div>
-                            <span>Próxima ação</span>
+                              </article>
+                            );
+                          }
+                        )
+                      }
 
-                            <strong>
-                              {lead.next_action ??
-                                "Ainda não definida"}
-                            </strong>
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
 
-                  {stageLeads.length === 0 && (
-                    <div
-                      className={`empty-stage ${
-                        isDragTarget
-                          ? "empty-stage-drag-over"
-                          : ""
-                      }`}
-                    >
-                      {draggedLeadId
-                        ? "Solte o card aqui."
-                        : "Nenhuma oportunidade nesta etapa."}
+                      {
+                        stageLeads.length ===
+                        0
+                          ? (
+                              <div
+                                className={[
+                                  "crm-empty-stage-v2",
+                                  isDragTarget
+                                    ? "active"
+                                    : "",
+                                ].join(
+                                  " "
+                                )}
+                              >
+
+                                <div>
+                                  <Building2 size={18} />
+                                </div>
+
+                                <strong>
+                                  {
+                                    draggedLeadId
+                                      ? "Solte aqui"
+                                      : "Sem oportunidades"
+                                  }
+                                </strong>
+
+                                <span>
+                                  {
+                                    draggedLeadId
+                                      ? "Mova a oportunidade para esta etapa."
+                                      : "Os novos cards aparecerão aqui."
+                                  }
+                                </span>
+
+                              </div>
+                            )
+                          : null
+                      }
+
                     </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </section>
-      )}
 
-      {editingLead && (
-        <EditLeadForm
-          lead={editingLead}
-          onClose={() => setEditingLead(null)}
-        />
-      )}
+                  </section>
+                );
+              }
+            )
+          }
+
+        </div>
+
+      </section>
+
+
+      {
+        editingLead
+          ? (
+              <EditLeadForm
+                lead={editingLead}
+                onClose={
+                  () =>
+                    setEditingLead(
+                      null
+                    )
+                }
+              />
+            )
+          : null
+      }
+
     </>
   );
 }
