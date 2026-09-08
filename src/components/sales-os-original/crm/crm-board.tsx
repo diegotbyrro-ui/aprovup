@@ -27,8 +27,18 @@ import {
 import Link from "next/link";
 
 import {
+  SyncedHorizontalScroll,
+} from "@/components/kanban/SyncedHorizontalScroll";
+
+import {
+  PipelineStageManager,
+} from "./pipeline-stage-manager";
+
+import {
   type CSSProperties,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from "react";
@@ -289,6 +299,62 @@ export function CrmBoard({
     );
 
 
+  const searchInputRef =
+    useRef<HTMLInputElement | null>(
+      null
+    );
+
+
+  useEffect(
+    () => {
+      setLocalLeads(
+        leads
+      );
+    },
+    [
+      leads,
+    ]
+  );
+
+
+  useEffect(
+    () => {
+      function handleSearchShortcut(
+        event: KeyboardEvent
+      ) {
+        if (
+          (
+            event.ctrlKey ||
+            event.metaKey
+          ) &&
+          event.key.toLowerCase() ===
+            "k"
+        ) {
+          event.preventDefault();
+
+          searchInputRef.current?.focus();
+          searchInputRef.current?.select();
+        }
+      }
+
+
+      window.addEventListener(
+        "keydown",
+        handleSearchShortcut
+      );
+
+
+      return () => {
+        window.removeEventListener(
+          "keydown",
+          handleSearchShortcut
+        );
+      };
+    },
+    []
+  );
+
+
   const [
     searchTerm,
     setSearchTerm,
@@ -396,6 +462,8 @@ export function CrmBoard({
               [
                 lead.company_name,
                 lead.segment,
+                lead.website,
+                lead.instagram,
                 lead.city,
                 lead.state,
                 lead.decision_maker_name,
@@ -701,6 +769,7 @@ export function CrmBoard({
             <Search size={18} />
 
             <input
+              ref={searchInputRef}
               aria-label="Pesquisar oportunidades"
               onChange={
                 (
@@ -710,10 +779,14 @@ export function CrmBoard({
                     event.target.value
                   )
               }
-              placeholder="Buscar empresa, decisor, segmento ou cidade..."
+              placeholder="Buscar empresa, contato, cidade, segmento ou responsável..."
               type="search"
               value={searchTerm}
             />
+
+            <kbd className="crm-search-shortcut-v2">
+              Ctrl K
+            </kbd>
 
           </div>
 
@@ -807,6 +880,12 @@ export function CrmBoard({
           }
 
 
+          <PipelineStageManager
+            leads={localLeads}
+            stages={stages}
+          />
+
+
           <div className="crm-board-result-v2">
 
             <strong>
@@ -858,7 +937,14 @@ export function CrmBoard({
         }
 
 
-        <div className="crm-kanban-v2">
+        <div className="crm-kanban-navigation-v2">
+
+          <SyncedHorizontalScroll
+            alwaysShowTop
+            className="crm-kanban-scroll-v2"
+          >
+
+            <div className="crm-kanban-v2">
 
           {
             stages.map(
@@ -1523,6 +1609,10 @@ export function CrmBoard({
               }
             )
           }
+
+            </div>
+
+          </SyncedHorizontalScroll>
 
         </div>
 
