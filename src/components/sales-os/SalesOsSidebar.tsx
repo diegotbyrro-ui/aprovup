@@ -11,9 +11,7 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   ChartNoAxesCombined,
-  LayoutDashboard,
   Search,
-  Settings,
 } from "lucide-react";
 
 import {
@@ -26,12 +24,6 @@ import {
 
 
 const items = [
-  {
-    name: "Dashboard",
-    href: "/crm",
-    icon: LayoutDashboard,
-    exact: true,
-  },
   {
     name: "CRM",
     href: "/crm/pipeline",
@@ -51,11 +43,6 @@ const items = [
     name: "Relatórios",
     href: "/crm/relatorios",
     icon: ChartNoAxesCombined,
-  },
-  {
-    name: "Configurações",
-    href: "/crm/configuracoes",
-    icon: Settings,
   },
 ];
 
@@ -83,11 +70,36 @@ export function SalesOsSidebar() {
       <div
         className="
           ap-sidebar-logo
-          mb-6
+          mb-4
         "
       >
         <AprovUpLogo size="sm" />
       </div>
+
+
+      <Link
+        className="
+          ap-sidebar-link
+          mb-6
+          flex
+          min-h-[44px]
+          items-center
+          gap-2
+          rounded-xl
+          border
+          border-[var(--ap-border)]
+          px-3
+          text-xs
+          font-bold
+        "
+        href="/operacao"
+      >
+
+        <ArrowLeft size={16} />
+
+        Voltar para o AprovUp
+
+      </Link>
 
 
       <nav
@@ -105,14 +117,11 @@ export function SalesOsSidebar() {
             item.icon;
 
           const active =
-            item.exact
-              ? pathname ===
-                item.href
-              : pathname ===
-                  item.href ||
-                pathname.startsWith(
-                  `${item.href}/`
-                );
+            pathname ===
+              item.href ||
+            pathname.startsWith(
+              `${item.href}/`
+            );
 
 
           return (
@@ -151,35 +160,10 @@ export function SalesOsSidebar() {
       <div
         className="
           mt-5
-          space-y-3
         "
       >
 
         <AprovUpThemeToggle />
-
-
-        <Link
-          className="
-            ap-sidebar-link
-            flex
-            min-h-[42px]
-            items-center
-            gap-2
-            rounded-xl
-            border
-            border-[var(--ap-border)]
-            px-3
-            text-xs
-            font-bold
-          "
-          href="/operacao"
-        >
-
-          <ArrowLeft size={16} />
-
-          Voltar ao AprovUp
-
-        </Link>
 
       </div>
 
