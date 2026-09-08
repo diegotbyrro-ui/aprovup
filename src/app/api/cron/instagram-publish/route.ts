@@ -1,4 +1,4 @@
-﻿import {
+import {
   NextRequest,
   NextResponse,
 } from 'next/server';
@@ -15,6 +15,7 @@ import {
   publishInstagramCarousel,
   publishInstagramImage,
   publishInstagramReel,
+  publishInstagramStory,
 } from '@/lib/metaInstagram';
 
 
@@ -92,6 +93,19 @@ function isReelFormat(
 
 }
 
+
+function isStoryFormat(
+  value:
+    string | null
+) {
+
+  return normalizedFormat(
+    value
+  ).includes(
+    'STORY'
+  );
+
+}
 
 function authorized(
   request:
@@ -350,6 +364,38 @@ export async function GET(
         );
 
 
+      const story =
+        isStoryFormat(
+          content.format
+        );
+
+
+      if (
+        story &&
+        (
+          !content.finalMediaUrl ||
+          !(
+            String(
+              content.finalMediaType ||
+              ''
+            ).startsWith(
+              'image/'
+            ) ||
+            String(
+              content.finalMediaType ||
+              ''
+            ).startsWith(
+              'video/'
+            )
+          )
+        )
+      ) {
+        throw new Error(
+          'O Story precisa possuir uma imagem ou vídeo final.'
+        );
+      }
+
+
       const result =
         carousel
           ? await publishInstagramCarousel({
@@ -391,21 +437,41 @@ export async function GET(
 
               })
 
-            : await publishInstagramImage({
+            : story
+              ? await publishInstagramStory({
 
-                instagramUserId:
-                  connection
-                    .instagramUserId,
+                  instagramUserId:
+                    connection
+                      .instagramUserId,
 
-                accessToken,
+                  accessToken,
 
-                imageUrl:
-                  content
-                    .finalMediaUrl!,
+                  mediaUrl:
+                    content
+                      .finalMediaUrl!,
 
-                caption,
+                  mediaMimeType:
+                    content
+                      .finalMediaType ||
+                    '',
 
-              });
+                })
+
+              : await publishInstagramImage({
+
+                  instagramUserId:
+                    connection
+                      .instagramUserId,
+
+                  accessToken,
+
+                  imageUrl:
+                    content
+                      .finalMediaUrl!,
+
+                  caption,
+
+                });
 
 
       await prisma.$transaction([

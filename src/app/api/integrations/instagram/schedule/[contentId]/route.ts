@@ -391,27 +391,10 @@ export async function POST(
     );
 
 
-  if (
+  const story =
     isStoryFormat(
       content.format
-    )
-  ) {
-
-    return NextResponse.json(
-      {
-        ok:
-          false,
-
-        message:
-          'Story ainda não está disponível para agendamento.',
-      },
-      {
-        status:
-          400,
-      }
     );
-
-  }
 
 
   if (
@@ -470,8 +453,46 @@ export async function POST(
 
 
   if (
+    story &&
+    (
+      !content.finalMediaUrl ||
+      !(
+        String(
+          content.finalMediaType ||
+          ''
+        ).startsWith(
+          'image/'
+        ) ||
+        String(
+          content.finalMediaType ||
+          ''
+        ).startsWith(
+          'video/'
+        )
+      )
+    )
+  ) {
+
+    return NextResponse.json(
+      {
+        ok:
+          false,
+
+        message:
+          'O Story precisa possuir uma imagem ou vídeo final.',
+      },
+      {
+        status:
+          400,
+      }
+    );
+
+  }
+
+  if (
     !carousel &&
     !reel &&
+    !story &&
     (
       !content.finalMediaUrl ||
       !String(

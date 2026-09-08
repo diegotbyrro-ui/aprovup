@@ -503,11 +503,18 @@ export default async function ProntoParaPostarPage({
                                                                 content.finalMediaUrl &&
                                                                 isVideoMedia
                                                             )
-                                                            : !isStory &&
-                                                              Boolean(
-                                                                  content.finalMediaUrl &&
-                                                                  isImageMedia
-                                                              )
+                                                            : isStory
+                                                                ? Boolean(
+                                                                    content.finalMediaUrl &&
+                                                                    (
+                                                                        isImageMedia ||
+                                                                        isVideoMedia
+                                                                    )
+                                                                )
+                                                                : Boolean(
+                                                                    content.finalMediaUrl &&
+                                                                    isImageMedia
+                                                                )
                                                 )
                                             );
 
@@ -517,8 +524,15 @@ export default async function ProntoParaPostarPage({
                                                 : isCarousel &&
                                                   carouselMediaCount < 2
                                                     ? 'Envie pelo menos 2 imagens do carrossel.'
-                                                    : isStory
-                                                        ? 'Story ainda não está disponível nesta versão.'
+                                                    : isStory &&
+                                                      !Boolean(
+                                                          content.finalMediaUrl &&
+                                                          (
+                                                              isImageMedia ||
+                                                              isVideoMedia
+                                                          )
+                                                      )
+                                                        ? 'Story precisa de arquivo final de imagem ou vídeo.'
                                                         : !hasFinalMedia
                                                             ? 'Material final ausente.'
                                                             : isReel &&
@@ -526,6 +540,7 @@ export default async function ProntoParaPostarPage({
                                                                 ? 'Reel precisa de arquivo final de vídeo.'
                                                                 : !isCarousel &&
                                                                   !isReel &&
+                                                                  !isStory &&
                                                                   !isImageMedia
                                                                     ? 'Formato de mídia ainda não suportado.'
                                                                     : undefined;
@@ -838,18 +853,6 @@ export default async function ProntoParaPostarPage({
                                                         />
 
 
-                                                                <button
-                                                                    type="button"
-                                                                    disabled
-                                                                    title={
-                                                                        instagramReady
-                                                                            ? 'Será ativado na próxima etapa.'
-                                                                            : 'Conecte o Instagram e envie o material final.'
-                                                                    }
-                                                                    className="cursor-not-allowed rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-600 opacity-70"
-                                                                >
-                                                                    Agendar publicação
-                                                                </button>
 
                                                             </div>
 

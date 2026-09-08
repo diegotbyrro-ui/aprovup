@@ -22,6 +22,7 @@ import {
   publishInstagramCarousel,
   publishInstagramImage,
   publishInstagramReel,
+  publishInstagramStory,
 } from '@/lib/metaInstagram';
 
 import {
@@ -320,24 +321,6 @@ export async function POST(
     );
 
 
-  if (
-    story
-  ) {
-    return NextResponse.json(
-      {
-        ok:
-          false,
-
-        message:
-          'Story ainda não está disponível nesta versão.',
-      },
-      {
-        status:
-          400,
-      }
-    );
-  }
-
 
   if (
     carousel &&
@@ -408,8 +391,44 @@ export async function POST(
 
 
   if (
+    story &&
+    (
+      !content.finalMediaUrl ||
+      !(
+        String(
+          content.finalMediaType ||
+          ''
+        ).startsWith(
+          'image/'
+        ) ||
+        String(
+          content.finalMediaType ||
+          ''
+        ).startsWith(
+          'video/'
+        )
+      )
+    )
+  ) {
+    return NextResponse.json(
+      {
+        ok:
+          false,
+
+        message:
+          'O Story precisa possuir uma imagem ou vídeo final.',
+      },
+      {
+        status:
+          400,
+      }
+    );
+  }
+
+  if (
     !carousel &&
     !reel &&
+    !story &&
     !String(
       content.finalMediaType ||
       ''
@@ -641,21 +660,40 @@ export async function POST(
               caption,
 
             })
-          : await publishInstagramImage({
+          : story
+            ? await publishInstagramStory({
 
-              instagramUserId:
-                connection
-                  .instagramUserId,
+                instagramUserId:
+                  connection
+                    .instagramUserId,
 
-              accessToken,
+                accessToken,
 
-              imageUrl:
-                content
-                  .finalMediaUrl!,
+                mediaUrl:
+                  content
+                    .finalMediaUrl!,
 
-              caption,
+                mediaMimeType:
+                  content
+                    .finalMediaType ||
+                  '',
 
-            });
+              })
+            : await publishInstagramImage({
+
+                instagramUserId:
+                  connection
+                    .instagramUserId,
+
+                accessToken,
+
+                imageUrl:
+                  content
+                    .finalMediaUrl!,
+
+                caption,
+
+              });
 
 
     await prisma.$transaction([
@@ -732,7 +770,9 @@ export async function POST(
                 ? 'Carrossel'
                 : reel
                   ? 'Reel'
-                  : 'Imagem'
+                  : story
+                    ? 'Story'
+                    : 'Imagem'
             }.`,
 
           authorName:

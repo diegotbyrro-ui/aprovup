@@ -3457,6 +3457,234 @@ export async function publishInstagramReel({
 }
 
 
+export async function publishInstagramStory({
+  instagramUserId,
+  accessToken,
+  mediaUrl,
+  mediaMimeType,
+}: {
+  instagramUserId: string;
+  accessToken: string;
+  mediaUrl: string;
+  mediaMimeType: string;
+}): Promise<InstagramImagePublishResult> {
+
+  if (
+    !mediaUrl.startsWith(
+      'https://'
+    )
+  ) {
+    throw new Error(
+      'O Story precisa possuir uma URL HTTPS pública.'
+    );
+  }
+
+
+  const normalizedMimeType =
+    String(
+      mediaMimeType ||
+      ''
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const isImage =
+    normalizedMimeType
+      .startsWith(
+        'image/'
+      );
+
+
+  const isVideo =
+    normalizedMimeType
+      .startsWith(
+        'video/'
+      );
+
+
+  if (
+    !isImage &&
+    !isVideo
+  ) {
+    throw new Error(
+      'O Story precisa possuir uma imagem ou vídeo final.'
+    );
+  }
+
+
+  const createUrl =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/media`
+    );
+
+
+  const createBody =
+    new URLSearchParams();
+
+
+  createBody.set(
+    'media_type',
+    'STORIES'
+  );
+
+
+  createBody.set(
+    isVideo
+      ? 'video_url'
+      : 'image_url',
+    mediaUrl
+  );
+
+
+  createBody.set(
+    'access_token',
+    accessToken
+  );
+
+
+  const createResponse =
+    await fetch(
+      createUrl,
+      {
+        method:
+          'POST',
+
+        headers: {
+          'Content-Type':
+            'application/x-www-form-urlencoded',
+        },
+
+        body:
+          createBody,
+
+        cache:
+          'no-store',
+      }
+    );
+
+
+  const created =
+    await parseMeta<{
+      id: string;
+    }>(
+      createResponse
+    );
+
+
+  if (
+    !created.id
+  ) {
+    throw new Error(
+      'A Meta não retornou o container do Story.'
+    );
+  }
+
+
+  await waitInstagramContainerReady({
+
+    containerId:
+      created.id,
+
+    accessToken,
+
+    attempts:
+      isVideo
+        ? 45
+        : 20,
+
+    delayMs:
+      isVideo
+        ? 2000
+        : 1500,
+
+  });
+
+
+  const publishUrl =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/media_publish`
+    );
+
+
+  const publishBody =
+    new URLSearchParams();
+
+
+  publishBody.set(
+    'creation_id',
+    created.id
+  );
+
+
+  publishBody.set(
+    'access_token',
+    accessToken
+  );
+
+
+  const publishResponse =
+    await fetch(
+      publishUrl,
+      {
+        method:
+          'POST',
+
+        headers: {
+          'Content-Type':
+            'application/x-www-form-urlencoded',
+        },
+
+        body:
+          publishBody,
+
+        cache:
+          'no-store',
+      }
+    );
+
+
+  const published =
+    await parseMeta<{
+      id: string;
+    }>(
+      publishResponse
+    );
+
+
+  if (
+    !published.id
+  ) {
+    throw new Error(
+      'A Meta não retornou o ID do Story publicado.'
+    );
+  }
+
+
+  const permalink =
+    await getPublishedInstagramPermalink({
+
+      mediaId:
+        published.id,
+
+      accessToken,
+
+    });
+
+
+  return {
+
+    containerId:
+      created.id,
+
+    mediaId:
+      published.id,
+
+    permalink,
+
+  };
+}
+
 export async function publishInstagramCarousel({
   instagramUserId,
   accessToken,
