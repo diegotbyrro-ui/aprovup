@@ -97,7 +97,7 @@ export async function POST(
             false,
 
           message:
-            'Essa aÃ§Ã£o nÃ£o estÃ¡ mais disponÃ­vel.',
+            'Essa ação não está mais disponível.',
         },
         {
           status:
@@ -131,7 +131,7 @@ export async function POST(
           true,
 
         content:
-          'Agendamento cancelado. Nenhuma alteraÃ§Ã£o foi feita no Google Agenda.',
+          'Agendamento cancelado. Nenhuma alteração foi feita no Google Agenda.',
       });
     }
 
@@ -146,7 +146,7 @@ export async function POST(
             false,
 
           message:
-            'DecisÃ£o invÃ¡lida.',
+            'Decisão inválida.',
         },
         {
           status:
@@ -182,7 +182,7 @@ export async function POST(
             false,
 
           message:
-            'Essa confirmaÃ§Ã£o expirou. PeÃ§a o agendamento novamente.',
+            'Essa confirmação expirou. Peça o agendamento novamente.',
         },
         {
           status:
@@ -202,7 +202,7 @@ export async function POST(
             false,
 
           message:
-            'Tipo de aÃ§Ã£o nÃ£o suportado.',
+            'Tipo de ação não suportado.',
         },
         {
           status:
@@ -255,7 +255,7 @@ export async function POST(
             false,
 
           message:
-            'As datas do agendamento sÃ£o invÃ¡lidas.',
+            'As datas do agendamento são inválidas.',
         },
         {
           status:
@@ -302,7 +302,7 @@ export async function POST(
             false,
 
           message:
-            'O Google Agenda da agÃªncia nÃ£o estÃ¡ conectado.',
+            'O Google Agenda da agência não está conectado.',
         },
         {
           status:
@@ -342,7 +342,7 @@ export async function POST(
         true,
 
       content:
-        'âœ… Compromisso criado no Google Agenda.',
+        '✅ Compromisso criado no Google Agenda.',
 
       htmlLink:
         event.htmlLink ||
@@ -366,7 +366,7 @@ export async function POST(
         message:
           error instanceof Error
             ? error.message
-            : 'Erro ao executar a aÃ§Ã£o.',
+            : 'Erro ao executar a ação.',
       },
       {
         status:

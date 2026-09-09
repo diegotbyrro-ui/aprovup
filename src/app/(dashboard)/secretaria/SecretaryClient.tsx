@@ -283,7 +283,7 @@ export function SecretaryClient({
     );
 
     setStatus(
-      'Consultando a operaÃ§Ã£o...'
+      'Consultando a operação...'
     );
 
     setText(
@@ -352,7 +352,7 @@ export function SecretaryClient({
       ) {
         throw new Error(
           result.message ||
-          'NÃ£o foi possÃ­vel consultar a SecretÃ¡ria.'
+          'Não foi possível consultar a Secretária.'
         );
       }
 
@@ -390,7 +390,7 @@ export function SecretaryClient({
       setStatus(
         error instanceof Error
           ? error.message
-          : 'Erro ao conversar com a SecretÃ¡ria.'
+          : 'Erro ao conversar com a Secretária.'
       );
     }
     finally {
@@ -473,7 +473,7 @@ export function SecretaryClient({
           );
 
           setStatus(
-            'Transcrevendo Ã¡udio...'
+            'Transcrevendo áudio...'
           );
 
 
@@ -525,7 +525,7 @@ export function SecretaryClient({
             ) {
               throw new Error(
                 result.message ||
-                'NÃ£o foi possÃ­vel transcrever.'
+                'Não foi possível transcrever.'
               );
             }
 
@@ -546,7 +546,7 @@ export function SecretaryClient({
             setStatus(
               error instanceof Error
                 ? error.message
-                : 'Erro ao transcrever Ã¡udio.'
+                : 'Erro ao transcrever áudio.'
             );
           }
           finally {
@@ -570,7 +570,7 @@ export function SecretaryClient({
     }
     catch {
       setStatus(
-        'NÃ£o foi possÃ­vel acessar o microfone.'
+        'Não foi possível acessar o microfone.'
       );
     }
   }
@@ -643,7 +643,7 @@ export function SecretaryClient({
       ) {
         throw new Error(
           result.message ||
-          'NÃ£o foi possÃ­vel executar a aÃ§Ã£o.'
+          'Não foi possível executar a ação.'
         );
       }
 
@@ -690,7 +690,7 @@ export function SecretaryClient({
       setStatus(
         error instanceof Error
           ? error.message
-          : 'Erro ao executar aÃ§Ã£o.'
+          : 'Erro ao executar ação.'
       );
     }
   }
@@ -744,11 +744,11 @@ export function SecretaryClient({
 
             <div>
               <p className="font-black text-slate-950">
-                SecretÃ¡ria IA
+                Secretária IA
               </p>
 
               <p className="text-xs text-slate-500">
-                Converse naturalmente por texto ou Ã¡udio.
+                Converse naturalmente por texto ou áudio.
               </p>
             </div>
           </div>
@@ -786,7 +786,7 @@ export function SecretaryClient({
               </h2>
 
               <p className="mt-2 max-w-lg text-sm leading-relaxed text-slate-500">
-                A SecretÃ¡ria consulta mÃ©tricas, publicaÃ§Ãµes, aprovaÃ§Ãµes, alertas e Google Agenda sem exigir comandos padronizados.
+                A Secretária consulta métricas, publicações, aprovações, alertas e Google Agenda sem exigir comandos padronizados.
               </p>
             </div>
           ) : null}
@@ -822,7 +822,7 @@ export function SecretaryClient({
                     .inputType ===
                   'AUDIO' ? (
                     <p className="mb-1 text-[9px] font-black uppercase tracking-wider opacity-50">
-                      Ãudio transcrito
+                      Áudio transcrito
                     </p>
                   ) : null}
 
@@ -867,7 +867,7 @@ export function SecretaryClient({
                   pending
                     .payload
                     .endDate
-                    ? ' atÃ© ' +
+                    ? ' até ' +
                       formatDateTime(
                         pending
                           .payload
@@ -941,7 +941,7 @@ export function SecretaryClient({
 
           {busy ? (
             <div className="text-xs font-bold text-blue-600">
-              SecretÃ¡ria estÃ¡ analisando...
+              Secretária está analisando...
             </div>
           ) : null}
 
@@ -1075,11 +1075,11 @@ export function SecretaryClient({
         <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
 
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            Monitor automÃ¡tico
+            Monitor automático
           </p>
 
           <h3 className="mt-1 font-black text-slate-950">
-            PublicaÃ§Ãµes
+            Publicações
           </h3>
 
 
@@ -1088,7 +1088,7 @@ export function SecretaryClient({
             {alerts.length ===
             0 ? (
               <div className="rounded-xl bg-emerald-50 p-3 text-xs font-bold text-emerald-700">
-                Nenhum problema de publicaÃ§Ã£o aberto.
+                Nenhum problema de publicação aberto.
               </div>
             ) : null}
 

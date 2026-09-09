@@ -73,7 +73,7 @@ export async function POST(
             false,
 
           message:
-            'Ãudio nÃ£o recebido.',
+            'Áudio não recebido.',
         },
         {
           status:
@@ -95,7 +95,7 @@ export async function POST(
             false,
 
           message:
-            'O Ã¡udio ultrapassa 20 MB.',
+            'O áudio ultrapassa 20 MB.',
         },
         {
           status:
@@ -120,7 +120,7 @@ export async function POST(
             false,
 
           message:
-            'Configure a chave da OpenAI em ConfiguraÃ§Ãµes > IntegraÃ§Ãµes.',
+            'Configure a chave da OpenAI em Configurações > Integrações.',
         },
         {
           status:
@@ -203,7 +203,7 @@ export async function POST(
             payload
               .error
               ?.message ||
-            'NÃ£o foi possÃ­vel transcrever o Ã¡udio.',
+            'Não foi possível transcrever o áudio.',
         },
         {
           status:
@@ -241,7 +241,7 @@ export async function POST(
         message:
           error instanceof Error
             ? error.message
-            : 'Erro ao processar o Ã¡udio.',
+            : 'Erro ao processar o áudio.',
       },
       {
         status:

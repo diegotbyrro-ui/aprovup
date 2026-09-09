@@ -21,7 +21,7 @@ export async function getSecretaryApiUser() {
         401,
 
       message:
-        'SessÃ£o expirada. Entre novamente.',
+        'Sessão expirada. Entre novamente.',
     };
   }
 
@@ -39,7 +39,7 @@ export async function getSecretaryApiUser() {
         403,
 
       message:
-        'UsuÃ¡rio sem acesso ao AprovUp.',
+        'Usuário sem acesso ao AprovUp.',
     };
   }
 
@@ -58,7 +58,7 @@ export async function getSecretaryApiUser() {
         403,
 
       message:
-        'VocÃª nÃ£o tem acesso Ã  SecretÃ¡ria IA.',
+        'Você não tem acesso à Secretária IA.',
     };
   }
 

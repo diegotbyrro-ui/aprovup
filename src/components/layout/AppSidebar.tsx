@@ -91,7 +91,7 @@ export async function AppSidebar() {
 
     {
       name:
-        "SecretÃ¡ria IA",
+        "Secretária IA",
 
       icon:
         "secretary",

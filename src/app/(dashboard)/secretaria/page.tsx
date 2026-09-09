@@ -147,16 +147,16 @@ export default async function SecretaryPage() {
               />
 
               <span className="text-[10px] font-black uppercase tracking-[0.18em]">
-                InteligÃªncia operacional
+                Inteligência operacional
               </span>
             </div>
 
             <h1 className="mt-3 text-3xl font-black">
-              SecretÃ¡ria IA
+              Secretária IA
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">
-              Converse naturalmente por texto ou Ã¡udio. Ela consulta mÃ©tricas, publicaÃ§Ãµes, aprovaÃ§Ãµes e Google Agenda.
+              Converse naturalmente por texto ou áudio. Ela consulta métricas, publicações, aprovações e Google Agenda.
             </p>
           </div>
 

@@ -92,7 +92,7 @@ export async function POST(
             false,
 
           message:
-            'A mensagem Ã© muito longa.',
+            'A mensagem é muito longa.',
         },
         {
           status:
@@ -343,7 +343,7 @@ export async function POST(
         message:
           error instanceof Error
             ? error.message
-            : 'Erro ao conversar com a SecretÃ¡ria.',
+            : 'Erro ao conversar com a Secretária.',
       },
       {
         status:

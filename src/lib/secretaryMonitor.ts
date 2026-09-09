@@ -111,8 +111,8 @@ export async function syncSecretaryPublicationAlerts() {
 
     const title =
       isError
-        ? 'Falha em publicaÃ§Ã£o do Instagram'
-        : 'PublicaÃ§Ã£o ainda nÃ£o confirmada';
+        ? 'Falha em publicação do Instagram'
+        : 'Publicação ainda não confirmada';
 
 
     const message =
@@ -145,7 +145,7 @@ export async function syncSecretaryPublicationAlerts() {
             publication
               .content
               .title +
-            '" jÃ¡ passou do horÃ¡rio programado e ainda permanece como AGENDADO.'
+            '" já passou do horário programado e ainda permanece como AGENDADO.'
           );
 
 
