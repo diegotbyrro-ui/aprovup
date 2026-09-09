@@ -169,6 +169,10 @@ export default async function ViewContentPage({
   const finalCoverUrl = item.finalCoverUrl || '';
   const finalMediaType = item.finalMediaType || '';
 
+  const finalExternalUrl =
+    item.finalExternalUrl ||
+    '';
+
   const storyMediaUrl =
     item.storyMediaUrl ||
     '';
@@ -377,7 +381,7 @@ export default async function ViewContentPage({
 
             {!isDesignContent &&
               !isDesignCarousel &&
-              (finalMediaUrl || finalCoverUrl) ? (
+              (finalMediaUrl || finalCoverUrl || finalExternalUrl) ? (
                 <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
                   Material enviado para conferência interna.
                 </div>
@@ -453,6 +457,9 @@ export default async function ViewContentPage({
               }
               currentFinalMediaType={
                 finalMediaType
+              }
+              currentFinalExternalUrl={
+                finalExternalUrl
               }
               currentStoryMediaUrl={
                 storyMediaUrl

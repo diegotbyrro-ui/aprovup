@@ -249,6 +249,7 @@ model Content {
   finalCoverUrl   String?
   finalMediaType  String?
   finalUploadedAt DateTime?
+  finalExternalUrl String?
   storyMediaUrl  String?
   storyCoverUrl  String?
   storyMediaType String?

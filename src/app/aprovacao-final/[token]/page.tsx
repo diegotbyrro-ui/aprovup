@@ -235,6 +235,10 @@ export default async function FinalApprovalPage({
                 content.coverImageUrl ||
                 '';
 
+              const finalExternalUrl =
+                content.finalExternalUrl ||
+                '';
+
               const storyApprovalUrl =
                 content.storyMediaUrl ||
                 content.storyCoverUrl ||
@@ -410,7 +414,9 @@ export default async function FinalApprovalPage({
                                   : (
 
                                       <div className="flex aspect-[4/5] items-center justify-center bg-slate-200 p-8 text-center text-sm font-bold text-slate-500">
-                                        Material final ainda não disponível.
+                                        {finalExternalUrl
+                                          ? 'O arquivo final está hospedado no Google Drive. Use o botão abaixo para abrir.'
+                                          : 'Material final ainda não disponível.'}
                                       </div>
 
                                     )
@@ -440,6 +446,32 @@ export default async function FinalApprovalPage({
                           </div>
                         </div>
                       </div>
+
+
+                      {finalExternalUrl ? (
+                        <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+
+                          <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-500">
+                            Arquivo final em link externo
+                          </p>
+
+                          <p className="mt-2 text-sm leading-relaxed text-blue-800">
+                            Este material foi compartilhado por link devido ao tamanho do arquivo.
+                          </p>
+
+                          <a
+                            href={
+                              finalExternalUrl
+                            }
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            className="mt-4 flex w-full items-center justify-center rounded-xl bg-blue-700 px-4 py-3 text-sm font-black text-white transition hover:bg-blue-800"
+                          >
+                            Abrir material no Google Drive
+                          </a>
+
+                        </div>
+                      ) : null}
 
 
                       {storyApprovalUrl ? (

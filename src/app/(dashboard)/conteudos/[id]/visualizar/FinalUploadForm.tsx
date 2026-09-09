@@ -9,7 +9,9 @@ import {
 } from 'react';
 
 import {
+  ExternalLink,
   LayoutTemplate,
+  Link2,
   Smartphone,
   UploadCloud,
   X,
@@ -25,6 +27,11 @@ type UploadKind =
   | 'cover'
   | 'story'
   | 'storyCover';
+
+
+type DeleteKind =
+  | UploadKind
+  | 'external';
 
 
 type PreparedUpload = {
@@ -54,6 +61,8 @@ type FinalUploadFormProps = {
   currentFinalCoverUrl?: string | null;
 
   currentFinalMediaType?: string | null;
+
+  currentFinalExternalUrl?: string | null;
 
   currentStoryMediaUrl?: string | null;
 
@@ -128,7 +137,7 @@ function CurrentAsset({
   coverKind: UploadKind;
 
   deletingKind:
-    | UploadKind
+    | DeleteKind
     | null;
 
   onDelete: (
@@ -352,6 +361,117 @@ function CurrentAsset({
 }
 
 
+
+
+function ExternalDeliveryField({
+  currentUrl,
+  disabled,
+  deleting,
+  onDelete,
+}: {
+  currentUrl?: string | null;
+
+  disabled: boolean;
+
+  deleting: boolean;
+
+  onDelete: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/70 p-4">
+
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-700 shadow-sm">
+          <Link2
+            size={17}
+          />
+        </div>
+
+        <div className="min-w-0">
+          <label
+            htmlFor="finalExternalUrl"
+            className="block text-xs font-black uppercase tracking-wider text-blue-700"
+          >
+            Link do Google Drive / arquivo externo
+          </label>
+
+          <p className="mt-1 text-xs leading-relaxed text-blue-700/80">
+            Para arquivos muito pesados, envie pelo Google Drive e cole aqui o link compartilhado.
+          </p>
+        </div>
+      </div>
+
+
+      {currentUrl ? (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-3">
+
+          <a
+            href={
+              currentUrl
+            }
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex items-center gap-2 text-xs font-black text-emerald-700 hover:underline"
+          >
+            <ExternalLink
+              size={14}
+            />
+
+            Abrir link atual
+          </a>
+
+
+          <button
+            type="button"
+            disabled={
+              disabled
+            }
+            onClick={
+              onDelete
+            }
+            className="inline-flex items-center gap-1 rounded-lg border border-red-100 bg-red-50 px-2.5 py-1.5 text-[10px] font-black text-red-600 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <X
+              size={12}
+              strokeWidth={2.8}
+            />
+
+            {deleting
+              ? 'Removendo...'
+              : 'Remover link'}
+          </button>
+
+        </div>
+      ) : null}
+
+
+      <input
+        key={
+          currentUrl ||
+          'external-empty'
+        }
+        id="finalExternalUrl"
+        type="url"
+        name="externalUrl"
+        defaultValue={
+          currentUrl ||
+          ''
+        }
+        placeholder="https://drive.google.com/..."
+        disabled={
+          disabled
+        }
+        className="mt-3 block w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+      />
+
+      <p className="mt-2 text-[11px] font-medium leading-relaxed text-slate-500">
+        Antes de enviar, confira se o arquivo está liberado para visualização pelo link.
+      </p>
+
+    </div>
+  );
+}
+
 export default function FinalUploadForm({
   contentId,
   area,
@@ -360,6 +480,7 @@ export default function FinalUploadForm({
   currentFinalMediaUrl,
   currentFinalCoverUrl,
   currentFinalMediaType,
+  currentFinalExternalUrl,
   currentStoryMediaUrl,
   currentStoryCoverUrl,
   currentStoryMediaType,
@@ -382,7 +503,7 @@ export default function FinalUploadForm({
     setDeletingKind,
   ] =
     useState<
-      UploadKind |
+      DeleteKind |
       null
     >(
       null
@@ -543,11 +664,11 @@ export default function FinalUploadForm({
 
 
   async function handleDelete(
-    kind: UploadKind
+    kind: DeleteKind
   ) {
     const copy:
       Record<
-        UploadKind,
+        DeleteKind,
         {
           question: string;
           progress: string;
@@ -606,6 +727,15 @@ export default function FinalUploadForm({
             'Excluindo thumbnail dos Stories...',
           success:
             'Thumbnail dos Stories removida com sucesso.',
+        },
+
+        external: {
+          question:
+            'o link externo do material final',
+          progress:
+            'Removendo link externo...',
+          success:
+            'Link externo removido com sucesso.',
         },
       };
 
@@ -749,14 +879,24 @@ export default function FinalUploadForm({
       );
 
 
+    const externalUrl =
+      String(
+        formData.get(
+          'externalUrl'
+        ) ||
+        ''
+      ).trim();
+
+
     if (
       !finalFile &&
       !coverFile &&
       !storyFile &&
-      !storyCoverFile
+      !storyCoverFile &&
+      !externalUrl
     ) {
       setMessage(
-        'Selecione pelo menos um arquivo para enviar.'
+        'Selecione pelo menos um arquivo ou informe um link externo.'
       );
 
       return;
@@ -873,6 +1013,8 @@ export default function FinalUploadForm({
 
                 storyCoverPath,
 
+                externalUrl,
+
                 finalMediaType:
                   finalFile?.type ||
                   '',
@@ -957,6 +1099,27 @@ export default function FinalUploadForm({
           }
           onDelete={
             handleDelete
+          }
+        />
+
+        <ExternalDeliveryField
+          currentUrl={
+            currentFinalExternalUrl
+          }
+          disabled={
+            isUploading ||
+            deletingKind !==
+              null
+          }
+          deleting={
+            deletingKind ===
+            'external'
+          }
+          onDelete={
+            () =>
+              handleDelete(
+                'external'
+              )
           }
         />
 
@@ -1251,6 +1414,28 @@ export default function FinalUploadForm({
       </div>
 
 
+      <ExternalDeliveryField
+        currentUrl={
+          currentFinalExternalUrl
+        }
+        disabled={
+          isUploading ||
+          deletingKind !==
+            null
+        }
+        deleting={
+          deletingKind ===
+          'external'
+        }
+        onDelete={
+          () =>
+            handleDelete(
+              'external'
+            )
+        }
+      />
+
+
       <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-medium leading-relaxed text-blue-700">
         Você pode enviar Feed e Stories juntos ou atualizar apenas um deles. Campos sem novo arquivo mantêm o material que já está salvo.
       </p>
@@ -1279,7 +1464,7 @@ export default function FinalUploadForm({
         {isUploading
           ? 'Enviando materiais...'
           : feedMode === 'carousel'
-            ? 'Enviar Stories para conferência'
+            ? 'Enviar link / Stories para conferência'
             : 'Enviar materiais para conferência'}
       </button>
 

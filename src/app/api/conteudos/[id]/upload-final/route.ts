@@ -38,6 +38,11 @@ type UploadKind =
   | 'storyCover';
 
 
+type DeleteKind =
+  | UploadKind
+  | 'external';
+
+
 const uploadPrefixes:
   Record<
     UploadKind,
@@ -94,6 +99,87 @@ function parseUploadKind(
 
 
   return null;
+}
+
+
+function parseDeleteKind(
+  value: unknown
+): DeleteKind | null {
+  if (
+    value ===
+    'external'
+  ) {
+    return 'external';
+  }
+
+  return parseUploadKind(
+    value
+  );
+}
+
+
+function parseExternalUrl(
+  value: unknown
+) {
+  const raw =
+    typeof value ===
+    'string'
+      ? value.trim()
+      : '';
+
+  if (!raw) {
+    return {
+      ok: true,
+      url: '',
+      message: '',
+    };
+  }
+
+  if (
+    raw.length >
+    2048
+  ) {
+    return {
+      ok: false,
+      url: '',
+      message:
+        'O link externo é muito longo.',
+    };
+  }
+
+  try {
+    const parsed =
+      new URL(
+        raw
+      );
+
+    if (
+      parsed.protocol !==
+      'https:'
+    ) {
+      return {
+        ok: false,
+        url: '',
+        message:
+          'Informe um link HTTPS válido.',
+      };
+    }
+
+    return {
+      ok: true,
+      url:
+        parsed.toString(),
+      message: '',
+    };
+  }
+  catch {
+    return {
+      ok: false,
+      url: '',
+      message:
+        'Informe um link válido do Google Drive ou de outro serviço de arquivos.',
+    };
+  }
 }
 
 
@@ -334,17 +420,44 @@ export async function POST(
           : '';
 
 
+      const externalResult =
+        parseExternalUrl(
+          body.externalUrl
+        );
+
+
       if (
-        !finalPath &&
-        !coverPath &&
-        !storyPath &&
-        !storyCoverPath
+        !externalResult.ok
       ) {
         return NextResponse.json(
           {
             ok: false,
             message:
-              'Nenhum arquivo foi enviado.',
+              externalResult.message,
+          },
+          {
+            status: 400,
+          }
+        );
+      }
+
+
+      const finalExternalUrl =
+        externalResult.url;
+
+
+      if (
+        !finalPath &&
+        !coverPath &&
+        !storyPath &&
+        !storyCoverPath &&
+        !finalExternalUrl
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            message:
+              'Nenhum arquivo ou link externo foi enviado.',
           },
           {
             status: 400,
@@ -564,6 +677,12 @@ export async function POST(
       }
 
 
+      if (finalExternalUrl) {
+        updateData.finalExternalUrl =
+          finalExternalUrl;
+      }
+
+
       await prisma.content.update({
         where: {
           id,
@@ -600,6 +719,8 @@ export async function POST(
         ok: true,
 
         finalMediaUrl,
+
+        finalExternalUrl,
 
         coverUrl,
 
@@ -807,7 +928,7 @@ export async function DELETE(
 
 
     const kind =
-      parseUploadKind(
+      parseDeleteKind(
         body?.kind
       );
 
@@ -880,20 +1001,24 @@ export async function DELETE(
 
 
       if (
-        content.area ===
-        'FILMMAKER'
+        !content.finalExternalUrl
       ) {
-        updateData.status =
-          'FILMMAKER_EDICAO';
-      }
-      else if (
-        content.area ===
-          'DESIGN' ||
-        content.area ===
-          'SOCIAL_DESIGN'
-      ) {
-        updateData.status =
-          'DESIGN_FAZENDO';
+        if (
+          content.area ===
+          'FILMMAKER'
+        ) {
+          updateData.status =
+            'FILMMAKER_EDICAO';
+        }
+        else if (
+          content.area ===
+            'DESIGN' ||
+          content.area ===
+            'SOCIAL_DESIGN'
+        ) {
+          updateData.status =
+            'DESIGN_FAZENDO';
+        }
       }
     }
 
@@ -959,6 +1084,36 @@ export async function DELETE(
 
       updateData.storyCoverUrl =
         null;
+    }
+
+
+    if (
+      kind ===
+      'external'
+    ) {
+      updateData.finalExternalUrl =
+        null;
+
+      if (
+        !content.finalMediaUrl
+      ) {
+        if (
+          content.area ===
+          'FILMMAKER'
+        ) {
+          updateData.status =
+            'FILMMAKER_EDICAO';
+        }
+        else if (
+          content.area ===
+            'DESIGN' ||
+          content.area ===
+            'SOCIAL_DESIGN'
+        ) {
+          updateData.status =
+            'DESIGN_FAZENDO';
+        }
+      }
     }
 
 
@@ -1028,7 +1183,7 @@ export async function DELETE(
 
     const successMessages:
       Record<
-        UploadKind,
+        DeleteKind,
         string
       > = {
         final:
@@ -1042,6 +1197,9 @@ export async function DELETE(
 
         storyCover:
           'Thumbnail dos Stories removida com sucesso.',
+
+        external:
+          'Link externo removido com sucesso.',
       };
 
 
