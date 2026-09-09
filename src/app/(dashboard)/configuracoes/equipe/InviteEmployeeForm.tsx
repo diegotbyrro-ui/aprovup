@@ -34,6 +34,32 @@ const PERMISSION_GROUPS = [
 
   {
     title:
+      "Secretária IA",
+
+    description:
+      "Consulta operacional e ações confirmadas.",
+
+    permissions: [
+      {
+        value:
+          "secretary.use",
+
+        label:
+          "Usar Secretária",
+      },
+
+      {
+        value:
+          "secretary.act",
+
+        label:
+          "Executar ações",
+      },
+    ],
+  },
+
+  {
+    title:
       "Social Media",
 
     description:
@@ -146,6 +172,8 @@ const ROLE_PRESETS:
 
   DIRECTOR: [
     "dashboard.view",
+    "secretary.use",
+    "secretary.act",
     "social.view",
     "social.manage",
     "design.view",
@@ -160,16 +188,19 @@ const ROLE_PRESETS:
 
   SOCIAL_MEDIA: [
     "dashboard.view",
+    "secretary.use",
     "social.view",
     "social.manage",
   ],
 
   DESIGN: [
+    "secretary.use",
     "design.view",
     "design.manage",
   ],
 
   FILMMAKER: [
+    "secretary.use",
     "filmmaker.view",
     "filmmaker.manage",
   ],
@@ -331,7 +362,7 @@ export function InviteEmployeeForm() {
         </div>
 
 
-        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
           {PERMISSION_GROUPS.map(
             (
               group

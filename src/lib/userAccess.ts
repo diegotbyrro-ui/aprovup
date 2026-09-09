@@ -10,6 +10,9 @@ import {
 export const PERMISSIONS = [
   "dashboard.view",
 
+  "secretary.use",
+  "secretary.act",
+
   "social.view",
   "social.manage",
 
@@ -44,18 +47,21 @@ export const ROLE_DEFAULT_PERMISSIONS:
 
   SOCIAL_MEDIA: [
     "dashboard.view",
+    "secretary.use",
     "social.view",
     "social.manage",
   ],
 
 
   DESIGN: [
+    "secretary.use",
     "design.view",
     "design.manage",
   ],
 
 
   FILMMAKER: [
+    "secretary.use",
     "filmmaker.view",
     "filmmaker.manage",
   ],

@@ -1706,6 +1706,7 @@ export async function runSecretaryTurn({
   userId,
   threadId,
   conversation,
+  canExecuteActions = false,
 }: {
   agencyId:
     string;
@@ -1718,6 +1719,9 @@ export async function runSecretaryTurn({
 
   conversation:
     ConversationItem[];
+
+  canExecuteActions?:
+    boolean;
 }) {
   const plan =
     await planConversation({
@@ -1903,6 +1907,21 @@ export async function runSecretaryTurn({
         'CALENDAR_CREATE' &&
       !pendingAction
     ) {
+      if (!canExecuteActions) {
+        facts.push({
+          type:
+            action.type,
+
+          data: {
+            error:
+              'O usuário pode consultar a operação, mas não tem permissão para executar ações.',
+          },
+        });
+
+        continue;
+      }
+
+
       const start =
         parseDate(
           action.start_iso

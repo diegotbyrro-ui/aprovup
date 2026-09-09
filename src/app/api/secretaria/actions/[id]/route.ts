@@ -4,16 +4,12 @@ import {
 } from 'next/server';
 
 import {
-  prisma,
-} from '@/lib/prisma';
-
-import {
   getSecretaryApiUser,
 } from '@/lib/secretaryAccess';
 
 import {
-  createGoogleCalendarEvent,
-} from '@/lib/googleCalendar';
+  executeSecretaryPendingAction,
+} from '@/lib/secretaryActions';
 
 
 export const runtime =
@@ -67,79 +63,17 @@ export async function POST(
         .json();
 
 
-    const pending =
-      await prisma
-        .secretaryPendingAction
-        .findFirst({
-          where: {
-            id,
-
-            agencyId:
-              access
-                .user
-                .agencyId,
-
-            userId:
-              access
-                .user
-                .id,
-
-            status:
-              'PENDING',
-          },
-        });
-
-
-    if (!pending) {
-      return NextResponse.json(
-        {
-          ok:
-            false,
-
-          message:
-            'Essa ação não está mais disponível.',
-        },
-        {
-          status:
-            404,
-        }
-      );
-    }
-
-
-    if (
+    const decision =
       body?.decision ===
-      'cancel'
-    ) {
-      await prisma
-        .secretaryPendingAction
-        .update({
-          where: {
-            id:
-              pending.id,
-          },
-
-          data: {
-            status:
-              'CANCELED',
-          },
-        });
+        'confirm'
+        ? 'confirm'
+        : body?.decision ===
+            'cancel'
+          ? 'cancel'
+          : null;
 
 
-      return NextResponse.json({
-        ok:
-          true,
-
-        content:
-          'Agendamento cancelado. Nenhuma alteração foi feita no Google Agenda.',
-      });
-    }
-
-
-    if (
-      body?.decision !==
-      'confirm'
-    ) {
+    if (!decision) {
       return NextResponse.json(
         {
           ok:
@@ -156,184 +90,33 @@ export async function POST(
     }
 
 
-    if (
-      pending.expiresAt &&
-      pending.expiresAt <
-        new Date()
-    ) {
-      await prisma
-        .secretaryPendingAction
-        .update({
-          where: {
-            id:
-              pending.id,
-          },
-
-          data: {
-            status:
-              'EXPIRED',
-          },
-        });
-
-
-      return NextResponse.json(
-        {
-          ok:
-            false,
-
-          message:
-            'Essa confirmação expirou. Peça o agendamento novamente.',
-        },
-        {
-          status:
-            410,
-        }
-      );
-    }
-
-
-    if (
-      pending.type !==
-      'GOOGLE_CALENDAR_CREATE'
-    ) {
-      return NextResponse.json(
-        {
-          ok:
-            false,
-
-          message:
-            'Tipo de ação não suportado.',
-        },
-        {
-          status:
-            400,
-        }
-      );
-    }
-
-
-    const payload =
-      pending.payload as
-        unknown as
-        Record<
-          string,
-          unknown
-        >;
-
-
-    const startDate =
-      new Date(
-        String(
-          payload.startDate ||
-          ''
-        )
-      );
-
-
-    const endDate =
-      new Date(
-        String(
-          payload.endDate ||
-          ''
-        )
-      );
-
-
-    if (
-      Number.isNaN(
-        startDate.getTime()
-      ) ||
-      Number.isNaN(
-        endDate.getTime()
-      ) ||
-      endDate <=
-        startDate
-    ) {
-      return NextResponse.json(
-        {
-          ok:
-            false,
-
-          message:
-            'As datas do agendamento são inválidas.',
-        },
-        {
-          status:
-            400,
-        }
-      );
-    }
-
-
-    const event =
-      await createGoogleCalendarEvent({
+    const result =
+      await executeSecretaryPendingAction({
         agencyId:
           access
             .user
             .agencyId,
 
-        title:
-          String(
-            payload.title ||
-            'Compromisso'
-          ),
+        userId:
+          access
+            .user
+            .id,
 
-        description:
-          String(
-            payload.description ||
-            ''
-          ),
+        actionId:
+          id,
 
-        location:
-          String(
-            payload.location ||
-            ''
-          ),
+        decision,
 
-        startDate,
-        endDate,
-      });
+        channel:
+          'WEB',
 
-
-    if (!event) {
-      return NextResponse.json(
-        {
-          ok:
-            false,
-
-          message:
-            'O Google Agenda da agência não está conectado.',
-        },
-        {
-          status:
-            409,
-        }
-      );
-    }
-
-
-    await prisma
-      .secretaryPendingAction
-      .update({
-        where: {
-          id:
-            pending.id,
-        },
-
-        data: {
-          status:
-            'EXECUTED',
-
-          result: {
-            googleEventId:
-              event.id ||
-              null,
-
-            htmlLink:
-              event.htmlLink ||
-              null,
-          },
-        },
+        authorName:
+          access
+            .user
+            .name ||
+          access
+            .user
+            .email,
       });
 
 
@@ -341,12 +124,7 @@ export async function POST(
       ok:
         true,
 
-      content:
-        '✅ Compromisso criado no Google Agenda.',
-
-      htmlLink:
-        event.htmlLink ||
-        null,
+      ...result,
     });
   }
   catch (
@@ -358,19 +136,33 @@ export async function POST(
     );
 
 
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Erro ao executar a ação.';
+
+
+    const status =
+      message.includes(
+        'permissão'
+      )
+        ? 403
+        : message.includes(
+              'não está mais'
+            )
+          ? 404
+          : 500;
+
+
     return NextResponse.json(
       {
         ok:
           false,
 
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Erro ao executar a ação.',
+        message,
       },
       {
-        status:
-          500,
+        status,
       }
     );
   }

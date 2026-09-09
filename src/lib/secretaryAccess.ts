@@ -47,7 +47,7 @@ export async function getSecretaryApiUser() {
   if (
     !hasPermission(
       user,
-      'dashboard.view'
+      'secretary.use'
     )
   ) {
     return {

@@ -1,5 +1,8 @@
+import Link from 'next/link';
+
 import {
   Bot,
+  Settings,
   Sparkles,
 } from 'lucide-react';
 
@@ -8,6 +11,7 @@ import {
 } from '@/lib/prisma';
 
 import {
+  hasPermission,
   requirePermission,
 } from '@/lib/userAccess';
 
@@ -23,7 +27,7 @@ export const dynamic =
 export default async function SecretaryPage() {
   const user =
     await requirePermission(
-      'dashboard.view'
+      'secretary.use'
     );
 
 
@@ -133,6 +137,13 @@ export default async function SecretaryPage() {
       });
 
 
+  const canManage =
+    hasPermission(
+      user,
+      'settings.manage'
+    );
+
+
   return (
     <div className="space-y-5">
 
@@ -161,10 +172,29 @@ export default async function SecretaryPage() {
           </div>
 
 
-          <div className="hidden h-16 w-16 items-center justify-center rounded-3xl bg-white/10 text-blue-200 sm:flex">
-            <Bot
-              size={30}
-            />
+          <div className="flex items-center gap-3">
+            {
+              canManage
+                ? (
+                  <Link
+                    href="/secretaria/configuracoes"
+                    className="hidden items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-[10px] font-black text-white hover:bg-white/15 sm:inline-flex"
+                  >
+                    <Settings
+                      size={14}
+                    />
+
+                    WhatsApp
+                  </Link>
+                )
+                : null
+            }
+
+            <div className="hidden h-16 w-16 items-center justify-center rounded-3xl bg-white/10 text-blue-200 sm:flex">
+              <Bot
+                size={30}
+              />
+            </div>
           </div>
 
         </div>

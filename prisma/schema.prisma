@@ -29,6 +29,11 @@ model Agency {
   secretaryPendingActions SecretaryPendingAction[]
   secretaryAlerts         SecretaryAlert[]
 
+  secretaryWhatsappConnection SecretaryWhatsappConnection?
+  secretaryWhatsappMembers    SecretaryWhatsappMember[]
+  secretaryWhatsappEvents     SecretaryWhatsappEvent[]
+  secretaryWhatsappDeliveries SecretaryWhatsappDelivery[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -541,6 +546,110 @@ model SecretaryAlert {
   @@unique([agencyId, dedupKey])
   @@index([agencyId, status, createdAt])
   @@index([publicationId])
+}
+
+model SecretaryWhatsappConnection {
+  id String @id @default(cuid())
+
+  agencyId String @unique
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  wabaId             String?
+  phoneNumberId      String? @unique
+  displayPhoneNumber String?
+
+  encryptedAccessToken String?
+  encryptedVerifyToken String?
+
+  graphVersion String @default("v26.0")
+  status       String @default("PENDENTE")
+
+  proactiveEnabled Boolean @default(false)
+
+  alertTemplateName     String?
+  alertTemplateLanguage String @default("pt_BR")
+
+  connectedAt   DateTime?
+  lastWebhookAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SecretaryWhatsappMember {
+  id String @id @default(cuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  userId String?
+
+  phoneE164   String
+  displayName String?
+
+  isActive          Boolean @default(true)
+  canUseSecretary   Boolean @default(true)
+  canConfirmActions Boolean @default(false)
+  receiveAlerts     Boolean @default(false)
+
+  lastInboundAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agencyId, phoneE164])
+  @@index([agencyId, userId])
+  @@index([agencyId, receiveAlerts])
+}
+
+model SecretaryWhatsappEvent {
+  id String @id @default(cuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  providerMessageId String @unique
+  phoneNumberId     String
+  fromPhone         String
+  messageType       String
+
+  status String @default("RECEIVED")
+
+  transcript        String?
+  responseMessageId String?
+  error             String?
+
+  metadata Json?
+
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([agencyId, status, createdAt])
+}
+
+model SecretaryWhatsappDelivery {
+  id String @id @default(cuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  dedupKey String
+
+  memberId String?
+  alertId  String?
+  toPhone  String
+
+  status            String @default("PENDING")
+  providerMessageId String?
+  templateUsed      Boolean @default(false)
+  error             String?
+  sentAt            DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agencyId, dedupKey])
+  @@index([agencyId, status, createdAt])
 }
 
 model PromptTemplate {

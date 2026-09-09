@@ -8,6 +8,10 @@ import {
 } from '@/lib/prisma';
 
 import {
+  hasPermission,
+} from '@/lib/userAccess';
+
+import {
   getSecretaryApiUser,
 } from '@/lib/secretaryAccess';
 
@@ -246,6 +250,12 @@ export async function POST(
           thread.id,
 
         conversation,
+
+        canExecuteActions:
+          hasPermission(
+            access.user,
+            'secretary.act'
+          ),
       });
 
 

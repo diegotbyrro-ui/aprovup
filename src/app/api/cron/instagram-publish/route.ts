@@ -19,8 +19,8 @@ import {
 } from '@/lib/metaInstagram';
 
 import {
-  syncSecretaryPublicationAlerts,
-} from '@/lib/secretaryMonitor';
+  runSecretaryAutomation,
+} from '@/lib/secretaryAutomation';
 
 
 export const runtime =
@@ -664,13 +664,13 @@ export async function GET(
   }
 
 
-  await syncSecretaryPublicationAlerts()
+  await runSecretaryAutomation()
     .catch(
       (
         error
       ) => {
         console.error(
-          'SECRETARY MONITOR ERROR',
+          'SECRETARY AUTOMATION ERROR',
           error
         );
       }

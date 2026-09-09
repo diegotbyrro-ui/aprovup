@@ -8,8 +8,8 @@ import {
 } from '@/lib/secretaryAccess';
 
 import {
-  getOpenAiConfigForAgency,
-} from '@/lib/aiProviderCredentials';
+  transcribeSecretaryAudio,
+} from '@/lib/secretaryAudio';
 
 
 export const runtime =
@@ -83,145 +83,27 @@ export async function POST(
     }
 
 
-    if (
-      audio.size >
-      20 *
-        1024 *
-        1024
-    ) {
-      return NextResponse.json(
-        {
-          ok:
-            false,
+    const text =
+      await transcribeSecretaryAudio({
+        agencyId:
+          access
+            .user
+            .agencyId,
 
-          message:
-            'O áudio ultrapassa 20 MB.',
-        },
-        {
-          status:
-            413,
-        }
-      );
-    }
+        blob:
+          audio,
 
-
-    const config =
-      await getOpenAiConfigForAgency(
-        access
-          .user
-          .agencyId
-      );
-
-
-    if (!config.apiKey) {
-      return NextResponse.json(
-        {
-          ok:
-            false,
-
-          message:
-            'Configure a chave da OpenAI em Configurações > Integrações.',
-        },
-        {
-          status:
-            400,
-        }
-      );
-    }
-
-
-    const formData =
-      new FormData();
-
-
-    formData.append(
-      'file',
-      audio,
-      audio.name ||
-        'secretaria.webm'
-    );
-
-
-    formData.append(
-      'model',
-      String(
-        process.env
-          .OPENAI_TRANSCRIBE_MODEL ||
-        'gpt-4o-mini-transcribe'
-      )
-    );
-
-
-    formData.append(
-      'language',
-      'pt'
-    );
-
-
-    const response =
-      await fetch(
-        'https://api.openai.com/v1/audio/transcriptions',
-        {
-          method:
-            'POST',
-
-          headers: {
-            Authorization:
-              'Bearer ' +
-              config.apiKey,
-          },
-
-          body:
-            formData,
-        }
-      );
-
-
-    const payload =
-      await response
-        .json() as {
-          text?:
-            string;
-
-          error?: {
-            message?:
-              string;
-          };
-        };
-
-
-    if (
-      !response.ok ||
-      !payload.text
-    ) {
-      return NextResponse.json(
-        {
-          ok:
-            false,
-
-          message:
-            payload
-              .error
-              ?.message ||
-            'Não foi possível transcrever o áudio.',
-        },
-        {
-          status:
-            response.status ||
-            500,
-        }
-      );
-    }
+        fileName:
+          audio.name ||
+          'secretaria.webm',
+      });
 
 
     return NextResponse.json({
       ok:
         true,
 
-      text:
-        payload
-          .text
-          .trim(),
+      text,
     });
   }
   catch (

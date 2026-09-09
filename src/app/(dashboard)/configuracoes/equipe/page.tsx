@@ -68,6 +68,16 @@ const PERMISSION_OPTIONS = [
   ],
 
   [
+    "secretary.use",
+    "Usar Secretária",
+  ],
+
+  [
+    "secretary.act",
+    "Executar ações da IA",
+  ],
+
+  [
     "social.view",
     "Ver Social",
   ],
