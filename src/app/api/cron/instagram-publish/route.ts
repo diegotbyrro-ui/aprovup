@@ -18,6 +18,10 @@ import {
   publishInstagramStory,
 } from '@/lib/metaInstagram';
 
+import {
+  syncSecretaryPublicationAlerts,
+} from '@/lib/secretaryMonitor';
+
 
 export const runtime =
   'nodejs';
@@ -658,6 +662,19 @@ export async function GET(
     }
 
   }
+
+
+  await syncSecretaryPublicationAlerts()
+    .catch(
+      (
+        error
+      ) => {
+        console.error(
+          'SECRETARY MONITOR ERROR',
+          error
+        );
+      }
+    );
 
 
   return NextResponse.json({

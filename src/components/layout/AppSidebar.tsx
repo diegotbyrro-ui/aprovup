@@ -45,6 +45,7 @@ type MenuDefinition = {
   requiredFeature?: SaasFeature;
   icon:
     | "dashboard"
+    | "secretary"
     | "social"
     | "filmmaker"
     | "design"
@@ -85,6 +86,24 @@ export async function AppSidebar() {
 
       activePrefixes: [
         "/operacao",
+      ],
+    },
+
+    {
+      name:
+        "SecretÃ¡ria IA",
+
+      icon:
+        "secretary",
+
+      path:
+        "/secretaria",
+
+      permission:
+        "dashboard.view",
+
+      activePrefixes: [
+        "/secretaria",
       ],
     },
 

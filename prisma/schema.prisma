@@ -25,6 +25,10 @@ model Agency {
   reportTemplates          ReportTemplate[]
   supportTickets           SupportTicket[]
 
+  secretaryThreads        SecretaryThread[]
+  secretaryPendingActions SecretaryPendingAction[]
+  secretaryAlerts         SecretaryAlert[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -445,6 +449,98 @@ model MetaOAuthSession {
   @@index([clientId])
   @@index([userId])
   @@index([expiresAt])
+}
+
+model SecretaryThread {
+  id String @id @default(cuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  userId String?
+
+  channel                String @default("WEB")
+  externalConversationId String?
+  title                  String?
+
+  messages       SecretaryMessage[]
+  pendingActions SecretaryPendingAction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId, channel, userId, updatedAt])
+}
+
+model SecretaryMessage {
+  id String @id @default(cuid())
+
+  threadId String
+  thread   SecretaryThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  role      String
+  content   String
+  inputType String @default("TEXT")
+  metadata  Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+model SecretaryPendingAction {
+  id String @id @default(cuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  threadId String?
+  thread   SecretaryThread? @relation(fields: [threadId], references: [id], onDelete: SetNull)
+
+  userId String?
+
+  type   String
+  status String @default("PENDING")
+
+  payload Json
+  result  Json?
+
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId, status, createdAt])
+  @@index([threadId, status])
+}
+
+model SecretaryAlert {
+  id String @id @default(cuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  dedupKey String
+
+  type     String
+  severity String @default("INFO")
+  status   String @default("OPEN")
+
+  title   String
+  message String
+
+  clientId      String?
+  contentId     String?
+  publicationId String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agencyId, dedupKey])
+  @@index([agencyId, status, createdAt])
+  @@index([publicationId])
 }
 
 model PromptTemplate {

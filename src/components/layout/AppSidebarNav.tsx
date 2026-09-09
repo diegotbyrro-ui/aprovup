@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
+  Bot,
   BriefcaseBusiness,
   LayoutDashboard,
   Lock,
@@ -21,6 +22,7 @@ export type AppSidebarNavItem = {
   blocked: boolean;
   icon:
     | "dashboard"
+    | "secretary"
     | "social"
     | "filmmaker"
     | "design"
@@ -34,6 +36,7 @@ const iconMap: Record<
   LucideIcon
 > = {
   dashboard: LayoutDashboard,
+  secretary: Bot,
   social: Users,
   filmmaker: Video,
   design: PenTool,
