@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  type ReactNode,
   useEffect,
   useRef,
   useState,
@@ -115,6 +116,288 @@ function formatDateTime(
 }
 
 
+function renderInlineMarkdown(
+  text:
+    string
+) {
+  return text
+    .split(
+      /(\*\*[^*]+\*\*)/g
+    )
+    .filter(
+      (
+        part
+      ) =>
+        part.length >
+        0
+    )
+    .map(
+      (
+        part,
+        index
+      ) => {
+        if (
+          part.startsWith(
+            '**'
+          ) &&
+          part.endsWith(
+            '**'
+          ) &&
+          part.length >
+          4
+        ) {
+          return (
+            <strong
+              key={
+                'strong-' +
+                index
+              }
+              className="font-black text-inherit"
+            >
+              {part.slice(
+                2,
+                -2
+              )}
+            </strong>
+          );
+        }
+
+
+        return part;
+      }
+    );
+}
+
+
+function MarkdownMessage({
+  content,
+}: {
+  content:
+    string;
+}) {
+  const nodes:
+    ReactNode[] =
+      [];
+
+  let listItems:
+    Array<{
+      key:
+        string;
+
+      text:
+        string;
+    }> =
+      [];
+
+
+  function flushList() {
+    if (
+      listItems.length ===
+      0
+    ) {
+      return;
+    }
+
+
+    const currentItems =
+      listItems;
+
+    listItems =
+      [];
+
+
+    nodes.push(
+      <ul
+        key={
+          'list-' +
+          nodes.length
+        }
+        className="my-2 list-disc space-y-1 pl-5"
+      >
+        {currentItems.map(
+          (
+            item
+          ) => (
+            <li
+              key={
+                item.key
+              }
+            >
+              {renderInlineMarkdown(
+                item.text
+              )}
+            </li>
+          )
+        )}
+      </ul>
+    );
+  }
+
+
+  const lines =
+    content
+      .replace(
+        /\r\n/g,
+        '\n'
+      )
+      .split(
+        '\n'
+      );
+
+
+  lines.forEach(
+    (
+      line,
+      index
+    ) => {
+      const trimmed =
+        line.trim();
+
+
+      if (
+        trimmed.startsWith(
+          '- '
+        ) ||
+        trimmed.startsWith(
+          '* '
+        )
+      ) {
+        listItems.push({
+          key:
+            'item-' +
+            index,
+
+          text:
+            trimmed.slice(
+              2
+            ),
+        });
+
+        return;
+      }
+
+
+      flushList();
+
+
+      if (!trimmed) {
+        nodes.push(
+          <div
+            key={
+              'space-' +
+              index
+            }
+            className="h-1.5"
+          />
+        );
+
+        return;
+      }
+
+
+      if (
+        trimmed.startsWith(
+          '### '
+        )
+      ) {
+        nodes.push(
+          <h4
+            key={
+              'h3-' +
+              index
+            }
+            className="mt-3 text-sm font-black text-slate-950"
+          >
+            {renderInlineMarkdown(
+              trimmed.slice(
+                4
+              )
+            )}
+          </h4>
+        );
+
+        return;
+      }
+
+
+      if (
+        trimmed.startsWith(
+          '## '
+        )
+      ) {
+        nodes.push(
+          <h3
+            key={
+              'h2-' +
+              index
+            }
+            className="mt-3 text-[15px] font-black text-slate-950"
+          >
+            {renderInlineMarkdown(
+              trimmed.slice(
+                3
+              )
+            )}
+          </h3>
+        );
+
+        return;
+      }
+
+
+      if (
+        trimmed.startsWith(
+          '# '
+        )
+      ) {
+        nodes.push(
+          <h2
+            key={
+              'h1-' +
+              index
+            }
+            className="mt-3 text-base font-black text-slate-950"
+          >
+            {renderInlineMarkdown(
+              trimmed.slice(
+                2
+              )
+            )}
+          </h2>
+        );
+
+        return;
+      }
+
+
+      nodes.push(
+        <p
+          key={
+            'p-' +
+            index
+          }
+          className="whitespace-pre-wrap"
+        >
+          {renderInlineMarkdown(
+            line
+          )}
+        </p>
+      );
+    }
+  );
+
+
+  flushList();
+
+
+  return (
+    <div className="space-y-1">
+      {nodes}
+    </div>
+  );
+}
+
+
 export function SecretaryClient({
   initialThreadId,
   initialMessages,
@@ -215,6 +498,12 @@ export function SecretaryClient({
     );
 
 
+  const sendingRef =
+    useRef(
+      false
+    );
+
+
   const recorderRef =
     useRef<
       MediaRecorder |
@@ -272,10 +561,15 @@ export function SecretaryClient({
 
     if (
       !message ||
-      busy
+      busy ||
+      sendingRef.current
     ) {
       return;
     }
+
+
+    sendingRef.current =
+      true;
 
 
     setBusy(
@@ -394,6 +688,10 @@ export function SecretaryClient({
       );
     }
     finally {
+      sendingRef.current =
+        false;
+
+
       setBusy(
         false
       );
@@ -826,7 +1124,16 @@ export function SecretaryClient({
                     </p>
                   ) : null}
 
-                  {message.content}
+                  {message.role ===
+                  'USER' ? (
+                    message.content
+                  ) : (
+                    <MarkdownMessage
+                      content={
+                        message.content
+                      }
+                    />
+                  )}
                 </div>
               </div>
             )
