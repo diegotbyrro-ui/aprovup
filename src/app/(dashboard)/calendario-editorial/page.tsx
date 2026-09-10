@@ -5,6 +5,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 
 import { CalendarBackButton } from './CalendarBackButton';
 import { MobileEditorialCalendar } from './MobileEditorialCalendar';
+import { DesktopEditorialCalendar } from './DesktopEditorialCalendar';
 const monthNames = [
     'Janeiro',
     'Fevereiro',
@@ -476,130 +477,25 @@ export default async function CalendarioEditorialPage({
                     }))}
                 />
 
-                <div className="mt-5 hidden grid-cols-7 gap-2 lg:grid">
-                    {weekDays.map((day) => (
-                        <div
-                            key={day}
-                            className="rounded-lg bg-slate-100 px-3 py-2 text-center text-xs font-bold uppercase tracking-wide text-slate-500"
-                        >
-                            {day}
-                        </div>
-                    ))}
-
-                    {calendarDays.map((day, index) => {
-                        if (!day) {
-                            return (
-                                <div
-                                    key={`empty-${index}`}
-                                    className="min-h-44 rounded-xl border border-dashed border-slate-100 bg-slate-50"
-                                />
-                            );
-                        }
-
-                        const key = getDateKey(day);
-                        const dayContents = contentsByDay[key] || [];
-                        const todayDay = isToday(day);
-                        const pastDay = isPast(day);
-
-                        return (
-                            <div
-                                key={key}
-                                className={`min-h-44 rounded-xl border p-3 ${todayDay
-                                        ? 'border-blue-300 bg-blue-50'
-                                        : pastDay
-                                            ? 'border-slate-200 bg-slate-50'
-                                            : 'border-slate-200 bg-white'
-                                    }`}
-                            >
-                                <div className="mb-3 flex items-center justify-between">
-                                    <div
-                                        className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${todayDay
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-slate-100 text-slate-700'
-                                            }`}
-                                    >
-                                        {day.getDate()}
-                                    </div>
-
-                                    <Link
-                                        href={
-                                        selectedClient !== 'TODOS'
-                                            ? `/conteudos/novo?cliente=${selectedClient}&data=${formatDateInput(day)}`
-                                            : '/clientes'
-                                    }
-                                        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold text-slate-500 hover:bg-slate-100"
-                                    >
-                                        +
-                                    </Link>
-                                </div>
-
-                                <div className="space-y-2">
-                                    {dayContents.length === 0 ? (
-                                        <p className="text-xs text-slate-400">
-                                            Sem conteúdo
-                                        </p>
-                                    ) : (
-                                        dayContents.slice(0, 4).map((content) => {
-                                            const priority = content.priority || 'MEDIA';
-                                            const area = content.area || 'GERAL';
-                                            const late =
-                                                pastDay &&
-                                                !['PUBLICADO_MANUALMENTE', 'ARQUIVADO'].includes(
-                                                    content.status
-                                                );
-
-                                            return (
-                                                <Link
-                                                    key={content.id}
-                                                    href={`/conteudos/${content.id}`}
-                                                    className={`block rounded-lg border p-2 text-xs transition hover:shadow-sm ${late
-                                                            ? 'border-red-200 bg-red-50'
-                                                            : priority === 'URGENTE'
-                                                                ? 'border-red-200 bg-white'
-                                                                : priority === 'ALTA'
-                                                                    ? 'border-orange-200 bg-white'
-                                                                    : 'border-slate-100 bg-white'
-                                                        }`}
-                                                >
-                                                    <p className="line-clamp-2 font-bold text-slate-900">
-                                                        {content.title}
-                                                    </p>
-
-                                                    <p className="mt-1 line-clamp-1 text-[11px] text-slate-500">
-                                                        {content.client?.name || 'Cliente não informado'}
-                                                    </p>
-
-                                                    <div className="mt-2 flex flex-wrap gap-1">
-                                                        <span
-                                                            className={`rounded-full border px-1.5 py-0.5 text-[9px] font-bold uppercase ${priorityClasses[priority] ||
-                                                                priorityClasses.MEDIA
-                                                                }`}
-                                                        >
-                                                            {priorityLabels[priority] || priority}
-                                                        </span>
-
-                                                        <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-slate-500">
-                                                            {areaLabels[area] || area}
-                                                        </span>
-                                                    </div>
-                                                </Link>
-                                            );
-                                        })
-                                    )}
-
-                                    {dayContents.length > 4 && (
-                                        <p className="text-[11px] font-bold text-slate-500">
-                                            +{dayContents.length - 4} conteúdo(s)
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                <DesktopEditorialCalendar
+                    month={currentMonth}
+                    year={currentYear}
+                    selectedClient={selectedClient}
+                    contents={contents.map((content) => ({
+                        id: content.id,
+                        title: content.title,
+                        clientName: content.client.name,
+                        dateKey: content.plannedDate
+                            ? getDateKey(new Date(content.plannedDate))
+                            : '',
+                        format: content.format,
+                        area: content.area,
+                        priority: content.priority,
+                        status: content.status,
+                    }))}
+                />
             </div>
 
         </div>
     );
 }
-
