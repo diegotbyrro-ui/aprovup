@@ -16,6 +16,7 @@ const areaLabels: Record<string, string> = {
   FILMMAKER: 'Filmmaker',
   SOCIAL_DESIGN: 'Design',
   AUDIOVISUAL: 'Filmmaker',
+  SOCIAL_MEDIA: 'Social Media',
   GERAL: 'Geral',
 };
 
@@ -184,6 +185,28 @@ function getNextStep(status: string, area: string) {
         'O material está com o cliente. Use o link de aprovação final para o cliente aprovar ou pedir alteração.',
       color: 'orange',
       actionLabel: 'Abrir link de aprovação',
+      nextStatus: null,
+    };
+  }
+
+  if (
+    area === 'SOCIAL_MEDIA' &&
+    [
+      'APROVADO',
+      'ALTERACAO_SOLICITADA',
+    ].includes(status)
+  ) {
+    return {
+      title:
+        status === 'ALTERACAO_SOLICITADA'
+          ? 'Corrigir material pela Social Media'
+          : 'Produzir material pela Social Media',
+      description:
+        status === 'ALTERACAO_SOLICITADA'
+          ? 'O material voltou com ajuste. Abra a produção, substitua as fotos necessárias e envie novamente para a conferência antes da 2ª aprovação.'
+          : 'A 1ª aprovação foi concluída. Abra a produção, suba a foto, vídeo ou carrossel e, quando houver, a versão de Stories.',
+      color: 'blue',
+      actionLabel: null,
       nextStatus: null,
     };
   }
@@ -671,7 +694,7 @@ export default async function ConteudoDetailPage({
       .toUpperCase();
 
   const isDesignCarousel =
-    ['DESIGN', 'SOCIAL_DESIGN'].includes(
+    ['DESIGN', 'SOCIAL_DESIGN', 'SOCIAL_MEDIA'].includes(
       currentArea
     ) &&
     (
@@ -875,6 +898,19 @@ export default async function ConteudoDetailPage({
                 </button>
               </form>
             )}
+
+            {currentArea === 'SOCIAL_MEDIA' &&
+              [
+                'APROVADO',
+                'ALTERACAO_SOLICITADA',
+              ].includes(contentSafe.status) && (
+                <Link
+                  href={`/conteudos/${contentSafe.id}/visualizar`}
+                  className="w-full rounded-xl bg-blue-600 px-5 py-3 text-center text-sm font-bold text-white hover:bg-blue-700 sm:w-auto"
+                >
+                  Produzir material
+                </Link>
+              )}
 
             {contentSafe.status === 'ENVIADO_CLIENTE' && approvalToken && (
               <Link
@@ -1181,10 +1217,12 @@ export default async function ConteudoDetailPage({
                   <select
                     name="area"
                     defaultValue={
-                      currentArea === 'FILMMAKER' ||
-                      currentArea === 'AUDIOVISUAL'
-                        ? 'FILMMAKER'
-                        : 'DESIGN'
+                      currentArea === 'SOCIAL_MEDIA'
+                        ? 'SOCIAL_MEDIA'
+                        : currentArea === 'FILMMAKER' ||
+                            currentArea === 'AUDIOVISUAL'
+                          ? 'FILMMAKER'
+                          : 'DESIGN'
                     }
                     className={inputClasses}
                   >
@@ -1194,6 +1232,10 @@ export default async function ConteudoDetailPage({
 
                     <option value="FILMMAKER">
                       Filmmaker
+                    </option>
+
+                    <option value="SOCIAL_MEDIA">
+                      Social Media
                     </option>
                   </select>
                 </div>

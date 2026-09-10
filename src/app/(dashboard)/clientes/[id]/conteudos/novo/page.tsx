@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { requireAgencyContext } from '@/lib/tenant';
 import Link from 'next/link';
 import { createContent } from '@/app/actions';
@@ -198,10 +198,11 @@ export default async function NovoConteudoClientePage({
             >
               <option value="DESIGN">Design</option>
               <option value="FILMMAKER">Filmmaker</option>
+              <option value="SOCIAL_MEDIA">Social Media</option>
             </select>
 
             <p className="mt-1 text-xs text-slate-500">
-              Define qual equipe será responsável pela produção.
+              Escolha Design, Filmmaker ou a própria Social Media para produzir o material.
             </p>
           </div>
 
@@ -292,4 +293,3 @@ export default async function NovoConteudoClientePage({
     </div>
   );
 }
-

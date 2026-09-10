@@ -476,13 +476,19 @@ function ContentPreview({
 
 function ContentRow({
   content,
+  href,
 }: {
   content:
     ContentRowData;
+
+  href?: string;
 }) {
   return (
     <Link
-      href={`/conteudos/${content.id}`}
+      href={
+        href ||
+        `/conteudos/${content.id}`
+      }
       className="group flex items-center gap-3 border-b border-slate-100 py-3 last:border-b-0"
     >
       <ContentPreview
@@ -521,9 +527,12 @@ function ContentRow({
 
           <span>
             {content.area ===
-            "FILMMAKER"
-              ? "Filmaker"
-              : "Design"}
+            "SOCIAL_MEDIA"
+              ? "Social Media"
+              : content.area ===
+                  "FILMMAKER"
+                ? "Filmaker"
+                : "Design"}
           </span>
 
           <span>
@@ -1101,6 +1110,43 @@ const query =
     ]);
 
 
+  const socialProductionContents =
+    await prisma.content.findMany({
+      where: {
+        clientId,
+
+        area:
+          "SOCIAL_MEDIA",
+
+        status: {
+          in: [
+            "APROVADO",
+            "ALTERACAO_SOLICITADA",
+          ],
+        },
+      },
+
+      include: {
+        client:
+          true,
+      },
+
+      orderBy: [
+        {
+          plannedDate:
+            "asc",
+        },
+        {
+          updatedAt:
+            "desc",
+        },
+      ],
+
+      take:
+        12,
+    });
+
+
   const finalApprovalQueue =
     finalApprovalContents.filter(
       (content) => {
@@ -1351,6 +1397,78 @@ const query =
 
 
       {/* ===================================================
+          PRODUCAO PELA SOCIAL MEDIA
+          =================================================== */}
+
+      <section className="rounded-xl border border-blue-200 bg-blue-50/40 p-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
+                <ImageIcon
+                  size={15}
+                />
+              </div>
+
+              <div>
+                <h2 className="text-[13px] font-bold text-slate-900">
+                  Produção pela Social Media
+                </h2>
+
+                <p className="mt-0.5 text-[9px] text-slate-500">
+                  Conteúdos que já passaram pela 1ª aprovação e serão produzidos por você.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <span className="w-fit rounded-md bg-white px-2.5 py-1 text-[8px] font-bold text-blue-700 shadow-sm">
+            {socialProductionContents.length} para produzir
+          </span>
+        </div>
+
+        {socialProductionContents.length === 0 ? (
+          <div className="mt-4 flex min-h-[100px] items-center justify-center rounded-xl border border-dashed border-blue-200 bg-white/70">
+            <div className="text-center">
+              <CheckCircle2
+                size={20}
+                className="mx-auto text-blue-300"
+              />
+
+              <p className="mt-2 text-[10px] font-bold text-slate-600">
+                Nenhum material aguardando produção
+              </p>
+
+              <p className="mt-1 text-[8px] text-slate-400">
+                Ao criar um conteúdo, escolha Social Media como área responsável.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 divide-y divide-blue-100 rounded-xl border border-blue-100 bg-white px-3">
+            {socialProductionContents.map(
+              (
+                content
+              ) => (
+                <ContentRow
+                  key={
+                    content.id
+                  }
+                  content={
+                    content
+                  }
+                  href={
+                    `/conteudos/${content.id}/visualizar`
+                  }
+                />
+              )
+            )}
+          </div>
+        )}
+      </section>
+
+
+      {/* ===================================================
           ATALHOS
           =================================================== */}
 
@@ -1495,7 +1613,7 @@ const query =
               </p>
 
               <p className="mt-1 text-[8px] text-slate-400">
-                Quando Design ou Filmmaker finalizarem, o conteúdo aparecerá aqui.
+                Quando Design, Filmmaker ou Social Media finalizarem, o conteúdo aparecerá aqui.
               </p>
             </div>
           </div>
@@ -1593,8 +1711,12 @@ const query =
 
                         <div className="aspect-[9/16] overflow-hidden bg-black">
                         {mediaUrl ? (
-                          content.area ===
-                          "FILMMAKER" ? (
+                          String(
+                            content.finalMediaType ||
+                            ""
+                          ).startsWith(
+                            "video/"
+                          ) ? (
                             <video
                               src={
                                 mediaUrl
@@ -1673,12 +1795,15 @@ const query =
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="rounded-md bg-white px-1.5 py-1 text-[7px] font-bold text-slate-600">
                             {content.area ===
-                            "FILMMAKER"
-                              ? "FILMMAKER"
+                            "SOCIAL_MEDIA"
+                              ? "SOCIAL MEDIA"
                               : content.area ===
-                                  "DESIGN"
-                                ? "DESIGN"
-                                : "CONTEÚDO"}
+                                  "FILMMAKER"
+                                ? "FILMMAKER"
+                                : content.area ===
+                                    "DESIGN"
+                                  ? "DESIGN"
+                                  : "CONTEÚDO"}
                           </span>
 
                           <span

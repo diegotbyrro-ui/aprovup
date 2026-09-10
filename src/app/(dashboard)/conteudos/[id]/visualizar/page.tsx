@@ -189,6 +189,7 @@ export default async function ViewContentPage({
     [
       'DESIGN',
       'SOCIAL_DESIGN',
+      'SOCIAL_MEDIA',
     ].includes(
       String(
         item.area ||
@@ -209,7 +210,9 @@ export default async function ViewContentPage({
       item.area ===
         'DESIGN' ||
       item.area ===
-        'SOCIAL_DESIGN'
+        'SOCIAL_DESIGN' ||
+      item.area ===
+        'SOCIAL_MEDIA'
     ) &&
     (
       normalizedFormat.includes(
@@ -238,14 +241,28 @@ export default async function ViewContentPage({
       ? finalMediaUrl
       : '';
 
+  const backHref =
+    item.area === 'SOCIAL_MEDIA'
+      ? `/social-media?cliente=${item.clientId}`
+      : item.area === 'FILMMAKER'
+        ? '/filmmaker'
+        : '/design';
+
+  const backLabel =
+    item.area === 'SOCIAL_MEDIA'
+      ? 'Social Media'
+      : item.area === 'FILMMAKER'
+        ? 'Filmaker'
+        : 'Design';
+
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
       <Link
-        href={item.area === 'FILMMAKER' ? '/filmmaker' : '/design'}
+        href={backHref}
         className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-950"
       >
         <ArrowLeft size={16} />
-        Voltar para {item.area === 'FILMMAKER' ? 'Filmaker' : 'Design'}
+        Voltar para {backLabel}
       </Link>
 
       <section className="rounded-3xl bg-slate-950 p-8 text-white shadow-sm">
@@ -515,7 +532,7 @@ export default async function ViewContentPage({
           </section>
 
           <Link
-            href={item.area === 'FILMMAKER' ? '/filmmaker' : '/design'}
+            href={backHref}
             className="block rounded-2xl bg-slate-950 px-5 py-4 text-center text-sm font-bold text-white transition hover:bg-slate-800"
           >
             Voltar

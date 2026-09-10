@@ -84,9 +84,11 @@ export async function approvePlanningContent(
   });
 
   const destinationLabel =
-    destination === 'FILMMAKER'
-      ? 'Filmaker'
-      : 'Design';
+    destination === 'SOCIAL_MEDIA'
+      ? 'Social Media'
+      : destination === 'FILMMAKER'
+        ? 'Filmaker'
+        : 'Design';
 
   await prisma.historyLog.create({
     data: {
@@ -113,6 +115,7 @@ export async function approvePlanningContent(
   revalidatePath(`/conteudos/${contentId}`);
   revalidatePath('/clientes');
   revalidatePath('/calendario-editorial');
+  revalidatePath('/social-media');
   revalidatePath('/design');
   revalidatePath('/filmmaker');
   revalidatePath('/social-media/agendamentos');

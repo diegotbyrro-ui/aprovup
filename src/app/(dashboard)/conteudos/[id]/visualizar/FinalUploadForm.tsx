@@ -530,7 +530,9 @@ export default function FinalUploadForm({
     normalizedArea ===
       'DESIGN' ||
     normalizedArea ===
-      'SOCIAL_DESIGN';
+      'SOCIAL_DESIGN' ||
+    normalizedArea ===
+      'SOCIAL_MEDIA';
 
 
   async function prepareUpload(

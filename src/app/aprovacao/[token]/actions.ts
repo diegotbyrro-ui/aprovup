@@ -52,6 +52,13 @@ export async function approveClientContentAction(
   const destination =
     getApprovedContentDestination(content);
 
+  const destinationLabel =
+    destination === 'SOCIAL_MEDIA'
+      ? 'Social Media'
+      : destination === 'FILMMAKER'
+        ? 'Filmaker'
+        : 'Design';
+
   await prisma.content.update({
     where: {
       id: contentId,
@@ -68,11 +75,7 @@ export async function approveClientContentAction(
       authorName: client.name,
       authorRole: 'CLIENTE',
       message:
-        `APROVAÇÃO DO CLIENTE: conteúdo aprovado e encaminhado para ${
-          destination === 'FILMMAKER'
-            ? 'Filmaker'
-            : 'Design'
-        }.`,
+        `APROVAÇÃO DO CLIENTE: conteúdo aprovado e encaminhado para ${destinationLabel}.`,
     },
   }).catch(() => null);
 

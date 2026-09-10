@@ -437,26 +437,39 @@ export async function requestInternalAdjustmentAction(
       );
   }
 
-  const returnToDesign =
-    content.status ===
-      'DESIGN_ANALISE' ||
+  const returnToSocialMedia =
     content.area ===
-      'DESIGN';
+      'SOCIAL_MEDIA';
+
+  const returnToDesign =
+    !returnToSocialMedia &&
+    (
+      content.status ===
+        'DESIGN_ANALISE' ||
+      content.area ===
+        'DESIGN'
+    );
 
   const targetArea =
-    returnToDesign
-      ? 'DESIGN'
-      : 'FILMMAKER';
+    returnToSocialMedia
+      ? 'SOCIAL_MEDIA'
+      : returnToDesign
+        ? 'DESIGN'
+        : 'FILMMAKER';
 
   const targetStatus =
-    returnToDesign
-      ? 'DESIGN_FAZENDO'
-      : 'FILMMAKER_EDICAO';
+    returnToSocialMedia
+      ? 'APROVADO'
+      : returnToDesign
+        ? 'DESIGN_FAZENDO'
+        : 'FILMMAKER_EDICAO';
 
   const targetLabel =
-    returnToDesign
-      ? 'Design'
-      : 'Filmmaker';
+    returnToSocialMedia
+      ? 'Social Media'
+      : returnToDesign
+        ? 'Design'
+        : 'Filmmaker';
 
   const authorName =
     currentUser.name ||

@@ -3,6 +3,11 @@ export type RoutableContent = {
   format?: string | null;
 };
 
+export type ApprovedContentDestination =
+  | 'DESIGN'
+  | 'FILMMAKER'
+  | 'SOCIAL_MEDIA';
+
 function normalizeContentValue(value?: string | null) {
   return String(value || '')
     .trim()
@@ -45,6 +50,17 @@ export function isVideoContent(content: RoutableContent) {
 
 export function getApprovedContentDestination(
   content: RoutableContent
-): 'DESIGN' | 'FILMMAKER' {
-  return isVideoContent(content) ? 'FILMMAKER' : 'DESIGN';
+): ApprovedContentDestination {
+  const area =
+    normalizeContentValue(
+      content.area
+    );
+
+  if (area === 'SOCIAL_MEDIA') {
+    return 'SOCIAL_MEDIA';
+  }
+
+  return isVideoContent(content)
+    ? 'FILMMAKER'
+    : 'DESIGN';
 }

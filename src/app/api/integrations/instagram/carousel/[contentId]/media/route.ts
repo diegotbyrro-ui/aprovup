@@ -1,4 +1,4 @@
-﻿import {
+import {
   NextRequest,
   NextResponse,
 } from 'next/server';
@@ -225,7 +225,9 @@ export async function POST(
     content.area !==
       'DESIGN' &&
     content.area !==
-      'SOCIAL_DESIGN'
+      'SOCIAL_DESIGN' &&
+    content.area !==
+      'SOCIAL_MEDIA'
   ) {
 
     return NextResponse.json(
@@ -234,7 +236,7 @@ export async function POST(
           false,
 
         message:
-          'Este conteúdo não pertence ao Design.',
+          'Este conteúdo não pertence a uma área habilitada para carrossel.',
       },
       {
         status:
@@ -1034,7 +1036,9 @@ export async function PATCH(
       data: {
 
         status:
-          'DESIGN_ANALISE',
+          content.area === 'SOCIAL_MEDIA'
+            ? 'REVISAO_INTERNA'
+            : 'DESIGN_ANALISE',
 
         finalMediaUrl:
           firstPage,
@@ -1067,7 +1071,11 @@ export async function PATCH(
           'DESIGN',
 
         message:
-          `Carrossel com ${assets.length} páginas enviado pelo Design para análise interna.`,
+          `Carrossel com ${assets.length} páginas enviado pela ${
+            content.area === 'SOCIAL_MEDIA'
+              ? 'Social Media'
+              : 'Design'
+          } para análise interna.`,
 
       },
 
@@ -1106,7 +1114,9 @@ export async function PATCH(
       true,
 
     status:
-      'DESIGN_ANALISE',
+      content.area === 'SOCIAL_MEDIA'
+        ? 'REVISAO_INTERNA'
+        : 'DESIGN_ANALISE',
 
     pages:
       assets.length,

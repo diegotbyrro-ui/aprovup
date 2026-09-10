@@ -80,6 +80,13 @@ async function approveContentBase(
   const destination =
     getApprovedContentDestination(content);
 
+  const destinationLabel =
+    destination === 'SOCIAL_MEDIA'
+      ? 'Social Media'
+      : destination === 'FILMMAKER'
+        ? 'Filmaker'
+        : 'Design';
+
   await prisma.$transaction(async (transaction) => {
     await transaction.content.update({
       where: {
@@ -97,11 +104,7 @@ async function approveContentBase(
         authorName: monthlyApproval.client.name,
         authorRole: 'CLIENTE',
         message:
-          `APROVA??O DO CLIENTE: conte?do aprovado na Etapa 1 e encaminhado para ${
-            destination === 'FILMMAKER'
-              ? 'Filmaker'
-              : 'Design'
-          }.`,
+          `APROVA??O DO CLIENTE: conte?do aprovado na Etapa 1 e encaminhado para ${destinationLabel}.`,
       },
     });
 
@@ -111,11 +114,7 @@ async function approveContentBase(
         entityId: content.id,
         action: 'PLANNING_APPROVED_AND_ROUTED',
         description:
-          `Conte?do aprovado pelo cliente e encaminhado para ${
-            destination === 'FILMMAKER'
-              ? 'Filmaker'
-              : 'Design'
-          }.`,
+          `Conte?do aprovado pelo cliente e encaminhado para ${destinationLabel}.`,
         authorName: monthlyApproval.client.name,
       },
     });

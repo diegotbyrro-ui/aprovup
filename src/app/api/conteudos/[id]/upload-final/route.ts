@@ -588,14 +588,39 @@ export async function POST(
           : '';
 
 
-      const reviewStatus =
+      const normalizedFormat =
+        String(
+          content.format ||
+          ''
+        )
+          .trim()
+          .toUpperCase();
+
+      const isSocialMediaCarousel =
         content.area ===
-        'FILMMAKER'
-          ? 'FILMMAKER_ANALISE'
+          'SOCIAL_MEDIA' &&
+        (
+          normalizedFormat.includes(
+            'CARROSSEL'
+          ) ||
+          normalizedFormat.includes(
+            'CAROUSEL'
+          ) ||
+          normalizedFormat.includes(
+            'ALBUM'
+          )
+        );
+
+      const reviewStatus =
+        isSocialMediaCarousel
+          ? content.status
           : content.area ===
-              'DESIGN'
-            ? 'DESIGN_ANALISE'
-            : 'REVISAO_INTERNA';
+              'FILMMAKER'
+            ? 'FILMMAKER_ANALISE'
+            : content.area ===
+                'DESIGN'
+              ? 'DESIGN_ANALISE'
+              : 'REVISAO_INTERNA';
 
 
       const updateData:
