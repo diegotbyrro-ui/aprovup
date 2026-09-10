@@ -1,5 +1,11 @@
 import Link from "next/link";
 
+import {
+  redirect,
+} from "next/navigation";
+
+import { InstagramIcon } from "@/components/icons/InstagramIcon";
+
 import type {
   Prisma,
 } from "@prisma/client";
@@ -9,8 +15,10 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Eye,
   FileText,
   FolderOpen,
+  Heart,
   LayoutGrid,
   Palette,
   Send,
@@ -25,8 +33,34 @@ import {
 } from "@/lib/prisma";
 
 import {
-  requireAgencyContext,
-} from "@/lib/tenant";
+  requireCurrentUser,
+} from "@/lib/auth";
+
+import {
+  canAccessClient,
+} from "@/lib/clientAccess";
+
+import {
+  canUseMetaIntegration,
+} from "@/lib/metaAccess";
+
+import {
+  decryptMetaSecret,
+} from "@/lib/metaCrypto";
+
+import {
+  getInstagramDashboardMetrics,
+  isMetaConfigured,
+  type InstagramDashboardMetrics,
+} from "@/lib/metaInstagram";
+
+import {
+  saveInstagramSnapshot,
+} from "@/lib/instagramSnapshots";
+
+import {
+  DashboardClientSelector,
+} from "./DashboardClientSelector";
 
 
 type ContentWithClient =
@@ -586,6 +620,158 @@ function KpiCard({
 }
 
 
+function formatInstagramMetric(
+  value:
+    number |
+    null
+) {
+  if (
+    value ===
+    null
+  ) {
+    return "—";
+  }
+
+  return new Intl.NumberFormat(
+    "pt-BR",
+    {
+      notation:
+        value >= 10000
+          ? "compact"
+          : "standard",
+
+      maximumFractionDigits:
+        1,
+    }
+  ).format(
+    value
+  );
+}
+
+
+function formatInstagramChange(
+  value:
+    number |
+    null
+) {
+  if (
+    value ===
+    null
+  ) {
+    return "Sem comparação";
+  }
+
+  const formatted =
+    Math.abs(
+      value
+    )
+      .toFixed(1)
+      .replace(
+        ".",
+        ","
+      );
+
+  if (
+    value >
+    0
+  ) {
+    return `+${formatted}% vs. mês anterior`;
+  }
+
+  if (
+    value <
+    0
+  ) {
+    return `-${formatted}% vs. mês anterior`;
+  }
+
+  return "0% vs. mês anterior";
+}
+
+
+function InstagramMetricCard({
+  label,
+  value,
+  change,
+  icon,
+  helper,
+}: {
+  label:
+    string;
+
+  value:
+    number |
+    null;
+
+  change:
+    number |
+    null;
+
+  icon:
+    React.ReactNode;
+
+  helper?:
+    string;
+}) {
+  const positive =
+    change !==
+      null &&
+    change >=
+      0;
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">
+            {label}
+          </p>
+
+          <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+            {formatInstagramMetric(
+              value
+            )}
+          </p>
+
+          {
+            helper
+              ? (
+                <p className="mt-1 truncate text-[10px] font-semibold text-slate-400">
+                  {helper}
+                </p>
+              )
+              : (
+                <p
+                  className={[
+                    "mt-1",
+                    "text-[10px]",
+                    "font-bold",
+                    change ===
+                    null
+                      ? "text-slate-400"
+                      : positive
+                        ? "text-emerald-600"
+                        : "text-red-500",
+                  ].join(
+                    " "
+                  )}
+                >
+                  {formatInstagramChange(
+                    change
+                  )}
+                </p>
+              )
+          }
+        </div>
+
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-50 text-pink-600">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Thumb({
   content,
 }: {
@@ -670,11 +856,120 @@ function ClientAvatar({
 }
 
 
-export default async function OperacaoPage() {
-  const {
-    agencyId,
-  } =
-    await requireAgencyContext();
+export default async function OperacaoPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    cliente?: string;
+  }>;
+}) {
+  const currentUser =
+    await requireCurrentUser();
+
+  const agencyId =
+    currentUser.agencyId;
+
+  const query =
+    searchParams
+      ? await searchParams
+      : {};
+
+  const requestedClientId =
+    String(
+      query?.cliente ||
+      ""
+    ).trim();
+
+
+  /*
+   * CLIENT_RESPONSIBLE_ACCESS
+   *
+   * O seletor nunca recebe clientes de outra agencia.
+   * Para SOCIAL_MEDIA, canAccessClient limita aos clientes
+   * presentes em internalResponsible.
+   * Diretoria continua enxergando toda a agencia.
+   */
+  const candidateClients =
+    await prisma.client.findMany({
+      where: {
+        agencyId,
+      },
+
+      select: {
+        id:
+          true,
+
+        name:
+          true,
+
+        agencyId:
+          true,
+
+        internalResponsible:
+          true,
+      },
+
+      orderBy: {
+        name:
+          "asc",
+      },
+    });
+
+
+  const accessibleClients =
+    candidateClients.filter(
+      (
+        client
+      ) =>
+        canAccessClient(
+          currentUser,
+          client
+        )
+    );
+
+
+  const selectedClient =
+    requestedClientId
+      ? (
+          accessibleClients.find(
+            (
+              client
+            ) =>
+              client.id ===
+              requestedClientId
+          ) ||
+          null
+        )
+      : null;
+
+
+  if (
+    requestedClientId &&
+    !selectedClient
+  ) {
+    redirect(
+      "/operacao"
+    );
+  }
+
+
+  const selectedClientId =
+    selectedClient?.id ||
+    null;
+
+
+  const scopedClientIds =
+    selectedClientId
+      ? [
+          selectedClientId,
+        ]
+      : accessibleClients.map(
+          (
+            client
+          ) =>
+            client.id
+        );
+
 
   const now =
     new Date();
@@ -726,8 +1021,9 @@ export default async function OperacaoPage() {
     await prisma.$transaction([
       prisma.content.findMany({
         where: {
-          client: {
-            agencyId,
+          clientId: {
+            in:
+              scopedClientIds,
           },
           plannedDate: {
             gte:
@@ -752,8 +1048,9 @@ export default async function OperacaoPage() {
 
       prisma.content.findMany({
         where: {
-          client: {
-            agencyId,
+          clientId: {
+            in:
+              scopedClientIds,
           },
           plannedDate: {
             gte:
@@ -773,8 +1070,9 @@ export default async function OperacaoPage() {
 
       prisma.content.findMany({
         where: {
-          client: {
-            agencyId,
+          clientId: {
+            in:
+              scopedClientIds,
           },
           plannedDate: {
             gte:
@@ -806,8 +1104,9 @@ export default async function OperacaoPage() {
 
       prisma.content.findMany({
         where: {
-          client: {
-            agencyId,
+          clientId: {
+            in:
+              scopedClientIds,
           },
           status: {
             in: [
@@ -843,6 +1142,11 @@ export default async function OperacaoPage() {
       prisma.client.findMany({
         where: {
           agencyId,
+
+          id: {
+            in:
+              scopedClientIds,
+          },
         },
 
         include: {
@@ -864,8 +1168,9 @@ export default async function OperacaoPage() {
       prisma.approval.count({
         where: {
           content: {
-            client: {
-              agencyId,
+            clientId: {
+              in:
+                scopedClientIds,
             },
           },
           status:
@@ -885,8 +1190,9 @@ export default async function OperacaoPage() {
       prisma.approval.count({
         where: {
           content: {
-            client: {
-              agencyId,
+            clientId: {
+              in:
+                scopedClientIds,
             },
           },
           status:
@@ -905,8 +1211,9 @@ export default async function OperacaoPage() {
 
       prisma.content.count({
         where: {
-          client: {
-            agencyId,
+          clientId: {
+            in:
+              scopedClientIds,
           },
           status: {
             in:
@@ -918,8 +1225,9 @@ export default async function OperacaoPage() {
 
       prisma.content.count({
         where: {
-          client: {
-            agencyId,
+          clientId: {
+            in:
+              scopedClientIds,
           },
           status: {
             in:
@@ -931,8 +1239,9 @@ export default async function OperacaoPage() {
 
       prisma.content.count({
         where: {
-          client: {
-            agencyId,
+          clientId: {
+            in:
+              scopedClientIds,
           },
           status: {
             in:
@@ -944,8 +1253,9 @@ export default async function OperacaoPage() {
 
       prisma.content.count({
         where: {
-          client: {
-            agencyId,
+          clientId: {
+            in:
+              scopedClientIds,
           },
           status:
             "ENVIADO_CLIENTE",
@@ -955,8 +1265,9 @@ export default async function OperacaoPage() {
 
       prisma.content.count({
         where: {
-          client: {
-            agencyId,
+          clientId: {
+            in:
+              scopedClientIds,
           },
           status: {
             in:
@@ -968,8 +1279,9 @@ export default async function OperacaoPage() {
 
       prisma.content.findMany({
         where: {
-          client: {
-            agencyId,
+          clientId: {
+            in:
+              scopedClientIds,
           },
           status: {
             in:
@@ -998,6 +1310,112 @@ export default async function OperacaoPage() {
       }),
     ]);
 
+
+  /*
+   * INSTAGRAM ANALYTICS
+   *
+   * A consulta ao Graph so acontece quando existe um
+   * cliente especifico selecionado. Na visao geral da
+   * agencia nao somamos metricas de contas diferentes.
+   */
+  const instagramConnection =
+    selectedClientId
+      ? await prisma.instagramConnection.findUnique({
+          where: {
+            clientId:
+              selectedClientId,
+          },
+
+          select: {
+            instagramUserId:
+              true,
+
+            username:
+              true,
+
+            displayName:
+              true,
+
+            status:
+              true,
+
+            userAccessTokenEncrypted:
+              true,
+          },
+        })
+      : null;
+
+
+  const metaReady =
+    isMetaConfigured() &&
+    canUseMetaIntegration(
+      currentUser
+    );
+
+
+  let instagramMetrics:
+    InstagramDashboardMetrics |
+    null =
+    null;
+
+
+  let instagramLoadError =
+    false;
+
+
+  if (
+    selectedClientId &&
+    instagramConnection
+      ?.userAccessTokenEncrypted &&
+    metaReady
+  ) {
+    try {
+      instagramMetrics =
+        await getInstagramDashboardMetrics({
+          instagramUserId:
+            instagramConnection.instagramUserId,
+
+          accessToken:
+            decryptMetaSecret(
+              instagramConnection
+                .userAccessTokenEncrypted
+            ),
+        });
+
+
+      try {
+        await saveInstagramSnapshot({
+          clientId:
+            selectedClientId,
+
+          instagramUserId:
+            instagramConnection.instagramUserId,
+
+          metrics:
+            instagramMetrics,
+        });
+      }
+      catch (
+        snapshotError
+      ) {
+        console.error(
+          "DASHBOARD INSTAGRAM SNAPSHOT ERROR",
+          snapshotError
+        );
+      }
+    }
+    catch (
+      error
+    ) {
+      instagramLoadError =
+        true;
+
+      console.error(
+        "DASHBOARD INSTAGRAM METRICS ERROR",
+        error
+      );
+    }
+  }
 
   const currentClientIds =
     new Set(
@@ -1434,6 +1852,77 @@ export default async function OperacaoPage() {
   return (
     <div className="space-y-4">
       {/* ===================================================
+          FILTRO DO DASHBOARD
+          =================================================== */}
+
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-[18px] font-bold tracking-tight text-slate-900">
+                {
+                  selectedClient
+                    ? cleanName(
+                        selectedClient.name
+                      )
+                    : "Visão geral da operação"
+                }
+              </h1>
+
+              {
+                selectedClient
+                  ? (
+                    <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-violet-600">
+                      Cliente selecionado
+                    </span>
+                  )
+                  : null
+              }
+            </div>
+
+            <p className="mt-1 text-[11px] text-slate-400">
+              {
+                selectedClient
+                  ? "Operação, calendário e resultados do Instagram em uma única visão."
+                  : currentUser.role ===
+                      "SOCIAL_MEDIA"
+                    ? "Visão consolidada somente dos clientes sob sua responsabilidade."
+                    : "Visão consolidada de todos os clientes da agência."
+              }
+            </p>
+          </div>
+
+          <DashboardClientSelector
+            clients={
+              accessibleClients.map(
+                (
+                  client
+                ) => ({
+                  id:
+                    client.id,
+
+                  name:
+                    cleanName(
+                      client.name
+                    ),
+                })
+              )
+            }
+            selectedClientId={
+              selectedClientId
+            }
+            allLabel={
+              currentUser.role ===
+              "DIRECTOR"
+                ? "Todos os clientes"
+                : "Meus clientes"
+            }
+          />
+        </div>
+      </section>
+
+
+      {/* ===================================================
           KPIS
           =================================================== */}
 
@@ -1456,14 +1945,28 @@ export default async function OperacaoPage() {
         />
 
         <KpiCard
-          label="Clientes ativos"
+          label={
+            selectedClient
+              ? "Cliente em análise"
+              : "Clientes ativos"
+          }
           value={
-            currentClientIds.size
+            selectedClient
+              ? 1
+              : currentClientIds.size
           }
           delta={
-            clientsDelta
+            selectedClient
+              ? 0
+              : clientsDelta
           }
-          helper="com conteúdo neste mês"
+          helper={
+            selectedClient
+              ? cleanName(
+                  selectedClient.name
+                )
+              : "com conteúdo neste mês"
+          }
           icon={
             <UsersRound
               size={18}
@@ -1509,6 +2012,177 @@ export default async function OperacaoPage() {
       </section>
 
 
+      {
+        selectedClient
+          ? (
+            <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-pink-600">
+                    <InstagramIcon
+                      size={19}
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-[15px] font-bold text-slate-900">
+                        Instagram
+                      </h2>
+
+                      {
+                        instagramConnection
+                          ? (
+                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-emerald-600">
+                              Conectado
+                            </span>
+                          )
+                          : (
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-slate-500">
+                              Não conectado
+                            </span>
+                          )
+                      }
+                    </div>
+
+                    <p className="mt-0.5 text-[10px] text-slate-400">
+                      {
+                        instagramConnection
+                          ? (
+                              instagramConnection.username
+                                ? `@${instagramConnection.username}`
+                                : instagramConnection.displayName ||
+                                  cleanName(
+                                    selectedClient.name
+                                  )
+                            )
+                          : "Conecte a conta profissional para acompanhar os resultados."
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                <Link
+                  href={`/clientes/${selectedClient.id}/instagram`}
+                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-blue-600 transition hover:bg-slate-50"
+                >
+                  Abrir análise completa
+
+                  <ArrowUpRight
+                    size={11}
+                  />
+                </Link>
+              </div>
+
+
+              {
+                instagramConnection &&
+                metaReady &&
+                instagramMetrics
+                  ? (
+                    <div className="grid grid-cols-2 gap-3 p-4 xl:grid-cols-4">
+                      <InstagramMetricCard
+                        label="Seguidores"
+                        value={
+                          instagramMetrics.followersCount
+                        }
+                        change={
+                          null
+                        }
+                        helper={
+                          instagramConnection.username
+                            ? `@${instagramConnection.username}`
+                            : "Perfil conectado"
+                        }
+                        icon={
+                          <UsersRound
+                            size={18}
+                          />
+                        }
+                      />
+
+                      <InstagramMetricCard
+                        label="Alcance"
+                        value={
+                          instagramMetrics.current.reach
+                        }
+                        change={
+                          instagramMetrics.change.reach
+                        }
+                        icon={
+                          <TrendingUp
+                            size={18}
+                          />
+                        }
+                      />
+
+                      <InstagramMetricCard
+                        label="Visualizações"
+                        value={
+                          instagramMetrics.current.views
+                        }
+                        change={
+                          instagramMetrics.change.views
+                        }
+                        icon={
+                          <Eye
+                            size={18}
+                          />
+                        }
+                      />
+
+                      <InstagramMetricCard
+                        label="Interações"
+                        value={
+                          instagramMetrics.current.interactions
+                        }
+                        change={
+                          instagramMetrics.change.interactions
+                        }
+                        icon={
+                          <Heart
+                            size={18}
+                          />
+                        }
+                      />
+                    </div>
+                  )
+                  : (
+                    <div className="p-4">
+                      <div className="flex min-h-24 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-center">
+                        <div>
+                          <p className="text-[11px] font-bold text-slate-700">
+                            {
+                              !instagramConnection
+                                ? "Instagram ainda não conectado"
+                                : !metaReady
+                                  ? "Integração Meta indisponível neste acesso"
+                                  : instagramLoadError
+                                    ? "Não foi possível atualizar as métricas agora"
+                                    : "Carregando histórico do Instagram"
+                            }
+                          </p>
+
+                          <p className="mt-1 text-[10px] leading-relaxed text-slate-400">
+                            {
+                              !instagramConnection
+                                ? "Abra a análise do Instagram deste cliente para realizar a conexão."
+                                : !metaReady
+                                  ? "Assim que a integração Meta estiver liberada para este usuário, os indicadores aparecerão aqui."
+                                  : "A análise completa continua disponível na página do Instagram do cliente."
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+              }
+            </section>
+          )
+          : null
+      }
+
+
       {/* ===================================================
           CALENDARIO + APROVACOES + CLIENTES
           =================================================== */}
@@ -1530,7 +2204,11 @@ export default async function OperacaoPage() {
             </div>
 
             <Link
-              href={`/calendario-editorial?mes=${now.getMonth() + 1}&ano=${now.getFullYear()}`}
+              href={
+                selectedClientId
+                  ? `/clientes/${selectedClientId}/calendario`
+                  : `/calendario-editorial?mes=${now.getMonth() + 1}&ano=${now.getFullYear()}`
+              }
               className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
             >
               Ver calendário
@@ -1727,7 +2405,11 @@ export default async function OperacaoPage() {
 
 
           <Link
-            href="/conteudos"
+            href={
+              selectedClientId
+                ? `/clientes/${selectedClientId}/conteudos`
+                : "/conteudos"
+            }
             className="mt-3 flex items-center justify-center gap-1 text-[11px] font-bold text-blue-600 hover:underline"
           >
             Ver todos os conteúdos
@@ -1759,7 +2441,11 @@ export default async function OperacaoPage() {
             </div>
 
             <Link
-              href="/aprovacoes"
+              href={
+                selectedClientId
+                  ? `/clientes/${selectedClientId}/aprovacao-final`
+                  : "/aprovacoes"
+              }
               className="text-[10px] font-bold text-blue-600 hover:underline"
             >
               Ver todas
@@ -1859,7 +2545,11 @@ export default async function OperacaoPage() {
 
 
           <Link
-            href="/aprovacoes"
+            href={
+              selectedClientId
+                ? `/clientes/${selectedClientId}/aprovacao-final`
+                : "/aprovacoes"
+            }
             className="mt-3 flex items-center justify-center gap-1 border-t border-slate-100 pt-3 text-[11px] font-bold text-blue-600 hover:underline"
           >
             Ver todas as aprovações
