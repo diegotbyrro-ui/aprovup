@@ -22,6 +22,10 @@ import {
   runSecretaryAutomation,
 } from '@/lib/secretaryAutomation';
 
+import {
+  processScheduledInstagramStories,
+} from '@/lib/instagramStoryPublishing';
+
 
 export const runtime =
   'nodejs';
@@ -664,6 +668,28 @@ export async function GET(
   }
 
 
+  const storyRun =
+    await processScheduledInstagramStories()
+      .catch(
+        (
+          error
+        ) => {
+          console.error(
+            'INSTAGRAM STORY CRON ERROR',
+            error
+          );
+
+          return {
+            due: 0,
+            processed: 0,
+            success: 0,
+            failed: 1,
+            results: [],
+          };
+        }
+      );
+
+
   await runSecretaryAutomation()
     .catch(
       (
@@ -708,6 +734,9 @@ export async function GET(
       ).length,
 
     results,
+
+    stories:
+      storyRun,
 
   });
 

@@ -100,6 +100,12 @@ export default async function ProntoParaPostarPage({
                 agencyId,
             },
             status: 'PRONTO_PARA_POSTAR',
+            NOT: {
+                format: {
+                    contains: 'STORY',
+                    mode: 'insensitive',
+                },
+            },
             ...(selectedClient !== 'TODOS'
                 ? {
                     clientId: selectedClient,
@@ -226,6 +232,30 @@ export default async function ProntoParaPostarPage({
                         </Link>
                     </div>
                 </div>
+            </section>
+
+            <section className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+                <Link
+                    href={
+                        selectedClient === 'TODOS'
+                            ? '/pronto-para-postar'
+                            : `/pronto-para-postar?cliente=${encodeURIComponent(selectedClient)}`
+                    }
+                    className="rounded-xl bg-slate-950 px-4 py-3 text-center text-sm font-black text-white shadow-sm"
+                >
+                    Feed
+                </Link>
+
+                <Link
+                    href={
+                        selectedClient === 'TODOS'
+                            ? '/pronto-para-postar/stories'
+                            : `/pronto-para-postar/stories?cliente=${encodeURIComponent(selectedClient)}`
+                    }
+                    className="rounded-xl px-4 py-3 text-center text-sm font-black text-slate-500 hover:bg-fuchsia-50 hover:text-fuchsia-700"
+                >
+                    Stories
+                </Link>
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

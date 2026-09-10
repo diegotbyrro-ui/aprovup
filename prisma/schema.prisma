@@ -245,23 +245,24 @@ model Content {
   clientId String
   client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  tasks                Task[]
-  comments             Comment[]
-  approvals            Approval[]
-  instagramPublication InstagramPublication?
-  instagramMediaAssets InstagramMediaAsset[]
+  tasks                     Task[]
+  comments                  Comment[]
+  approvals                 Approval[]
+  instagramPublication      InstagramPublication?
+  instagramStoryPublication InstagramStoryPublication?
+  instagramMediaAssets      InstagramMediaAsset[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  finalMediaUrl   String?
-  finalCoverUrl   String?
-  finalMediaType  String?
-  finalUploadedAt DateTime?
+  finalMediaUrl    String?
+  finalCoverUrl    String?
+  finalMediaType   String?
+  finalUploadedAt  DateTime?
   finalExternalUrl String?
-  storyMediaUrl  String?
-  storyCoverUrl  String?
-  storyMediaType String?
+  storyMediaUrl    String?
+  storyCoverUrl    String?
+  storyMediaType   String?
 }
 
 model Task {
@@ -382,6 +383,40 @@ model InstagramPublication {
   @@index([instagramUserId])
 }
 
+model InstagramStoryPublication {
+  id String @id @default(cuid())
+
+  contentId String  @unique
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  instagramUserId   String?
+  instagramUsername String?
+
+  mediaUrl  String?
+  coverUrl  String?
+  mediaType String?
+
+  status String @default("PRONTO")
+
+  scheduledFor DateTime?
+  publishedAt  DateTime?
+
+  metaContainerId String?
+  metaMediaId     String?
+  permalink       String?
+
+  attemptCount  Int       @default(0)
+  lastAttemptAt DateTime?
+  lastError     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([instagramUserId])
+}
+
 model InstagramConnection {
   id String @id @default(cuid())
 
@@ -464,7 +499,7 @@ model SecretaryThread {
 
   userId String?
 
-  channel                String @default("WEB")
+  channel                String  @default("WEB")
   externalConversationId String?
   title                  String?
 
@@ -567,7 +602,7 @@ model SecretaryWhatsappConnection {
   proactiveEnabled Boolean @default(false)
 
   alertTemplateName     String?
-  alertTemplateLanguage String @default("pt_BR")
+  alertTemplateLanguage String  @default("pt_BR")
 
   connectedAt   DateTime?
   lastWebhookAt DateTime?
@@ -622,7 +657,7 @@ model SecretaryWhatsappEvent {
   metadata Json?
 
   processedAt DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   @@index([agencyId, status, createdAt])
 }
@@ -639,9 +674,9 @@ model SecretaryWhatsappDelivery {
   alertId  String?
   toPhone  String
 
-  status            String @default("PENDING")
+  status            String    @default("PENDING")
   providerMessageId String?
-  templateUsed      Boolean @default(false)
+  templateUsed      Boolean   @default(false)
   error             String?
   sentAt            DateTime?
 
