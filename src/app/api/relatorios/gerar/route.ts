@@ -5,6 +5,7 @@ import {
 
 import {
   PDFDocument,
+  PDFImage,
   PDFPage,
   PDFFont,
   StandardFonts,
@@ -29,8 +30,10 @@ import {
 
 import {
   getInstagramDashboardMetrics,
+  getInstagramTopMedia,
   isMetaConfigured,
   type InstagramDashboardMetrics,
+  type InstagramTopMediaItem,
 } from "@/lib/metaInstagram";
 
 import {
@@ -54,33 +57,12 @@ export const dynamic =
   "force-dynamic";
 
 
-const NAVY =
-  rgb(
-    0.02,
-    0.055,
-    0.12
-  );
+const DESIGN_WIDTH =
+  1024;
 
-const BLUE =
-  rgb(
-    0.055,
-    0.36,
-    0.95
-  );
+const DESIGN_HEIGHT =
+  1536;
 
-const BLUE_LIGHT =
-  rgb(
-    0.92,
-    0.95,
-    1
-  );
-
-const PAGE_BG =
-  rgb(
-    0.965,
-    0.975,
-    0.99
-  );
 
 const WHITE =
   rgb(
@@ -89,32 +71,74 @@ const WHITE =
     1
   );
 
+const CARD =
+  rgb(
+    0.965,
+    0.98,
+    0.99
+  );
+
+const CARD_ALT =
+  rgb(
+    0.94,
+    0.965,
+    0.99
+  );
+
 const TEXT =
   rgb(
-    0.04,
-    0.07,
-    0.12
+    0.035,
+    0.055,
+    0.10
   );
 
 const MUTED =
   rgb(
-    0.38,
-    0.45,
-    0.56
+    0.28,
+    0.36,
+    0.48
   );
 
-const BORDER =
+const BLUE =
   rgb(
-    0.86,
-    0.89,
-    0.94
+    0.02,
+    0.36,
+    0.95
   );
 
 const GREEN =
   rgb(
     0.02,
-    0.58,
-    0.35
+    0.57,
+    0.30
+  );
+
+const RED =
+  rgb(
+    0.82,
+    0.16,
+    0.16
+  );
+
+const DARK =
+  rgb(
+    0.035,
+    0.065,
+    0.10
+  );
+
+const DARK_BOX =
+  rgb(
+    0.06,
+    0.10,
+    0.15
+  );
+
+const GRID =
+  rgb(
+    0.84,
+    0.89,
+    0.95
   );
 
 
@@ -136,248 +160,125 @@ function clamp(
 }
 
 
-function formatNumber(
+function sx(
+  page:
+    PDFPage,
   value:
-    number |
-    null
+    number
 ) {
-  if (
-    value ===
-    null ||
-    !Number.isFinite(
-      value
-    )
-  ) {
-    return "-";
-  }
-
-
-  return new Intl
-    .NumberFormat(
-      "pt-BR",
-      {
-        maximumFractionDigits:
-          0,
-      }
-    )
-    .format(
-      Math.round(
-        value
-      )
-    );
+  return (
+    value /
+    DESIGN_WIDTH
+  ) *
+    page.getWidth();
 }
 
 
-function formatSignedNumber(
-  value:
-    number |
-    null
+function sy(
+  page:
+    PDFPage,
+  top:
+    number
 ) {
-  if (
-    value ===
-    null ||
-    !Number.isFinite(
-      value
-    )
-  ) {
-    return "-";
-  }
-
-
-  const rounded =
-    Math.round(
-      value
-    );
-
-
-  if (
-    rounded >
-    0
-  ) {
-    return `+${formatNumber(
-      rounded
-    )}`;
-  }
-
-
-  return formatNumber(
-    rounded
+  return (
+    page.getHeight() -
+    (
+      top /
+      DESIGN_HEIGHT
+    ) *
+      page.getHeight()
   );
 }
 
 
-function formatPercent(
+function sw(
+  page:
+    PDFPage,
   value:
-    number |
-    null,
-  signed =
-    true
+    number
 ) {
-  if (
-    value ===
-    null ||
-    !Number.isFinite(
-      value
-    )
-  ) {
-    return "-";
-  }
-
-
-  const absolute =
-    Math.abs(
-      value
-    )
-      .toFixed(
-        2
-      )
-      .replace(
-        ".",
-        ","
-      );
-
-
-  if (
-    signed &&
-    value >
-    0
-  ) {
-    return `+${absolute}%`;
-  }
-
-
-  if (
-    value <
-    0
-  ) {
-    return `-${absolute}%`;
-  }
-
-
-  return `${absolute}%`;
+  return (
+    value /
+    DESIGN_WIDTH
+  ) *
+    page.getWidth();
 }
 
 
-function formatDateKey(
+function sh(
+  page:
+    PDFPage,
   value:
-    string |
-    undefined |
-    null
+    number
 ) {
-  if (
-    !value
-  ) {
-    return "-";
-  }
-
-
-  const [
-    year,
-    month,
-    day,
-  ] =
-    value.split(
-      "-"
-    );
-
-
-  if (
-    !year ||
-    !month ||
-    !day
-  ) {
-    return value;
-  }
-
-
-  return `${day}/${month}/${year}`;
+  return (
+    value /
+    DESIGN_HEIGHT
+  ) *
+    page.getHeight();
 }
 
 
-function todayDateKey() {
-  const formatter =
-    new Intl.DateTimeFormat(
-      "en-CA",
-      {
-        timeZone:
-          "America/Maceio",
+function mask({
+  page,
+  x,
+  y,
+  width,
+  height,
+  color,
+}: {
+  page:
+    PDFPage;
 
-        year:
-          "numeric",
+  x:
+    number;
 
-        month:
-          "2-digit",
+  y:
+    number;
 
-        day:
-          "2-digit",
-      }
-    );
+  width:
+    number;
 
+  height:
+    number;
 
-  const parts =
-    formatter.formatToParts(
-      new Date()
-    );
+  color:
+    ReturnType<
+      typeof rgb
+    >;
+}) {
+  page.drawRectangle({
+    x:
+      sx(
+        page,
+        x
+      ),
 
+    y:
+      sy(
+        page,
+        y +
+        height
+      ),
 
-  const part = (
-    type:
-      string
-  ) =>
-    parts.find(
-      (
-        item
-      ) =>
-        item.type ===
-        type
-    )?.value ||
-    "";
+    width:
+      sw(
+        page,
+        width
+      ),
 
+    height:
+      sh(
+        page,
+        height
+      ),
 
-  return `${part(
-    "year"
-  )}-${part(
-    "month"
-  )}-${part(
-    "day"
-  )}`;
+    color,
+  });
 }
 
 
-function safeFilename(
-  value:
-    string
-) {
-  const clean =
-    value
-      .normalize(
-        "NFD"
-      )
-      .replace(
-        /[\u0300-\u036f]/g,
-        ""
-      )
-      .toLowerCase()
-      .replace(
-        /[^a-z0-9]+/g,
-        "-"
-      )
-      .replace(
-        /^-+|-+$/g,
-        ""
-      )
-      .slice(
-        0,
-        70
-      );
-
-
-  return clean ||
-    "cliente";
-}
-
-
-function safeText(
+function cleanText(
   value:
     string
 ) {
@@ -404,17 +305,16 @@ function safeText(
     .replace(
       /[^\u0020-\u00ff]/g,
       ""
-    );
+    )
+    .trim();
 }
 
 
-function fitTextSize({
+function fitSize({
   text,
   font,
-  size,
+  requested,
   maxWidth,
-  minimum =
-    5,
 }: {
   text:
     string;
@@ -422,41 +322,38 @@ function fitTextSize({
   font:
     PDFFont;
 
-  size:
+  requested:
     number;
 
   maxWidth:
     number;
-
-  minimum?:
-    number;
 }) {
-  let result =
-    size;
+  let size =
+    requested;
 
 
   while (
-    result >
-      minimum &&
+    size >
+      4 &&
     font.widthOfTextAtSize(
       text,
-      result
+      size
     ) >
       maxWidth
   ) {
-    result -=
+    size -=
       0.25;
   }
 
 
   return Math.max(
-    minimum,
-    result
+    4,
+    size
   );
 }
 
 
-function drawText({
+function textAt({
   page,
   text,
   x,
@@ -494,32 +391,59 @@ function drawText({
     number;
 }) {
   const clean =
-    safeText(
+    cleanText(
       text
     );
 
 
-  const finalSize =
+  const pdfSize =
+    sw(
+      page,
+      size
+    );
+
+
+  const widthLimit =
     maxWidth
-      ? fitTextSize({
+      ? sw(
+          page,
+          maxWidth
+        )
+      : undefined;
+
+
+  const finalSize =
+    widthLimit
+      ? fitSize({
           text:
             clean,
 
           font,
 
-          size,
+          requested:
+            pdfSize,
 
-          maxWidth,
+          maxWidth:
+            widthLimit,
         })
-      : size;
+      : pdfSize;
 
 
   page.drawText(
     clean,
     {
-      x,
+      x:
+        sx(
+          page,
+          x
+        ),
 
-      y,
+      y:
+        sy(
+          page,
+          y
+        ) -
+        finalSize,
 
       size:
         finalSize,
@@ -528,21 +452,31 @@ function drawText({
 
       color,
 
-      maxWidth,
+      maxWidth:
+        widthLimit,
     }
   );
 }
 
 
-function drawCard({
+function multiline({
   page,
+  text,
   x,
   y,
-  width,
-  height,
+  size,
+  lineHeight,
+  maxWidth,
+  maxLines,
+  font,
+  color =
+    TEXT,
 }: {
   page:
     PDFPage;
+
+  text:
+    string;
 
   x:
     number;
@@ -550,35 +484,497 @@ function drawCard({
   y:
     number;
 
-  width:
+  size:
     number;
 
-  height:
+  lineHeight:
     number;
+
+  maxWidth:
+    number;
+
+  maxLines:
+    number;
+
+  font:
+    PDFFont;
+
+  color?:
+    ReturnType<
+      typeof rgb
+    >;
 }) {
-  page.drawRectangle({
-    x,
-    y,
-    width,
-    height,
-    color:
-      WHITE,
-    borderColor:
-      BORDER,
-    borderWidth:
-      0.45,
-  });
+  const words =
+    cleanText(
+      text
+    )
+      .split(
+        /\s+/
+      )
+      .filter(
+        Boolean
+      );
+
+
+  const lines:
+    string[] =
+    [];
+
+
+  let current =
+    "";
+
+
+  const pdfSize =
+    sw(
+      page,
+      size
+    );
+
+
+  const pdfMaxWidth =
+    sw(
+      page,
+      maxWidth
+    );
+
+
+  for (
+    const word
+    of words
+  ) {
+    const candidate =
+      current
+        ? `${current} ${word}`
+        : word;
+
+
+    if (
+      font.widthOfTextAtSize(
+        candidate,
+        pdfSize
+      ) <=
+        pdfMaxWidth
+    ) {
+      current =
+        candidate;
+    }
+    else {
+      if (
+        current
+      ) {
+        lines.push(
+          current
+        );
+      }
+
+      current =
+        word;
+
+      if (
+        lines.length >=
+        maxLines
+      ) {
+        break;
+      }
+    }
+  }
+
+
+  if (
+    current &&
+    lines.length <
+      maxLines
+  ) {
+    lines.push(
+      current
+    );
+  }
+
+
+  lines
+    .slice(
+      0,
+      maxLines
+    )
+    .forEach(
+      (
+        line,
+        index
+      ) => {
+        textAt({
+          page,
+
+          text:
+            line,
+
+          x,
+
+          y:
+            y +
+            index *
+              lineHeight,
+
+          size,
+
+          font,
+
+          color,
+
+          maxWidth,
+        });
+      }
+    );
 }
 
 
-function drawMetricCard({
+function numberText(
+  value:
+    number |
+    null
+) {
+  if (
+    value ===
+      null ||
+    !Number.isFinite(
+      value
+    )
+  ) {
+    return "-";
+  }
+
+
+  return new Intl
+    .NumberFormat(
+      "pt-BR",
+      {
+        maximumFractionDigits:
+          0,
+      }
+    )
+    .format(
+      Math.round(
+        value
+      )
+    );
+}
+
+
+function signedNumber(
+  value:
+    number |
+    null
+) {
+  if (
+    value ===
+      null ||
+    !Number.isFinite(
+      value
+    )
+  ) {
+    return "-";
+  }
+
+
+  const rounded =
+    Math.round(
+      value
+    );
+
+
+  if (
+    rounded >
+      0
+  ) {
+    return `+${numberText(
+      rounded
+    )}`;
+  }
+
+
+  return numberText(
+    rounded
+  );
+}
+
+
+function percentText(
+  value:
+    number |
+    null,
+  signed =
+    true
+) {
+  if (
+    value ===
+      null ||
+    !Number.isFinite(
+      value
+    )
+  ) {
+    return "-";
+  }
+
+
+  const absolute =
+    Math.abs(
+      value
+    )
+      .toFixed(
+        1
+      )
+      .replace(
+        ".",
+        ","
+      );
+
+
+  if (
+    signed &&
+    value >
+      0
+  ) {
+    return `+${absolute}%`;
+  }
+
+
+  if (
+    value <
+      0
+  ) {
+    return `-${absolute}%`;
+  }
+
+
+  return `${absolute}%`;
+}
+
+
+function dateLabel(
+  value:
+    string |
+    null |
+    undefined
+) {
+  if (
+    !value
+  ) {
+    return "-";
+  }
+
+
+  const [
+    year,
+    month,
+    day,
+  ] =
+    value.split(
+      "-"
+    );
+
+
+  return `${day}/${month}/${year}`;
+}
+
+
+function fileSlug(
+  value:
+    string
+) {
+  return value
+    .normalize(
+      "NFD"
+    )
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
+    .toLowerCase()
+    .replace(
+      /[^a-z0-9]+/g,
+      "-"
+    )
+    .replace(
+      /^-+|-+$/g,
+      ""
+    )
+    .slice(
+      0,
+      70
+    ) ||
+    "cliente";
+}
+
+
+function topMediaTitle(
+  item:
+    InstagramTopMediaItem
+) {
+  const caption =
+    cleanText(
+      item.caption ||
+      ""
+    )
+      .replace(
+        /\s+/g,
+        " "
+      )
+      .trim();
+
+
+  if (
+    !caption
+  ) {
+    return "Conteudo publicado";
+  }
+
+
+  return caption.length >
+    38
+      ? `${caption.slice(
+          0,
+          35
+        )}...`
+      : caption;
+}
+
+
+function mediaFormat(
+  item:
+    InstagramTopMediaItem
+) {
+  if (
+    item.mediaProductType ===
+      "REELS"
+  ) {
+    return "Reels";
+  }
+
+
+  if (
+    item.mediaType ===
+      "CAROUSEL_ALBUM"
+  ) {
+    return "Carrossel";
+  }
+
+
+  if (
+    item.mediaType ===
+      "VIDEO"
+  ) {
+    return "Video";
+  }
+
+
+  return "Posts no feed";
+}
+
+
+function mediaScore(
+  item:
+    InstagramTopMediaItem
+) {
+  return (
+    item.interactions ??
+    item.reach ??
+    item.views ??
+    (
+      item.likes +
+      item.comments
+    )
+  );
+}
+
+
+async function remoteImage(
+  document:
+    PDFDocument,
+  url:
+    string |
+    null
+): Promise<
+  PDFImage |
+  null
+> {
+  if (
+    !url
+  ) {
+    return null;
+  }
+
+
+  try {
+    const response =
+      await fetch(
+        url,
+        {
+          cache:
+            "no-store",
+        }
+      );
+
+
+    if (
+      !response.ok
+    ) {
+      return null;
+    }
+
+
+    const bytes =
+      new Uint8Array(
+        await response
+          .arrayBuffer()
+      );
+
+
+    const type =
+      response.headers
+        .get(
+          "content-type"
+        )
+        ?.toLowerCase() ||
+      "";
+
+
+    if (
+      type.includes(
+        "png"
+      )
+    ) {
+      return await document
+        .embedPng(
+          bytes
+        );
+    }
+
+
+    try {
+      return await document
+        .embedJpg(
+          bytes
+        );
+    }
+    catch {
+      return await document
+        .embedPng(
+          bytes
+        );
+    }
+  }
+  catch {
+    return null;
+  }
+}
+
+
+function drawOverviewCard({
   page,
   x,
-  y,
-  width,
-  height,
-  label,
   value,
+  label,
+  change,
   helper,
   bold,
   regular,
@@ -589,19 +985,13 @@ function drawMetricCard({
   x:
     number;
 
-  y:
-    number;
-
-  width:
-    number;
-
-  height:
-    number;
+  value:
+    string;
 
   label:
     string;
 
-  value:
+  change:
     string;
 
   helper:
@@ -613,128 +1003,121 @@ function drawMetricCard({
   regular:
     PDFFont;
 }) {
-  drawCard({
+  mask({
     page,
-    x,
-    y,
-    width,
-    height,
-  });
-
-
-  page.drawRectangle({
     x:
       x +
-      7,
-
+      2,
     y:
-      y +
-      height -
-      15,
-
+      292,
     width:
-      3,
-
+      125,
     height:
-      8,
-
+      111,
     color:
-      BLUE,
+      CARD,
   });
 
 
-  drawText({
-    page,
-    text:
-      label.toUpperCase(),
-    x:
-      x +
-      14,
-    y:
-      y +
-      height -
-      15,
-    size:
-      5.5,
-    font:
-      bold,
-    color:
-      MUTED,
-    maxWidth:
-      width -
-      20,
-  });
-
-
-  drawText({
+  textAt({
     page,
     text:
       value,
     x:
       x +
-      9,
+      11,
     y:
-      y +
-      22,
+      299,
     size:
-      15,
+      22,
     font:
       bold,
     color:
       TEXT,
     maxWidth:
-      width -
-      18,
+      108,
   });
 
 
-  drawText({
+  textAt({
+    page,
+    text:
+      label,
+    x:
+      x +
+      11,
+    y:
+      330,
+    size:
+      13,
+    font:
+      regular,
+    color:
+      TEXT,
+    maxWidth:
+      108,
+  });
+
+
+  const changeColor =
+    change.startsWith(
+      "-"
+    )
+      ? RED
+      : GREEN;
+
+
+  textAt({
+    page,
+    text:
+      change,
+    x:
+      x +
+      11,
+    y:
+      358,
+    size:
+      15,
+    font:
+      bold,
+    color:
+      changeColor,
+    maxWidth:
+      108,
+  });
+
+
+  textAt({
     page,
     text:
       helper,
     x:
       x +
-      9,
+      11,
     y:
-      y +
-      8,
+      385,
     size:
-      4.8,
+      7,
     font:
       regular,
     color:
       MUTED,
     maxWidth:
-      width -
-      18,
+      108,
   });
 }
 
 
-function drawFollowersChart({
+function drawGrowthChart({
   page,
-  x,
-  y,
-  width,
-  height,
   points,
+  followersDelta,
+  followersPercent,
   bold,
   regular,
 }: {
   page:
     PDFPage;
-
-  x:
-    number;
-
-  y:
-    number;
-
-  width:
-    number;
-
-  height:
-    number;
 
   points:
     Array<{
@@ -746,61 +1129,32 @@ function drawFollowersChart({
         null;
     }>;
 
+  followersDelta:
+    number |
+    null;
+
+  followersPercent:
+    number |
+    null;
+
   bold:
     PDFFont;
 
   regular:
     PDFFont;
 }) {
-  drawCard({
+  mask({
     page,
-    x,
-    y,
-    width,
-    height,
-  });
-
-
-  drawText({
-    page,
-    text:
-      "EVOLUCAO DE SEGUIDORES",
     x:
-      x +
-      12,
+      80,
     y:
-      y +
-      height -
-      18,
-    size:
-      7,
-    font:
-      bold,
+      510,
+    width:
+      414,
+    height:
+      230,
     color:
-      TEXT,
-    maxWidth:
-      width -
-      24,
-  });
-
-
-  drawText({
-    page,
-    text:
-      "Historico proprio do AprovUp",
-    x:
-      x +
-      12,
-    y:
-      y +
-      height -
-      29,
-    size:
-      4.8,
-    font:
-      regular,
-    color:
-      MUTED,
+      WHITE,
   });
 
 
@@ -814,140 +1168,17 @@ function drawFollowersChart({
     );
 
 
-  if (
-    valid.length ===
-    0
-  ) {
-    drawText({
-      page,
-      text:
-        "Historico ainda nao iniciado.",
-      x:
-        x +
-        12,
-      y:
-        y +
-        height /
-          2,
-      size:
-        6,
-      font:
-        bold,
-      color:
-        MUTED,
-    });
+  const x0 =
+    82;
 
-    return;
-  }
-
-
-  if (
-    valid.length ===
-    1
-  ) {
-    drawText({
-      page,
-      text:
-        formatNumber(
-          valid[0]
-            .followersCount
-        ),
-      x:
-        x +
-        12,
-      y:
-        y +
-        height /
-          2 +
-        5,
-      size:
-        18,
-      font:
-        bold,
-      color:
-        BLUE,
-    });
-
-
-    drawText({
-      page,
-      text:
-        `Primeira coleta: ${formatDateKey(
-          valid[0]
-            .dateKey
-        )}`,
-      x:
-        x +
-        12,
-      y:
-        y +
-        height /
-          2 -
-        8,
-      size:
-        5,
-      font:
-        regular,
-      color:
-        MUTED,
-    });
-
-    return;
-  }
-
-
-  const values =
-    valid.map(
-      (
-        point
-      ) =>
-        point.followersCount ||
-        0
-    );
-
-
-  const minimum =
-    Math.min(
-      ...values
-    );
-
-
-  const maximum =
-    Math.max(
-      ...values
-    );
-
-
-  const rawRange =
-    maximum -
-    minimum;
-
-
-  const range =
-    Math.max(
-      rawRange,
-      10
-    );
-
-
-  const chartX =
-    x +
-    13;
-
-
-  const chartY =
-    y +
-    24;
-
+  const y0 =
+    532;
 
   const chartWidth =
-    width -
-    26;
-
+    376;
 
   const chartHeight =
-    height -
-    63;
+    108;
 
 
   for (
@@ -959,8 +1190,8 @@ function drawFollowersChart({
       1,
     ]
   ) {
-    const lineY =
-      chartY +
+    const y =
+      y0 +
       chartHeight *
         fraction;
 
@@ -968,194 +1199,338 @@ function drawFollowersChart({
     page.drawLine({
       start: {
         x:
-          chartX,
-
+          sx(
+            page,
+            x0
+          ),
         y:
-          lineY,
+          sy(
+            page,
+            y
+          ),
       },
 
       end: {
         x:
-          chartX +
-          chartWidth,
-
+          sx(
+            page,
+            x0 +
+            chartWidth
+          ),
         y:
-          lineY,
+          sy(
+            page,
+            y
+          ),
       },
 
       thickness:
-        0.35,
+        0.45,
 
       color:
-        BORDER,
+        GRID,
     });
   }
 
 
-  const coordinates =
-    valid.map(
-      (
-        point,
-        index
-      ) => {
-        const value =
+  if (
+    valid.length >=
+      2
+  ) {
+    const values =
+      valid.map(
+        (
+          point
+        ) =>
           point.followersCount ||
-          0;
+          0
+      );
 
 
-        return {
-          x:
-            chartX +
-            (
-              index /
-              Math.max(
-                valid.length -
-                1,
-                1
-              )
-            ) *
-              chartWidth,
+    const minimum =
+      Math.min(
+        ...values
+      );
 
-          y:
-            chartY +
+
+    const maximum =
+      Math.max(
+        ...values
+      );
+
+
+    const range =
+      Math.max(
+        maximum -
+        minimum,
+        10
+      );
+
+
+    const coords =
+      valid.map(
+        (
+          point,
+          index
+        ) => {
+          const normalized =
             (
               (
-                value -
-                minimum
-              ) /
-              range
-            ) *
-              chartHeight,
-
-          value,
-
-          dateKey:
-            point.dateKey,
-        };
-      }
-    );
+                point.followersCount ||
+                0
+              ) -
+              minimum
+            ) /
+            range;
 
 
-  for (
-    let index =
-      1;
-    index <
-      coordinates.length;
-    index++
-  ) {
-    page.drawLine({
-      start: {
+          return {
+            x:
+              x0 +
+              (
+                index /
+                Math.max(
+                  valid.length -
+                  1,
+                  1
+                )
+              ) *
+                chartWidth,
+
+            y:
+              y0 +
+              chartHeight -
+              normalized *
+                chartHeight,
+
+            dateKey:
+              point.dateKey,
+
+            value:
+              point.followersCount ||
+              0,
+          };
+        }
+      );
+
+
+    for (
+      let index =
+        1;
+      index <
+        coords.length;
+      index++
+    ) {
+      page.drawLine({
+        start: {
+          x:
+            sx(
+              page,
+              coords[
+                index -
+                1
+              ].x
+            ),
+          y:
+            sy(
+              page,
+              coords[
+                index -
+                1
+              ].y
+            ),
+        },
+
+        end: {
+          x:
+            sx(
+              page,
+              coords[
+                index
+              ].x
+            ),
+          y:
+            sy(
+              page,
+              coords[
+                index
+              ].y
+            ),
+        },
+
+        thickness:
+          1.6,
+
+        color:
+          BLUE,
+      });
+    }
+
+
+    for (
+      const point
+      of coords
+    ) {
+      page.drawCircle({
         x:
-          coordinates[
-            index -
-            1
-          ].x,
+          sx(
+            page,
+            point.x
+          ),
 
         y:
-          coordinates[
-            index -
-            1
-          ].y,
-      },
+          sy(
+            page,
+            point.y
+          ),
 
-      end: {
-        x:
-          coordinates[
-            index
-          ].x,
+        size:
+          sw(
+            page,
+            3.4
+          ),
 
-        y:
-          coordinates[
-            index
-          ].y,
-      },
-
-      thickness:
-        1.5,
-
-      color:
-        BLUE,
-    });
-  }
+        color:
+          BLUE,
+      });
+    }
 
 
-  for (
-    const point
-    of coordinates
-  ) {
-    page.drawCircle({
+    textAt({
+      page,
+      text:
+        dateLabel(
+          coords[0]
+            .dateKey
+        ),
       x:
-        point.x,
-
+        82,
       y:
-        point.y,
-
+        648,
       size:
-        2.1,
-
+        8,
+      font:
+        regular,
       color:
-        BLUE,
+        MUTED,
+    });
+
+
+    textAt({
+      page,
+      text:
+        dateLabel(
+          coords[
+            coords.length -
+            1
+          ].dateKey
+        ),
+      x:
+        405,
+      y:
+        648,
+      size:
+        8,
+      font:
+        regular,
+      color:
+        MUTED,
+      maxWidth:
+        76,
+    });
+  }
+  else {
+    textAt({
+      page,
+      text:
+        "Historico ainda em coleta",
+      x:
+        180,
+      y:
+        576,
+      size:
+        10,
+      font:
+        bold,
+      color:
+        MUTED,
+      maxWidth:
+        190,
     });
   }
 
 
-  const first =
-    coordinates[0];
-
-
-  const last =
-    coordinates[
-      coordinates.length -
-      1
-    ];
-
-
-  drawText({
+  mask({
     page,
-    text:
-      formatDateKey(
-        first.dateKey
-      ),
     x:
-      chartX,
+      34,
     y:
-      y +
-      8,
-    size:
-      4.5,
-    font:
-      regular,
+      674,
+    width:
+      458,
+    height:
+      67,
     color:
-      MUTED,
+      CARD,
   });
 
 
-  const lastLabel =
-    formatDateKey(
-      last.dateKey
-    );
-
-
-  const lastLabelWidth =
-    regular.widthOfTextAtSize(
-      lastLabel,
-      4.5
-    );
-
-
-  drawText({
+  textAt({
     page,
     text:
-      lastLabel,
+      signedNumber(
+        followersDelta
+      ),
     x:
-      chartX +
-      chartWidth -
-      lastLabelWidth,
+      102,
     y:
-      y +
-      8,
+      689,
     size:
-      4.5,
+      19,
+    font:
+      bold,
+    color:
+      TEXT,
+    maxWidth:
+      90,
+  });
+
+
+  textAt({
+    page,
+    text:
+      "novos seguidores",
+    x:
+      102,
+    y:
+      715,
+    size:
+      10,
+    font:
+      regular,
+    color:
+      TEXT,
+  });
+
+
+  multiline({
+    page,
+    text:
+      `Crescimento de ${percentText(
+        followersPercent
+      )} dentro do historico atualmente disponivel no AprovUp.`,
+    x:
+      221,
+    y:
+      688,
+    size:
+      8,
+    lineHeight:
+      12,
+    maxWidth:
+      252,
+    maxLines:
+      3,
     font:
       regular,
     color:
@@ -1164,56 +1539,31 @@ function drawFollowersChart({
 }
 
 
-function drawSummary({
+function drawReachViews({
   page,
-  x,
-  y,
-  width,
-  height,
-  firstDate,
-  lastDate,
-  daysWithData,
-  followersDelta,
-  followersPercent,
-  engagementRate,
+  reach,
+  views,
+  reachChange,
+  viewsChange,
   bold,
   regular,
 }: {
   page:
     PDFPage;
 
-  x:
-    number;
-
-  y:
-    number;
-
-  width:
-    number;
-
-  height:
-    number;
-
-  firstDate:
-    string |
-    undefined;
-
-  lastDate:
-    string |
-    undefined;
-
-  daysWithData:
-    number;
-
-  followersDelta:
+  reach:
     number |
     null;
 
-  followersPercent:
+  views:
     number |
     null;
 
-  engagementRate:
+  reachChange:
+    number |
+    null;
+
+  viewsChange:
     number |
     null;
 
@@ -1223,61 +1573,351 @@ function drawSummary({
   regular:
     PDFFont;
 }) {
-  drawCard({
+  mask({
     page,
-    x,
-    y,
-    width,
-    height,
+    x:
+      528,
+    y:
+      514,
+    width:
+      466,
+    height:
+      226,
+    color:
+      WHITE,
   });
 
 
-  drawText({
+  const cards = [
+    {
+      x:
+        532,
+
+      value:
+        numberText(
+          reach
+        ),
+
+      label:
+        "Contas alcancadas",
+
+      change:
+        percentText(
+          reachChange
+        ),
+
+      helper:
+        "Numero de contas unicas alcancadas no periodo disponivel pela Meta.",
+    },
+
+    {
+      x:
+        772,
+
+      value:
+        numberText(
+          views
+        ),
+
+      label:
+        "Visualizacoes",
+
+      change:
+        percentText(
+          viewsChange
+        ),
+
+      helper:
+        "Numero de visualizacoes registradas pela Meta no periodo atual.",
+    },
+  ];
+
+
+  for (
+    const card
+    of cards
+  ) {
+    mask({
+      page,
+      x:
+        card.x,
+      y:
+        514,
+      width:
+        222,
+      height:
+        226,
+      color:
+        CARD,
+    });
+
+
+    textAt({
+      page,
+      text:
+        card.value,
+      x:
+        card.x +
+        26,
+      y:
+        534,
+      size:
+        24,
+      font:
+        bold,
+      color:
+        TEXT,
+      maxWidth:
+        170,
+    });
+
+
+    textAt({
+      page,
+      text:
+        card.label,
+      x:
+        card.x +
+        26,
+      y:
+        573,
+      size:
+        13,
+      font:
+        regular,
+      color:
+        TEXT,
+      maxWidth:
+        170,
+    });
+
+
+    textAt({
+      page,
+      text:
+        card.change,
+      x:
+        card.x +
+        67,
+      y:
+        607,
+      size:
+        18,
+      font:
+        bold,
+      color:
+        card.change.startsWith(
+          "-"
+        )
+          ? RED
+          : GREEN,
+      maxWidth:
+        110,
+    });
+
+
+    multiline({
+      page,
+      text:
+        card.helper,
+      x:
+        card.x +
+        20,
+      y:
+        661,
+      size:
+        9,
+      lineHeight:
+        13,
+      maxWidth:
+        182,
+      maxLines:
+        4,
+      font:
+        regular,
+      color:
+        MUTED,
+    });
+  }
+}
+
+
+function drawInteractions({
+  page,
+  interactions,
+  reach,
+  views,
+  engagement,
+  followersDelta,
+  bold,
+  regular,
+}: {
+  page:
+    PDFPage;
+
+  interactions:
+    number |
+    null;
+
+  reach:
+    number |
+    null;
+
+  views:
+    number |
+    null;
+
+  engagement:
+    number |
+    null;
+
+  followersDelta:
+    number |
+    null;
+
+  bold:
+    PDFFont;
+
+  regular:
+    PDFFont;
+}) {
+  mask({
+    page,
+    x:
+      32,
+    y:
+      829,
+    width:
+      361,
+    height:
+      289,
+    color:
+      WHITE,
+  });
+
+
+  page.drawCircle({
+    x:
+      sx(
+        page,
+        116
+      ),
+
+    y:
+      sy(
+        page,
+        917
+      ),
+
+    size:
+      sw(
+        page,
+        72
+      ),
+
+    color:
+      BLUE,
+  });
+
+
+  page.drawCircle({
+    x:
+      sx(
+        page,
+        116
+      ),
+
+    y:
+      sy(
+        page,
+        917
+      ),
+
+    size:
+      sw(
+        page,
+        44
+      ),
+
+    color:
+      WHITE,
+  });
+
+
+  textAt({
     page,
     text:
-      "BASE HISTORICA",
+      numberText(
+        interactions
+      ),
     x:
-      x +
-      11,
+      74,
     y:
-      y +
-      height -
-      18,
+      897,
     size:
-      7,
+      19,
     font:
       bold,
+    color:
+      TEXT,
+    maxWidth:
+      86,
   });
 
 
-  const rows = [
+  textAt({
+    page,
+    text:
+      "interacoes",
+    x:
+      84,
+    y:
+      927,
+    size:
+      10,
+    font:
+      regular,
+    color:
+      TEXT,
+    maxWidth:
+      70,
+  });
+
+
+  const lines = [
     [
-      "Primeira coleta",
-      formatDateKey(
-        firstDate
+      "Alcance",
+      numberText(
+        reach
       ),
     ],
 
     [
-      "Ultima coleta",
-      formatDateKey(
-        lastDate
+      "Visualizacoes",
+      numberText(
+        views
       ),
     ],
 
     [
-      "Dias com dados",
-      String(
-        daysWithData
+      "Engajamento",
+      percentText(
+        engagement,
+        false
+      ),
+    ],
+
+    [
+      "Novos seguidores",
+      signedNumber(
+        followersDelta
       ),
     ],
   ];
 
 
-  let rowY =
-    y +
-    height -
-    38;
+  let y =
+    850;
 
 
   for (
@@ -1285,40 +1925,1071 @@ function drawSummary({
       label,
       value
     ]
-    of rows
+    of lines
   ) {
-    page.drawRectangle({
-      x:
-        x +
-        10,
-
-      y:
-        rowY -
-        15,
-
-      width:
-        width -
-        20,
-
-      height:
-        22,
-
-      color:
-        PAGE_BG,
-    });
-
-
-    drawText({
+    textAt({
       page,
       text:
         label,
       x:
-        x +
-        16,
-      y:
-        rowY,
+        218,
+      y,
       size:
-        4.7,
+        9,
+      font:
+        regular,
+      color:
+        MUTED,
+      maxWidth:
+        100,
+    });
+
+
+    textAt({
+      page,
+      text:
+        value,
+      x:
+        322,
+      y,
+      size:
+        9,
+      font:
+        bold,
+      color:
+        TEXT,
+      maxWidth:
+        58,
+    });
+
+
+    y +=
+      36;
+  }
+
+
+  mask({
+    page,
+    x:
+      32,
+    y:
+      1029,
+    width:
+      361,
+    height:
+      86,
+    color:
+      CARD,
+  });
+
+
+  multiline({
+    page,
+    text:
+      `No periodo analisado foram registradas ${numberText(
+        interactions
+      )} interacoes, com taxa de ${percentText(
+        engagement,
+        false
+      )} sobre o alcance.`,
+    x:
+      86,
+    y:
+      1049,
+    size:
+      9,
+    lineHeight:
+      14,
+    maxWidth:
+      286,
+    maxLines:
+      4,
+    font:
+      regular,
+    color:
+      MUTED,
+  });
+}
+
+
+function formatShares(
+  media:
+    InstagramTopMediaItem[]
+) {
+  const totals =
+    new Map<
+      string,
+      number
+    >();
+
+
+  for (
+    const item
+    of media
+  ) {
+    const key =
+      mediaFormat(
+        item
+      );
+
+
+    totals.set(
+      key,
+      (
+        totals.get(
+          key
+        ) ||
+        0
+      ) +
+      Math.max(
+        mediaScore(
+          item
+        ),
+        0
+      )
+    );
+  }
+
+
+  const total =
+    Array.from(
+      totals.values()
+    ).reduce(
+      (
+        sum,
+        value
+      ) =>
+        sum +
+        value,
+      0
+    );
+
+
+  const keys = [
+    "Reels",
+    "Posts no feed",
+    "Carrossel",
+    "Video",
+  ];
+
+
+  return keys.map(
+    (
+      key
+    ) => ({
+      key,
+
+      value:
+        total >
+          0
+          ? (
+              (
+                totals.get(
+                  key
+                ) ||
+                0
+              ) /
+              total
+            ) *
+            100
+          : 0,
+    })
+  );
+}
+
+
+function drawFormats({
+  page,
+  media,
+  bold,
+  regular,
+}: {
+  page:
+    PDFPage;
+
+  media:
+    InstagramTopMediaItem[];
+
+  bold:
+    PDFFont;
+
+  regular:
+    PDFFont;
+}) {
+  mask({
+    page,
+    x:
+      429,
+    y:
+      829,
+    width:
+      279,
+    height:
+      289,
+    color:
+      WHITE,
+  });
+
+
+  const shares =
+    formatShares(
+      media
+    );
+
+
+  let y =
+    844;
+
+
+  for (
+    const item
+    of shares
+  ) {
+    textAt({
+      page,
+      text:
+        item.key,
+      x:
+        475,
+      y,
+      size:
+        10,
+      font:
+        bold,
+      color:
+        TEXT,
+      maxWidth:
+        140,
+    });
+
+
+    mask({
+      page,
+      x:
+        475,
+      y:
+        y +
+        25,
+      width:
+        185,
+      height:
+        10,
+      color:
+        CARD,
+    });
+
+
+    if (
+      item.value >
+        0
+    ) {
+      mask({
+        page,
+        x:
+          475,
+        y:
+          y +
+          25,
+        width:
+          185 *
+          clamp(
+            item.value /
+              100,
+            0,
+            1
+          ),
+        height:
+          10,
+        color:
+          BLUE,
+      });
+    }
+
+
+    textAt({
+      page,
+      text:
+        `${item.value
+          .toFixed(
+            1
+          )
+          .replace(
+            ".",
+            ","
+          )}%`,
+      x:
+        670,
+      y:
+        y +
+        21,
+      size:
+        9,
+      font:
+        bold,
+      color:
+        TEXT,
+      maxWidth:
+        34,
+    });
+
+
+    y +=
+      67;
+  }
+
+
+  textAt({
+    page,
+    text:
+      "Distribuicao baseada nos conteudos recentes disponiveis pela Meta.",
+    x:
+      475,
+    y:
+      1094,
+    size:
+      7,
+    font:
+      regular,
+    color:
+      MUTED,
+    maxWidth:
+      220,
+  });
+}
+
+
+function drawAudience({
+  page,
+  bold,
+  regular,
+}: {
+  page:
+    PDFPage;
+
+  bold:
+    PDFFont;
+
+  regular:
+    PDFFont;
+}) {
+  mask({
+    page,
+    x:
+      742,
+    y:
+      829,
+    width:
+      251,
+    height:
+      289,
+    color:
+      WHITE,
+  });
+
+
+  page.drawCircle({
+    x:
+      sx(
+        page,
+        804
+      ),
+
+    y:
+      sy(
+        page,
+        881
+      ),
+
+    size:
+      sw(
+        page,
+        36
+      ),
+
+    color:
+      CARD_ALT,
+  });
+
+
+  page.drawCircle({
+    x:
+      sx(
+        page,
+        804
+      ),
+
+    y:
+      sy(
+        page,
+        881
+      ),
+
+    size:
+      sw(
+        page,
+        21
+      ),
+
+    color:
+      WHITE,
+  });
+
+
+  textAt({
+    page,
+    text:
+      "DADOS DE PUBLICO",
+    x:
+      759,
+    y:
+      943,
+    size:
+      10,
+    font:
+      bold,
+    color:
+      TEXT,
+    maxWidth:
+      210,
+  });
+
+
+  multiline({
+    page,
+    text:
+      "Genero, faixa etaria e localizacao ainda nao sao coletados pelo AprovUp nesta integracao.",
+    x:
+      759,
+    y:
+      971,
+    size:
+      9,
+    lineHeight:
+      15,
+    maxWidth:
+      210,
+    maxLines:
+      5,
+    font:
+      regular,
+    color:
+      MUTED,
+  });
+
+
+  mask({
+    page,
+    x:
+      759,
+    y:
+      1065,
+    width:
+      205,
+    height:
+      31,
+    color:
+      CARD,
+  });
+
+
+  textAt({
+    page,
+    text:
+      "Sem dados ficticios",
+    x:
+      775,
+    y:
+      1075,
+    size:
+      8,
+    font:
+      bold,
+    color:
+      BLUE,
+      maxWidth:
+        170,
+  });
+}
+
+
+async function drawTopFive({
+  document,
+  page,
+  media,
+  bold,
+  regular,
+}: {
+  document:
+    PDFDocument;
+
+  page:
+    PDFPage;
+
+  media:
+    InstagramTopMediaItem[];
+
+  bold:
+    PDFFont;
+
+  regular:
+    PDFFont;
+}) {
+  mask({
+    page,
+    x:
+      31,
+    y:
+      1200,
+    width:
+      428,
+    height:
+      168,
+    color:
+      WHITE,
+  });
+
+
+  const items =
+    media
+      .slice(
+        0,
+        5
+      );
+
+
+  if (
+    items.length ===
+      0
+  ) {
+    textAt({
+      page,
+      text:
+        "Nenhum conteudo recente disponivel para ranking.",
+      x:
+        50,
+      y:
+        1240,
+      size:
+        10,
+      font:
+        bold,
+      color:
+        MUTED,
+      maxWidth:
+        385,
+    });
+
+    return;
+  }
+
+
+  const boxWidth =
+    76;
+
+
+  for (
+    let index =
+      0;
+    index <
+      5;
+    index++
+  ) {
+    const x =
+      33 +
+      index *
+        84;
+
+
+    const item =
+      items[
+        index
+      ];
+
+
+    if (
+      !item
+    ) {
+      mask({
+        page,
+        x,
+        y:
+          1202,
+        width:
+          boxWidth,
+        height:
+          102,
+        color:
+          CARD,
+      });
+
+      continue;
+    }
+
+
+    const image =
+      await remoteImage(
+        document,
+        item.imageUrl
+      );
+
+
+    if (
+      image
+    ) {
+      page.drawImage(
+        image,
+        {
+          x:
+            sx(
+              page,
+              x
+            ),
+
+          y:
+            sy(
+              page,
+              1301
+            ),
+
+          width:
+            sw(
+              page,
+              boxWidth
+            ),
+
+          height:
+            sh(
+              page,
+              99
+            ),
+        }
+      );
+    }
+    else {
+      mask({
+        page,
+        x,
+        y:
+          1202,
+        width:
+          boxWidth,
+        height:
+          99,
+        color:
+          CARD,
+      });
+
+
+      multiline({
+        page,
+        text:
+          topMediaTitle(
+            item
+          ),
+        x:
+          x +
+          5,
+        y:
+          1230,
+        size:
+          7,
+        lineHeight:
+          10,
+        maxWidth:
+          boxWidth -
+          10,
+        maxLines:
+          4,
+        font:
+          regular,
+        color:
+          TEXT,
+      });
+    }
+
+
+    textAt({
+      page,
+      text:
+        `${index + 1}o`,
+      x:
+        x +
+        30,
+      y:
+        1312,
+      size:
+        9,
+      font:
+        bold,
+      color:
+        TEXT,
+      maxWidth:
+        22,
+    });
+
+
+    textAt({
+      page,
+      text:
+        numberText(
+          item.reach
+        ),
+      x:
+        x +
+        8,
+      y:
+        1333,
+      size:
+        10,
+      font:
+        bold,
+      color:
+        TEXT,
+      maxWidth:
+        62,
+    });
+
+
+    textAt({
+      page,
+      text:
+        "alcance",
+      x:
+        x +
+        17,
+      y:
+        1353,
+      size:
+        7,
+      font:
+        regular,
+      color:
+        MUTED,
+      maxWidth:
+        48,
+    });
+  }
+}
+
+
+function buildHighlights({
+  followersDelta,
+  reachChange,
+  viewsChange,
+  interactionChange,
+  topMedia,
+}: {
+  followersDelta:
+    number |
+    null;
+
+  reachChange:
+    number |
+    null;
+
+  viewsChange:
+    number |
+    null;
+
+  interactionChange:
+    number |
+    null;
+
+  topMedia:
+    InstagramTopMediaItem[];
+}) {
+  const lines:
+    string[] =
+    [];
+
+
+  if (
+    reachChange !==
+    null
+  ) {
+    lines.push(
+      `${percentText(
+        reachChange
+      )} no alcance em relacao ao periodo comparavel`
+    );
+  }
+
+
+  if (
+    viewsChange !==
+    null
+  ) {
+    lines.push(
+      `${percentText(
+        viewsChange
+      )} em visualizacoes`
+    );
+  }
+
+
+  if (
+    interactionChange !==
+    null
+  ) {
+    lines.push(
+      `${percentText(
+        interactionChange
+      )} em interacoes`
+    );
+  }
+
+
+  if (
+    followersDelta !==
+    null
+  ) {
+    lines.push(
+      `${signedNumber(
+        followersDelta
+      )} seguidores no historico analisado`
+    );
+  }
+
+
+  if (
+    topMedia[0]
+      ?.reach !==
+      null &&
+    topMedia[0]
+      ?.reach !==
+      undefined
+  ) {
+    lines.push(
+      `Melhor conteudo alcancou ${numberText(
+        topMedia[0]
+          .reach
+      )} contas`
+    );
+  }
+
+
+  while (
+    lines.length <
+      5
+  ) {
+    lines.push(
+      "Acompanhamento continuo das metricas no AprovUp"
+    );
+  }
+
+
+  return lines.slice(
+    0,
+    5
+  );
+}
+
+
+function drawHighlights({
+  page,
+  lines,
+  bold,
+  regular,
+}: {
+  page:
+    PDFPage;
+
+  lines:
+    string[];
+
+  bold:
+    PDFFont;
+
+  regular:
+    PDFFont;
+}) {
+  mask({
+    page,
+    x:
+      692,
+    y:
+      244,
+    width:
+      300,
+    height:
+      168,
+    color:
+      CARD_ALT,
+  });
+
+
+  let y =
+    253;
+
+
+  for (
+    const line
+    of lines.slice(
+      0,
+      5
+    )
+  ) {
+    multiline({
+      page,
+      text:
+        line,
+      x:
+        695,
+      y,
+      size:
+        9,
+      lineHeight:
+        12,
+      maxWidth:
+        288,
+      maxLines:
+        2,
+      font:
+        regular,
+      color:
+        TEXT,
+    });
+
+
+    y +=
+      31;
+  }
+}
+
+
+function drawInsights({
+  page,
+  metrics,
+  engagement,
+  topMedia,
+  bold,
+  regular,
+}: {
+  page:
+    PDFPage;
+
+  metrics:
+    InstagramDashboardMetrics |
+    null;
+
+  engagement:
+    number |
+    null;
+
+  topMedia:
+    InstagramTopMediaItem[];
+
+  bold:
+    PDFFont;
+
+  regular:
+    PDFFont;
+}) {
+  mask({
+    page,
+    x:
+      495,
+    y:
+      1200,
+    width:
+      240,
+    height:
+      168,
+    color:
+      WHITE,
+  });
+
+
+  const items = [
+    metrics
+      ?.change
+      .reach !==
+      null &&
+    metrics
+      ?.change
+      .reach !==
+      undefined
+      ? `Alcance variou ${percentText(
+          metrics.change.reach
+        )}.`
+      : "Alcance atual disponivel pela Meta.",
+
+    metrics
+      ?.change
+      .views !==
+      null &&
+    metrics
+      ?.change
+      .views !==
+      undefined
+      ? `Visualizacoes variaram ${percentText(
+          metrics.change.views
+        )}.`
+      : "Visualizacoes em acompanhamento.",
+
+    `Taxa de interacoes sobre alcance: ${percentText(
+      engagement,
+      false
+    )}.`,
+
+    topMedia[0]
+      ? `Destaque: ${topMediaTitle(
+          topMedia[0]
+        )}.`
+      : "Ranking de conteudos em coleta.",
+
+    "Dados historicos ficam mais precisos a cada nova coleta.",
+  ];
+
+
+  let y =
+    1211;
+
+
+  for (
+    const item
+    of items
+  ) {
+    page.drawCircle({
+      x:
+        sx(
+          page,
+          505
+        ),
+
+      y:
+        sy(
+          page,
+          y +
+          6
+        ),
+
+      size:
+        sw(
+          page,
+          2.8
+        ),
+
+      color:
+        BLUE,
+    });
+
+
+    multiline({
+      page,
+      text:
+        item,
+      x:
+        520,
+      y,
+      size:
+        7.4,
+      lineHeight:
+        10,
+      maxWidth:
+        204,
+      maxLines:
+        2,
       font:
         regular,
       color:
@@ -1326,122 +2997,127 @@ function drawSummary({
     });
 
 
-    drawText({
+    y +=
+      31;
+  }
+}
+
+
+function drawNextSteps({
+  page,
+  topMedia,
+  metrics,
+  bold,
+  regular,
+}: {
+  page:
+    PDFPage;
+
+  topMedia:
+    InstagramTopMediaItem[];
+
+  metrics:
+    InstagramDashboardMetrics |
+    null;
+
+  bold:
+    PDFFont;
+
+  regular:
+    PDFFont;
+}) {
+  mask({
+    page,
+    x:
+      773,
+    y:
+      1200,
+    width:
+      221,
+    height:
+      168,
+    color:
+      DARK_BOX,
+  });
+
+
+  const bestFormat =
+    topMedia[0]
+      ? mediaFormat(
+          topMedia[0]
+        )
+      : "conteudos de melhor desempenho";
+
+
+  const steps = [
+    "Manter consistencia de publicacao.",
+    `Explorar mais ${bestFormat}.`,
+    "Repetir temas dos melhores conteudos.",
+    metrics
+      ?.change
+      .reach !==
+      null &&
+    metrics
+      ?.change
+      .reach !==
+      undefined &&
+    metrics.change.reach <
+      0
+      ? "Testar novas abordagens para recuperar alcance."
+      : "Escalar formatos que sustentam o alcance.",
+    "Continuar acompanhando o historico no AprovUp.",
+  ];
+
+
+  let y =
+    1211;
+
+
+  for (
+    const step
+    of steps
+  ) {
+    textAt({
       page,
       text:
-        value,
+        "-",
       x:
-        x +
-        16,
-      y:
-        rowY -
-        9,
+        783,
+      y,
       size:
-        6.2,
+        9,
       font:
         bold,
       color:
-        TEXT,
-      maxWidth:
-        width -
-        32,
+        WHITE,
     });
 
 
-    rowY -=
-      29;
+    multiline({
+      page,
+      text:
+        step,
+      x:
+        800,
+      y,
+      size:
+        7.4,
+      lineHeight:
+        10,
+      maxWidth:
+        184,
+      maxLines:
+        2,
+      font:
+        regular,
+      color:
+        WHITE,
+    });
+
+
+    y +=
+      31;
   }
-
-
-  page.drawRectangle({
-    x:
-      x +
-      10,
-
-    y:
-      y +
-      11,
-
-    width:
-      width -
-      20,
-
-    height:
-      43,
-
-    color:
-      BLUE_LIGHT,
-  });
-
-
-  drawText({
-    page,
-    text:
-      "CRESCIMENTO",
-    x:
-      x +
-      16,
-    y:
-      y +
-      41,
-    size:
-      4.6,
-    font:
-      bold,
-    color:
-      BLUE,
-  });
-
-
-  drawText({
-    page,
-    text:
-      `${formatSignedNumber(
-        followersDelta
-      )} seguidores`,
-    x:
-      x +
-      16,
-    y:
-      y +
-      26,
-    size:
-      9,
-    font:
-      bold,
-    color:
-      BLUE,
-    maxWidth:
-      width -
-      32,
-  });
-
-
-  drawText({
-    page,
-    text:
-      `${formatPercent(
-        followersPercent
-      )} | Engajamento ${formatPercent(
-        engagementRate,
-        false
-      )}`,
-    x:
-      x +
-      16,
-    y:
-      y +
-      15,
-    size:
-      4.4,
-    font:
-      regular,
-    color:
-      MUTED,
-    maxWidth:
-      width -
-      32,
-  });
 }
 
 
@@ -1549,7 +3225,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Selecione o cliente e o modelo do relatorio.",
+            "Cliente ou modelo nao informado.",
         },
         {
           status:
@@ -1687,6 +3363,11 @@ export async function GET(
       null;
 
 
+    let topMedia:
+      InstagramTopMediaItem[] =
+      [];
+
+
     const connection =
       client.instagramConnection;
 
@@ -1699,24 +3380,48 @@ export async function GET(
         .userAccessTokenEncrypted &&
       isMetaConfigured()
     ) {
-      try {
+      const accessToken =
+        decryptMetaSecret(
+          connection
+            .userAccessTokenEncrypted
+        );
 
-        dashboardMetrics =
-          await getInstagramDashboardMetrics({
+
+      const [
+        metricsResult,
+        mediaResult,
+      ] =
+        await Promise.allSettled([
+          getInstagramDashboardMetrics({
             instagramUserId:
               connection
                 .instagramUserId,
 
-            accessToken:
-              decryptMetaSecret(
-                connection
-                  .userAccessTokenEncrypted
-              ),
-          });
+            accessToken,
+          }),
+
+          getInstagramTopMedia({
+            instagramUserId:
+              connection
+                .instagramUserId,
+
+            accessToken,
+
+            limit:
+              24,
+          }),
+        ]);
+
+
+      if (
+        metricsResult.status ===
+        "fulfilled"
+      ) {
+        dashboardMetrics =
+          metricsResult.value;
 
 
         try {
-
           await saveInstagramSnapshot({
             clientId:
               client.id,
@@ -1728,27 +3433,24 @@ export async function GET(
             metrics:
               dashboardMetrics,
           });
-
         }
         catch (
           snapshotError
         ) {
-
           console.error(
             "REPORT SNAPSHOT ERROR",
             snapshotError
           );
         }
-
       }
-      catch (
-        metricsError
-      ) {
 
-        console.error(
-          "REPORT METRICS ERROR",
-          metricsError
-        );
+
+      if (
+        mediaResult.status ===
+        "fulfilled"
+      ) {
+        topMedia =
+          mediaResult.value;
       }
     }
 
@@ -1763,7 +3465,7 @@ export async function GET(
       });
 
 
-    const currentFollowers =
+    const followers =
       dashboardMetrics
         ?.followersCount ??
       history.latest
@@ -1771,7 +3473,7 @@ export async function GET(
       null;
 
 
-    const currentReach =
+    const reach =
       dashboardMetrics
         ?.current
         .reach ??
@@ -1780,7 +3482,7 @@ export async function GET(
       null;
 
 
-    const currentViews =
+    const views =
       dashboardMetrics
         ?.current
         .views ??
@@ -1789,7 +3491,7 @@ export async function GET(
       null;
 
 
-    const currentInteractions =
+    const interactions =
       dashboardMetrics
         ?.current
         .interactions ??
@@ -1798,16 +3500,16 @@ export async function GET(
       null;
 
 
-    const engagementRate =
-      currentReach !==
+    const engagement =
+      reach !==
         null &&
-      currentReach >
+      reach >
         0 &&
-      currentInteractions !==
+      interactions !==
         null
         ? (
-            currentInteractions /
-            currentReach
+            interactions /
+            reach
           ) *
           100
         : null;
@@ -1844,24 +3546,24 @@ export async function GET(
         .arrayBuffer();
 
 
-    const sourceDocument =
+    const document =
       await PDFDocument.load(
         sourcePdf
       );
 
 
-    const sourcePage =
-      sourceDocument
+    const page =
+      document
         .getPages()[0];
 
 
     if (
-      !sourcePage
+      !page
     ) {
       return NextResponse.json(
         {
           message:
-            "O modelo PDF nao possui paginas.",
+            "Modelo sem pagina.",
         },
         {
           status:
@@ -1871,100 +3573,8 @@ export async function GET(
     }
 
 
-    const {
-      width,
-      height,
-    } =
-      sourcePage.getSize();
-
-
-    const outputDocument =
-      await PDFDocument.create();
-
-
-    const [
-      backgroundPage,
-    ] =
-      await outputDocument
-        .embedPdf(
-          sourcePdf,
-          [
-            0,
-          ]
-        );
-
-
-    const page =
-      outputDocument.addPage([
-        width,
-        height,
-      ]);
-
-
-    page.drawPage(
-      backgroundPage,
-      {
-        x:
-          0,
-
-        y:
-          0,
-
-        width,
-
-        height,
-      }
-    );
-
-
-    /*
-     * O PDF enviado como modelo contem metricas
-     * demonstrativas impressas na propria arte.
-     *
-     * Por isso apagamos toda a area central do
-     * mockup e reconstruimos o relatorio com dados
-     * reais. Cabecalho e rodape da identidade visual
-     * continuam preservados.
-     */
-    const footerHeight =
-      height *
-      0.09;
-
-
-    const headerHeight =
-      height *
-      0.105;
-
-
-    const bodyBottom =
-      footerHeight;
-
-
-    const bodyTop =
-      height -
-      headerHeight;
-
-
-    page.drawRectangle({
-      x:
-        0,
-
-      y:
-        bodyBottom,
-
-      width,
-
-      height:
-        bodyTop -
-        bodyBottom,
-
-      color:
-        PAGE_BG,
-    });
-
-
     const regular =
-      await outputDocument
+      await document
         .embedFont(
           StandardFonts
             .Helvetica
@@ -1972,7 +3582,7 @@ export async function GET(
 
 
     const bold =
-      await outputDocument
+      await document
         .embedFont(
           StandardFonts
             .HelveticaBold
@@ -1980,731 +3590,311 @@ export async function GET(
 
 
     /*
-     * Substitui tambem a caixa de periodo
-     * antiga no cabecalho.
+     * MODO FIEL:
+     * O PDF original permanece como fundo.
+     * So cobrimos os dados demonstrativos dentro
+     * das areas de conteudo e escrevemos os dados reais.
+     * A estrutura visual, cabecalho, rodape, blocos,
+     * icones e proporcoes permanecem do arquivo exportado.
      */
-    const periodBoxWidth =
-      width *
-      0.235;
 
-
-    const periodBoxHeight =
-      height *
-      0.055;
-
-
-    const periodBoxX =
-      width -
-      periodBoxWidth -
-      width *
-        0.105;
-
-
-    const periodBoxY =
-      height -
-      periodBoxHeight -
-      height *
-        0.022;
-
-
-    page.drawRectangle({
+    /* Periodo do cabecalho */
+    mask({
+      page,
       x:
-        periodBoxX,
-
+        716,
       y:
-        periodBoxY,
-
+        108,
       width:
-        periodBoxWidth,
-
+        174,
       height:
-        periodBoxHeight,
-
+        39,
       color:
-        NAVY,
-
-      borderColor:
-        rgb(
-          0.25,
-          0.33,
-          0.45
-        ),
-
-      borderWidth:
-        0.5,
+        DARK_BOX,
     });
 
 
-    drawText({
+    textAt({
       page,
-
       text:
         "PERIODO ANALISADO",
-
       x:
-        periodBoxX +
-        8,
-
+        721,
       y:
-        periodBoxY +
-        periodBoxHeight -
-        12,
-
-      size:
-        4.5,
-
-      font:
-        regular,
-
-      color:
-        rgb(
-          0.72,
-          0.78,
-          0.88
-        ),
-    });
-
-
-    drawText({
-      page,
-
-      text:
-        `Ultimos ${period} dias`,
-
-      x:
-        periodBoxX +
-        8,
-
-      y:
-        periodBoxY +
-        8,
-
+        111,
       size:
         7,
-
       font:
-        bold,
-
+        regular,
       color:
         WHITE,
-
       maxWidth:
-        periodBoxWidth -
-        16,
+        160,
     });
 
 
-    const margin =
-      width *
-      0.035;
-
-
-    const bodyWidth =
-      width -
-      margin *
-        2;
-
-
-    const titleY =
-      bodyTop -
-      22;
-
-
-    drawText({
+    textAt({
       page,
-
       text:
-        "VISAO GERAL",
-
+        `Ultimos ${period} dias`,
       x:
-        margin,
-
+        721,
       y:
-        titleY,
-
+        129,
       size:
-        9,
-
+        10,
       font:
         bold,
-
       color:
-        TEXT,
-    });
-
-
-    drawText({
-      page,
-
-      text:
-        `${safeText(
-          client.name
-        )}${connection?.username ? ` | @${connection.username}` : ""}`,
-
-      x:
-        margin,
-
-      y:
-        titleY -
-        11,
-
-      size:
-        5.3,
-
-      font:
-        regular,
-
-      color:
-        MUTED,
-
+        WHITE,
       maxWidth:
-        bodyWidth,
+        160,
     });
 
 
-    const gap =
-      width *
-      0.012;
-
-
-    const metricY =
-      titleY -
-      76;
-
-
-    const metricHeight =
-      58;
-
-
-    const metricWidth =
-      (
-        bodyWidth -
-        gap *
-          4
-      ) /
-      5;
-
-
-    const metricItems = [
-      {
-        label:
-          "Seguidores",
-
-        value:
-          formatNumber(
-            currentFollowers
-          ),
-
-        helper:
-          `${formatSignedNumber(
-            history.followersDelta
-          )} no periodo`,
-      },
-
-      {
-        label:
-          "Crescimento",
-
-        value:
-          formatSignedNumber(
-            history.followersDelta
-          ),
-
-        helper:
-          `${formatPercent(
-            history.followersPercent
-          )} no periodo`,
-      },
-
-      {
-        label:
-          "Alcance",
-
-        value:
-          formatNumber(
-            currentReach
-          ),
-
-        helper:
-          "Contas alcancadas",
-      },
-
-      {
-        label:
-          "Visualizacoes",
-
-        value:
-          formatNumber(
-            currentViews
-          ),
-
-        helper:
-          "Visualizacoes na Meta",
-      },
-
-      {
-        label:
-          "Interacoes",
-
-        value:
-          formatNumber(
-            currentInteractions
-          ),
-
-        helper:
-          "Interacoes na Meta",
-      },
-    ];
-
-
-    metricItems.forEach(
-      (
-        item,
-        index
-      ) => {
-
-        drawMetricCard({
-          page,
-
-          x:
-            margin +
-            index *
-              (
-                metricWidth +
-                gap
-              ),
-
-          y:
-            metricY,
-
-          width:
-            metricWidth,
-
-          height:
-            metricHeight,
-
-          label:
-            item.label,
-
-          value:
-            item.value,
-
-          helper:
-            item.helper,
-
-          bold,
-
-          regular,
-        });
-
-      }
-    );
-
-
-    const lowerTop =
-      metricY -
-      12;
-
-
-    const summaryWidth =
-      bodyWidth *
-      0.32;
-
-
-    const chartWidth =
-      bodyWidth -
-      summaryWidth -
-      gap;
-
-
-    const middleHeight =
-      151;
-
-
-    const middleY =
-      lowerTop -
-      middleHeight;
-
-
-    drawFollowersChart({
+    /* Visao geral */
+    drawOverviewCard({
       page,
-
       x:
-        margin,
+        35,
+      value:
+        numberText(
+          followers
+        ),
+      label:
+        "Seguidores",
+      change:
+        percentText(
+          history.followersPercent
+        ),
+      helper:
+        `${signedNumber(
+          history.followersDelta
+        )} no periodo`,
+      bold,
+      regular,
+    });
 
-      y:
-        middleY,
 
-      width:
-        chartWidth,
+    drawOverviewCard({
+      page,
+      x:
+        177,
+      value:
+        numberText(
+          reach
+        ),
+      label:
+        "Contas alcancadas",
+      change:
+        percentText(
+          dashboardMetrics
+            ?.change
+            .reach ??
+          null
+        ),
+      helper:
+        "vs periodo comparavel",
+      bold,
+      regular,
+    });
 
-      height:
-        middleHeight,
 
+    drawOverviewCard({
+      page,
+      x:
+        319,
+      value:
+        numberText(
+          views
+        ),
+      label:
+        "Visualizacoes",
+      change:
+        percentText(
+          dashboardMetrics
+            ?.change
+            .views ??
+          null
+        ),
+      helper:
+        "vs periodo comparavel",
+      bold,
+      regular,
+    });
+
+
+    drawOverviewCard({
+      page,
+      x:
+        461,
+      value:
+        numberText(
+          interactions
+        ),
+      label:
+        "Interacoes",
+      change:
+        percentText(
+          dashboardMetrics
+            ?.change
+            .interactions ??
+          null
+        ),
+      helper:
+        "vs periodo comparavel",
+      bold,
+      regular,
+    });
+
+
+    /* Destaques */
+    drawHighlights({
+      page,
+      lines:
+        buildHighlights({
+          followersDelta:
+            history.followersDelta,
+
+          reachChange:
+            dashboardMetrics
+              ?.change
+              .reach ??
+            null,
+
+          viewsChange:
+            dashboardMetrics
+              ?.change
+              .views ??
+            null,
+
+          interactionChange:
+            dashboardMetrics
+              ?.change
+              .interactions ??
+            null,
+
+          topMedia,
+        }),
+      bold,
+      regular,
+    });
+
+
+    /* Crescimento */
+    drawGrowthChart({
+      page,
       points:
         history.points,
-
-      bold,
-
-      regular,
-    });
-
-
-    drawSummary({
-      page,
-
-      x:
-        margin +
-        chartWidth +
-        gap,
-
-      y:
-        middleY,
-
-      width:
-        summaryWidth,
-
-      height:
-        middleHeight,
-
-      firstDate:
-        history.first
-          ?.dateKey,
-
-      lastDate:
-        history.latest
-          ?.dateKey,
-
-      daysWithData:
-        history.daysWithData,
-
       followersDelta:
         history.followersDelta,
-
       followersPercent:
         history.followersPercent,
-
-      engagementRate,
-
       bold,
-
       regular,
     });
 
 
-    const insightY =
-      bodyBottom +
-      14;
-
-
-    const insightHeight =
-      middleY -
-      insightY -
-      12;
-
-
-    drawCard({
+    /* Alcance e visualizacoes */
+    drawReachViews({
       page,
-
-      x:
-        margin,
-
-      y:
-        insightY,
-
-      width:
-        bodyWidth,
-
-      height:
-        insightHeight,
+      reach,
+      views,
+      reachChange:
+        dashboardMetrics
+          ?.change
+          .reach ??
+        null,
+      viewsChange:
+        dashboardMetrics
+          ?.change
+          .views ??
+        null,
+      bold,
+      regular,
     });
 
 
-    drawText({
+    /* Interacoes */
+    drawInteractions({
       page,
-
-      text:
-        "LEITURA DO PERIODO",
-
-      x:
-        margin +
-        12,
-
-      y:
-        insightY +
-        insightHeight -
-        18,
-
-      size:
-        7,
-
-      font:
-        bold,
+      interactions,
+      reach,
+      views,
+      engagement,
+      followersDelta:
+        history.followersDelta,
+      bold,
+      regular,
     });
 
 
-    const insightColumnWidth =
-      (
-        bodyWidth -
-        48
-      ) /
-      3;
-
-
-    const insightItems = [
-      {
-        title:
-          "Alcance",
-
-        value:
-          formatNumber(
-            currentReach
-          ),
-
-        helper:
-          dashboardMetrics
-            ?.change
-            .reach !==
-            null &&
-          dashboardMetrics
-            ?.change
-            .reach !==
-            undefined
-            ? `${formatPercent(
-                dashboardMetrics
-                  .change
-                  .reach
-              )} vs periodo comparavel`
-            : "Periodo atual disponivel na Meta",
-      },
-
-      {
-        title:
-          "Visualizacoes",
-
-        value:
-          formatNumber(
-            currentViews
-          ),
-
-        helper:
-          dashboardMetrics
-            ?.change
-            .views !==
-            null &&
-          dashboardMetrics
-            ?.change
-            .views !==
-            undefined
-            ? `${formatPercent(
-                dashboardMetrics
-                  .change
-                  .views
-              )} vs periodo comparavel`
-            : "Periodo atual disponivel na Meta",
-      },
-
-      {
-        title:
-          "Interacoes",
-
-        value:
-          formatNumber(
-            currentInteractions
-          ),
-
-        helper:
-          `Taxa sobre alcance: ${formatPercent(
-            engagementRate,
-            false
-          )}`,
-      },
-    ];
-
-
-    insightItems.forEach(
-      (
-        item,
-        index
-      ) => {
-
-        const x =
-          margin +
-          12 +
-          index *
-            (
-              insightColumnWidth +
-              12
-            );
-
-
-        page.drawRectangle({
-          x,
-
-          y:
-            insightY +
-            14,
-
-          width:
-            insightColumnWidth,
-
-          height:
-            Math.max(
-              42,
-              insightHeight -
-                44
-            ),
-
-          color:
-            index ===
-              0
-              ? BLUE_LIGHT
-              : PAGE_BG,
-        });
-
-
-        drawText({
-          page,
-
-          text:
-            item.title.toUpperCase(),
-
-          x:
-            x +
-            9,
-
-          y:
-            insightY +
-            insightHeight -
-            38,
-
-          size:
-            4.7,
-
-          font:
-            bold,
-
-          color:
-            MUTED,
-
-          maxWidth:
-            insightColumnWidth -
-            18,
-        });
-
-
-        drawText({
-          page,
-
-          text:
-            item.value,
-
-          x:
-            x +
-            9,
-
-          y:
-            insightY +
-            31,
-
-          size:
-            12,
-
-          font:
-            bold,
-
-          color:
-            index ===
-              0
-              ? BLUE
-              : TEXT,
-
-          maxWidth:
-            insightColumnWidth -
-            18,
-        });
-
-
-        drawText({
-          page,
-
-          text:
-            item.helper,
-
-          x:
-            x +
-            9,
-
-          y:
-            insightY +
-            18,
-
-          size:
-            4.2,
-
-          font:
-            regular,
-
-          color:
-            MUTED,
-
-          maxWidth:
-            insightColumnWidth -
-            18,
-        });
-
-      }
-    );
-
-
-    drawText({
+    /* Formatos */
+    drawFormats({
       page,
-
-      text:
-        `Dados atualizados em ${formatDateKey(
-          todayDateKey()
-        )}. Metricas obtidas pela integracao Meta e pelo historico proprio do AprovUp.`,
-
-      x:
-        margin,
-
-      y:
-        bodyBottom +
-        3,
-
-      size:
-        3.7,
-
-      font:
-        regular,
-
-      color:
-        MUTED,
-
-      maxWidth:
-        bodyWidth,
+      media:
+        topMedia,
+      bold,
+      regular,
     });
 
 
-    outputDocument.setTitle(
-      `Relatorio Instagram - ${safeText(
+    /* Publico sem inventar dados */
+    drawAudience({
+      page,
+      bold,
+      regular,
+    });
+
+
+    /* Top 5 */
+    await drawTopFive({
+      document,
+      page,
+      media:
+        topMedia,
+      bold,
+      regular,
+    });
+
+
+    /* Insights */
+    drawInsights({
+      page,
+      metrics:
+        dashboardMetrics,
+      engagement,
+      topMedia,
+      bold,
+      regular,
+    });
+
+
+    /* Proximos passos */
+    drawNextSteps({
+      page,
+      topMedia,
+      metrics:
+        dashboardMetrics,
+      bold,
+      regular,
+    });
+
+
+    document.setTitle(
+      `Relatorio Instagram - ${cleanText(
         client.name
       )}`
     );
 
 
-    outputDocument.setAuthor(
+    document.setAuthor(
       "AprovUp"
     );
 
 
-    outputDocument.setSubject(
-      `Metricas reais do Instagram - ultimos ${period} dias`
-    );
-
-
     const output =
-      await outputDocument
+      await document
         .save();
 
 
@@ -2714,12 +3904,19 @@ export async function GET(
       ).buffer;
 
 
+    const now =
+      new Date();
+
+
     const filename =
-      `relatorio-${safeFilename(
+      `relatorio-${fileSlug(
         client.name
-      )}-${todayDateKey().slice(
-        0,
-        7
+      )}-${now.getUTCFullYear()}-${String(
+        now.getUTCMonth() +
+        1
+      ).padStart(
+        2,
+        "0"
       )}.pdf`;
 
 
@@ -2739,45 +3936,22 @@ export async function GET(
           "Cache-Control":
             "private, no-store, max-age=0",
 
+          "X-AprovUp-Report-Mode":
+            "faithful-template",
+
           "X-AprovUp-Report-Period":
             String(
               period
             ),
-
-          "X-AprovUp-Report-Followers":
-            String(
-              currentFollowers ??
-              ""
-            ),
-
-          "X-AprovUp-Report-Reach":
-            String(
-              currentReach ??
-              ""
-            ),
-
-          "X-AprovUp-Report-Views":
-            String(
-              currentViews ??
-              ""
-            ),
-
-          "X-AprovUp-Report-Interactions":
-            String(
-              currentInteractions ??
-              ""
-            ),
         },
       }
     );
-
   }
   catch (
     error
   ) {
-
     console.error(
-      "APROVUP LIVE REPORT ERROR",
+      "APROVUP FAITHFUL REPORT ERROR",
       error
     );
 
