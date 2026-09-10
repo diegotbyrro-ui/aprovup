@@ -5,6 +5,7 @@ import {
 
 import {
   PDFDocument,
+  PDFPage,
   PDFFont,
   StandardFonts,
   rgb,
@@ -19,8 +20,8 @@ import {
 } from "@/lib/clientAccess";
 
 import {
-  canUseMetaIntegration,
-} from "@/lib/metaAccess";
+  getInstagramHistorySummary,
+} from "@/lib/instagramHistory";
 
 import {
   decryptMetaSecret,
@@ -46,42 +47,84 @@ import {
 } from "@/lib/saasAccess";
 
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const runtime =
+  "nodejs";
+
+export const dynamic =
+  "force-dynamic";
 
 
-type TextAlign =
-  | "left"
-  | "center"
-  | "right";
+const NAVY =
+  rgb(
+    0.02,
+    0.055,
+    0.12
+  );
 
+const BLUE =
+  rgb(
+    0.055,
+    0.36,
+    0.95
+  );
 
-type ReportElement = {
-  metricKey: string;
-  page: number;
-  x: number;
-  y: number;
-  width: number;
-  fontSize: number;
-  fontWeight: number;
-  textAlign: TextAlign;
-  color: string;
-};
+const BLUE_LIGHT =
+  rgb(
+    0.92,
+    0.95,
+    1
+  );
 
+const PAGE_BG =
+  rgb(
+    0.965,
+    0.975,
+    0.99
+  );
 
-type SnapshotMetric = {
-  dateKey: string;
-  followersCount: number | null;
-  reach: number | null;
-  views: number | null;
-  interactions: number | null;
-};
+const WHITE =
+  rgb(
+    1,
+    1,
+    1
+  );
+
+const TEXT =
+  rgb(
+    0.04,
+    0.07,
+    0.12
+  );
+
+const MUTED =
+  rgb(
+    0.38,
+    0.45,
+    0.56
+  );
+
+const BORDER =
+  rgb(
+    0.86,
+    0.89,
+    0.94
+  );
+
+const GREEN =
+  rgb(
+    0.02,
+    0.58,
+    0.35
+  );
 
 
 function clamp(
-  value: number,
-  minimum: number,
-  maximum: number
+  value:
+    number,
+  minimum:
+    number,
+  maximum:
+    number
 ) {
   return Math.min(
     maximum,
@@ -93,177 +136,21 @@ function clamp(
 }
 
 
-function normalizeElements(
-  value: unknown
-): ReportElement[] {
-  if (
-    !Array.isArray(
-      value
-    )
-  ) {
-    return [];
-  }
-
-  return value
-    .map(
-      (raw) => {
-        if (
-          !raw ||
-          typeof raw !==
-            "object"
-        ) {
-          return null;
-        }
-
-        const item =
-          raw as Record<
-            string,
-            unknown
-          >;
-
-        const align =
-          String(
-            item.textAlign ||
-            "left"
-          );
-
-        const textAlign:
-          TextAlign =
-          align ===
-            "center" ||
-          align ===
-            "right"
-            ? align
-            : "left";
-
-        const rawColor =
-          String(
-            item.color ||
-            "#0f172a"
-          );
-
-        const color =
-          /^#[0-9a-fA-F]{6}$/.test(
-            rawColor
-          )
-            ? rawColor
-            : "#0f172a";
-
-        return {
-          metricKey:
-            String(
-              item.metricKey ||
-              ""
-            ),
-          page:
-            clamp(
-              Math.round(
-                Number(
-                  item.page ||
-                  1
-                )
-              ),
-              1,
-              100
-            ),
-          x:
-            clamp(
-              Number(
-                item.x ||
-                0
-              ),
-              0,
-              0.98
-            ),
-          y:
-            clamp(
-              Number(
-                item.y ||
-                0
-              ),
-              0,
-              0.98
-            ),
-          width:
-            clamp(
-              Number(
-                item.width ||
-                0.3
-              ),
-              0.04,
-              0.98
-            ),
-          fontSize:
-            clamp(
-              Number(
-                item.fontSize ||
-                28
-              ),
-              6,
-              120
-            ),
-          fontWeight:
-            Number(
-              item.fontWeight ||
-              700
-            ),
-          textAlign,
-          color,
-        };
-      }
-    )
-    .filter(
-      (
-        item
-      ): item is ReportElement =>
-        Boolean(
-          item &&
-          item.metricKey
-        )
-    );
-}
-
-
-function percentageChange(
-  current: number | null,
-  previous: number | null
-) {
-  if (
-    current ===
-      null ||
-    previous ===
-      null ||
-    previous ===
-      0
-  ) {
-    return null;
-  }
-
-  return (
-    (
-      current -
-      previous
-    ) /
-    Math.abs(
-      previous
-    )
-  ) *
-    100;
-}
-
-
-function numberText(
-  value: number | null
+function formatNumber(
+  value:
+    number |
+    null
 ) {
   if (
     value ===
-      null ||
+    null ||
     !Number.isFinite(
       value
     )
   ) {
-    return "—";
+    return "-";
   }
+
 
   return new Intl
     .NumberFormat(
@@ -281,450 +168,185 @@ function numberText(
 }
 
 
-function signedNumberText(
-  value: number | null
+function formatSignedNumber(
+  value:
+    number |
+    null
 ) {
   if (
     value ===
-      null ||
+    null ||
     !Number.isFinite(
       value
     )
   ) {
-    return "—";
+    return "-";
   }
+
 
   const rounded =
     Math.round(
       value
     );
 
-  const formatted =
-    new Intl
-      .NumberFormat(
-        "pt-BR",
-        {
-          maximumFractionDigits:
-            0,
-        }
-      )
-      .format(
-        Math.abs(
-          rounded
-        )
-      );
 
   if (
     rounded >
     0
   ) {
-    return `+${formatted}`;
+    return `+${formatNumber(
+      rounded
+    )}`;
   }
 
-  if (
-    rounded <
-    0
-  ) {
-    return `-${formatted}`;
-  }
 
-  return "0";
+  return formatNumber(
+    rounded
+  );
 }
 
 
-function percentageText(
-  value: number | null,
-  signed = true
+function formatPercent(
+  value:
+    number |
+    null,
+  signed =
+    true
 ) {
   if (
     value ===
-      null ||
+    null ||
     !Number.isFinite(
       value
     )
   ) {
-    return "—";
+    return "-";
   }
 
-  const formatted =
+
+  const absolute =
     Math.abs(
       value
     )
       .toFixed(
-        1
+        2
       )
       .replace(
         ".",
         ","
       );
 
+
   if (
     signed &&
     value >
     0
   ) {
-    return `+${formatted}%`;
+    return `+${absolute}%`;
   }
+
 
   if (
     value <
     0
   ) {
-    return `-${formatted}%`;
+    return `-${absolute}%`;
   }
 
-  return `${formatted}%`;
+
+  return `${absolute}%`;
 }
 
 
-function toDateKey(
-  date: Date
+function formatDateKey(
+  value:
+    string |
+    undefined |
+    null
 ) {
-  return [
-    date.getUTCFullYear(),
-    String(
-      date.getUTCMonth() +
-      1
-    ).padStart(
-      2,
-      "0"
-    ),
-    String(
-      date.getUTCDate()
-    ).padStart(
-      2,
-      "0"
-    ),
-  ].join(
-    "-"
-  );
-}
-
-
-function fallbackPeriod() {
-  const now =
-    new Date();
-
-  const year =
-    now.getUTCFullYear();
-
-  const month =
-    now.getUTCMonth();
-
-  const currentStart =
-    new Date(
-      Date.UTC(
-        year,
-        month,
-        1
-      )
-    );
-
-  const previousStart =
-    new Date(
-      Date.UTC(
-        year,
-        month - 1,
-        1
-      )
-    );
-
-  const previousLastDay =
-    new Date(
-      Date.UTC(
-        year,
-        month,
-        0
-      )
-    ).getUTCDate();
-
-  const comparableDay =
-    Math.min(
-      now.getUTCDate(),
-      previousLastDay
-    );
-
-  const previousEnd =
-    new Date(
-      Date.UTC(
-        previousStart
-          .getUTCFullYear(),
-        previousStart
-          .getUTCMonth(),
-        comparableDay,
-        23,
-        59,
-        59
-      )
-    );
-
-  return {
-    currentStart,
-    currentEnd:
-      now,
-    previousStart,
-    previousEnd,
-  };
-}
-
-
-function periodLabel(
-  start: Date
-) {
-  const months = [
-    "Janeiro",
-    "Fevereiro",
-    "Março",
-    "Abril",
-    "Maio",
-    "Junho",
-    "Julho",
-    "Agosto",
-    "Setembro",
-    "Outubro",
-    "Novembro",
-    "Dezembro",
-  ];
-
-  return `${
-    months[
-      start.getUTCMonth()
-    ]
-  }/${start.getUTCFullYear()}`;
-}
-
-
-function safePdfText(
-  value: string
-) {
-  return value
-    .replace(
-      /[\u2013\u2014]/g,
-      "-"
-    )
-    .replace(
-      /[\u2018\u2019]/g,
-      "'"
-    )
-    .replace(
-      /[\u201c\u201d]/g,
-      '"'
-    )
-    .replace(
-      /\u00a0/g,
-      " "
-    )
-    .replace(
-      /[^\u0020-\u00ff]/g,
-      ""
-    )
-    .trim();
-}
-
-
-function hexColor(
-  value: string
-) {
-  const clean =
-    /^#[0-9a-fA-F]{6}$/.test(
-      value
-    )
-      ? value.slice(
-          1
-        )
-      : "0f172a";
-
-  return rgb(
-    parseInt(
-      clean.slice(
-        0,
-        2
-      ),
-      16
-    ) / 255,
-    parseInt(
-      clean.slice(
-        2,
-        4
-      ),
-      16
-    ) / 255,
-    parseInt(
-      clean.slice(
-        4,
-        6
-      ),
-      16
-    ) / 255
-  );
-}
-
-
-function fittedFontSize({
-  text,
-  font,
-  requestedSize,
-  maxWidth,
-}: {
-  text: string;
-  font: PDFFont;
-  requestedSize: number;
-  maxWidth: number;
-}) {
-  let size =
-    requestedSize;
-
-  while (
-    size >
-      5 &&
-    font.widthOfTextAtSize(
-      text,
-      size
-    ) >
-      maxWidth
+  if (
+    !value
   ) {
-    size -=
-      0.5;
+    return "-";
   }
 
-  return Math.max(
-    5,
-    size
-  );
+
+  const [
+    year,
+    month,
+    day,
+  ] =
+    value.split(
+      "-"
+    );
+
+
+  if (
+    !year ||
+    !month ||
+    !day
+  ) {
+    return value;
+  }
+
+
+  return `${day}/${month}/${year}`;
 }
 
 
-function pickSnapshots(
-  snapshots: SnapshotMetric[],
-  period: {
-    currentStart: Date;
-    currentEnd: Date;
-    previousStart: Date;
-    previousEnd: Date;
-  }
-) {
-  const currentStartKey =
-    toDateKey(
-      period.currentStart
+function todayDateKey() {
+  const formatter =
+    new Intl.DateTimeFormat(
+      "en-CA",
+      {
+        timeZone:
+          "America/Maceio",
+
+        year:
+          "numeric",
+
+        month:
+          "2-digit",
+
+        day:
+          "2-digit",
+      }
     );
 
-  const currentEndKey =
-    toDateKey(
-      period.currentEnd
+
+  const parts =
+    formatter.formatToParts(
+      new Date()
     );
 
-  const previousStartKey =
-    toDateKey(
-      period.previousStart
-    );
 
-  const previousEndKey =
-    toDateKey(
-      period.previousEnd
-    );
-
-  const current =
-    snapshots.filter(
-      (snapshot) =>
-        snapshot.dateKey >=
-          currentStartKey &&
-        snapshot.dateKey <=
-          currentEndKey
-    );
-
-  const previous =
-    snapshots.filter(
-      (snapshot) =>
-        snapshot.dateKey >=
-          previousStartKey &&
-        snapshot.dateKey <=
-          previousEndKey
-    );
-
-  return {
-    firstCurrent:
-      current[0] ||
-      null,
-    latestCurrent:
-      current[
-        current.length -
-        1
-      ] ||
-      null,
-    latestPrevious:
-      previous[
-        previous.length -
-        1
-      ] ||
-      null,
-  };
-}
+  const part = (
+    type:
+      string
+  ) =>
+    parts.find(
+      (
+        item
+      ) =>
+        item.type ===
+        type
+    )?.value ||
+    "";
 
 
-function metricsFromSnapshots({
-  followersCount,
-  current,
-  previous,
-  period,
-}: {
-  followersCount: number | null;
-  current: SnapshotMetric;
-  previous: SnapshotMetric | null;
-  period: {
-    currentStart: Date;
-    currentEnd: Date;
-    previousStart: Date;
-    previousEnd: Date;
-  };
-}): InstagramDashboardMetrics {
-  return {
-    followersCount,
-    current: {
-      reach:
-        current.reach,
-      views:
-        current.views,
-      interactions:
-        current.interactions,
-    },
-    previous: {
-      reach:
-        previous?.reach ??
-        null,
-      views:
-        previous?.views ??
-        null,
-      interactions:
-        previous?.interactions ??
-        null,
-    },
-    change: {
-      reach:
-        percentageChange(
-          current.reach,
-          previous?.reach ??
-          null
-        ),
-      views:
-        percentageChange(
-          current.views,
-          previous?.views ??
-          null
-        ),
-      interactions:
-        percentageChange(
-          current.interactions,
-          previous?.interactions ??
-          null
-        ),
-    },
-    period,
-  };
+  return `${part(
+    "year"
+  )}-${part(
+    "month"
+  )}-${part(
+    "day"
+  )}`;
 }
 
 
 function safeFilename(
-  value: string
+  value:
+    string
 ) {
   const clean =
     value
@@ -749,17 +371,1089 @@ function safeFilename(
         70
       );
 
+
   return clean ||
     "cliente";
 }
 
 
+function safeText(
+  value:
+    string
+) {
+  return String(
+    value ||
+    ""
+  )
+    .replace(
+      /[\u2013\u2014]/g,
+      "-"
+    )
+    .replace(
+      /[\u2018\u2019]/g,
+      "'"
+    )
+    .replace(
+      /[\u201c\u201d]/g,
+      '"'
+    )
+    .replace(
+      /\u00a0/g,
+      " "
+    )
+    .replace(
+      /[^\u0020-\u00ff]/g,
+      ""
+    );
+}
+
+
+function fitTextSize({
+  text,
+  font,
+  size,
+  maxWidth,
+  minimum =
+    5,
+}: {
+  text:
+    string;
+
+  font:
+    PDFFont;
+
+  size:
+    number;
+
+  maxWidth:
+    number;
+
+  minimum?:
+    number;
+}) {
+  let result =
+    size;
+
+
+  while (
+    result >
+      minimum &&
+    font.widthOfTextAtSize(
+      text,
+      result
+    ) >
+      maxWidth
+  ) {
+    result -=
+      0.25;
+  }
+
+
+  return Math.max(
+    minimum,
+    result
+  );
+}
+
+
+function drawText({
+  page,
+  text,
+  x,
+  y,
+  size,
+  font,
+  color =
+    TEXT,
+  maxWidth,
+}: {
+  page:
+    PDFPage;
+
+  text:
+    string;
+
+  x:
+    number;
+
+  y:
+    number;
+
+  size:
+    number;
+
+  font:
+    PDFFont;
+
+  color?:
+    ReturnType<
+      typeof rgb
+    >;
+
+  maxWidth?:
+    number;
+}) {
+  const clean =
+    safeText(
+      text
+    );
+
+
+  const finalSize =
+    maxWidth
+      ? fitTextSize({
+          text:
+            clean,
+
+          font,
+
+          size,
+
+          maxWidth,
+        })
+      : size;
+
+
+  page.drawText(
+    clean,
+    {
+      x,
+
+      y,
+
+      size:
+        finalSize,
+
+      font,
+
+      color,
+
+      maxWidth,
+    }
+  );
+}
+
+
+function drawCard({
+  page,
+  x,
+  y,
+  width,
+  height,
+}: {
+  page:
+    PDFPage;
+
+  x:
+    number;
+
+  y:
+    number;
+
+  width:
+    number;
+
+  height:
+    number;
+}) {
+  page.drawRectangle({
+    x,
+    y,
+    width,
+    height,
+    color:
+      WHITE,
+    borderColor:
+      BORDER,
+    borderWidth:
+      0.45,
+  });
+}
+
+
+function drawMetricCard({
+  page,
+  x,
+  y,
+  width,
+  height,
+  label,
+  value,
+  helper,
+  bold,
+  regular,
+}: {
+  page:
+    PDFPage;
+
+  x:
+    number;
+
+  y:
+    number;
+
+  width:
+    number;
+
+  height:
+    number;
+
+  label:
+    string;
+
+  value:
+    string;
+
+  helper:
+    string;
+
+  bold:
+    PDFFont;
+
+  regular:
+    PDFFont;
+}) {
+  drawCard({
+    page,
+    x,
+    y,
+    width,
+    height,
+  });
+
+
+  page.drawRectangle({
+    x:
+      x +
+      7,
+
+    y:
+      y +
+      height -
+      15,
+
+    width:
+      3,
+
+    height:
+      8,
+
+    color:
+      BLUE,
+  });
+
+
+  drawText({
+    page,
+    text:
+      label.toUpperCase(),
+    x:
+      x +
+      14,
+    y:
+      y +
+      height -
+      15,
+    size:
+      5.5,
+    font:
+      bold,
+    color:
+      MUTED,
+    maxWidth:
+      width -
+      20,
+  });
+
+
+  drawText({
+    page,
+    text:
+      value,
+    x:
+      x +
+      9,
+    y:
+      y +
+      22,
+    size:
+      15,
+    font:
+      bold,
+    color:
+      TEXT,
+    maxWidth:
+      width -
+      18,
+  });
+
+
+  drawText({
+    page,
+    text:
+      helper,
+    x:
+      x +
+      9,
+    y:
+      y +
+      8,
+    size:
+      4.8,
+    font:
+      regular,
+    color:
+      MUTED,
+    maxWidth:
+      width -
+      18,
+  });
+}
+
+
+function drawFollowersChart({
+  page,
+  x,
+  y,
+  width,
+  height,
+  points,
+  bold,
+  regular,
+}: {
+  page:
+    PDFPage;
+
+  x:
+    number;
+
+  y:
+    number;
+
+  width:
+    number;
+
+  height:
+    number;
+
+  points:
+    Array<{
+      dateKey:
+        string;
+
+      followersCount:
+        number |
+        null;
+    }>;
+
+  bold:
+    PDFFont;
+
+  regular:
+    PDFFont;
+}) {
+  drawCard({
+    page,
+    x,
+    y,
+    width,
+    height,
+  });
+
+
+  drawText({
+    page,
+    text:
+      "EVOLUCAO DE SEGUIDORES",
+    x:
+      x +
+      12,
+    y:
+      y +
+      height -
+      18,
+    size:
+      7,
+    font:
+      bold,
+    color:
+      TEXT,
+    maxWidth:
+      width -
+      24,
+  });
+
+
+  drawText({
+    page,
+    text:
+      "Historico proprio do AprovUp",
+    x:
+      x +
+      12,
+    y:
+      y +
+      height -
+      29,
+    size:
+      4.8,
+    font:
+      regular,
+    color:
+      MUTED,
+  });
+
+
+  const valid =
+    points.filter(
+      (
+        point
+      ) =>
+        point.followersCount !==
+        null
+    );
+
+
+  if (
+    valid.length ===
+    0
+  ) {
+    drawText({
+      page,
+      text:
+        "Historico ainda nao iniciado.",
+      x:
+        x +
+        12,
+      y:
+        y +
+        height /
+          2,
+      size:
+        6,
+      font:
+        bold,
+      color:
+        MUTED,
+    });
+
+    return;
+  }
+
+
+  if (
+    valid.length ===
+    1
+  ) {
+    drawText({
+      page,
+      text:
+        formatNumber(
+          valid[0]
+            .followersCount
+        ),
+      x:
+        x +
+        12,
+      y:
+        y +
+        height /
+          2 +
+        5,
+      size:
+        18,
+      font:
+        bold,
+      color:
+        BLUE,
+    });
+
+
+    drawText({
+      page,
+      text:
+        `Primeira coleta: ${formatDateKey(
+          valid[0]
+            .dateKey
+        )}`,
+      x:
+        x +
+        12,
+      y:
+        y +
+        height /
+          2 -
+        8,
+      size:
+        5,
+      font:
+        regular,
+      color:
+        MUTED,
+    });
+
+    return;
+  }
+
+
+  const values =
+    valid.map(
+      (
+        point
+      ) =>
+        point.followersCount ||
+        0
+    );
+
+
+  const minimum =
+    Math.min(
+      ...values
+    );
+
+
+  const maximum =
+    Math.max(
+      ...values
+    );
+
+
+  const rawRange =
+    maximum -
+    minimum;
+
+
+  const range =
+    Math.max(
+      rawRange,
+      10
+    );
+
+
+  const chartX =
+    x +
+    13;
+
+
+  const chartY =
+    y +
+    24;
+
+
+  const chartWidth =
+    width -
+    26;
+
+
+  const chartHeight =
+    height -
+    63;
+
+
+  for (
+    const fraction
+    of [
+      0,
+      0.33,
+      0.66,
+      1,
+    ]
+  ) {
+    const lineY =
+      chartY +
+      chartHeight *
+        fraction;
+
+
+    page.drawLine({
+      start: {
+        x:
+          chartX,
+
+        y:
+          lineY,
+      },
+
+      end: {
+        x:
+          chartX +
+          chartWidth,
+
+        y:
+          lineY,
+      },
+
+      thickness:
+        0.35,
+
+      color:
+        BORDER,
+    });
+  }
+
+
+  const coordinates =
+    valid.map(
+      (
+        point,
+        index
+      ) => {
+        const value =
+          point.followersCount ||
+          0;
+
+
+        return {
+          x:
+            chartX +
+            (
+              index /
+              Math.max(
+                valid.length -
+                1,
+                1
+              )
+            ) *
+              chartWidth,
+
+          y:
+            chartY +
+            (
+              (
+                value -
+                minimum
+              ) /
+              range
+            ) *
+              chartHeight,
+
+          value,
+
+          dateKey:
+            point.dateKey,
+        };
+      }
+    );
+
+
+  for (
+    let index =
+      1;
+    index <
+      coordinates.length;
+    index++
+  ) {
+    page.drawLine({
+      start: {
+        x:
+          coordinates[
+            index -
+            1
+          ].x,
+
+        y:
+          coordinates[
+            index -
+            1
+          ].y,
+      },
+
+      end: {
+        x:
+          coordinates[
+            index
+          ].x,
+
+        y:
+          coordinates[
+            index
+          ].y,
+      },
+
+      thickness:
+        1.5,
+
+      color:
+        BLUE,
+    });
+  }
+
+
+  for (
+    const point
+    of coordinates
+  ) {
+    page.drawCircle({
+      x:
+        point.x,
+
+      y:
+        point.y,
+
+      size:
+        2.1,
+
+      color:
+        BLUE,
+    });
+  }
+
+
+  const first =
+    coordinates[0];
+
+
+  const last =
+    coordinates[
+      coordinates.length -
+      1
+    ];
+
+
+  drawText({
+    page,
+    text:
+      formatDateKey(
+        first.dateKey
+      ),
+    x:
+      chartX,
+    y:
+      y +
+      8,
+    size:
+      4.5,
+    font:
+      regular,
+    color:
+      MUTED,
+  });
+
+
+  const lastLabel =
+    formatDateKey(
+      last.dateKey
+    );
+
+
+  const lastLabelWidth =
+    regular.widthOfTextAtSize(
+      lastLabel,
+      4.5
+    );
+
+
+  drawText({
+    page,
+    text:
+      lastLabel,
+    x:
+      chartX +
+      chartWidth -
+      lastLabelWidth,
+    y:
+      y +
+      8,
+    size:
+      4.5,
+    font:
+      regular,
+    color:
+      MUTED,
+  });
+}
+
+
+function drawSummary({
+  page,
+  x,
+  y,
+  width,
+  height,
+  firstDate,
+  lastDate,
+  daysWithData,
+  followersDelta,
+  followersPercent,
+  engagementRate,
+  bold,
+  regular,
+}: {
+  page:
+    PDFPage;
+
+  x:
+    number;
+
+  y:
+    number;
+
+  width:
+    number;
+
+  height:
+    number;
+
+  firstDate:
+    string |
+    undefined;
+
+  lastDate:
+    string |
+    undefined;
+
+  daysWithData:
+    number;
+
+  followersDelta:
+    number |
+    null;
+
+  followersPercent:
+    number |
+    null;
+
+  engagementRate:
+    number |
+    null;
+
+  bold:
+    PDFFont;
+
+  regular:
+    PDFFont;
+}) {
+  drawCard({
+    page,
+    x,
+    y,
+    width,
+    height,
+  });
+
+
+  drawText({
+    page,
+    text:
+      "BASE HISTORICA",
+    x:
+      x +
+      11,
+    y:
+      y +
+      height -
+      18,
+    size:
+      7,
+    font:
+      bold,
+  });
+
+
+  const rows = [
+    [
+      "Primeira coleta",
+      formatDateKey(
+        firstDate
+      ),
+    ],
+
+    [
+      "Ultima coleta",
+      formatDateKey(
+        lastDate
+      ),
+    ],
+
+    [
+      "Dias com dados",
+      String(
+        daysWithData
+      ),
+    ],
+  ];
+
+
+  let rowY =
+    y +
+    height -
+    38;
+
+
+  for (
+    const [
+      label,
+      value
+    ]
+    of rows
+  ) {
+    page.drawRectangle({
+      x:
+        x +
+        10,
+
+      y:
+        rowY -
+        15,
+
+      width:
+        width -
+        20,
+
+      height:
+        22,
+
+      color:
+        PAGE_BG,
+    });
+
+
+    drawText({
+      page,
+      text:
+        label,
+      x:
+        x +
+        16,
+      y:
+        rowY,
+      size:
+        4.7,
+      font:
+        regular,
+      color:
+        MUTED,
+    });
+
+
+    drawText({
+      page,
+      text:
+        value,
+      x:
+        x +
+        16,
+      y:
+        rowY -
+        9,
+      size:
+        6.2,
+      font:
+        bold,
+      color:
+        TEXT,
+      maxWidth:
+        width -
+        32,
+    });
+
+
+    rowY -=
+      29;
+  }
+
+
+  page.drawRectangle({
+    x:
+      x +
+      10,
+
+    y:
+      y +
+      11,
+
+    width:
+      width -
+      20,
+
+    height:
+      43,
+
+    color:
+      BLUE_LIGHT,
+  });
+
+
+  drawText({
+    page,
+    text:
+      "CRESCIMENTO",
+    x:
+      x +
+      16,
+    y:
+      y +
+      41,
+    size:
+      4.6,
+    font:
+      bold,
+    color:
+      BLUE,
+  });
+
+
+  drawText({
+    page,
+    text:
+      `${formatSignedNumber(
+        followersDelta
+      )} seguidores`,
+    x:
+      x +
+      16,
+    y:
+      y +
+      26,
+    size:
+      9,
+    font:
+      bold,
+    color:
+      BLUE,
+    maxWidth:
+      width -
+      32,
+  });
+
+
+  drawText({
+    page,
+    text:
+      `${formatPercent(
+        followersPercent
+      )} | Engajamento ${formatPercent(
+        engagementRate,
+        false
+      )}`,
+    x:
+      x +
+      16,
+    y:
+      y +
+      15,
+    size:
+      4.4,
+    font:
+      regular,
+    color:
+      MUTED,
+    maxWidth:
+      width -
+      32,
+  });
+}
+
+
 export async function GET(
-  request: NextRequest
+  request:
+    NextRequest
 ) {
   try {
+
     const currentUser =
       await getCurrentUser();
+
 
     if (
       !currentUser ||
@@ -770,7 +1464,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Acesso não autorizado.",
+            "Acesso nao autorizado.",
         },
         {
           status:
@@ -779,8 +1473,10 @@ export async function GET(
       );
     }
 
+
     const saasAccess =
       await getCurrentUserSaasAccess();
+
 
     if (
       !canUseFeature(
@@ -791,7 +1487,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Seu plano não possui acesso aos relatórios.",
+            "Seu plano nao possui acesso aos relatorios.",
         },
         {
           status:
@@ -799,6 +1495,7 @@ export async function GET(
         }
       );
     }
+
 
     const clientId =
       String(
@@ -810,6 +1507,7 @@ export async function GET(
         ""
       ).trim();
 
+
     const templateId =
       String(
         request.nextUrl
@@ -820,6 +1518,30 @@ export async function GET(
         ""
       ).trim();
 
+
+    const requestedPeriod =
+      Number(
+        request.nextUrl
+          .searchParams
+          .get(
+            "periodo"
+          ) ||
+        30
+      );
+
+
+    const period =
+      [
+        7,
+        30,
+        90,
+      ].includes(
+        requestedPeriod
+      )
+        ? requestedPeriod
+        : 30;
+
+
     if (
       !clientId ||
       !templateId
@@ -827,7 +1549,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Selecione o cliente e o modelo do relatório.",
+            "Selecione o cliente e o modelo do relatorio.",
         },
         {
           status:
@@ -836,50 +1558,77 @@ export async function GET(
       );
     }
 
+
     const [
       client,
       template,
-    ] = await Promise.all([
-      prisma.client.findFirst({
-        where: {
-          id:
-            clientId,
-          agencyId:
-            currentUser.agencyId,
-        },
-        select: {
-          id: true,
-          name: true,
-          agencyId: true,
-          internalResponsible: true,
-          instagramConnection: {
-            select: {
-              instagramUserId: true,
-              userAccessTokenEncrypted: true,
-              status: true,
+    ] =
+      await Promise.all([
+        prisma.client.findFirst({
+          where: {
+            id:
+              clientId,
+
+            agencyId:
+              currentUser.agencyId,
+          },
+
+          select: {
+            id:
+              true,
+
+            name:
+              true,
+
+            agencyId:
+              true,
+
+            internalResponsible:
+              true,
+
+            instagramConnection: {
+              select: {
+                instagramUserId:
+                  true,
+
+                username:
+                  true,
+
+                userAccessTokenEncrypted:
+                  true,
+
+                status:
+                  true,
+              },
             },
           },
-        },
-      }),
+        }),
 
-      prisma.reportTemplate.findFirst({
-        where: {
-          id:
-            templateId,
-          agencyId:
-            currentUser.agencyId,
-          status:
-            "ATIVO",
-        },
-        select: {
-          id: true,
-          name: true,
-          sourceFileUrl: true,
-          pageCount: true,
-          elements: true,
-        },
-      }),
-    ]);
+        prisma.reportTemplate.findFirst({
+          where: {
+            id:
+              templateId,
+
+            agencyId:
+              currentUser.agencyId,
+
+            status:
+              "ATIVO",
+          },
+
+          select: {
+            id:
+              true,
+
+            name:
+              true,
+
+            sourceFileUrl:
+              true,
+          },
+        }),
+      ]);
+
 
     if (
       !client
@@ -887,7 +1636,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Cliente não encontrado.",
+            "Cliente nao encontrado.",
         },
         {
           status:
@@ -895,6 +1644,7 @@ export async function GET(
         }
       );
     }
+
 
     if (
       !canAccessClient(
@@ -905,7 +1655,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Você não possui acesso a este cliente.",
+            "Voce nao possui acesso a este cliente.",
         },
         {
           status:
@@ -914,13 +1664,14 @@ export async function GET(
       );
     }
 
+
     if (
       !template
     ) {
       return NextResponse.json(
         {
           message:
-            "Modelo de relatório não encontrado.",
+            "Modelo de relatorio nao encontrado.",
         },
         {
           status:
@@ -929,202 +1680,127 @@ export async function GET(
       );
     }
 
-    const templateResponse =
-      await fetch(
-        template.sourceFileUrl,
-        {
-          cache:
-            "no-store",
-        }
-      );
 
-    if (
-      !templateResponse.ok
-    ) {
-      return NextResponse.json(
-        {
-          message:
-            "Não foi possível carregar o PDF base do relatório.",
-        },
-        {
-          status:
-            502,
-        }
-      );
-    }
-
-    const sourcePdf =
-      await templateResponse.arrayBuffer();
-
-    const pdfDocument =
-      await PDFDocument.load(
-        sourcePdf
-      );
-
-    const regularFont =
-      await pdfDocument.embedFont(
-        StandardFonts.Helvetica
-      );
-
-    const boldFont =
-      await pdfDocument.embedFont(
-        StandardFonts.HelveticaBold
-      );
-
-    let metrics:
+    let dashboardMetrics:
       InstagramDashboardMetrics |
       null =
       null;
 
-    let metricsSource =
-      "sem-metricas";
 
     const connection =
       client.instagramConnection;
+
 
     if (
       connection &&
       connection.status ===
         "ATIVO" &&
-      connection.userAccessTokenEncrypted &&
-      isMetaConfigured() &&
-      canUseMetaIntegration(
-        currentUser
-      )
+      connection
+        .userAccessTokenEncrypted &&
+      isMetaConfigured()
     ) {
       try {
-        metrics =
+
+        dashboardMetrics =
           await getInstagramDashboardMetrics({
             instagramUserId:
-              connection.instagramUserId,
+              connection
+                .instagramUserId,
+
             accessToken:
               decryptMetaSecret(
-                connection.userAccessTokenEncrypted
+                connection
+                  .userAccessTokenEncrypted
               ),
           });
 
-        metricsSource =
-          "meta";
 
         try {
+
           await saveInstagramSnapshot({
             clientId:
               client.id,
+
             instagramUserId:
-              connection.instagramUserId,
-            metrics,
+              connection
+                .instagramUserId,
+
+            metrics:
+              dashboardMetrics,
           });
+
         }
         catch (
           snapshotError
         ) {
+
           console.error(
-            "REPORT SNAPSHOT SAVE ERROR",
+            "REPORT SNAPSHOT ERROR",
             snapshotError
           );
         }
+
       }
       catch (
-        metaError
+        metricsError
       ) {
+
         console.error(
-          "REPORT META METRICS ERROR",
-          metaError
+          "REPORT METRICS ERROR",
+          metricsError
         );
       }
     }
 
-    const period =
-      metrics?.period ||
-      fallbackPeriod();
 
-    const snapshots =
-      await prisma.instagramMetricSnapshot.findMany({
-        where: {
-          clientId:
-            client.id,
-          dateKey: {
-            gte:
-              toDateKey(
-                period.previousStart
-              ),
-            lte:
-              toDateKey(
-                period.currentEnd
-              ),
-          },
-        },
-        select: {
-          dateKey: true,
-          followersCount: true,
-          reach: true,
-          views: true,
-          interactions: true,
-        },
-        orderBy: {
-          dateKey:
-            "asc",
-        },
+    const history =
+      await getInstagramHistorySummary({
+        clientId:
+          client.id,
+
+        days:
+          period,
       });
 
-    const selectedSnapshots =
-      pickSnapshots(
-        snapshots,
-        period
-      );
-
-    if (
-      !metrics &&
-      selectedSnapshots.latestCurrent
-    ) {
-      metrics =
-        metricsFromSnapshots({
-          followersCount:
-            selectedSnapshots.latestCurrent.followersCount,
-          current:
-            selectedSnapshots.latestCurrent,
-          previous:
-            selectedSnapshots.latestPrevious,
-          period,
-        });
-
-      metricsSource =
-        "snapshot";
-    }
 
     const currentFollowers =
-      metrics?.followersCount ??
-      selectedSnapshots.latestCurrent?.followersCount ??
+      dashboardMetrics
+        ?.followersCount ??
+      history.latest
+        ?.followersCount ??
       null;
 
-    const followerBaseline =
-      selectedSnapshots.latestPrevious?.followersCount ??
-      selectedSnapshots.firstCurrent?.followersCount ??
-      null;
-
-    const followersGained =
-      currentFollowers !==
-        null &&
-      followerBaseline !==
-        null
-        ? currentFollowers -
-          followerBaseline
-        : null;
 
     const currentReach =
-      metrics?.current.reach ??
+      dashboardMetrics
+        ?.current
+        .reach ??
+      history.latest
+        ?.reach ??
       null;
+
 
     const currentViews =
-      metrics?.current.views ??
+      dashboardMetrics
+        ?.current
+        .views ??
+      history.latest
+        ?.views ??
       null;
+
 
     const currentInteractions =
-      metrics?.current.interactions ??
+      dashboardMetrics
+        ?.current
+        .interactions ??
+      history.latest
+        ?.interactions ??
       null;
 
+
     const engagementRate =
-      currentReach &&
+      currentReach !==
+        null &&
       currentReach >
         0 &&
       currentInteractions !==
@@ -1136,274 +1812,983 @@ export async function GET(
           100
         : null;
 
-    const values:
-      Record<
-        string,
-        string
-      > = {
-      "client.name":
-        client.name,
-      "period.label":
-        periodLabel(
-          period.currentStart
-        ),
-      "instagram.followers":
-        numberText(
-          currentFollowers
-        ),
-      "instagram.followers_gained":
-        signedNumberText(
-          followersGained
-        ),
-      "instagram.reach":
-        numberText(
-          currentReach
-        ),
-      "instagram.reach_change":
-        percentageText(
-          metrics?.change.reach ??
-          null
-        ),
-      "instagram.views":
-        numberText(
-          currentViews
-        ),
-      "instagram.views_change":
-        percentageText(
-          metrics?.change.views ??
-          null
-        ),
-      "instagram.interactions":
-        numberText(
-          currentInteractions
-        ),
-      "instagram.engagement_rate":
-        percentageText(
-          engagementRate,
-          false
-        ),
-    };
 
-    const elements =
-      normalizeElements(
-        template.elements
+    const templateResponse =
+      await fetch(
+        template.sourceFileUrl,
+        {
+          cache:
+            "no-store",
+        }
       );
 
-    const pages =
-      pdfDocument.getPages();
 
-    for (
-      const element
-      of elements
+    if (
+      !templateResponse.ok
     ) {
-      const page =
-        pages[
-          element.page -
-          1
-        ];
-
-      if (
-        !page
-      ) {
-        continue;
-      }
-
-      const rawValue =
-        values[
-          element.metricKey
-        ] ??
-        "—";
-
-      const text =
-        safePdfText(
-          rawValue
-        ) ||
-        "-";
-
-      const {
-        width:
-          pageWidth,
-        height:
-          pageHeight,
-      } =
-        page.getSize();
-
-      const requestedFontSize =
-        clamp(
-          element.fontSize *
-            pageWidth /
-            760,
-          5,
-          120
-        );
-
-      const font =
-        element.fontWeight >=
-          600
-          ? boldFont
-          : regularFont;
-
-      const x =
-        clamp(
-          element.x *
-            pageWidth,
-          0,
-          pageWidth -
-            1
-        );
-
-      const availableWidth =
-        Math.max(
-          5,
-          Math.min(
-            element.width *
-              pageWidth,
-            pageWidth -
-              x
-          )
-        );
-
-      const fontSize =
-        fittedFontSize({
-          text,
-          font,
-          requestedSize:
-            requestedFontSize,
-          maxWidth:
-            availableWidth,
-        });
-
-      const textWidth =
-        font.widthOfTextAtSize(
-          text,
-          fontSize
-        );
-
-      let drawX =
-        x;
-
-      if (
-        element.textAlign ===
-        "center"
-      ) {
-        drawX =
-          x +
-          Math.max(
-            0,
-            (
-              availableWidth -
-              textWidth
-            ) /
-              2
-          );
-      }
-      else if (
-        element.textAlign ===
-        "right"
-      ) {
-        drawX =
-          x +
-          Math.max(
-            0,
-            availableWidth -
-              textWidth
-          );
-      }
-
-      const topY =
-        element.y *
-        pageHeight;
-
-      const drawY =
-        clamp(
-          pageHeight -
-            topY -
-            fontSize,
-          0,
-          pageHeight -
-            fontSize
-        );
-
-      page.drawText(
-        text,
+      return NextResponse.json(
         {
-          x:
-            drawX,
-          y:
-            drawY,
-          size:
-            fontSize,
-          font,
-          color:
-            hexColor(
-              element.color
-            ),
-          maxWidth:
-            availableWidth,
+          message:
+            "Nao foi possivel carregar o PDF base.",
+        },
+        {
+          status:
+            502,
         }
       );
     }
 
-    const output =
-      await pdfDocument.save();
+
+    const sourcePdf =
+      await templateResponse
+        .arrayBuffer();
+
+
+    const sourceDocument =
+      await PDFDocument.load(
+        sourcePdf
+      );
+
+
+    const sourcePage =
+      sourceDocument
+        .getPages()[0];
+
+
+    if (
+      !sourcePage
+    ) {
+      return NextResponse.json(
+        {
+          message:
+            "O modelo PDF nao possui paginas.",
+        },
+        {
+          status:
+            422,
+        }
+      );
+    }
+
+
+    const {
+      width,
+      height,
+    } =
+      sourcePage.getSize();
+
+
+    const outputDocument =
+      await PDFDocument.create();
+
+
+    const [
+      backgroundPage,
+    ] =
+      await outputDocument
+        .embedPdf(
+          sourcePdf,
+          [
+            0,
+          ]
+        );
+
+
+    const page =
+      outputDocument.addPage([
+        width,
+        height,
+      ]);
+
+
+    page.drawPage(
+      backgroundPage,
+      {
+        x:
+          0,
+
+        y:
+          0,
+
+        width,
+
+        height,
+      }
+    );
+
 
     /*
-     * pdf-lib devolve Uint8Array.
-     * NextResponse no Next.js 16 espera um BodyInit compatível.
-     * Criamos um ArrayBuffer real antes de devolver o PDF.
+     * O PDF enviado como modelo contem metricas
+     * demonstrativas impressas na propria arte.
+     *
+     * Por isso apagamos toda a area central do
+     * mockup e reconstruimos o relatorio com dados
+     * reais. Cabecalho e rodape da identidade visual
+     * continuam preservados.
      */
+    const footerHeight =
+      height *
+      0.09;
+
+
+    const headerHeight =
+      height *
+      0.105;
+
+
+    const bodyBottom =
+      footerHeight;
+
+
+    const bodyTop =
+      height -
+      headerHeight;
+
+
+    page.drawRectangle({
+      x:
+        0,
+
+      y:
+        bodyBottom,
+
+      width,
+
+      height:
+        bodyTop -
+        bodyBottom,
+
+      color:
+        PAGE_BG,
+    });
+
+
+    const regular =
+      await outputDocument
+        .embedFont(
+          StandardFonts
+            .Helvetica
+        );
+
+
+    const bold =
+      await outputDocument
+        .embedFont(
+          StandardFonts
+            .HelveticaBold
+        );
+
+
+    /*
+     * Substitui tambem a caixa de periodo
+     * antiga no cabecalho.
+     */
+    const periodBoxWidth =
+      width *
+      0.235;
+
+
+    const periodBoxHeight =
+      height *
+      0.055;
+
+
+    const periodBoxX =
+      width -
+      periodBoxWidth -
+      width *
+        0.105;
+
+
+    const periodBoxY =
+      height -
+      periodBoxHeight -
+      height *
+        0.022;
+
+
+    page.drawRectangle({
+      x:
+        periodBoxX,
+
+      y:
+        periodBoxY,
+
+      width:
+        periodBoxWidth,
+
+      height:
+        periodBoxHeight,
+
+      color:
+        NAVY,
+
+      borderColor:
+        rgb(
+          0.25,
+          0.33,
+          0.45
+        ),
+
+      borderWidth:
+        0.5,
+    });
+
+
+    drawText({
+      page,
+
+      text:
+        "PERIODO ANALISADO",
+
+      x:
+        periodBoxX +
+        8,
+
+      y:
+        periodBoxY +
+        periodBoxHeight -
+        12,
+
+      size:
+        4.5,
+
+      font:
+        regular,
+
+      color:
+        rgb(
+          0.72,
+          0.78,
+          0.88
+        ),
+    });
+
+
+    drawText({
+      page,
+
+      text:
+        `Ultimos ${period} dias`,
+
+      x:
+        periodBoxX +
+        8,
+
+      y:
+        periodBoxY +
+        8,
+
+      size:
+        7,
+
+      font:
+        bold,
+
+      color:
+        WHITE,
+
+      maxWidth:
+        periodBoxWidth -
+        16,
+    });
+
+
+    const margin =
+      width *
+      0.035;
+
+
+    const bodyWidth =
+      width -
+      margin *
+        2;
+
+
+    const titleY =
+      bodyTop -
+      22;
+
+
+    drawText({
+      page,
+
+      text:
+        "VISAO GERAL",
+
+      x:
+        margin,
+
+      y:
+        titleY,
+
+      size:
+        9,
+
+      font:
+        bold,
+
+      color:
+        TEXT,
+    });
+
+
+    drawText({
+      page,
+
+      text:
+        `${safeText(
+          client.name
+        )}${connection?.username ? ` | @${connection.username}` : ""}`,
+
+      x:
+        margin,
+
+      y:
+        titleY -
+        11,
+
+      size:
+        5.3,
+
+      font:
+        regular,
+
+      color:
+        MUTED,
+
+      maxWidth:
+        bodyWidth,
+    });
+
+
+    const gap =
+      width *
+      0.012;
+
+
+    const metricY =
+      titleY -
+      76;
+
+
+    const metricHeight =
+      58;
+
+
+    const metricWidth =
+      (
+        bodyWidth -
+        gap *
+          4
+      ) /
+      5;
+
+
+    const metricItems = [
+      {
+        label:
+          "Seguidores",
+
+        value:
+          formatNumber(
+            currentFollowers
+          ),
+
+        helper:
+          `${formatSignedNumber(
+            history.followersDelta
+          )} no periodo`,
+      },
+
+      {
+        label:
+          "Crescimento",
+
+        value:
+          formatSignedNumber(
+            history.followersDelta
+          ),
+
+        helper:
+          `${formatPercent(
+            history.followersPercent
+          )} no periodo`,
+      },
+
+      {
+        label:
+          "Alcance",
+
+        value:
+          formatNumber(
+            currentReach
+          ),
+
+        helper:
+          "Contas alcancadas",
+      },
+
+      {
+        label:
+          "Visualizacoes",
+
+        value:
+          formatNumber(
+            currentViews
+          ),
+
+        helper:
+          "Visualizacoes na Meta",
+      },
+
+      {
+        label:
+          "Interacoes",
+
+        value:
+          formatNumber(
+            currentInteractions
+          ),
+
+        helper:
+          "Interacoes na Meta",
+      },
+    ];
+
+
+    metricItems.forEach(
+      (
+        item,
+        index
+      ) => {
+
+        drawMetricCard({
+          page,
+
+          x:
+            margin +
+            index *
+              (
+                metricWidth +
+                gap
+              ),
+
+          y:
+            metricY,
+
+          width:
+            metricWidth,
+
+          height:
+            metricHeight,
+
+          label:
+            item.label,
+
+          value:
+            item.value,
+
+          helper:
+            item.helper,
+
+          bold,
+
+          regular,
+        });
+
+      }
+    );
+
+
+    const lowerTop =
+      metricY -
+      12;
+
+
+    const summaryWidth =
+      bodyWidth *
+      0.32;
+
+
+    const chartWidth =
+      bodyWidth -
+      summaryWidth -
+      gap;
+
+
+    const middleHeight =
+      151;
+
+
+    const middleY =
+      lowerTop -
+      middleHeight;
+
+
+    drawFollowersChart({
+      page,
+
+      x:
+        margin,
+
+      y:
+        middleY,
+
+      width:
+        chartWidth,
+
+      height:
+        middleHeight,
+
+      points:
+        history.points,
+
+      bold,
+
+      regular,
+    });
+
+
+    drawSummary({
+      page,
+
+      x:
+        margin +
+        chartWidth +
+        gap,
+
+      y:
+        middleY,
+
+      width:
+        summaryWidth,
+
+      height:
+        middleHeight,
+
+      firstDate:
+        history.first
+          ?.dateKey,
+
+      lastDate:
+        history.latest
+          ?.dateKey,
+
+      daysWithData:
+        history.daysWithData,
+
+      followersDelta:
+        history.followersDelta,
+
+      followersPercent:
+        history.followersPercent,
+
+      engagementRate,
+
+      bold,
+
+      regular,
+    });
+
+
+    const insightY =
+      bodyBottom +
+      14;
+
+
+    const insightHeight =
+      middleY -
+      insightY -
+      12;
+
+
+    drawCard({
+      page,
+
+      x:
+        margin,
+
+      y:
+        insightY,
+
+      width:
+        bodyWidth,
+
+      height:
+        insightHeight,
+    });
+
+
+    drawText({
+      page,
+
+      text:
+        "LEITURA DO PERIODO",
+
+      x:
+        margin +
+        12,
+
+      y:
+        insightY +
+        insightHeight -
+        18,
+
+      size:
+        7,
+
+      font:
+        bold,
+    });
+
+
+    const insightColumnWidth =
+      (
+        bodyWidth -
+        48
+      ) /
+      3;
+
+
+    const insightItems = [
+      {
+        title:
+          "Alcance",
+
+        value:
+          formatNumber(
+            currentReach
+          ),
+
+        helper:
+          dashboardMetrics
+            ?.change
+            .reach !==
+            null &&
+          dashboardMetrics
+            ?.change
+            .reach !==
+            undefined
+            ? `${formatPercent(
+                dashboardMetrics
+                  .change
+                  .reach
+              )} vs periodo comparavel`
+            : "Periodo atual disponivel na Meta",
+      },
+
+      {
+        title:
+          "Visualizacoes",
+
+        value:
+          formatNumber(
+            currentViews
+          ),
+
+        helper:
+          dashboardMetrics
+            ?.change
+            .views !==
+            null &&
+          dashboardMetrics
+            ?.change
+            .views !==
+            undefined
+            ? `${formatPercent(
+                dashboardMetrics
+                  .change
+                  .views
+              )} vs periodo comparavel`
+            : "Periodo atual disponivel na Meta",
+      },
+
+      {
+        title:
+          "Interacoes",
+
+        value:
+          formatNumber(
+            currentInteractions
+          ),
+
+        helper:
+          `Taxa sobre alcance: ${formatPercent(
+            engagementRate,
+            false
+          )}`,
+      },
+    ];
+
+
+    insightItems.forEach(
+      (
+        item,
+        index
+      ) => {
+
+        const x =
+          margin +
+          12 +
+          index *
+            (
+              insightColumnWidth +
+              12
+            );
+
+
+        page.drawRectangle({
+          x,
+
+          y:
+            insightY +
+            14,
+
+          width:
+            insightColumnWidth,
+
+          height:
+            Math.max(
+              42,
+              insightHeight -
+                44
+            ),
+
+          color:
+            index ===
+              0
+              ? BLUE_LIGHT
+              : PAGE_BG,
+        });
+
+
+        drawText({
+          page,
+
+          text:
+            item.title.toUpperCase(),
+
+          x:
+            x +
+            9,
+
+          y:
+            insightY +
+            insightHeight -
+            38,
+
+          size:
+            4.7,
+
+          font:
+            bold,
+
+          color:
+            MUTED,
+
+          maxWidth:
+            insightColumnWidth -
+            18,
+        });
+
+
+        drawText({
+          page,
+
+          text:
+            item.value,
+
+          x:
+            x +
+            9,
+
+          y:
+            insightY +
+            31,
+
+          size:
+            12,
+
+          font:
+            bold,
+
+          color:
+            index ===
+              0
+              ? BLUE
+              : TEXT,
+
+          maxWidth:
+            insightColumnWidth -
+            18,
+        });
+
+
+        drawText({
+          page,
+
+          text:
+            item.helper,
+
+          x:
+            x +
+            9,
+
+          y:
+            insightY +
+            18,
+
+          size:
+            4.2,
+
+          font:
+            regular,
+
+          color:
+            MUTED,
+
+          maxWidth:
+            insightColumnWidth -
+            18,
+        });
+
+      }
+    );
+
+
+    drawText({
+      page,
+
+      text:
+        `Dados atualizados em ${formatDateKey(
+          todayDateKey()
+        )}. Metricas obtidas pela integracao Meta e pelo historico proprio do AprovUp.`,
+
+      x:
+        margin,
+
+      y:
+        bodyBottom +
+        3,
+
+      size:
+        3.7,
+
+      font:
+        regular,
+
+      color:
+        MUTED,
+
+      maxWidth:
+        bodyWidth,
+    });
+
+
+    outputDocument.setTitle(
+      `Relatorio Instagram - ${safeText(
+        client.name
+      )}`
+    );
+
+
+    outputDocument.setAuthor(
+      "AprovUp"
+    );
+
+
+    outputDocument.setSubject(
+      `Metricas reais do Instagram - ultimos ${period} dias`
+    );
+
+
+    const output =
+      await outputDocument
+        .save();
+
+
     const responseBody =
       Uint8Array.from(
         output
       ).buffer;
 
+
     const filename =
       `relatorio-${safeFilename(
         client.name
-      )}-${toDateKey(
-        period.currentEnd
-      ).slice(
+      )}-${todayDateKey().slice(
         0,
         7
       )}.pdf`;
+
 
     return new NextResponse(
       responseBody,
       {
         status:
           200,
+
         headers: {
           "Content-Type":
             "application/pdf",
+
           "Content-Disposition":
             `attachment; filename="${filename}"`,
+
           "Cache-Control":
             "private, no-store, max-age=0",
-          "X-AprovUp-Metrics-Source":
-            metricsSource,
-          "X-AprovUp-Report-Fields":
+
+          "X-AprovUp-Report-Period":
             String(
-              elements.length
+              period
+            ),
+
+          "X-AprovUp-Report-Followers":
+            String(
+              currentFollowers ??
+              ""
+            ),
+
+          "X-AprovUp-Report-Reach":
+            String(
+              currentReach ??
+              ""
+            ),
+
+          "X-AprovUp-Report-Views":
+            String(
+              currentViews ??
+              ""
+            ),
+
+          "X-AprovUp-Report-Interactions":
+            String(
+              currentInteractions ??
+              ""
             ),
         },
       }
     );
+
   }
   catch (
     error
   ) {
+
     console.error(
-      "APROVUP REPORT GENERATION ERROR",
+      "APROVUP LIVE REPORT ERROR",
       error
     );
+
 
     return NextResponse.json(
       {
         message:
           error instanceof
             Error
-            ? `Não foi possível gerar o relatório: ${error.message}`
-            : "Não foi possível gerar o relatório.",
+            ? `Nao foi possivel gerar o relatorio: ${error.message}`
+            : "Nao foi possivel gerar o relatorio.",
       },
       {
         status:
