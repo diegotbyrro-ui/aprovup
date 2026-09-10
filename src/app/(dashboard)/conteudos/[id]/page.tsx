@@ -7,7 +7,6 @@ import { notFound } from 'next/navigation';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { updateContent, addComment, addTask, completeTask } from '@/app/actions';
 import { InstagramPreview } from '@/components/content/InstagramPreview';
-import { CoverImageUpload } from './CoverImageUpload';
 import { CarouselFinalUpload } from '@/components/content/CarouselFinalUpload';
 import { inputClasses, labelClasses } from '@/lib/styles';
 import { generateApprovalLink } from './contentActions';
@@ -648,8 +647,6 @@ export default async function ConteudoDetailPage({
   const approvalToken =
     contentSafe.approvals.find((approval) => approval.status === 'PENDENTE')?.token ||
     contentSafe.approvals[0]?.token;
-
-  const latestApproval = contentSafe.approvals[0];
 
   const updateContentAction = updateContent.bind(null, id);
 
@@ -1405,11 +1402,6 @@ export default async function ConteudoDetailPage({
                 />
 
               )}
-
-              <CoverImageUpload
-            contentId={contentSafe.id}
-            currentImageUrl={contentSafe.coverImageUrl}
-          />
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 border-b border-slate-100 pb-4">
               <h2 className="text-lg font-bold text-slate-900">
@@ -1485,117 +1477,9 @@ export default async function ConteudoDetailPage({
         </div>
 
         <aside className="space-y-6">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="border-b border-slate-100 pb-3 text-lg font-bold text-slate-900">
-              Aprovação Final
-            </h2>
 
-            <div className="mt-4 space-y-3">
-              {latestApproval ? (
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Status do link
-                  </p>
 
-                  <p className="mt-1 font-bold text-slate-900">
-                    {latestApproval.status}
-                  </p>
 
-                  {latestApproval.clientComment && (
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
-                      {latestApproval.clientComment}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
-                  Nenhum link de aprovação final gerado ainda.
-                </p>
-              )}
-
-              {approvalToken ? (
-                <Link
-                  href={`/aprovacao/${approvalToken}`}
-                  target="_blank"
-                  className="block w-full rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-bold text-white hover:bg-indigo-700"
-                >
-                  Abrir link de aprovação final
-                </Link>
-              ) : (
-                <form action={generateApprovalLinkAction}>
-                  <button
-                    type="submit"
-                    className="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-bold text-white hover:bg-indigo-700"
-                  >
-                    Gerar link de aprovação final
-                  </button>
-                </form>
-              )}
-
-              <p className="text-xs leading-relaxed text-slate-500">
-                Use este link somente quando a arte, vídeo ou peça final já estiver pronta para aprovação do cliente.
-              </p>
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="border-b border-slate-100 pb-3 text-lg font-bold text-slate-900">
-              Ações secundárias
-            </h2>
-
-            <div className="mt-4 space-y-2">
-              <form action={updateContentAction}>
-                <HiddenContentFields nextStatus="REVISAO_INTERNA" />
-                <button
-                  type="submit"
-                  className="w-full rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm font-bold text-yellow-700 hover:bg-yellow-100"
-                >
-                  Enviar para revisão interna
-                </button>
-              </form>
-
-              <form action={updateContentAction}>
-                <HiddenContentFields nextStatus="ENVIADO_CLIENTE" />
-                <button
-                  type="submit"
-                  className="w-full rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-100"
-                >
-                  Marcar como enviado ao cliente
-                </button>
-              </form>
-
-              <form action={updateContentAction}>
-                <HiddenContentFields nextStatus="Pronto para Postar" />
-                <button
-                  type="submit"
-                  className="w-full rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
-                >
-                  Marcar como pronto para postar
-                </button>
-              </form>
-
-              <form action={updateContentAction}>
-                <HiddenContentFields nextStatus="PUBLICADO_MANUALMENTE" />
-                <button
-                  type="submit"
-                  className="w-full rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 hover:bg-blue-100"
-                >
-                  Marcar como publicado
-                </button>
-              </form>
-
-              {contentSafe.fileLinks && (
-                <a
-                  href={contentSafe.fileLinks}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-center text-sm font-bold text-slate-600 hover:bg-slate-100"
-                >
-                  Abrir anexo/link
-                </a>
-              )}
-            </div>
-          </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
@@ -1728,7 +1612,33 @@ export default async function ConteudoDetailPage({
             caption={contentSafe.caption || ''}
             format={contentSafe.format || 'Feed'}
             platform={contentSafe.platform || 'Instagram'}
+            mediaUrl={
+              contentSafe.finalMediaUrl ||
+              contentSafe.storyMediaUrl ||
+              contentSafe.instagramMediaAssets[0]?.url ||
+              ''
+            }
+            mediaType={
+              contentSafe.finalMediaType ||
+              contentSafe.storyMediaType ||
+              contentSafe.instagramMediaAssets[0]?.mimeType ||
+              ''
+            }
+            coverUrl={
+              contentSafe.finalCoverUrl ||
+              contentSafe.storyCoverUrl ||
+              contentSafe.coverImageUrl ||
+              ''
+            }
             imageUrl={contentSafe.coverImageUrl || ''}
+            carouselAssets={
+              contentSafe.instagramMediaAssets.map(
+                (asset) => ({
+                  url: asset.url,
+                  mimeType: asset.mimeType,
+                })
+              )
+            }
           />
 
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
