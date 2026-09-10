@@ -2298,23 +2298,7 @@ function drawFormats({
   }
 
 
-  textAt({
-    page,
-    text:
-      "Distribuicao baseada nos conteudos recentes disponiveis pela Meta.",
-    x:
-      475,
-    y:
-      1094,
-    size:
-      7,
-    font:
-      regular,
-    color:
-      MUTED,
-    maxWidth:
-      220,
-  });
+
 }
 
 
