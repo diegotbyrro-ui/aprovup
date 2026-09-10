@@ -1844,44 +1844,104 @@ function drawInteractions({
   });
 
 
-  textAt({
-    page,
-    text:
+  const interactionValue =
+    cleanText(
       numberText(
         interactions
-      ),
-    x:
-      74,
-    y:
-      897,
-    size:
-      19,
-    font:
-      bold,
-    color:
-      TEXT,
-    maxWidth:
-      86,
-  });
+      )
+    );
 
 
-  textAt({
-    page,
-    text:
-      "interacoes",
-    x:
-      84,
-    y:
-      927,
-    size:
-      10,
-    font:
-      regular,
-    color:
-      TEXT,
-    maxWidth:
-      70,
-  });
+  const interactionValueSize =
+    sw(
+      page,
+      19
+    );
+
+
+  const interactionValueWidth =
+    bold.widthOfTextAtSize(
+      interactionValue,
+      interactionValueSize
+    );
+
+
+  page.drawText(
+    interactionValue,
+    {
+      x:
+        sx(
+          page,
+          116
+        ) -
+        interactionValueWidth /
+          2,
+
+      y:
+        sy(
+          page,
+          897
+        ) -
+        interactionValueSize,
+
+      size:
+        interactionValueSize,
+
+      font:
+        bold,
+
+      color:
+        TEXT,
+    }
+  );
+
+
+  const interactionLabel =
+    "interacoes";
+
+
+  const interactionLabelSize =
+    sw(
+      page,
+      10
+    );
+
+
+  const interactionLabelWidth =
+    regular.widthOfTextAtSize(
+      interactionLabel,
+      interactionLabelSize
+    );
+
+
+  page.drawText(
+    interactionLabel,
+    {
+      x:
+        sx(
+          page,
+          116
+        ) -
+        interactionLabelWidth /
+          2,
+
+      y:
+        sy(
+          page,
+          927
+        ) -
+        interactionLabelSize,
+
+      size:
+        interactionLabelSize,
+
+      font:
+        regular,
+
+      color:
+        TEXT,
+    }
+  );
 
 
   const lines = [
