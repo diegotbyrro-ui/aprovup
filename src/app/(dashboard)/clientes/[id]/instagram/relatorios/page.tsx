@@ -736,6 +736,37 @@ export default async function InstagramReportsPage({
   }
 
 
+  const reportTemplate =
+    await prisma.reportTemplate.findFirst({
+      where: {
+        agencyId:
+          currentUser.agencyId,
+
+        status:
+          'ATIVO',
+      },
+
+      select: {
+        id:
+          true,
+
+        name:
+          true,
+      },
+
+      orderBy: [
+        {
+          isDefault:
+            'desc',
+        },
+        {
+          createdAt:
+            'desc',
+        },
+      ],
+    });
+
+
   const connection =
     client.instagramConnection;
 
@@ -923,24 +954,43 @@ export default async function InstagramReportsPage({
             </div>
 
 
-            <button
-              type="button"
-              disabled
-              title="Exportação em PDF será ativada na próxima etapa"
-              className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-slate-400"
-            >
+            {reportTemplate ? (
 
-              <FileText
-                size={17}
-              />
+              <a
+                href={
+                  `/api/relatorios/gerar?cliente=${client.id}&modelo=${reportTemplate.id}`
+                }
+                title={
+                  `Gerar PDF usando o modelo ${reportTemplate.name}`
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-400/30 bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-500"
+              >
 
-              Gerar PDF
+                <FileText
+                  size={17}
+                />
 
-              <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] uppercase tracking-wider">
-                Em breve
-              </span>
+                Gerar PDF
 
-            </button>
+              </a>
+
+            ) : (
+
+              <Link
+                href="/relatorios"
+                title="Nenhum modelo de relatório cadastrado"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-300/30 bg-amber-400/10 px-5 py-3 text-sm font-bold text-amber-200 transition hover:bg-amber-400/20"
+              >
+
+                <FileText
+                  size={17}
+                />
+
+                Configurar PDF
+
+              </Link>
+
+            )}
 
           </div>
 
