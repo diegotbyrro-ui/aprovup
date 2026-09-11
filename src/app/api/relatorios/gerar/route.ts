@@ -2790,7 +2790,7 @@ function buildHighlights({
     lines.push(
       `${signedNumber(
         followersDelta
-      )} seguidores no historico analisado`
+      )} seguidores liquidos no periodo`
     );
   }
 
@@ -3442,6 +3442,9 @@ export async function GET(
                 .instagramUserId,
 
             accessToken,
+
+            days:
+              period,
           }),
 
           getInstagramTopMedia({
@@ -3453,6 +3456,9 @@ export async function GET(
 
             limit:
               24,
+
+            days:
+              period,
           }),
         ]);
 
@@ -3509,11 +3515,12 @@ export async function GET(
       });
 
 
-    const followers =
+    const netFollowers =
       dashboardMetrics
-        ?.followersCount ??
-      history.latest
-        ?.followersCount ??
+        ?.current
+        .netFollowers ??
+      history
+        .followersDelta ??
       null;
 
 
@@ -3702,19 +3709,20 @@ export async function GET(
       x:
         35,
       value:
-        numberText(
-          followers
+        signedNumber(
+          netFollowers
         ),
       label:
-        "Seguidores",
+        "Seguidores liquidos",
       change:
         percentText(
-          history.followersPercent
+          dashboardMetrics
+            ?.change
+            .netFollowers ??
+          null
         ),
       helper:
-        `${signedNumber(
-          history.followersDelta
-        )} no periodo`,
+        `Ultimos ${period} dias`,
       bold,
       regular,
     });
@@ -3798,7 +3806,7 @@ export async function GET(
       lines:
         buildHighlights({
           followersDelta:
-            history.followersDelta,
+            netFollowers,
 
           reachChange:
             dashboardMetrics
@@ -3831,7 +3839,7 @@ export async function GET(
       points:
         history.points,
       followersDelta:
-        history.followersDelta,
+        netFollowers,
       followersPercent:
         history.followersPercent,
       bold,
@@ -3867,7 +3875,7 @@ export async function GET(
       views,
       engagement,
       followersDelta:
-        history.followersDelta,
+        netFollowers,
       bold,
       regular,
     });

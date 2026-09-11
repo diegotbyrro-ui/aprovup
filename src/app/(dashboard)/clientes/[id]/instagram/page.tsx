@@ -13,10 +13,6 @@ BarChart3,
   Users,
   TrendingUp,
   Trophy,
-  Send,
-  CalendarDays,
-  FileText,
-  CheckCircle2,
   Link2,
 } from 'lucide-react';
 
@@ -49,10 +45,6 @@ import {
   saveInstagramSnapshot,
 } from '@/lib/instagramSnapshots';
 
-import {
-  getInstagramHistorySummary,
-} from '@/lib/instagramHistory';
-
 
 function formatMetricValue(
   value:
@@ -71,6 +63,28 @@ function formatMetricValue(
   );
 }
 
+
+function formatSignedMetricValue(
+  value:
+    number | null
+) {
+  if (
+    value === null
+  ) {
+    return '—';
+  }
+
+  const formatted =
+    new Intl.NumberFormat(
+      'pt-BR'
+    ).format(
+      value
+    );
+
+  return value > 0
+    ? `+${formatted}`
+    : formatted;
+}
 
 function formatComparison(
   value:
@@ -95,16 +109,16 @@ function formatComparison(
   if (
     value > 0
   ) {
-    return `↑ +${formatted}% vs. mês anterior`;
+    return `↑ +${formatted}% vs. 30 dias anteriores`;
   }
 
   if (
     value < 0
   ) {
-    return `↓ -${formatted}% vs. mês anterior`;
+    return `↓ -${formatted}% vs. 30 dias anteriores`;
   }
 
-  return '0% vs. mês anterior';
+  return '0% vs. 30 dias anteriores';
 }
 
 
@@ -115,6 +129,7 @@ function MetricCard({
   comparison,
   connected,
   helper,
+  signed = false,
 }: {
   label:
     string;
@@ -133,6 +148,9 @@ function MetricCard({
 
   helper?:
     string;
+
+  signed?:
+    boolean;
 }) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -162,9 +180,13 @@ function MetricCard({
 
       <p className="mt-5 text-3xl font-bold tracking-tight text-slate-900">
         {
-          formatMetricValue(
-            value
-          )
+          signed
+            ? formatSignedMetricValue(
+                value
+              )
+            : formatMetricValue(
+                value
+              )
         }
       </p>
 
@@ -182,7 +204,7 @@ function MetricCard({
               ? formatComparison(
                   comparison
                 )
-              : 'vs. mês anterior'
+              : 'vs. 30 dias anteriores'
           )
         }
       </p>
@@ -612,6 +634,9 @@ export default async function ClientInstagramPage({
               connection
                 .userAccessTokenEncrypted
             ),
+
+          days:
+            30,
         });
 
 
@@ -692,6 +717,9 @@ export default async function ClientInstagramPage({
             connection.instagramUserId,
 
           accessToken,
+
+          days:
+            30,
         }),
 
         getInstagramTopMedia({
@@ -701,6 +729,9 @@ export default async function ClientInstagramPage({
           accessToken,
 
           limit: 3,
+
+          days:
+            30,
         }),
 
       ]);
@@ -736,77 +767,6 @@ export default async function ClientInstagramPage({
     }
 
   }
-
-
-  const followerHistory =
-    await getInstagramHistorySummary({
-
-      clientId:
-        client.id,
-
-      days:
-        90,
-
-    });
-
-
-  let followerHelper:
-    string | undefined;
-
-
-  if (
-    followerHistory.daysWithData >= 2
-  ) {
-
-    const delta =
-      followerHistory.followersDelta;
-
-
-    const deltaText =
-      delta === null
-        ? '—'
-        : (
-            delta > 0
-              ? '+'
-              : ''
-          ) +
-          delta.toLocaleString(
-            'pt-BR'
-          );
-
-
-    const firstDateText =
-      followerHistory.first
-        ?.dateKey
-        ?.split('-')
-        .reverse()
-        .join('/') ||
-      'a primeira coleta';
-
-
-    followerHelper =
-      deltaText +
-      ' desde ' +
-      firstDateText;
-
-  }
-  else if (
-    followerHistory.daysWithData === 1
-  ) {
-
-    followerHelper =
-      'Histórico iniciado hoje';
-
-  }
-  else if (
-    connection
-  ) {
-
-    followerHelper =
-      'Aguardando primeira coleta histórica';
-
-  }
-
 
 
   return (
@@ -858,67 +818,56 @@ export default async function ClientInstagramPage({
 
             </div>
 
-            {
-              configured
-                ? (
-                  <a
-                    href={`/api/integrations/instagram/connect?clientId=${client.id}`}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100"
-                  >
-                    <Link2 size={17} />
+            <div className="flex flex-wrap items-center gap-2">
 
-                    {
-                      connection
-                        ? 'Reconectar Instagram'
-                        : 'Conectar Instagram'
-                    }
-                  </a>
-                )
-                : (
-                  <button
-                    type="button"
-                    disabled
-                    className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-900 opacity-60"
-                  >
-                    <Link2 size={17} />
-                    Configuração pendente
-                  </button>
-                )
-            }
+              {connection ? (
+                <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-300">
+                  ● Conectado
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full border border-slate-600 bg-white/5 px-3 py-2 text-xs font-bold text-slate-300">
+                  Desconectado
+                </span>
+              )}
+
+              {
+                configured
+                  ? (
+                    <a
+                      href={`/api/integrations/instagram/connect?clientId=${client.id}`}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100"
+                    >
+                      <Link2 size={17} />
+
+                      {
+                        connection
+                          ? 'Reconectar Instagram'
+                          : 'Conectar Instagram'
+                      }
+                    </a>
+                  )
+                  : (
+                    <button
+                      type="button"
+                      disabled
+                      className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-900 opacity-60"
+                    >
+                      <Link2 size={17} />
+                      Configuração pendente
+                    </button>
+                  )
+              }
+
+            </div>
 
           </div>
         </div>
 
-        {/* NAVEGACAO */}
-
         <div className="overflow-x-auto border-t border-white/10 px-5 md:px-8">
           <nav className="flex min-w-max gap-1 py-3">
-
-            <Link
-              href={`/clientes/${client.id}/calendario`}
-              className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-400 transition hover:bg-white/5 hover:text-white"
-            >
-              Calendário
-            </Link>
-
-            <Link
-              href={`/clientes/${client.id}/conteudos`}
-              className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-400 transition hover:bg-white/5 hover:text-white"
-            >
-              Conteúdos
-            </Link>
-
-            <Link
-              href={`/clientes/${client.id}/aprovacao-final`}
-              className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-400 transition hover:bg-white/5 hover:text-white"
-            >
-              Aprovações
-            </Link>
-
             <span className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-slate-950">
               Instagram
             </span>
-
           </nav>
         </div>
       </section>
@@ -943,87 +892,36 @@ export default async function ClientInstagramPage({
 
       {/* STATUS CONEXAO */}
 
-      {
-        connection
-          ? (
-            <section className="flex flex-col gap-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-6 md:flex-row md:items-center md:justify-between">
+      {!connection ? (
+        <section className="flex flex-col gap-4 rounded-3xl border border-pink-100 bg-gradient-to-r from-pink-50 to-violet-50 p-6 md:flex-row md:items-center md:justify-between">
 
-              <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4">
 
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white">
-                  <InstagramIcon
-                    size={23}
-                  />
-                </div>
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-pink-600 text-white">
+              <InstagramIcon
+                size={23}
+              />
+            </div>
 
-                <div>
-                  <h2 className="font-bold text-slate-900">
-                    {
-                      connection.username
-                        ? `@${connection.username}`
-                        : connection.displayName ||
-                          'Instagram conectado'
-                    }
-                  </h2>
+            <div>
+              <h2 className="font-bold text-slate-900">
+                Instagram ainda não conectado
+              </h2>
 
-                  {
-                    connection.displayName &&
-                    (
-                      <p className="mt-1 text-sm text-slate-600">
-                        {
-                          connection.displayName
-                        }
-                      </p>
-                    )
-                  }
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
+                Conecte a conta profissional deste cliente.
+                Depois os resultados serão trazidos automaticamente para o AprovUp.
+              </p>
+            </div>
 
-                  <p className="mt-2 text-xs text-slate-500">
-                    Página vinculada: {
-                      connection.facebookPageName ||
-                      'Meta'
-                    }
-                  </p>
-                </div>
+          </div>
 
-              </div>
+          <span className="w-fit rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500 shadow-sm">
+            Desconectado
+          </span>
 
-              <span className="w-fit rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-700 shadow-sm">
-                ● Conectado
-              </span>
-
-            </section>
-          )
-          : (
-            <section className="flex flex-col gap-4 rounded-3xl border border-pink-100 bg-gradient-to-r from-pink-50 to-violet-50 p-6 md:flex-row md:items-center md:justify-between">
-
-              <div className="flex items-start gap-4">
-
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-pink-600 text-white">
-                  <InstagramIcon
-                    size={23}
-                  />
-                </div>
-
-                <div>
-                  <h2 className="font-bold text-slate-900">
-                    Instagram ainda não conectado
-                  </h2>
-
-                  <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
-                    Conecte a conta profissional deste cliente.
-                    Depois os resultados serão trazidos automaticamente para o AprovUp.
-                  </p>
-                </div>
-
-              </div>
-
-              <span className="w-fit rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500 shadow-sm">
-                Desconectado
-              </span>
-
-            </section>
-          )
-      }
+        </section>
+      ) : null}
 
 
       {/* TABS INTERNAS */}
@@ -1062,16 +960,20 @@ export default async function ClientInstagramPage({
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
         <MetricCard
-          label="Seguidores"
+          label="Visualizações"
           icon={
-            <Users size={19} />
+            <Eye size={19} />
           }
           value={
             dashboardMetrics
-              ?.followersCount ??
+              ?.current
+              .views ??
             null
           }
           comparison={
+            dashboardMetrics
+              ?.change
+              .views ??
             null
           }
           connected={
@@ -1080,14 +982,32 @@ export default async function ClientInstagramPage({
               configured
             )
           }
-          helper={
-            connection &&
-            configured
-              ? followerHelper
-              : connection
-                ? 'Configuração Meta pendente no servidor'
-                : undefined
+        />
+
+        <MetricCard
+          label="Seguidores líquidos"
+          icon={
+            <Users size={19} />
           }
+          value={
+            dashboardMetrics
+              ?.current
+              .netFollowers ??
+            null
+          }
+          comparison={
+            dashboardMetrics
+              ?.change
+              .netFollowers ??
+            null
+          }
+          connected={
+            Boolean(
+              connection &&
+              configured
+            )
+          }
+          signed
         />
 
         <MetricCard
@@ -1105,31 +1025,6 @@ export default async function ClientInstagramPage({
             dashboardMetrics
               ?.change
               .reach ??
-            null
-          }
-          connected={
-            Boolean(
-              connection &&
-              configured
-            )
-          }
-        />
-
-        <MetricCard
-          label="Visualizações"
-          icon={
-            <Eye size={19} />
-          }
-          value={
-            dashboardMetrics
-              ?.current
-              .views ??
-            null
-          }
-          comparison={
-            dashboardMetrics
-              ?.change
-              .views ??
             null
           }
           connected={
@@ -1233,7 +1128,7 @@ export default async function ClientInstagramPage({
                 />
 
                 <p className="mt-3 text-sm font-bold text-slate-600">
-                  Nenhum conteúdo encontrado neste mês
+                  Nenhum conteúdo encontrado nos últimos 30 dias
                 </p>
 
                 <p className="mt-1 text-xs text-slate-400">
@@ -1271,77 +1166,6 @@ export default async function ClientInstagramPage({
 
       </section>
 
-
-      {/* PUBLICACAO */}
-
-      <section className="rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-sm md:p-7">
-
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-
-          <div className="flex items-start gap-4">
-
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-600 text-white">
-              <Send size={21} />
-            </div>
-
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-violet-300">
-                Publicação
-              </p>
-
-              <h2 className="mt-1 text-xl font-bold text-white">
-                Do conteúdo aprovado para o Instagram
-              </h2>
-
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
-                Quando ativarmos a publicação, os conteúdos aprovados poderão
-                ser publicados imediatamente ou agendados sem precisar sair do AprovUp.
-              </p>
-            </div>
-
-          </div>
-
-
-          <div className="grid min-w-full grid-cols-1 gap-2 sm:grid-cols-3 lg:min-w-0">
-
-            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-              <CheckCircle2
-                size={16}
-                className="text-emerald-400"
-              />
-
-              <p className="mt-2 text-xs font-bold text-white">
-                Aprovado
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-              <CalendarDays
-                size={16}
-                className="text-violet-400"
-              />
-
-              <p className="mt-2 text-xs font-bold text-white">
-                Agendado
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-              <FileText
-                size={16}
-                className="text-blue-400"
-              />
-
-              <p className="mt-2 text-xs font-bold text-white">
-                Publicado
-              </p>
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
 
     </div>
   );

@@ -1518,6 +1518,9 @@ export type InstagramDashboardMetrics = {
 
     interactions:
       number | null;
+
+    netFollowers:
+      number | null;
   };
 
   previous: {
@@ -1529,6 +1532,9 @@ export type InstagramDashboardMetrics = {
 
     interactions:
       number | null;
+
+    netFollowers:
+      number | null;
   };
 
   change: {
@@ -1539,6 +1545,9 @@ export type InstagramDashboardMetrics = {
       number | null;
 
     interactions:
+      number | null;
+
+    netFollowers:
       number | null;
   };
 
@@ -1554,9 +1563,11 @@ export type InstagramDashboardMetrics = {
 
     previousEnd:
       Date;
+
+    days:
+      number;
   };
 };
-
 
 function unixSeconds(
   date: Date
@@ -1568,85 +1579,67 @@ function unixSeconds(
 }
 
 
-function getComparableMonthRanges() {
+function normalizeInsightsDays(
+  days:
+    number
+) {
+  if (
+    !Number.isFinite(
+      days
+    )
+  ) {
+    return 30;
+  }
+
+  return Math.min(
+    90,
+    Math.max(
+      1,
+      Math.round(
+        days
+      )
+    )
+  );
+}
+
+
+function getRollingPeriodRanges(
+  requestedDays:
+    number = 30
+) {
+  const days =
+    normalizeInsightsDays(
+      requestedDays
+    );
+
   const now =
     new Date();
 
-  const year =
-    now.getUTCFullYear();
-
-  const month =
-    now.getUTCMonth();
-
-  const currentStart =
-    new Date(
-      Date.UTC(
-        year,
-        month,
-        1,
-        0,
-        0,
-        0
-      )
-    );
+  const windowMs =
+    days *
+    24 *
+    60 *
+    60 *
+    1000;
 
   const currentEnd =
     now;
 
-  const previousMonthReference =
+  const currentStart =
     new Date(
-      Date.UTC(
-        year,
-        month - 1,
-        1
-      )
-    );
-
-  const previousYear =
-    previousMonthReference
-      .getUTCFullYear();
-
-  const previousMonth =
-    previousMonthReference
-      .getUTCMonth();
-
-  const lastDayPreviousMonth =
-    new Date(
-      Date.UTC(
-        previousYear,
-        previousMonth + 1,
-        0
-      )
-    ).getUTCDate();
-
-  const comparableDay =
-    Math.min(
-      now.getUTCDate(),
-      lastDayPreviousMonth
-    );
-
-  const previousStart =
-    new Date(
-      Date.UTC(
-        previousYear,
-        previousMonth,
-        1,
-        0,
-        0,
-        0
-      )
+      currentEnd.getTime() -
+      windowMs
     );
 
   const previousEnd =
     new Date(
-      Date.UTC(
-        previousYear,
-        previousMonth,
-        comparableDay,
-        now.getUTCHours(),
-        now.getUTCMinutes(),
-        now.getUTCSeconds()
-      )
+      currentStart.getTime()
+    );
+
+  const previousStart =
+    new Date(
+      previousEnd.getTime() -
+      windowMs
     );
 
   return {
@@ -1654,9 +1647,9 @@ function getComparableMonthRanges() {
     currentEnd,
     previousStart,
     previousEnd,
+    days,
   };
 }
-
 
 function calculateChange(
   current:
@@ -1844,6 +1837,201 @@ async function readMetricTotal({
 }
 
 
+async function readNetFollowers({
+  instagramUserId,
+  accessToken,
+  since,
+  until,
+}: {
+  instagramUserId:
+    string;
+
+  accessToken:
+    string;
+
+  since:
+    Date;
+
+  until:
+    Date;
+}): Promise<number | null> {
+  const url =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/insights`
+    );
+
+  url.searchParams.set(
+    'metric',
+    'follows_and_unfollows'
+  );
+
+  url.searchParams.set(
+    'period',
+    'day'
+  );
+
+  url.searchParams.set(
+    'metric_type',
+    'total_value'
+  );
+
+  url.searchParams.set(
+    'breakdown',
+    'follow_type'
+  );
+
+  url.searchParams.set(
+    'since',
+    String(
+      unixSeconds(
+        since
+      )
+    )
+  );
+
+  url.searchParams.set(
+    'until',
+    String(
+      unixSeconds(
+        until
+      )
+    )
+  );
+
+  url.searchParams.set(
+    'access_token',
+    accessToken
+  );
+
+  const response =
+    await fetch(
+      url,
+      {
+        cache:
+          'no-store',
+      }
+    );
+
+  const payload =
+    await response.json();
+
+  if (
+    !response.ok
+  ) {
+    console.warn(
+      'Instagram metric unavailable: follows_and_unfollows'
+    );
+
+    return null;
+  }
+
+  const breakdowns =
+    payload
+      ?.data
+      ?.[0]
+      ?.total_value
+      ?.breakdowns;
+
+  if (
+    !Array.isArray(
+      breakdowns
+    )
+  ) {
+    return null;
+  }
+
+  let follows:
+    number | null =
+    null;
+
+  let unfollows:
+    number | null =
+    null;
+
+  for (
+    const breakdown
+    of breakdowns
+  ) {
+    const results =
+      breakdown
+        ?.results;
+
+    if (
+      !Array.isArray(
+        results
+      )
+    ) {
+      continue;
+    }
+
+    for (
+      const result
+      of results
+    ) {
+      const dimension =
+        String(
+          result
+            ?.dimension_values
+            ?.[0] ||
+          ''
+        )
+          .trim()
+          .toUpperCase();
+
+      const value =
+        result
+          ?.value;
+
+      if (
+        typeof value !==
+        'number'
+      ) {
+        continue;
+      }
+
+      if (
+        dimension ===
+        'FOLLOWER'
+      ) {
+        follows =
+          (
+            follows ||
+            0
+          ) +
+          value;
+      }
+
+      if (
+        dimension ===
+        'NON_FOLLOWER'
+      ) {
+        unfollows =
+          (
+            unfollows ||
+            0
+          ) +
+          value;
+      }
+    }
+  }
+
+  if (
+    follows === null &&
+    unfollows === null
+  ) {
+    return null;
+  }
+
+  return (
+    follows ||
+    0
+  ) -
+  (
+    unfollows ||
+    0
+  );
+}
+
 async function getInstagramProfileMetrics({
   instagramUserId,
   accessToken,
@@ -1914,16 +2102,22 @@ async function getInstagramProfileMetrics({
 export async function getInstagramDashboardMetrics({
   instagramUserId,
   accessToken,
+  days = 30,
 }: {
   instagramUserId:
     string;
 
   accessToken:
     string;
+
+  days?:
+    number;
 }): Promise<InstagramDashboardMetrics> {
 
   const period =
-    getComparableMonthRanges();
+    getRollingPeriodRanges(
+      days
+    );
 
 
   const profile =
@@ -1937,10 +2131,12 @@ export async function getInstagramDashboardMetrics({
     currentReach,
     currentViews,
     currentInteractions,
+    currentNetFollowers,
 
     previousReach,
     previousViews,
     previousInteractions,
+    previousNetFollowers,
   ] =
     await Promise.all([
 
@@ -1977,6 +2173,15 @@ export async function getInstagramDashboardMetrics({
           period.currentEnd,
       }),
 
+      readNetFollowers({
+        instagramUserId,
+        accessToken,
+        since:
+          period.currentStart,
+        until:
+          period.currentEnd,
+      }),
+
 
       readMetricTotal({
         instagramUserId,
@@ -2010,6 +2215,15 @@ export async function getInstagramDashboardMetrics({
         until:
           period.previousEnd,
       }),
+
+      readNetFollowers({
+        instagramUserId,
+        accessToken,
+        since:
+          period.previousStart,
+        until:
+          period.previousEnd,
+      }),
     ]);
 
 
@@ -2026,6 +2240,9 @@ export async function getInstagramDashboardMetrics({
 
       interactions:
         currentInteractions,
+
+      netFollowers:
+        currentNetFollowers,
     },
 
     previous: {
@@ -2037,6 +2254,9 @@ export async function getInstagramDashboardMetrics({
 
       interactions:
         previousInteractions,
+
+      netFollowers:
+        previousNetFollowers,
     },
 
     change: {
@@ -2057,12 +2277,17 @@ export async function getInstagramDashboardMetrics({
           currentInteractions,
           previousInteractions
         ),
+
+      netFollowers:
+        calculateChange(
+          currentNetFollowers,
+          previousNetFollowers
+        ),
     },
 
     period,
   };
 }
-
 
 
 export type InstagramDailyReachPoint = {
@@ -2329,18 +2554,24 @@ async function readMediaInsights({
 export async function getInstagramDailyReach({
   instagramUserId,
   accessToken,
+  days = 30,
 }: {
   instagramUserId:
     string;
 
   accessToken:
     string;
+
+  days?:
+    number;
 }): Promise<
   InstagramDailyReachPoint[]
 > {
 
   const period =
-    getComparableMonthRanges();
+    getRollingPeriodRanges(
+      days
+    );
 
 
   const url =
@@ -2456,6 +2687,7 @@ export async function getInstagramTopMedia({
   instagramUserId,
   accessToken,
   limit = 3,
+  days = 30,
 }: {
   instagramUserId:
     string;
@@ -2465,12 +2697,17 @@ export async function getInstagramTopMedia({
 
   limit?:
     number;
+
+  days?:
+    number;
 }): Promise<
   InstagramTopMediaItem[]
 > {
 
   const period =
-    getComparableMonthRanges();
+    getRollingPeriodRanges(
+      days
+    );
 
 
   const url =
@@ -2533,7 +2770,7 @@ export async function getInstagramTopMedia({
   }
 
 
-  const mediaThisMonth =
+  const mediaInPeriod =
     (
       payload?.data ||
       []
@@ -2573,7 +2810,7 @@ export async function getInstagramTopMedia({
   const enriched =
     await Promise.all(
 
-      mediaThisMonth.map(
+      mediaInPeriod.map(
         async (
           media:
             any
