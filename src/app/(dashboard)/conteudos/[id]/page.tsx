@@ -10,6 +10,8 @@ import { InstagramPreview } from '@/components/content/InstagramPreview';
 import { CarouselFinalUpload } from '@/components/content/CarouselFinalUpload';
 import { inputClasses, labelClasses } from '@/lib/styles';
 import { generateApprovalLink } from './contentActions';
+import { hasPermission } from '@/lib/userAccess';
+import { SocialMediaProductionPanel } from './SocialMediaProductionPanel';
 
 const areaLabels: Record<string, string> = {
   DESIGN: 'Design',
@@ -56,6 +58,85 @@ const priorities = [
   { value: 'ALTA', label: 'Alta' },
   { value: 'URGENTE', label: 'Urgente' },
 ];
+
+
+function normalizeResponsibleName(
+  value:
+    string | null | undefined
+) {
+  return String(
+    value ||
+    ''
+  )
+    .trim()
+    .normalize(
+      'NFD'
+    )
+    .replace(
+      /[\u0300-\u036f]/g,
+      ''
+    )
+    .toLowerCase();
+}
+
+
+function isHiddenResponsibleName(
+  value:
+    string | null | undefined
+) {
+  const firstName =
+    normalizeResponsibleName(
+      value
+    )
+      .split(
+        /\s+/
+      )
+      .filter(
+        Boolean
+      )[0] ||
+    '';
+
+  return [
+    'yuri',
+    'leo',
+    'leonio',
+  ].includes(
+    firstName
+  );
+}
+
+
+function responsibleDisplayName(
+  value:
+    string | null | undefined
+) {
+  const raw =
+    String(
+      value ||
+      ''
+    ).trim();
+
+  if (
+    !raw ||
+    isHiddenResponsibleName(
+      raw
+    )
+  ) {
+    return '';
+  }
+
+  if (
+    normalizeResponsibleName(
+      raw
+    ) ===
+    'taketo'
+  ) {
+    return 'Diego Taketomi';
+  }
+
+  return raw;
+}
+
 
 function formatDate(date: Date | null) {
   if (!date) return 'Sem data';
@@ -667,6 +748,37 @@ export default async function ConteudoDetailPage({
     },
   });
 
+  const responsibleUsers =
+    users.filter(
+      (
+        user
+      ) =>
+        !isHiddenResponsibleName(
+          user.name
+        )
+    );
+
+  const responsibleValue =
+    responsibleDisplayName(
+      contentSafe.responsible
+    );
+
+  const canManageSocial =
+    hasPermission(
+      currentUser,
+      'social.manage'
+    );
+
+  const pendingApprovalToken =
+    contentSafe.approvals.find(
+      (
+        approval
+      ) =>
+        approval.status ===
+        'PENDENTE'
+    )?.token ||
+    null;
+
   const approvalToken =
     contentSafe.approvals.find((approval) => approval.status === 'PENDENTE')?.token ||
     contentSafe.approvals[0]?.token;
@@ -752,7 +864,7 @@ export default async function ConteudoDetailPage({
         <input type="hidden" name="status" value={nextStatus} />
         <input type="hidden" name="area" value={currentArea} />
         <input type="hidden" name="priority" value={currentPriority} />
-        <input type="hidden" name="responsible" value={contentSafe.responsible || ''} />
+        <input type="hidden" name="responsible" value={responsibleValue} />
         <input type="hidden" name="title" value={contentSafe.title || ''} />
         <input type="hidden" name="objective" value={contentSafe.objective || ''} />
         <input type="hidden" name="format" value={contentSafe.format || ''} />
@@ -834,7 +946,7 @@ export default async function ConteudoDetailPage({
               </strong>{' '}
               ⬢ Responsável:{' '}
               <strong className="text-white">
-                {contentSafe.responsible || 'Não definido'}
+                {responsibleValue || 'Não definido'}
               </strong>
             </p>
           </div>
@@ -905,10 +1017,10 @@ export default async function ConteudoDetailPage({
                 'ALTERACAO_SOLICITADA',
               ].includes(contentSafe.status) && (
                 <Link
-                  href={`/conteudos/${contentSafe.id}/visualizar`}
+                  href="#producao-social-media"
                   className="w-full rounded-xl bg-blue-600 px-5 py-3 text-center text-sm font-bold text-white hover:bg-blue-700 sm:w-auto"
                 >
-                  Produzir material
+                  Abrir área de produção
                 </Link>
               )}
 
@@ -1259,15 +1371,46 @@ export default async function ConteudoDetailPage({
                   <label className={labelClasses}>Responsável</label>
                   <select
                     name="responsible"
-                    defaultValue={contentSafe.responsible || ''}
+                    defaultValue={responsibleValue}
                     className={inputClasses}
                   >
                     <option value="">Nenhum</option>
-                    {users.map((user) => (
-                      <option key={user.id} value={user.name || user.id}>
-                        {user.name || user.email || 'Usuário sem nome'}
-                      </option>
-                    ))}
+
+                    {responsibleUsers.map(
+                      (
+                        user
+                      ) => {
+                        const rawValue =
+                          user.name ||
+                          user.id;
+
+                        const rawLabel =
+                          user.name ||
+                          user.email ||
+                          'Usuário sem nome';
+
+                        const optionValue =
+                          responsibleDisplayName(
+                            rawValue
+                          ) ||
+                          rawValue;
+
+                        const optionLabel =
+                          responsibleDisplayName(
+                            rawLabel
+                          ) ||
+                          rawLabel;
+
+                        return (
+                          <option
+                            key={user.id}
+                            value={optionValue}
+                          >
+                            {optionLabel}
+                          </option>
+                        );
+                      }
+                    )}
                   </select>
                 </div>
               </div>
@@ -1422,28 +1565,100 @@ export default async function ConteudoDetailPage({
             </form>
           </section>
 
-          {isDesignCarousel && (
+          {currentArea ===
+          'SOCIAL_MEDIA' ? (
+            <SocialMediaProductionPanel
+              contentId={
+                contentSafe.id
+              }
+              clientId={
+                contentSafe.clientId
+              }
+              status={
+                contentSafe.status
+              }
+              format={
+                contentSafe.format
+              }
+              caption={
+                contentSafe.caption
+              }
+              canManage={
+                canManageSocial
+              }
+              pendingApprovalToken={
+                pendingApprovalToken
+              }
+              finalMediaUrl={
+                contentSafe.finalMediaUrl
+              }
+              finalCoverUrl={
+                contentSafe.finalCoverUrl
+              }
+              finalMediaType={
+                contentSafe.finalMediaType
+              }
+              finalExternalUrl={
+                contentSafe.finalExternalUrl
+              }
+              storyMediaUrl={
+                contentSafe.storyMediaUrl
+              }
+              storyCoverUrl={
+                contentSafe.storyCoverUrl
+              }
+              storyMediaType={
+                contentSafe.storyMediaType
+              }
+              assets={
+                contentSafe.instagramMediaAssets.map(
+                  (
+                    asset
+                  ) => ({
+                    id:
+                      asset.id,
 
-                <CarouselFinalUpload
-                  contentId={
-                    contentSafe.id
-                  }
-                  status={
-                    contentSafe.status
-                  }
-                  assets={
-                    contentSafe.instagramMediaAssets.map(
-                      (asset) => ({
-                        id: asset.id,
-                        url: asset.url,
-                        mimeType: asset.mimeType,
-                        position: asset.position,
-                      })
-                    )
-                  }
-                />
+                    url:
+                      asset.url,
 
-              )}
+                    mimeType:
+                      asset.mimeType,
+
+                    position:
+                      asset.position,
+                  })
+                )
+              }
+            />
+          ) : isDesignCarousel ? (
+            <CarouselFinalUpload
+              contentId={
+                contentSafe.id
+              }
+              status={
+                contentSafe.status
+              }
+              assets={
+                contentSafe.instagramMediaAssets.map(
+                  (
+                    asset
+                  ) => ({
+                    id:
+                      asset.id,
+
+                    url:
+                      asset.url,
+
+                    mimeType:
+                      asset.mimeType,
+
+                    position:
+                      asset.position,
+                  })
+                )
+              }
+            />
+          ) : null}
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 border-b border-slate-100 pb-4">
               <h2 className="text-lg font-bold text-slate-900">

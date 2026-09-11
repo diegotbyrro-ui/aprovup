@@ -303,27 +303,37 @@ export async function requestFinalChangesAction(
     ).toUpperCase();
 
 
+  const returnsToSocialMedia =
+    content.area ===
+    'SOCIAL_MEDIA';
+
+
   const returnsToFilmmaker =
-    content.area === 'FILMMAKER' ||
-    [
-      'REEL',
-      'VIDEO',
-      'TIKTOK',
-      'SHORT',
-    ].some(
-      (format) =>
-        normalizedFormat.includes(
-          format
-        )
+    !returnsToSocialMedia &&
+    (
+      content.area === 'FILMMAKER' ||
+      [
+        'REEL',
+        'VIDEO',
+        'TIKTOK',
+        'SHORT',
+      ].some(
+        (format) =>
+          normalizedFormat.includes(
+            format
+          )
+      )
     );
 
 
   const returnLabel =
-    returnsToFilmmaker
-      ? 'Filmmaker / Edição'
-      : content.area === 'DESIGN'
-        ? 'Design / Fazendo'
-        : 'Produção';
+    returnsToSocialMedia
+      ? 'Social Media'
+      : returnsToFilmmaker
+        ? 'Filmmaker / Edição'
+        : content.area === 'DESIGN'
+          ? 'Design / Fazendo'
+          : 'Produção';
 
 
   await prisma.$transaction(async (transaction) => {
@@ -342,19 +352,24 @@ export async function requestFinalChangesAction(
         id: contentId,
       },
 
-      data: returnsToFilmmaker
+      data: returnsToSocialMedia
         ? {
-            status: 'FILMMAKER_EDICAO',
-            area: 'FILMMAKER',
+            status: 'ALTERACAO_SOLICITADA',
+            area: 'SOCIAL_MEDIA',
           }
-        : content.area === 'DESIGN'
+        : returnsToFilmmaker
           ? {
-              status: 'DESIGN_FAZENDO',
-              area: 'DESIGN',
+              status: 'FILMMAKER_EDICAO',
+              area: 'FILMMAKER',
             }
-          : {
-              status: 'ALTERACAO_SOLICITADA',
-            },
+          : content.area === 'DESIGN'
+            ? {
+                status: 'DESIGN_FAZENDO',
+                area: 'DESIGN',
+              }
+            : {
+                status: 'ALTERACAO_SOLICITADA',
+              },
     });
 
     await transaction.comment.create({
