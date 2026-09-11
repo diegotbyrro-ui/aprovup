@@ -23,6 +23,10 @@ import {
   SocialApprovalLinkButton,
 } from '../../social-media/SocialApprovalLinkButton';
 
+import {
+  DownloadContentButton,
+} from '@/components/content/DownloadContentButton';
+
 
 type MediaAsset = {
   id:
@@ -398,16 +402,29 @@ export function SocialMediaProductionPanel({
           </p>
         </div>
 
-        <Link
-          href={`/conteudos/${contentId}/visualizar`}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-xs font-black text-blue-700 transition hover:bg-blue-50"
-        >
-          <ExternalLink
-            size={14}
-          />
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {hasMaterial ? (
+            <DownloadContentButton
+              contentId={
+                contentId
+              }
+              isCarousel={
+                isCarousel
+              }
+            />
+          ) : null}
 
-          Abrir em tela dedicada
-        </Link>
+          <Link
+            href={`/conteudos/${contentId}/visualizar`}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-xs font-black text-blue-700 transition hover:bg-blue-50"
+          >
+            <ExternalLink
+              size={14}
+            />
+
+            Abrir em tela dedicada
+          </Link>
+        </div>
       </div>
 
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1">

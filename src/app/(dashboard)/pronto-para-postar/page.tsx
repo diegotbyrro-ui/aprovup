@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { markContentAsPublished } from './actions';
 import { InstagramPublishButton } from '@/components/instagram/InstagramPublishButton';
 import { InstagramScheduleControl } from '@/components/instagram/InstagramScheduleControl';
+import { DownloadContentButton } from '@/components/content/DownloadContentButton';
 
 const priorityLabels: Record<string, string> = {
     BAIXA: 'Baixa',
@@ -919,6 +920,14 @@ export default async function ProntoParaPostarPage({
                                                         </ul>
 
                                                         <div className="mt-4 space-y-2">
+                                                            {hasFinalMedia ? (
+                                                                <DownloadContentButton
+                                                                    contentId={content.id}
+                                                                    isCarousel={isCarousel}
+                                                                    compact
+                                                                />
+                                                            ) : null}
+
                                                             <Link
                                                                 href={`/conteudos/${content.id}`}
                                                                 className="block rounded-md border border-slate-200 bg-white px-3 py-2 text-center text-xs font-bold text-slate-600 hover:bg-slate-100"
