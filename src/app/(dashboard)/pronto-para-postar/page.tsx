@@ -6,8 +6,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { markContentAsPublished } from './actions';
 import { InstagramPublishButton } from '@/components/instagram/InstagramPublishButton';
 import { InstagramScheduleControl } from '@/components/instagram/InstagramScheduleControl';
-import { DownloadContentButton } from '@/components/content/DownloadContentButton';
-import { CopyCaptionButton } from '@/components/content/CopyCaptionButton';
+import { ReadyPostComposer } from '@/components/content/ReadyPostComposer';
 
 const priorityLabels: Record<string, string> = {
     BAIXA: 'Baixa',
@@ -701,122 +700,56 @@ export default async function ProntoParaPostarPage({
                                                             </div>
                                                         </div>
 
-                                                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
-                                                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                                                <div className="flex items-center justify-between gap-3">
-                                                                    <div>
-                                                                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                                                            Material final
-                                                                        </p>
 
-                                                                        <p className="mt-1 text-sm font-black text-slate-900">
-                                                                            {content.format || 'Publicação'}
-                                                                        </p>
-                                                                    </div>
+                                                        <ReadyPostComposer
+                                                            contentId={content.id}
+                                                            clientName={
+                                                                content.client?.name ||
+                                                                'Cliente'
+                                                            }
+                                                            username={
+                                                                instagramConnection?.username ||
+                                                                null
+                                                            }
+                                                            format={
+                                                                content.format ||
+                                                                'Publicação'
+                                                            }
+                                                            initialCaption={
+                                                                content.caption ||
+                                                                ''
+                                                            }
+                                                            isCarousel={
+                                                                isCarousel
+                                                            }
+                                                            assets={
+                                                                content.instagramMediaAssets.map(
+                                                                    (asset) => ({
+                                                                        id:
+                                                                            asset.id,
 
-                                                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700">
-                                                                        Pronto
-                                                                    </span>
-                                                                </div>
+                                                                        url:
+                                                                            asset.url,
 
-                                                                <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
-                                                                    {isCarousel && carouselMediaCount > 0 ? (
-                                                                        <div className="grid grid-cols-2 gap-1 bg-slate-900 p-1">
-                                                                            {content.instagramMediaAssets
-                                                                                .slice(0, 4)
-                                                                                .map((asset, index) => (
-                                                                                    <div
-                                                                                        key={asset.id}
-                                                                                        className="relative overflow-hidden rounded-lg bg-slate-800"
-                                                                                    >
-                                                                                        <img
-                                                                                            src={asset.url}
-                                                                                            alt={`Página ${index + 1}`}
-                                                                                            className="aspect-[4/5] w-full object-cover"
-                                                                                        />
+                                                                        mimeType:
+                                                                            asset.mimeType ||
+                                                                            '',
 
-                                                                                        <span className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-1 text-[9px] font-black text-white">
-                                                                                            {index + 1}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                ))}
-                                                                        </div>
-                                                                    ) : previewVideoUrl ? (
-                                                                        <video
-                                                                            src={previewVideoUrl}
-                                                                            controls
-                                                                            preload="metadata"
-                                                                            className="aspect-[9/16] max-h-[430px] w-full bg-black object-contain"
-                                                                        >
-                                                                            Seu navegador não conseguiu reproduzir este vídeo.
-                                                                        </video>
-                                                                    ) : previewImageUrl ? (
-                                                                        <img
-                                                                            src={previewImageUrl}
-                                                                            alt="Material final"
-                                                                            className="max-h-[430px] w-full bg-slate-100 object-contain"
-                                                                        />
-                                                                    ) : (
-                                                                        <div className="flex min-h-56 items-center justify-center px-4 text-center text-xs font-bold text-slate-400">
-                                                                            Material final pronto para download.
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-
-                                                                {isCarousel && carouselMediaCount > 4 ? (
-                                                                    <p className="mt-2 text-center text-[10px] font-bold text-slate-500">
-                                                                        + {carouselMediaCount - 4} página(s) no carrossel
-                                                                    </p>
-                                                                ) : null}
-
-                                                                {hasFinalMedia ? (
-                                                                    <div className="mt-3">
-                                                                        <DownloadContentButton
-                                                                            contentId={content.id}
-                                                                            isCarousel={isCarousel}
-                                                                            compact
-                                                                        />
-                                                                    </div>
-                                                                ) : null}
-                                                            </div>
-
-                                                            {content.caption ? (
-                                                                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                                                                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                                                        <div>
-                                                                            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                                                                Legenda
-                                                                            </p>
-
-                                                                            <p className="mt-1 text-sm font-black text-slate-900">
-                                                                                Texto pronto para publicação
-                                                                            </p>
-                                                                        </div>
-
-                                                                        <CopyCaptionButton
-                                                                            text={content.caption}
-                                                                        />
-                                                                    </div>
-
-                                                                    <textarea
-                                                                        readOnly
-                                                                        value={content.caption}
-                                                                        className="min-h-72 w-full resize-y rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                                                                    />
-                                                                </div>
-                                                            ) : (
-                                                                <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50 p-5">
-                                                                    <p className="text-sm font-black text-orange-800">
-                                                                        Este conteúdo não possui legenda cadastrada.
-                                                                    </p>
-
-                                                                    <p className="mt-1 text-xs leading-5 text-orange-700">
-                                                                        Abra o conteúdo para adicionar a legenda antes de publicar.
-                                                                    </p>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
+                                                                        position:
+                                                                            asset.position,
+                                                                    })
+                                                                )
+                                                            }
+                                                            previewImageUrl={
+                                                                previewImageUrl
+                                                            }
+                                                            previewVideoUrl={
+                                                                previewVideoUrl
+                                                            }
+                                                            hasFinalMedia={
+                                                                hasFinalMedia
+                                                            }
+                                                        />
                                                         {content.fileLinks && (
                                                             <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
                                                                 <p className="text-xs font-bold uppercase tracking-wider text-blue-500">

@@ -1,6 +1,3 @@
-import {
-  DownloadContentButton,
-} from '@/components/content/DownloadContentButton';
 
 import {
   SocialMediaQuickUpload,
@@ -130,16 +127,7 @@ export function SocialMediaProductionPanel({
           </p>
         </div>
 
-        {hasMaterial ? (
-          <DownloadContentButton
-            contentId={
-              contentId
-            }
-            isCarousel={
-              isCarousel
-            }
-          />
-        ) : null}
+
       </div>
 
       <div className="mt-5">

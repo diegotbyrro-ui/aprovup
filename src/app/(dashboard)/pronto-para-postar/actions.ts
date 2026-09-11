@@ -4,6 +4,81 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/userAccess";
 
+
+export async function updateReadyCaption(
+    contentId: string,
+    caption: string
+) {
+    const currentUser =
+        await requirePermission(
+            "social.manage"
+        );
+
+    const normalizedCaption =
+        typeof caption ===
+        "string"
+            ? caption.trim()
+            : "";
+
+    if (
+        normalizedCaption.length >
+        10000
+    ) {
+        throw new Error(
+            "A legenda ultrapassa o limite permitido pelo AprovUp."
+        );
+    }
+
+    const content =
+        await prisma.content.findFirst({
+            where: {
+                id:
+                    contentId,
+
+                client: {
+                    agencyId:
+                        currentUser.agencyId,
+                },
+
+                status:
+                    "PRONTO_PARA_POSTAR",
+            },
+        });
+
+    if (!content) {
+        throw new Error(
+            "Conteúdo não encontrado ou não está mais em Pronto para Postar."
+        );
+    }
+
+    await prisma.content.update({
+        where: {
+            id:
+                contentId,
+        },
+
+        data: {
+            caption:
+                normalizedCaption,
+        },
+    });
+
+    revalidatePath(
+        "/pronto-para-postar"
+    );
+
+    revalidatePath(
+        `/conteudos/${contentId}`
+    );
+
+    return {
+        ok:
+            true,
+
+        caption:
+            normalizedCaption,
+    };
+}
 export async function markContentAsPublished(contentId: string) {
     const currentUser =
         await requirePermission(
