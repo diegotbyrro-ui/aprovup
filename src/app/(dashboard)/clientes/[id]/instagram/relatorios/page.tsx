@@ -824,6 +824,9 @@ export default async function InstagramReportsPage({
 
           accessToken,
 
+          days:
+            period,
+
         }),
 
 
@@ -836,6 +839,9 @@ export default async function InstagramReportsPage({
 
           limit:
             3,
+
+          days:
+            period,
 
         }),
 
@@ -1107,6 +1113,27 @@ export default async function InstagramReportsPage({
 
       </section>
 
+
+      {/* ABAS DO RELATORIO */}
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
+
+        <div className="flex gap-2 overflow-x-auto">
+
+          <span className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white">
+            Resumo
+          </span>
+
+          <Link
+            href={`/clientes/${client.id}/instagram/relatorios/retencao?periodo=${period}`}
+            className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 transition hover:bg-slate-100"
+          >
+            Retenção de Reels
+          </Link>
+
+        </div>
+
+      </section>
 
       {/* FILTRO */}
 

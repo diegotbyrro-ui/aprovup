@@ -2954,6 +2954,538 @@ export async function getInstagramTopMedia({
 }
 
 
+export type InstagramReelRetentionItem = {
+  id:
+    string;
+
+  caption:
+    string | null;
+
+  permalink:
+    string | null;
+
+  timestamp:
+    string;
+
+  imageUrl:
+    string | null;
+
+  views:
+    number | null;
+
+  reach:
+    number | null;
+
+  interactions:
+    number | null;
+
+  saved:
+    number | null;
+
+  shares:
+    number | null;
+
+  averageWatchTimeMs:
+    number | null;
+
+  totalWatchTimeMs:
+    number | null;
+
+  skipRate:
+    number | null;
+
+  retainedAfter3s:
+    number | null;
+
+  reposts:
+    number | null;
+};
+
+
+function normalizeInstagramPercentage(
+  value:
+    number | null
+) {
+  if (
+    value === null ||
+    !Number.isFinite(
+      value
+    )
+  ) {
+    return null;
+  }
+
+  const normalized =
+    value >= 0 &&
+    value <= 1
+      ? value * 100
+      : value;
+
+  return Math.min(
+    100,
+    Math.max(
+      0,
+      normalized
+    )
+  );
+}
+
+
+async function readReelRetentionInsights({
+  mediaId,
+  accessToken,
+}: {
+  mediaId:
+    string;
+
+  accessToken:
+    string;
+}) {
+  const result = {
+    averageWatchTimeMs:
+      null as number | null,
+
+    totalWatchTimeMs:
+      null as number | null,
+
+    skipRate:
+      null as number | null,
+
+    reposts:
+      null as number | null,
+  };
+
+  const attempts = [
+    [
+      'ig_reels_avg_watch_time',
+      'ig_reels_video_view_total_time',
+      'reels_skip_rate',
+      'reposts',
+    ],
+
+    [
+      'ig_reels_avg_watch_time',
+      'ig_reels_video_view_total_time',
+      'reels_skip_rate',
+    ],
+
+    [
+      'ig_reels_avg_watch_time',
+      'ig_reels_video_view_total_time',
+    ],
+  ];
+
+  for (
+    const metrics
+    of attempts
+  ) {
+    const url =
+      new URL(
+        `https://graph.facebook.com/${graphVersion()}/${mediaId}/insights`
+      );
+
+    url.searchParams.set(
+      'metric',
+      metrics.join(',')
+    );
+
+    url.searchParams.set(
+      'access_token',
+      accessToken
+    );
+
+    const response =
+      await fetch(
+        url,
+        {
+          cache:
+            'no-store',
+        }
+      );
+
+    const payload =
+      await response.json();
+
+    if (
+      !response.ok
+    ) {
+      continue;
+    }
+
+    for (
+      const item
+      of payload?.data || []
+    ) {
+      const value =
+        getInsightMetricValue(
+          item
+        );
+
+      if (
+        item.name ===
+        'ig_reels_avg_watch_time'
+      ) {
+        result.averageWatchTimeMs =
+          value;
+      }
+
+      if (
+        item.name ===
+        'ig_reels_video_view_total_time'
+      ) {
+        result.totalWatchTimeMs =
+          value;
+      }
+
+      if (
+        item.name ===
+        'reels_skip_rate'
+      ) {
+        result.skipRate =
+          normalizeInstagramPercentage(
+            value
+          );
+      }
+
+      if (
+        item.name ===
+        'reposts'
+      ) {
+        result.reposts =
+          value;
+      }
+    }
+
+    break;
+  }
+
+  if (
+    result.skipRate === null
+  ) {
+    const url =
+      new URL(
+        `https://graph.facebook.com/${graphVersion()}/${mediaId}/insights`
+      );
+
+    url.searchParams.set(
+      'metric',
+      'reels_skip_rate'
+    );
+
+    url.searchParams.set(
+      'access_token',
+      accessToken
+    );
+
+    try {
+      const response =
+        await fetch(
+          url,
+          {
+            cache:
+              'no-store',
+          }
+        );
+
+      const payload =
+        await response.json();
+
+      if (
+        response.ok
+      ) {
+        const value =
+          getInsightMetricValue(
+            payload?.data?.[0]
+          );
+
+        result.skipRate =
+          normalizeInstagramPercentage(
+            value
+          );
+      }
+    }
+    catch {
+    }
+  }
+
+  return result;
+}
+
+
+export async function getInstagramReelRetention({
+  instagramUserId,
+  accessToken,
+  days = 30,
+  limit = 24,
+}: {
+  instagramUserId:
+    string;
+
+  accessToken:
+    string;
+
+  days?:
+    number;
+
+  limit?:
+    number;
+}): Promise<
+  InstagramReelRetentionItem[]
+> {
+  const period =
+    getRollingPeriodRanges(
+      days
+    );
+
+  const url =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/media`
+    );
+
+  url.searchParams.set(
+    'fields',
+    [
+      'id',
+      'caption',
+      'media_type',
+      'media_product_type',
+      'permalink',
+      'timestamp',
+      'thumbnail_url',
+      'media_url',
+    ].join(',')
+  );
+
+  url.searchParams.set(
+    'limit',
+    '100'
+  );
+
+  url.searchParams.set(
+    'access_token',
+    accessToken
+  );
+
+  const response =
+    await fetch(
+      url,
+      {
+        cache:
+          'no-store',
+      }
+    );
+
+  const payload =
+    await response.json();
+
+  if (
+    !response.ok
+  ) {
+    console.error(
+      'INSTAGRAM REEL RETENTION LIST ERROR',
+      payload
+    );
+
+    return [];
+  }
+
+  const reels =
+    (
+      payload?.data ||
+      []
+    )
+      .filter(
+        (
+          media:
+            any
+        ) => {
+          if (
+            !media.timestamp
+          ) {
+            return false;
+          }
+
+          const timestamp =
+            new Date(
+              media.timestamp
+            );
+
+          const isVideo =
+            media.media_product_type ===
+              'REELS' ||
+            media.media_type ===
+              'VIDEO';
+
+          return (
+            isVideo &&
+            timestamp >=
+              period.currentStart &&
+            timestamp <=
+              period.currentEnd
+          );
+        }
+      )
+      .slice(
+        0,
+        Math.max(
+          1,
+          Math.min(
+            limit,
+            50
+          )
+        )
+      );
+
+  const items =
+    await Promise.all(
+      reels.map(
+        async (
+          media:
+            any
+        ): Promise<
+          InstagramReelRetentionItem
+        > => {
+          const [
+            base,
+            retention,
+          ] =
+            await Promise.all([
+              readMediaInsights({
+                mediaId:
+                  media.id,
+
+                accessToken,
+              }),
+
+              readReelRetentionInsights({
+                mediaId:
+                  media.id,
+
+                accessToken,
+              }),
+            ]);
+
+          const retainedAfter3s =
+            retention.skipRate ===
+              null
+              ? null
+              : Math.max(
+                  0,
+                  Math.min(
+                    100,
+                    100 -
+                    retention.skipRate
+                  )
+                );
+
+          return {
+            id:
+              media.id,
+
+            caption:
+              media.caption ||
+              null,
+
+            permalink:
+              media.permalink ||
+              null,
+
+            timestamp:
+              media.timestamp,
+
+            imageUrl:
+              media.thumbnail_url ||
+              media.media_url ||
+              null,
+
+            views:
+              base.views,
+
+            reach:
+              base.reach,
+
+            interactions:
+              base.interactions,
+
+            saved:
+              base.saved,
+
+            shares:
+              base.shares,
+
+            averageWatchTimeMs:
+              retention.averageWatchTimeMs,
+
+            totalWatchTimeMs:
+              retention.totalWatchTimeMs,
+
+            skipRate:
+              retention.skipRate,
+
+            retainedAfter3s,
+
+            reposts:
+              retention.reposts,
+          };
+        }
+      )
+    );
+
+  items.sort(
+    (
+      a,
+      b
+    ) => {
+      const retentionDiff =
+        (
+          b.retainedAfter3s ??
+          -1
+        ) -
+        (
+          a.retainedAfter3s ??
+          -1
+        );
+
+      if (
+        retentionDiff !==
+        0
+      ) {
+        return retentionDiff;
+      }
+
+      const watchDiff =
+        (
+          b.averageWatchTimeMs ||
+          0
+        ) -
+        (
+          a.averageWatchTimeMs ||
+          0
+        );
+
+      if (
+        watchDiff !==
+        0
+      ) {
+        return watchDiff;
+      }
+
+      return (
+        (
+          b.views ||
+          0
+        ) -
+        (
+          a.views ||
+          0
+        )
+      );
+    }
+  );
+
+  return items;
+}
+
 export type InstagramImagePublishResult = {
   containerId:
     string;
