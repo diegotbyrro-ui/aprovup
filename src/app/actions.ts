@@ -5,6 +5,217 @@ import { requireAnyPermission, requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+import {
+  deleteAprovUpReferenceFile,
+  uploadAprovUpFile,
+} from '@/lib/aprovupStorage';
+
+
+const MAX_REFERENCE_IMAGES =
+  8;
+
+const MAX_REFERENCE_IMAGE_SIZE =
+  8 * 1024 * 1024;
+
+const MAX_REFERENCE_TOTAL_SIZE =
+  18 * 1024 * 1024;
+
+
+function referenceImageFiles(
+  formData:
+    FormData
+) {
+  return formData
+    .getAll(
+      'referenceImages'
+    )
+    .filter(
+      (
+        value
+      ): value is File =>
+        value instanceof
+          File &&
+        value.size >
+          0
+    );
+}
+
+
+function validateReferenceImages(
+  files:
+    File[]
+) {
+  if (
+    files.length >
+    MAX_REFERENCE_IMAGES
+  ) {
+    throw new Error(
+      `Envie no máximo ${MAX_REFERENCE_IMAGES} fotos de referência por vez.`
+    );
+  }
+
+
+  let totalSize =
+    0;
+
+
+  for (
+    const file
+    of files
+  ) {
+    if (
+      !String(
+        file.type ||
+        ''
+      ).startsWith(
+        'image/'
+      )
+    ) {
+      throw new Error(
+        `O arquivo "${file.name}" não é uma imagem.`
+      );
+    }
+
+
+    if (
+      file.size >
+      MAX_REFERENCE_IMAGE_SIZE
+    ) {
+      throw new Error(
+        `A foto "${file.name}" ultrapassa 8 MB.`
+      );
+    }
+
+
+    totalSize +=
+      file.size;
+  }
+
+
+  if (
+    totalSize >
+    MAX_REFERENCE_TOTAL_SIZE
+  ) {
+    throw new Error(
+      'As fotos de referência ultrapassam 18 MB no total.'
+    );
+  }
+}
+
+
+async function uploadContentReferenceImages(
+  contentId:
+    string,
+  formData:
+    FormData
+) {
+  const files =
+    referenceImageFiles(
+      formData
+    );
+
+
+  if (
+    files.length ===
+    0
+  ) {
+    return [];
+  }
+
+
+  validateReferenceImages(
+    files
+  );
+
+
+  const uploadedUrls:
+    string[] =
+    [];
+
+
+  try {
+    for (
+      const file
+      of files
+    ) {
+      const url =
+        await uploadAprovUpFile(
+          file,
+          'content-reference',
+          `referencia-${contentId}`
+        );
+
+
+      if (url) {
+        uploadedUrls.push(
+          url
+        );
+      }
+    }
+
+
+    return uploadedUrls;
+  }
+  catch (
+    error
+  ) {
+    await Promise.all(
+      uploadedUrls.map(
+        (
+          url
+        ) =>
+          deleteAprovUpReferenceFile(
+            contentId,
+            url
+          ).catch(
+            () =>
+              false
+          )
+      )
+    );
+
+
+    throw error;
+  }
+}
+
+
+async function removeContentReferenceImages(
+  contentId:
+    string,
+  formData:
+    FormData
+) {
+  const urls =
+    formData
+      .getAll(
+        'removeReferenceUrl'
+      )
+      .map(
+        (
+          value
+        ) =>
+          String(
+            value ||
+            ''
+          ).trim()
+      )
+      .filter(
+        Boolean
+      );
+
+
+  for (
+    const url
+    of urls
+  ) {
+    await deleteAprovUpReferenceFile(
+      contentId,
+      url
+    );
+  }
+}
+
 
 export async function createClient(formData: FormData) {
   const currentUser = await requirePermission('social.manage');
@@ -368,6 +579,38 @@ export async function createContent(formData: FormData) {
     },
   });
 
+  try {
+    await uploadContentReferenceImages(
+      content.id,
+      formData
+    );
+  }
+  catch (
+    error
+  ) {
+    await prisma.content
+      .delete({
+        where: {
+          id:
+            content.id,
+        },
+      })
+      .catch(
+        () =>
+          null
+      );
+
+    console.error(
+      'AprovUp reference upload on create:',
+      error
+    );
+
+    redirect(
+      `/clientes/${clientId}/conteudos/novo?error=reference-upload`
+    );
+  }
+
+
   await logHistory(
     "CONTENT",
     content.id,
@@ -466,6 +709,18 @@ export async function updateContent(contentId: string, formData: FormData) {
       coverImageUrl: text('coverImageUrl', currentContent.coverImageUrl || ''),
     },
   });
+
+  await removeContentReferenceImages(
+    contentId,
+    formData
+  );
+
+
+  await uploadContentReferenceImages(
+    contentId,
+    formData
+  );
+
 
   await prisma.historyLog.create({
     data: {
@@ -902,4 +1157,3 @@ export async function createPrompt(formData: FormData) {
   revalidatePath('/prompts');
   redirect('/prompts');
 }
-

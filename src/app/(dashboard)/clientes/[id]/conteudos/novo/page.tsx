@@ -10,7 +10,10 @@ export default async function NovoConteudoClientePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{
+    date?: string;
+    error?: string;
+  }>;
 }) {
   const {
     agencyId,
@@ -18,7 +21,10 @@ export default async function NovoConteudoClientePage({
     await requireAgencyContext();
 
   const { id } = await params;
-  const { date } = await searchParams;
+  const {
+    date,
+    error,
+  } = await searchParams;
 
   const client =
     await prisma.client.findFirst({
@@ -62,6 +68,13 @@ export default async function NovoConteudoClientePage({
           Novo Conteúdo para {client.name}
         </h1>
       </div>
+
+      {error ===
+      'reference-upload' ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+          Não foi possível anexar as fotos de referência. Confira formato/tamanho e tente novamente.
+        </div>
+      ) : null}
 
       <form
         action={createContent}
@@ -271,14 +284,26 @@ export default async function NovoConteudoClientePage({
           />
         </div>
 
-        <div>
-          <label className={labelClasses}>URL da Imagem de Capa</label>
+        <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+          <label className={labelClasses}>
+            Fotos de referência para criação
+          </label>
+
+          <p className="mb-3 text-xs leading-5 text-slate-600">
+            Anexe fotos de alunos, colaboradores, produtos, ambientes ou qualquer imagem que o Design/Filmmaker precise usar na criação.
+          </p>
+
           <input
-            name="coverImageUrl"
-            type="url"
-            placeholder="https://exemplo.com/imagem.jpg"
-            className={inputClasses}
+            name="referenceImages"
+            type="file"
+            accept="image/*"
+            multiple
+            className="block w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-blue-700"
           />
+
+          <p className="mt-2 text-[11px] leading-5 text-slate-500">
+            Até 8 fotos por envio, máximo de 8 MB por foto e 18 MB no total.
+          </p>
         </div>
 
         <div className="flex justify-end pt-4">

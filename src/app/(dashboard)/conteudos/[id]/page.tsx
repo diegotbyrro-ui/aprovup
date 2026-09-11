@@ -13,6 +13,7 @@ import { generateApprovalLink } from './contentActions';
 import { hasPermission } from '@/lib/userAccess';
 import { SocialMediaProductionPanel } from './SocialMediaProductionPanel';
 import { DownloadContentButton } from '@/components/content/DownloadContentButton';
+import { listAprovUpReferenceFiles } from '@/lib/aprovupStorage';
 
 const areaLabels: Record<string, string> = {
   DESIGN: 'Design',
@@ -727,6 +728,13 @@ export default async function ConteudoDetailPage({
 
 
   if (!content) return notFound();
+
+
+  const referenceImages =
+    await listAprovUpReferenceFiles(
+      contentSafe.id
+    );
+
 
   const historyLogs = await prisma.historyLog.findMany({
     where: {
@@ -1566,15 +1574,79 @@ export default async function ConteudoDetailPage({
                 />
               </div>
 
-              <div>
-                <label className={labelClasses}>URL pública de imagem/capa</label>
+              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+                <label className={labelClasses}>
+                  Fotos de referência para criação
+                </label>
+
+                <p className="mb-3 text-xs leading-5 text-slate-600">
+                  Use este espaço para anexar fotos de alunos, colaboradores, produtos ou ambientes que a equipe deve usar como referência ou material de criação.
+                </p>
+
+                {referenceImages.length >
+                0 ? (
+                  <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {referenceImages.map(
+                      (
+                        image,
+                        index
+                      ) => (
+                        <div
+                          key={
+                            image.name
+                          }
+                          className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                        >
+                          <a
+                            href={
+                              image.url
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block"
+                          >
+                            <img
+                              src={
+                                image.url
+                              }
+                              alt={`Foto de referência ${index + 1}`}
+                              className="aspect-square w-full object-cover"
+                            />
+                          </a>
+
+                          <label className="flex cursor-pointer items-center gap-2 border-t border-slate-100 px-3 py-2 text-[10px] font-bold text-red-600">
+                            <input
+                              type="checkbox"
+                              name="removeReferenceUrl"
+                              value={
+                                image.url
+                              }
+                              className="h-3.5 w-3.5"
+                            />
+
+                            Remover ao salvar
+                          </label>
+                        </div>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="mb-3 rounded-lg border border-dashed border-blue-200 bg-white p-4 text-center text-xs font-bold text-slate-400">
+                    Nenhuma foto de referência anexada.
+                  </div>
+                )}
+
                 <input
-                  name="coverImageUrl"
-                  defaultValue={contentSafe.coverImageUrl || ''}
-                  type="url"
-                  placeholder="https://exemplo.com/imagem.jpg"
-                  className={inputClasses}
+                  name="referenceImages"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="block w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-blue-700"
                 />
+
+                <p className="mt-2 text-[11px] leading-5 text-slate-500">
+                  Para adicionar mais fotos, selecione os arquivos e clique em “Salvar alterações”. Até 8 fotos por envio, 8 MB cada e 18 MB no total.
+                </p>
               </div>
             </form>
           </section>
