@@ -12,6 +12,7 @@ import { inputClasses, labelClasses } from '@/lib/styles';
 import { generateApprovalLink } from './contentActions';
 import { hasPermission } from '@/lib/userAccess';
 import { SocialMediaProductionPanel } from './SocialMediaProductionPanel';
+import { DownloadContentButton } from '@/components/content/DownloadContentButton';
 
 const areaLabels: Record<string, string> = {
   DESIGN: 'Design',
@@ -805,21 +806,34 @@ export default async function ConteudoDetailPage({
       .trim()
       .toUpperCase();
 
+  const isCarouselContent =
+    normalizedContentFormat.includes(
+      'CARROSSEL'
+    ) ||
+    normalizedContentFormat.includes(
+      'CAROUSEL'
+    ) ||
+    normalizedContentFormat.includes(
+      'ALBUM'
+    );
+
   const isDesignCarousel =
     ['DESIGN', 'SOCIAL_DESIGN', 'SOCIAL_MEDIA'].includes(
       currentArea
     ) &&
-    (
-      normalizedContentFormat.includes(
-        'CARROSSEL'
-      ) ||
-      normalizedContentFormat.includes(
-        'CAROUSEL'
-      ) ||
-      normalizedContentFormat.includes(
-        'ALBUM'
-      )
-    );
+    isCarouselContent;
+
+  const hasDownloadableContent =
+    isCarouselContent
+      ? contentSafe.instagramMediaAssets.length >=
+        2
+      : Boolean(
+          contentSafe.finalMediaUrl ||
+          contentSafe.finalCoverUrl ||
+          contentSafe.storyMediaUrl ||
+          contentSafe.storyCoverUrl
+        );
+
   const late = isLate(contentSafe.plannedDate, contentSafe.status);
 
   const pendingTasks = contentSafe.tasks.filter(
@@ -1897,6 +1911,32 @@ export default async function ConteudoDetailPage({
               )
             }
           />
+
+          {hasDownloadableContent ? (
+            <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4 shadow-sm">
+              <div className="flex flex-col gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-blue-500">
+                    Material final
+                  </p>
+
+                  <p className="mt-1 text-sm font-bold text-slate-800">
+                    Baixe o arquivo desta publicação
+                  </p>
+                </div>
+
+                <DownloadContentButton
+                  contentId={
+                    contentSafe.id
+                  }
+                  isCarousel={
+                    isCarouselContent
+                  }
+                  compact
+                />
+              </div>
+            </section>
+          ) : null}
 
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="border-b border-slate-100 pb-3 text-lg font-bold text-slate-900">

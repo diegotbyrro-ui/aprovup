@@ -981,9 +981,45 @@ export async function GET(
       );
     }
 
+    const selectedMedia =
+      content.finalMediaUrl
+        ? {
+            url:
+              content.finalMediaUrl,
+
+            declaredType:
+              content.finalMediaType ||
+              null,
+          }
+        : content.finalCoverUrl
+          ? {
+              url:
+                content.finalCoverUrl,
+
+              declaredType:
+                null,
+            }
+          : content.storyMediaUrl
+            ? {
+                url:
+                  content.storyMediaUrl,
+
+                declaredType:
+                  content.storyMediaType ||
+                  null,
+              }
+            : content.storyCoverUrl
+              ? {
+                  url:
+                    content.storyCoverUrl,
+
+                  declaredType:
+                    null,
+                }
+              : null;
+
     const mediaUrl =
-      content.finalMediaUrl ||
-      content.finalCoverUrl ||
+      selectedMedia?.url ||
       '';
 
     if (
@@ -1012,7 +1048,7 @@ export async function GET(
       );
 
     const contentType =
-      content.finalMediaType ||
+      selectedMedia?.declaredType ||
       remote.headers.get(
         'content-type'
       ) ||
