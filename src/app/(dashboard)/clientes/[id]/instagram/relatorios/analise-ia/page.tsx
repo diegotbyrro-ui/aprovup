@@ -183,6 +183,13 @@ export default async function InstagramAiAnalysisPage({
             Retenção de Reels
           </Link>
 
+          <Link
+            href={`/clientes/${client.id}/instagram/relatorios/estaticos?periodo=${period}`}
+            className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 transition hover:bg-slate-100"
+          >
+            Imagens e Carrosséis
+          </Link>
+
           <span className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white">
             Análise IA
           </span>

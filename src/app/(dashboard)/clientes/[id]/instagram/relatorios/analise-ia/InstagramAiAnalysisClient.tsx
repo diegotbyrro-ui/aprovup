@@ -6,6 +6,8 @@ import {
   Beaker,
   BrainCircuit,
   CheckCircle2,
+  Download,
+  FileText,
   Loader2,
   RefreshCw,
   Sparkles,
@@ -210,6 +212,18 @@ export default function InstagramAiAnalysisClient({
       null
     );
 
+  const [
+    exporting,
+    setExporting,
+  ] =
+    useState<
+      'pdf' |
+      'word' |
+      null
+    >(
+      null
+    );
+
 
   async function generate() {
     setLoading(
@@ -277,6 +291,151 @@ export default function InstagramAiAnalysisClient({
     }
   }
 
+
+  async function downloadAnalysis(
+    format:
+      'pdf' |
+      'word'
+  ) {
+    if (
+      !data
+        ?.analysis
+    ) {
+      return;
+    }
+
+    setExporting(
+      format
+    );
+
+    setError(
+      ''
+    );
+
+    try {
+      const response =
+        await fetch(
+          '/api/instagram/analise-ia/exportar',
+          {
+            method:
+              'POST',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+
+            body:
+              JSON.stringify({
+                clientId,
+                period,
+                format,
+                analysis:
+                  data.analysis,
+                source:
+                  data.source ||
+                  null,
+              }),
+          }
+        );
+
+      if (
+        !response.ok
+      ) {
+        let message =
+          'Não foi possível baixar o arquivo.';
+
+        try {
+          const payload =
+            await response
+              .json() as {
+                message?:
+                  string;
+              };
+
+          if (
+            payload.message
+          ) {
+            message =
+              payload.message;
+          }
+        }
+        catch {
+        }
+
+        throw new Error(
+          message
+        );
+      }
+
+      const blob =
+        await response
+          .blob();
+
+      const disposition =
+        response.headers
+          .get(
+            'content-disposition'
+          ) ||
+        '';
+
+      const match =
+        disposition.match(
+          /filename="?([^";]+)"?/i
+        );
+
+      const fileName =
+        match?.[1] ||
+        (
+          format ===
+            'pdf'
+            ? 'analise-instagram.pdf'
+            : 'analise-instagram.doc'
+        );
+
+      const url =
+        URL.createObjectURL(
+          blob
+        );
+
+      const link =
+        document.createElement(
+          'a'
+        );
+
+      link.href =
+        url;
+
+      link.download =
+        fileName;
+
+      document.body
+        .appendChild(
+          link
+        );
+
+      link.click();
+      link.remove();
+
+      URL.revokeObjectURL(
+        url
+      );
+    }
+    catch (
+      currentError
+    ) {
+      setError(
+        currentError instanceof Error
+          ? currentError.message
+          : 'Erro ao exportar a análise.'
+      );
+    }
+    finally {
+      setExporting(
+        null
+      );
+    }
+  }
 
   if (
     !data
@@ -377,29 +536,91 @@ export default function InstagramAiAnalysisClient({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={
-              generate
-            }
-            disabled={
-              loading
-            }
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-xs font-black text-white hover:bg-white/15 disabled:opacity-60"
-          >
-            {loading ? (
-              <Loader2
-                size={15}
-                className="animate-spin"
-              />
-            ) : (
-              <RefreshCw
-                size={15}
-              />
-            )}
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={
+                () =>
+                  downloadAnalysis(
+                    'pdf'
+                  )
+              }
+              disabled={
+                exporting !==
+                null
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white px-4 py-2.5 text-xs font-black text-slate-950 hover:bg-slate-100 disabled:opacity-60"
+            >
+              {exporting ===
+              'pdf' ? (
+                <Loader2
+                  size={15}
+                  className="animate-spin"
+                />
+              ) : (
+                <Download
+                  size={15}
+                />
+              )}
 
-            Gerar novamente
-          </button>
+              Baixar PDF
+            </button>
+
+            <button
+              type="button"
+              onClick={
+                () =>
+                  downloadAnalysis(
+                    'word'
+                  )
+              }
+              disabled={
+                exporting !==
+                null
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-300/30 bg-blue-500/15 px-4 py-2.5 text-xs font-black text-blue-100 hover:bg-blue-500/25 disabled:opacity-60"
+            >
+              {exporting ===
+              'word' ? (
+                <Loader2
+                  size={15}
+                  className="animate-spin"
+                />
+              ) : (
+                <FileText
+                  size={15}
+                />
+              )}
+
+              Baixar Word
+            </button>
+
+            <button
+              type="button"
+              onClick={
+                generate
+              }
+              disabled={
+                loading ||
+                exporting !==
+                  null
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-xs font-black text-white hover:bg-white/15 disabled:opacity-60"
+            >
+              {loading ? (
+                <Loader2
+                  size={15}
+                  className="animate-spin"
+                />
+              ) : (
+                <RefreshCw
+                  size={15}
+                />
+              )}
+
+              Gerar novamente
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2 text-[11px] font-bold text-slate-400">

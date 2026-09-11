@@ -2954,6 +2954,224 @@ export async function getInstagramTopMedia({
 }
 
 
+export async function getInstagramStaticMediaPerformance({
+  instagramUserId,
+  accessToken,
+  days = 30,
+  limit = 50,
+}: {
+  instagramUserId:
+    string;
+
+  accessToken:
+    string;
+
+  days?:
+    number;
+
+  limit?:
+    number;
+}): Promise<
+  InstagramTopMediaItem[]
+> {
+  const period =
+    getRollingPeriodRanges(
+      days
+    );
+
+  const url =
+    new URL(
+      `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/media`
+    );
+
+  url.searchParams.set(
+    'fields',
+    [
+      'id',
+      'caption',
+      'media_type',
+      'media_product_type',
+      'permalink',
+      'timestamp',
+      'thumbnail_url',
+      'media_url',
+      'like_count',
+      'comments_count',
+    ].join(',')
+  );
+
+  url.searchParams.set(
+    'limit',
+    '100'
+  );
+
+  url.searchParams.set(
+    'access_token',
+    accessToken
+  );
+
+  const response =
+    await fetch(
+      url,
+      {
+        cache:
+          'no-store',
+      }
+    );
+
+  const payload =
+    await response.json();
+
+  if (
+    !response.ok
+  ) {
+    console.error(
+      'INSTAGRAM STATIC MEDIA LIST ERROR',
+      payload
+    );
+
+    return [];
+  }
+
+  const media =
+    (
+      payload?.data ||
+      []
+    )
+      .filter(
+        (
+          item:
+            any
+        ) => {
+          if (
+            !item.timestamp
+          ) {
+            return false;
+          }
+
+          const timestamp =
+            new Date(
+              item.timestamp
+            );
+
+          const staticFormat =
+            item.media_type ===
+              'IMAGE' ||
+            item.media_type ===
+              'CAROUSEL_ALBUM';
+
+          return (
+            staticFormat &&
+            timestamp >=
+              period.currentStart &&
+            timestamp <=
+              period.currentEnd
+          );
+        }
+      )
+      .slice(
+        0,
+        Math.max(
+          1,
+          Math.min(
+            limit,
+            50
+          )
+        )
+      );
+
+  const enriched =
+    await Promise.all(
+      media.map(
+        async (
+          item:
+            any
+        ): Promise<
+          InstagramTopMediaItem
+        > => {
+          const insights =
+            await readMediaInsights({
+              mediaId:
+                item.id,
+
+              accessToken,
+            });
+
+          return {
+            id:
+              item.id,
+
+            caption:
+              item.caption ||
+              null,
+
+            mediaType:
+              item.media_type ||
+              'IMAGE',
+
+            mediaProductType:
+              item.media_product_type ||
+              null,
+
+            permalink:
+              item.permalink ||
+              null,
+
+            timestamp:
+              item.timestamp,
+
+            imageUrl:
+              item.thumbnail_url ||
+              item.media_url ||
+              null,
+
+            likes:
+              typeof item.like_count ===
+                'number'
+                ? item.like_count
+                : 0,
+
+            comments:
+              typeof item.comments_count ===
+                'number'
+                ? item.comments_count
+                : 0,
+
+            reach:
+              insights.reach,
+
+            views:
+              insights.views,
+
+            interactions:
+              insights.interactions,
+
+            saved:
+              insights.saved,
+
+            shares:
+              insights.shares,
+          };
+        }
+      )
+    );
+
+  enriched.sort(
+    (
+      a,
+      b
+    ) =>
+      new Date(
+        b.timestamp
+      ).getTime() -
+      new Date(
+        a.timestamp
+      ).getTime()
+  );
+
+  return enriched;
+}
+
 export type InstagramReelRetentionItem = {
   id:
     string;
