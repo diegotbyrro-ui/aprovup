@@ -388,6 +388,209 @@ export async function POST(
     }
 
 
+
+    if (
+      body?.action ===
+      'social-ready'
+    ) {
+      if (
+        content.area !==
+        'SOCIAL_MEDIA' ||
+        !hasPermission(
+          currentUser,
+          'social.manage'
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Somente a Social Media pode concluir esta entrega por este fluxo.',
+          },
+          {
+            status:
+              403,
+          }
+        );
+      }
+
+
+      const normalizedFormat =
+        String(
+          content.format ||
+          ''
+        )
+          .trim()
+          .toUpperCase();
+
+
+      const isCarousel =
+        normalizedFormat.includes(
+          'CARROSSEL'
+        ) ||
+        normalizedFormat.includes(
+          'CAROUSEL'
+        ) ||
+        normalizedFormat.includes(
+          'ALBUM'
+        );
+
+
+      const carouselAssets =
+        isCarousel
+          ? await prisma
+              .instagramMediaAsset
+              .findMany({
+                where: {
+                  contentId:
+                    id,
+                },
+
+                orderBy: {
+                  position:
+                    'asc',
+                },
+              })
+          : [];
+
+
+      const hasSingleMaterial =
+        Boolean(
+          content.finalMediaUrl ||
+          content.finalCoverUrl ||
+          content.finalExternalUrl
+        );
+
+
+      if (
+        isCarousel &&
+        carouselAssets.length <
+          2
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Anexe pelo menos 2 páginas para concluir o carrossel.',
+          },
+          {
+            status:
+              422,
+          }
+        );
+      }
+
+
+      if (
+        !isCarousel &&
+        !hasSingleMaterial
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Anexe o material final antes de salvar.',
+          },
+          {
+            status:
+              422,
+          }
+        );
+      }
+
+
+      await prisma.content.update({
+        where: {
+          id,
+        },
+
+        data: {
+          status:
+            'PRONTO_PARA_POSTAR',
+
+          finalUploadedAt:
+            new Date(),
+
+          ...(
+            isCarousel &&
+            carouselAssets[0]?.url
+              ? {
+                  finalCoverUrl:
+                    carouselAssets[0].url,
+                }
+              : {}
+          ),
+        },
+      });
+
+
+      await prisma.historyLog
+        .create({
+          data: {
+            entityType:
+              'CONTENT',
+
+            entityId:
+              id,
+
+            action:
+              'READY_TO_POST',
+
+            description:
+              'Social Media salvou o material final. Conteúdo enviado diretamente para Pronto para Postar.',
+
+            authorName:
+              currentUser.name ||
+              currentUser.email ||
+              'Equipe Level UP',
+          },
+        })
+        .catch(
+          () =>
+            null
+        );
+
+
+      await prisma.comment
+        .create({
+          data: {
+            contentId:
+              id,
+
+            authorName:
+              currentUser.name ||
+              currentUser.email ||
+              'Equipe Level UP',
+
+            authorRole:
+              currentUser.role ||
+              'EQUIPE',
+
+            message:
+              'Material final salvo pela Social Media e enviado para Pronto para Postar.',
+          },
+        })
+        .catch(
+          () =>
+            null
+        );
+
+
+      return NextResponse.json({
+        ok:
+          true,
+
+        status:
+          'PRONTO_PARA_POSTAR',
+      });
+    }
+
     if (
       body?.action ===
       'complete'
@@ -588,32 +791,10 @@ export async function POST(
           : '';
 
 
-      const normalizedFormat =
-        String(
-          content.format ||
-          ''
-        )
-          .trim()
-          .toUpperCase();
-
-      const isSocialMediaCarousel =
-        content.area ===
-          'SOCIAL_MEDIA' &&
-        (
-          normalizedFormat.includes(
-            'CARROSSEL'
-          ) ||
-          normalizedFormat.includes(
-            'CAROUSEL'
-          ) ||
-          normalizedFormat.includes(
-            'ALBUM'
-          )
-        );
-
       const reviewStatus =
-        isSocialMediaCarousel
-          ? content.status
+        content.area ===
+          'SOCIAL_MEDIA'
+          ? 'PRONTO_PARA_POSTAR'
           : content.area ===
               'FILMMAKER'
             ? 'FILMMAKER_ANALISE'
@@ -733,7 +914,10 @@ export async function POST(
             'EQUIPE',
 
           message:
-            'Materiais finais enviados para conferência interna antes da 2ª Etapa de Aprovação.',
+            content.area ===
+              'SOCIAL_MEDIA'
+              ? 'Material final salvo pela Social Media e enviado para Pronto para Postar.'
+              : 'Materiais finais enviados para conferência interna antes da 2ª Etapa de Aprovação.',
         },
       }).catch(
         () => null

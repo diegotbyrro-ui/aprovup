@@ -42,21 +42,6 @@ const priorityClasses: Record<string, string> = {
   URGENTE: 'bg-red-50 text-red-700 border-red-200',
 };
 
-const statusOptions = [
-  { value: 'IDEIA', label: 'Ideia' },
-  { value: 'ROTEIRO', label: 'Roteiro' },
-  { value: 'AGENDAMENTO_PRODUCAO', label: 'Agendamento de Produção' },
-  { value: 'DESIGN', label: 'Design / Pré-produção' },
-  { value: 'EDICAO', label: 'Edição' },
-  { value: 'REVISAO_INTERNA', label: 'Revisão Interna' },
-  { value: 'ENVIADO_CLIENTE', label: 'ENVIADO_AO_CLIENTE' },
-  { value: 'ALTERACAO_SOLICITADA', label: 'Alteração Solicitada' },
-  { value: 'APROVADO', label: 'Aprovado' },
-  { value: 'PRONTO_PARA_POSTAR', label: 'PRONTO_PARA_POSTAR' },
-  { value: 'PUBLICADO_MANUALMENTE', label: 'Publicado manualmente' },
-  { value: 'PUBLICADO', label: 'Publicado automaticamente' },
-  { value: 'ARQUIVADO', label: 'Arquivado' },
-];
 
 const priorities = [
   { value: 'BAIXA', label: 'Baixa' },
@@ -1334,22 +1319,7 @@ export default async function ConteudoDetailPage({
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                <div>
-                  <label className={labelClasses}>Status</label>
-                  <select
-                    name="status"
-                    defaultValue={formatLabel(contentSafe.status)}
-                    className={inputClasses}
-                  >
-                    {statusOptions.map((status) => (
-                      <option key={status.value} value={status.value}>
-                        {status.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
                   <label className={labelClasses}>Área responsável</label>
                   <select
@@ -1518,28 +1488,15 @@ export default async function ConteudoDetailPage({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label className={labelClasses}>Roteiro / Briefing</label>
-                  <textarea
-                    name="briefing"
-                    defaultValue={contentSafe.briefing || ''}
-                    rows={5}
-                    placeholder="Direcionamento, objetivo, estrutura, cenas, referências ou orientações para criação."
-                    className={inputClasses}
-                  ></textarea>
-                </div>
-
-                <div>
-                  <label className={labelClasses}>Texto da Arte</label>
-                  <textarea
-                    name="artText"
-                    defaultValue={contentSafe.artText || ''}
-                    rows={5}
-                    placeholder="Texto interno que deve aparecer na arte, carrossel ou criativo."
-                    className={inputClasses}
-                  ></textarea>
-                </div>
+              <div>
+                <label className={labelClasses}>Roteiro / Briefing</label>
+                <textarea
+                  name="briefing"
+                  defaultValue={contentSafe.briefing || ''}
+                  rows={5}
+                  placeholder="Direcionamento, objetivo, estrutura, cenas, referências ou orientações para criação."
+                  className={inputClasses}
+                ></textarea>
               </div>
 
               <div>
@@ -1553,19 +1510,6 @@ export default async function ConteudoDetailPage({
                 ></textarea>
               </div>
 
-              {contentSafe.caption && (
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                    Legenda para copiar
-                  </p>
-
-                  <textarea
-                    readOnly
-                    value={contentSafe.caption || ''}
-                    className="min-h-28 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-              )}
 
               <div>
                 <label className={labelClasses}>Links / Anexos da Mídia</label>

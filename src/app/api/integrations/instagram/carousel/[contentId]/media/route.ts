@@ -57,8 +57,24 @@ function isCarouselFormat(
 
 function canEditCarousel(
   status:
-    string
+    string,
+  area?:
+    string | null
 ) {
+
+  if (
+    area ===
+    'SOCIAL_MEDIA'
+  ) {
+    return ![
+      'PUBLICADO',
+      'PUBLICADO_MANUALMENTE',
+      'PUBLICANDO',
+    ].includes(
+      status
+    );
+  }
+
 
   return [
     'APROVADO',
@@ -272,7 +288,8 @@ export async function POST(
 
   if (
     !canEditCarousel(
-      content.status
+      content.status,
+      content.area
     )
   ) {
 
@@ -569,7 +586,8 @@ export async function DELETE(
   if (
     !content ||
     !canEditCarousel(
-      content.status
+      content.status,
+      content.area
     )
   ) {
 
@@ -966,7 +984,8 @@ export async function PATCH(
 
   if (
     !canEditCarousel(
-      content.status
+      content.status,
+      content.area
     )
   ) {
 
@@ -1203,7 +1222,8 @@ export async function PUT(
 
   if (
     !canEditCarousel(
-      content.status
+      content.status,
+      content.area
     )
   ) {
 
