@@ -5,6 +5,10 @@ import { createContent } from '@/app/actions';
 import { inputClasses, labelClasses } from '@/lib/styles';
 import { notFound } from 'next/navigation';
 
+import {
+  ReferenceAttachmentsField,
+} from '@/components/content/ReferenceAttachmentsField';
+
 export default async function NovoConteudoClientePage({
   params,
   searchParams,
@@ -284,27 +288,9 @@ export default async function NovoConteudoClientePage({
           />
         </div>
 
-        <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
-          <label className={labelClasses}>
-            Fotos de referência para criação
-          </label>
-
-          <p className="mb-3 text-xs leading-5 text-slate-600">
-            Anexe fotos de alunos, colaboradores, produtos, ambientes ou qualquer imagem que o Design/Filmmaker precise usar na criação.
-          </p>
-
-          <input
-            name="referenceImages"
-            type="file"
-            accept="image/*"
-            multiple
-            className="block w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-xs file:font-bold file:text-white hover:file:bg-blue-700"
-          />
-
-          <p className="mt-2 text-[11px] leading-5 text-slate-500">
-            Até 8 fotos por envio, máximo de 8 MB por foto e 18 MB no total.
-          </p>
-        </div>
+        <ReferenceAttachmentsField
+          existing={[]}
+        />
 
         <div className="flex justify-end pt-4">
           <button

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
@@ -540,7 +540,15 @@ export default function KanbanBoard({
                                         </div>
                                     </div>
 
-                                    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-50 p-3">
+                                    <div
+                                        className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-50 p-3 pr-2"
+                                        style={{
+                                            scrollbarWidth: "thin",
+                                            scrollbarColor: "#64748b #e2e8f0",
+                                            scrollbarGutter: "stable",
+                                            overscrollBehavior: "contain",
+                                        }}
+                                    >
                                         {columnContents.length > 0 ? (
                                             columnContents.map((content) => {
                                                 const isDragging = draggingContentId === content.id;
@@ -647,4 +655,3 @@ export default function KanbanBoard({
         </div>
     );
 }
-

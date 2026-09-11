@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation';
 
 import {
   deleteAprovUpReferenceFile,
-  uploadAprovUpFile,
+  uploadAprovUpReferenceFile,
 } from '@/lib/aprovupStorage';
 
 
@@ -139,10 +139,9 @@ async function uploadContentReferenceImages(
       of files
     ) {
       const url =
-        await uploadAprovUpFile(
+        await uploadAprovUpReferenceFile(
           file,
-          'content-reference',
-          `referencia-${contentId}`
+          contentId
         );
 
 

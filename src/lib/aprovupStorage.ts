@@ -384,6 +384,9 @@ export type AprovUpReferenceFile = {
   name:
     string;
 
+  originalName:
+    string;
+
   url:
     string;
 
@@ -396,6 +399,142 @@ export type AprovUpReferenceFile = {
   createdAt:
     string | null;
 };
+
+
+function referenceOriginalName(
+  storedName:
+    string
+) {
+  const delimiter =
+    '--';
+
+  const index =
+    storedName.lastIndexOf(
+      delimiter
+    );
+
+
+  if (
+    index ===
+    -1
+  ) {
+    return storedName;
+  }
+
+
+  const encoded =
+    storedName.slice(
+      index +
+      delimiter.length
+    );
+
+
+  if (
+    !encoded
+  ) {
+    return storedName;
+  }
+
+
+  try {
+    const decoded =
+      Buffer.from(
+        encoded,
+        'base64url'
+      ).toString(
+        'utf8'
+      );
+
+    return (
+      decoded.trim() ||
+      storedName
+    );
+  }
+  catch {
+    return storedName;
+  }
+}
+
+
+export async function uploadAprovUpReferenceFile(
+  file:
+    File,
+  contentId:
+    string
+) {
+  if (
+    !file ||
+    file.size ===
+      0
+  ) {
+    return '';
+  }
+
+
+  const supabase =
+    storageClient();
+
+  const encodedOriginalName =
+    Buffer.from(
+      file.name ||
+      'imagem',
+      'utf8'
+    ).toString(
+      'base64url'
+    );
+
+  const objectPath =
+    `content-reference/${safePart(
+      `referencia-${contentId}`
+    )}-${Date.now()}-${randomUUID()}--${encodedOriginalName}`;
+
+
+  const bytes =
+    await file.arrayBuffer();
+
+
+  const {
+    error,
+  } =
+    await supabase.storage
+      .from(
+        BUCKET
+      )
+      .upload(
+        objectPath,
+        Buffer.from(
+          bytes
+        ),
+        {
+          contentType:
+            file.type ||
+            'application/octet-stream',
+
+          cacheControl:
+            '3600',
+
+          upsert:
+            false,
+        }
+      );
+
+
+  if (error) {
+    console.error(
+      'AprovUp reference upload:',
+      error
+    );
+
+    throw new Error(
+      'Nao foi possivel salvar a foto de referencia.'
+    );
+  }
+
+
+  return getAprovUpPublicUrl(
+    objectPath
+  );
+}
 
 
 export async function listAprovUpReferenceFiles(
@@ -493,6 +632,11 @@ export async function listAprovUpReferenceFiles(
         return {
           name:
             file.name,
+
+          originalName:
+            referenceOriginalName(
+              file.name
+            ),
 
           url:
             getAprovUpPublicUrl(
