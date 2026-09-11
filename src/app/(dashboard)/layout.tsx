@@ -23,6 +23,10 @@ import {
   DirectorIntegrationAlert,
 } from "@/components/layout/DirectorIntegrationAlert";
 
+import {
+  RouteScrollReset,
+} from "@/components/layout/RouteScrollReset";
+
 
 export default function DashboardLayout({
   children,
@@ -39,6 +43,8 @@ export default function DashboardLayout({
         <DirectorIntegrationAlert />
 
         <main className="ap-app-main min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <RouteScrollReset />
+
           <div className="mx-auto w-full max-w-[1680px] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6 2xl:px-8">
             {children}
           </div>

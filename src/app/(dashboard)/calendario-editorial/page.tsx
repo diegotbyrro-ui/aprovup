@@ -334,7 +334,9 @@ export default async function CalendarioEditorialPage({
         <div className="space-y-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                    <CalendarBackButton />
+                    <CalendarBackButton
+                        clientId={selectedClient}
+                    />
 
                     <h1 className="text-3xl font-bold text-slate-900">
                         Calendário Editorial

@@ -7,6 +7,7 @@ import { markContentAsPublished } from './actions';
 import { InstagramPublishButton } from '@/components/instagram/InstagramPublishButton';
 import { InstagramScheduleControl } from '@/components/instagram/InstagramScheduleControl';
 import { DownloadContentButton } from '@/components/content/DownloadContentButton';
+import { CopyCaptionButton } from '@/components/content/CopyCaptionButton';
 
 const priorityLabels: Record<string, string> = {
     BAIXA: 'Baixa',
@@ -24,8 +25,11 @@ const priorityClasses: Record<string, string> = {
 
 const areaLabels: Record<string, string> = {
     GERAL: 'Geral',
+    SOCIAL_MEDIA: 'Social Media',
     SOCIAL_DESIGN: 'Design',
+    DESIGN: 'Design',
     AUDIOVISUAL: 'Filmaker',
+    FILMMAKER: 'Filmaker',
 };
 
 function formatDate(date: Date | null) {
@@ -197,7 +201,7 @@ export default async function ProntoParaPostarPage({
                         </Link>
 
                         <p className="text-sm font-bold uppercase tracking-wider text-emerald-300">
-                            Publicação Manual
+                            Central de publicação
                         </p>
 
                         <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">
@@ -205,8 +209,7 @@ export default async function ProntoParaPostarPage({
                         </h1>
 
                         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300">
-                            Central dos conteúdos aprovados e finalizados para publicação manual.
-                            Confira legenda, material, cliente, data e marque como publicado.
+                            Tudo que a Social Media precisa para publicar: material final, legenda, conta conectada, publicação imediata ou agendada.
                         </p>
                     </div>
 
@@ -518,6 +521,20 @@ export default async function ProntoParaPostarPage({
                                                 'video/'
                                             );
 
+                                        const previewImageUrl =
+                                            isCarousel
+                                                ? content.instagramMediaAssets[0]?.url || null
+                                                : content.finalCoverUrl ||
+                                                  (isImageMedia
+                                                      ? content.finalMediaUrl
+                                                      : null);
+
+                                        const previewVideoUrl =
+                                            !isCarousel &&
+                                            isVideoMedia
+                                                ? content.finalMediaUrl
+                                                : null;
+
                                         const carouselMediaCount =
                                             content
                                                 .instagramMediaAssets
@@ -588,8 +605,8 @@ export default async function ProntoParaPostarPage({
                                                                 : 'bg-white'
                                                     }`}
                                             >
-                                                <div className="grid grid-cols-1 gap-5 xl:grid-cols-4">
-                                                    <div className="space-y-4 xl:col-span-3">
+                                                <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+                                                    <div className="space-y-4">
                                                         <div>
                                                             <div className="flex flex-wrap items-center gap-2">
                                                                 <Link
@@ -684,31 +701,121 @@ export default async function ProntoParaPostarPage({
                                                             </div>
                                                         </div>
 
-                                                        {content.caption ? (
-                                                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                                                                <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                                                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                                                        Legenda para copiar
-                                                                    </p>
+                                                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
+                                                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                                                <div className="flex items-center justify-between gap-3">
+                                                                    <div>
+                                                                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                                                            Material final
+                                                                        </p>
 
-                                                                    <p className="text-xs text-slate-400">
-                                                                        Selecione o texto abaixo e copie.
-                                                                    </p>
+                                                                        <p className="mt-1 text-sm font-black text-slate-900">
+                                                                            {content.format || 'Publicação'}
+                                                                        </p>
+                                                                    </div>
+
+                                                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-700">
+                                                                        Pronto
+                                                                    </span>
                                                                 </div>
 
-                                                                <textarea
-                                                                    readOnly
-                                                                    value={content.caption}
-                                                                    className="min-h-32 w-full resize-y rounded-lg border border-slate-200 bg-white p-3 text-sm leading-relaxed text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                                                                />
+                                                                <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
+                                                                    {isCarousel && carouselMediaCount > 0 ? (
+                                                                        <div className="grid grid-cols-2 gap-1 bg-slate-900 p-1">
+                                                                            {content.instagramMediaAssets
+                                                                                .slice(0, 4)
+                                                                                .map((asset, index) => (
+                                                                                    <div
+                                                                                        key={asset.id}
+                                                                                        className="relative overflow-hidden rounded-lg bg-slate-800"
+                                                                                    >
+                                                                                        <img
+                                                                                            src={asset.url}
+                                                                                            alt={`Página ${index + 1}`}
+                                                                                            className="aspect-[4/5] w-full object-cover"
+                                                                                        />
+
+                                                                                        <span className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-1 text-[9px] font-black text-white">
+                                                                                            {index + 1}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                ))}
+                                                                        </div>
+                                                                    ) : previewVideoUrl ? (
+                                                                        <video
+                                                                            src={previewVideoUrl}
+                                                                            controls
+                                                                            preload="metadata"
+                                                                            className="aspect-[9/16] max-h-[430px] w-full bg-black object-contain"
+                                                                        >
+                                                                            Seu navegador não conseguiu reproduzir este vídeo.
+                                                                        </video>
+                                                                    ) : previewImageUrl ? (
+                                                                        <img
+                                                                            src={previewImageUrl}
+                                                                            alt="Material final"
+                                                                            className="max-h-[430px] w-full bg-slate-100 object-contain"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="flex min-h-56 items-center justify-center px-4 text-center text-xs font-bold text-slate-400">
+                                                                            Material final pronto para download.
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                {isCarousel && carouselMediaCount > 4 ? (
+                                                                    <p className="mt-2 text-center text-[10px] font-bold text-slate-500">
+                                                                        + {carouselMediaCount - 4} página(s) no carrossel
+                                                                    </p>
+                                                                ) : null}
+
+                                                                {hasFinalMedia ? (
+                                                                    <div className="mt-3">
+                                                                        <DownloadContentButton
+                                                                            contentId={content.id}
+                                                                            isCarousel={isCarousel}
+                                                                            compact
+                                                                        />
+                                                                    </div>
+                                                                ) : null}
                                                             </div>
-                                                        ) : (
-                                                            <div className="rounded-xl border border-dashed border-orange-200 bg-orange-50 p-4">
-                                                                <p className="text-sm font-bold text-orange-800">
-                                                                    Atenção: este conteúdo não possui legenda cadastrada.
-                                                                </p>
-                                                            </div>
-                                                        )}
+
+                                                            {content.caption ? (
+                                                                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                                                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                                                        <div>
+                                                                            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                                                                Legenda
+                                                                            </p>
+
+                                                                            <p className="mt-1 text-sm font-black text-slate-900">
+                                                                                Texto pronto para publicação
+                                                                            </p>
+                                                                        </div>
+
+                                                                        <CopyCaptionButton
+                                                                            text={content.caption}
+                                                                        />
+                                                                    </div>
+
+                                                                    <textarea
+                                                                        readOnly
+                                                                        value={content.caption}
+                                                                        className="min-h-72 w-full resize-y rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                                    />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50 p-5">
+                                                                    <p className="text-sm font-black text-orange-800">
+                                                                        Este conteúdo não possui legenda cadastrada.
+                                                                    </p>
+
+                                                                    <p className="mt-1 text-xs leading-5 text-orange-700">
+                                                                        Abra o conteúdo para adicionar a legenda antes de publicar.
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
 
                                                         {content.fileLinks && (
                                                             <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
@@ -732,7 +839,7 @@ export default async function ProntoParaPostarPage({
                                                         )}
                                                     </div>
 
-                                                    <aside className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
+                                                    <aside className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
 
                                                         <div className="rounded-xl border border-pink-100 bg-gradient-to-br from-pink-50 to-violet-50 p-4">
 
@@ -907,26 +1014,17 @@ export default async function ProntoParaPostarPage({
 
                                                         <div>
 
-                                                            <p className="text-sm font-bold text-slate-900">
-                                                                Checklist antes de publicar
-                                                            </p>
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <p className="text-sm font-black text-slate-900">
+                                                                    Ações rápidas
+                                                                </p>
 
-                                                        <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-slate-500">
-                                                            <li>Conferir se a arte/vídeo é a versão final.</li>
-                                                            <li>Copiar a legenda correta.</li>
-                                                            <li>Conferir cliente, data e formato.</li>
-                                                            <li>Publicar manualmente na plataforma.</li>
-                                                            <li>Depois marcar como publicado.</li>
-                                                        </ul>
+                                                                <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
+                                                                    Pronto para publicar
+                                                                </span>
+                                                            </div>
 
-                                                        <div className="mt-4 space-y-2">
-                                                            {hasFinalMedia ? (
-                                                                <DownloadContentButton
-                                                                    contentId={content.id}
-                                                                    isCarousel={isCarousel}
-                                                                    compact
-                                                                />
-                                                            ) : null}
+                                                        <div className="mt-3 space-y-2">
 
                                                             <Link
                                                                 href={`/conteudos/${content.id}`}
