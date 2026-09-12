@@ -2,8 +2,13 @@ import Link from 'next/link';
 
 import {
   Bot,
+  Clock3,
+  MessageCircleMore,
   Settings,
+  ShieldCheck,
   Sparkles,
+  Users,
+  Wifi,
 } from 'lucide-react';
 
 import {
@@ -11,29 +16,64 @@ import {
 } from '@/lib/prisma';
 
 import {
-  hasPermission,
   requirePermission,
 } from '@/lib/userAccess';
 
 import {
-  SecretaryClient,
-} from './SecretaryClient';
+  SecretaryConversationsClient,
+} from './SecretaryConversationsClient';
 
 
 export const dynamic =
   'force-dynamic';
 
 
+function formatDateTime(
+  value:
+    Date |
+    null |
+    undefined
+) {
+  if (!value) {
+    return 'Ainda não recebido';
+  }
+
+  return new Intl.DateTimeFormat(
+    'pt-BR',
+    {
+      timeZone:
+        'America/Maceio',
+
+      day:
+        '2-digit',
+
+      month:
+        '2-digit',
+
+      hour:
+        '2-digit',
+
+      minute:
+        '2-digit',
+    }
+  ).format(
+    value
+  );
+}
+
+
 export default async function SecretaryPage() {
   const user =
     await requirePermission(
-      'secretary.use'
+      'settings.manage'
     );
 
 
   const [
     agency,
-    secretaryIdentity,
+    connection,
+    members,
+    threads,
   ] =
     await Promise.all([
       prisma.agency
@@ -66,19 +106,126 @@ export default async function SecretaryPage() {
 
             secretaryAvatarUrl:
               true,
+
+            status:
+              true,
+
+            displayPhoneNumber:
+              true,
+
+            lastWebhookAt:
+              true,
+          },
+        }),
+
+      prisma
+        .secretaryWhatsappMember
+        .findMany({
+          where: {
+            agencyId:
+              user.agencyId,
+
+            isActive:
+              true,
+          },
+
+          select: {
+            userId:
+              true,
+
+            phoneE164:
+              true,
+
+            displayName:
+              true,
+
+            canUseSecretary:
+              true,
+
+            lastInboundAt:
+              true,
+          },
+
+          orderBy: {
+            displayName:
+              'asc',
+          },
+        }),
+
+      prisma
+        .secretaryThread
+        .findMany({
+          where: {
+            agencyId:
+              user.agencyId,
+
+            channel:
+              'WHATSAPP',
+          },
+
+          orderBy: {
+            updatedAt:
+              'desc',
+          },
+
+          take:
+            100,
+
+          select: {
+            id:
+              true,
+
+            userId:
+              true,
+
+            externalConversationId:
+              true,
+
+            title:
+              true,
+
+            updatedAt:
+              true,
+
+            messages: {
+              orderBy: {
+                createdAt:
+                  'desc',
+              },
+
+              take:
+                120,
+
+              select: {
+                id:
+                  true,
+
+                role:
+                  true,
+
+                content:
+                  true,
+
+                inputType:
+                  true,
+
+                createdAt:
+                  true,
+              },
+            },
           },
         }),
     ]);
 
 
   const secretaryName =
-    secretaryIdentity
+    connection
       ?.secretaryName
       ?.trim() ||
     'Secretária IA';
 
   const secretaryCompanyName =
-    secretaryIdentity
+    connection
       ?.secretaryCompanyName
       ?.trim() ||
     agency
@@ -87,123 +234,134 @@ export default async function SecretaryPage() {
     'sua empresa';
 
   const secretaryAvatarUrl =
-    secretaryIdentity
+    connection
       ?.secretaryAvatarUrl
       ?.trim() ||
     '';
 
 
-  const thread =
-    await prisma
-      .secretaryThread
-      .findFirst({
-        where: {
-          agencyId:
-            user.agencyId,
-
-          userId:
-            user.id,
-
-          channel:
-            'WEB',
-        },
-
-        orderBy: {
-          updatedAt:
-            'desc',
-        },
-      });
-
-
-  const messages =
-    thread
-      ? await prisma
-          .secretaryMessage
-          .findMany({
-            where: {
-              threadId:
-                thread.id,
-            },
-
-            orderBy: {
-              createdAt:
-                'desc',
-            },
-
-            take:
-              50,
-          })
-      : [];
-
-
-  const pending =
-    thread
-      ? await prisma
-          .secretaryPendingAction
-          .findFirst({
-            where: {
-              agencyId:
-                user.agencyId,
-
-              userId:
-                user.id,
-
-              threadId:
-                thread.id,
-
-              status:
-                'PENDING',
-
-              OR: [
-                {
-                  expiresAt:
-                    null,
-                },
-
-                {
-                  expiresAt: {
-                    gt:
-                      new Date(),
-                  },
-                },
-              ],
-            },
-
-            orderBy: {
-              createdAt:
-                'desc',
-            },
-          })
-      : null;
-
-
-  const alerts =
-    await prisma
-      .secretaryAlert
-      .findMany({
-        where: {
-          agencyId:
-            user.agencyId,
-
-          status:
-            'OPEN',
-        },
-
-        orderBy: {
-          createdAt:
-            'desc',
-        },
-
-        take:
-          20,
-      });
-
-
-  const canManage =
-    hasPermission(
-      user,
-      'settings.manage'
+  const memberByPhone =
+    new Map(
+      members.map(
+        (
+          member
+        ) => [
+          member.phoneE164,
+          member,
+        ]
+      )
     );
+
+
+  const conversations =
+    threads
+      .map(
+        (
+          thread
+        ) => {
+          const phone =
+            thread
+              .externalConversationId ||
+            '';
+
+          const member =
+            memberByPhone.get(
+              phone
+            );
+
+          const orderedMessages =
+            [
+              ...thread.messages,
+            ].reverse();
+
+          const latestMessage =
+            orderedMessages[
+              orderedMessages.length -
+                1
+            ];
+
+          return {
+            id:
+              thread.id,
+
+            userId:
+              thread.userId,
+
+            phone,
+
+            displayName:
+              member
+                ?.displayName
+                ?.trim() ||
+              'Contato WhatsApp',
+
+            lastInboundAt:
+              member
+                ?.lastInboundAt
+                ?.toISOString() ||
+              null,
+
+            updatedAt:
+              (
+                latestMessage
+                  ?.createdAt ||
+                thread.updatedAt
+              ).toISOString(),
+
+            messages:
+              orderedMessages.map(
+                (
+                  message
+                ) => ({
+                  id:
+                    message.id,
+
+                  role:
+                    message.role,
+
+                  content:
+                    message.content,
+
+                  inputType:
+                    message.inputType,
+
+                  createdAt:
+                    message
+                      .createdAt
+                      .toISOString(),
+                })
+              ),
+          };
+        }
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          new Date(
+            b.updatedAt
+          ).getTime() -
+          new Date(
+            a.updatedAt
+          ).getTime()
+      );
+
+
+  const authorizedMembers =
+    members.filter(
+      (
+        member
+      ) =>
+        member
+          .canUseSecretary
+    ).length;
+
+
+  const connectionStatus =
+    connection
+      ?.status ||
+    'PENDENTE';
 
 
   return (
@@ -211,7 +369,7 @@ export default async function SecretaryPage() {
 
       <section className="rounded-3xl bg-slate-950 px-6 py-7 text-white shadow-sm sm:px-8">
 
-        <div className="flex items-center justify-between gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-6">
 
           <div>
             <div className="flex items-center gap-2 text-blue-300">
@@ -220,37 +378,39 @@ export default async function SecretaryPage() {
               />
 
               <span className="text-[10px] font-black uppercase tracking-[0.18em]">
-                Inteligência operacional
+                Central administrativa da Secretária IA
               </span>
             </div>
 
             <h1 className="mt-3 text-3xl font-black">
-              {secretaryName}
+              Conversas da {secretaryName}
             </h1>
 
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">
-              Sua secretária IA operacional da {secretaryCompanyName}. Converse naturalmente por texto ou áudio.
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-300">
+              Acompanhe em um só lugar tudo que a {secretaryName} conversa pelo WhatsApp com a equipe da {secretaryCompanyName}. Esta área é somente para administração e não possui chat interno com a IA.
             </p>
+
+            <div className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-[10px] font-black text-emerald-200">
+              <ShieldCheck
+                size={14}
+              />
+
+              Acesso administrativo
+            </div>
           </div>
 
 
           <div className="flex items-center gap-3">
-            {
-              canManage
-                ? (
-                  <Link
-                    href="/secretaria/configuracoes"
-                    className="hidden items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-[10px] font-black text-white hover:bg-white/15 sm:inline-flex"
-                  >
-                    <Settings
-                      size={14}
-                    />
+            <Link
+              href="/secretaria/configuracoes"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-[10px] font-black text-white hover:bg-white/15"
+            >
+              <Settings
+                size={14}
+              />
 
-                    WhatsApp
-                  </Link>
-                )
-                : null
-            }
+              Configurações
+            </Link>
 
             <div className="hidden h-16 w-16 items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-white/10 text-blue-200 sm:flex">
               {secretaryAvatarUrl ? (
@@ -272,7 +432,106 @@ export default async function SecretaryPage() {
       </section>
 
 
-      <SecretaryClient
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-400">
+            <MessageCircleMore
+              size={15}
+            />
+
+            <span className="text-[9px] font-black uppercase tracking-[0.12em]">
+              Conversas
+            </span>
+          </div>
+
+          <p className="mt-2 text-2xl font-black text-slate-950">
+            {conversations.length}
+          </p>
+
+          <p className="mt-1 text-[10px] text-slate-500">
+            Históricos do WhatsApp
+          </p>
+        </div>
+
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-400">
+            <Users
+              size={15}
+            />
+
+            <span className="text-[9px] font-black uppercase tracking-[0.12em]">
+              Equipe autorizada
+            </span>
+          </div>
+
+          <p className="mt-2 text-2xl font-black text-slate-950">
+            {authorizedMembers}
+          </p>
+
+          <p className="mt-1 text-[10px] text-slate-500">
+            Pessoas que podem falar com a {secretaryName}
+          </p>
+        </div>
+
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-400">
+            <Wifi
+              size={15}
+            />
+
+            <span className="text-[9px] font-black uppercase tracking-[0.12em]">
+              WhatsApp
+            </span>
+          </div>
+
+          <p className={
+            'mt-2 text-sm font-black ' +
+            (
+              connectionStatus ===
+              'ATIVO'
+                ? 'text-emerald-600'
+                : 'text-amber-600'
+            )
+          }>
+            {connectionStatus}
+          </p>
+
+          <p className="mt-1 text-[10px] text-slate-500">
+            {connection
+              ?.displayPhoneNumber ||
+              'Número não configurado'}
+          </p>
+        </div>
+
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-400">
+            <Clock3
+              size={15}
+            />
+
+            <span className="text-[9px] font-black uppercase tracking-[0.12em]">
+              Último webhook
+            </span>
+          </div>
+
+          <p className="mt-2 text-sm font-black text-slate-950">
+            {formatDateTime(
+              connection
+                ?.lastWebhookAt
+            )}
+          </p>
+
+          <p className="mt-1 text-[10px] text-slate-500">
+            Última atividade recebida da Meta
+          </p>
+        </div>
+      </section>
+
+
+      <SecretaryConversationsClient
         secretaryName={
           secretaryName
         }
@@ -281,83 +540,8 @@ export default async function SecretaryPage() {
           secretaryAvatarUrl
         }
 
-        initialThreadId={
-          thread?.id ||
-          null
-        }
-
-        initialMessages={
-          messages
-            .reverse()
-            .map(
-              (
-                message
-              ) => ({
-                id:
-                  message.id,
-
-                role:
-                  message.role,
-
-                content:
-                  message.content,
-
-                inputType:
-                  message.inputType,
-
-                createdAt:
-                  message
-                    .createdAt
-                    .toISOString(),
-              })
-            )
-        }
-
-        initialPendingAction={
-          pending
-            ? {
-                id:
-                  pending.id,
-
-                type:
-                  pending.type,
-
-                payload:
-                  pending
-                    .payload as
-                    unknown as
-                    Record<
-                      string,
-                      unknown
-                    >,
-
-                expiresAt:
-                  pending
-                    .expiresAt
-                    ?.toISOString() ||
-                  null,
-              }
-            : null
-        }
-
-        alerts={
-          alerts.map(
-            (
-              alert
-            ) => ({
-              id:
-                alert.id,
-
-              title:
-                alert.title,
-
-              message:
-                alert.message,
-
-              severity:
-                alert.severity,
-            })
-          )
+        conversations={
+          conversations
         }
       />
 

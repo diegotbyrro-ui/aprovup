@@ -100,7 +100,7 @@ export async function AppSidebar() {
         "/secretaria",
 
       permission:
-        "secretary.use",
+        "settings.manage",
 
       activePrefixes: [
         "/secretaria",

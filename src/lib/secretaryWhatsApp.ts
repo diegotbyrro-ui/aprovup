@@ -1958,6 +1958,74 @@ async function sendProactive({
       });
 
 
+    if (
+      member.userId
+    ) {
+      try {
+        const thread =
+          await findOrCreateWhatsappThread({
+            agencyId,
+            userId:
+              member.userId,
+            phone:
+              toPhone,
+          });
+
+
+        await prisma
+          .secretaryMessage
+          .create({
+            data: {
+              threadId:
+                thread.id,
+
+              role:
+                'ASSISTANT',
+
+              content:
+                '*Secretária IA*\n\n*' +
+                title +
+                '*\n' +
+                message,
+
+              inputType:
+                'TEXT',
+
+              metadata: {
+                proactive:
+                  true,
+
+                dedupKey,
+              },
+            },
+          });
+
+
+        await prisma
+          .secretaryThread
+          .update({
+            where: {
+              id:
+                thread.id,
+            },
+
+            data: {
+              updatedAt:
+                new Date(),
+            },
+          });
+      }
+      catch (
+        historyError
+      ) {
+        console.error(
+          'SECRETARY WHATSAPP HISTORY ERROR',
+          historyError
+        );
+      }
+    }
+
+
     return {
       status:
         'SENT',
