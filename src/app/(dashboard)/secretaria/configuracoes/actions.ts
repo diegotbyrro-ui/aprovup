@@ -66,6 +66,116 @@ async function requireSettingsUser() {
 }
 
 
+export async function saveSecretaryIdentityAction(
+  formData:
+    FormData
+) {
+  const user =
+    await requireSettingsUser();
+
+
+  const secretaryName =
+    String(
+      formData.get(
+        "secretaryName"
+      ) ||
+      ""
+    )
+      .trim()
+      .slice(
+        0,
+        80
+      );
+
+  const secretaryCompanyName =
+    String(
+      formData.get(
+        "secretaryCompanyName"
+      ) ||
+      ""
+    )
+      .trim()
+      .slice(
+        0,
+        160
+      );
+
+
+  await prisma
+    .secretaryWhatsappConnection
+    .upsert({
+      where: {
+        agencyId:
+          user.agencyId,
+      },
+
+      update: {
+        secretaryName:
+          secretaryName ||
+          null,
+
+        secretaryCompanyName:
+          secretaryCompanyName ||
+          null,
+      },
+
+      create: {
+        agencyId:
+          user.agencyId,
+
+        secretaryName:
+          secretaryName ||
+          null,
+
+        secretaryCompanyName:
+          secretaryCompanyName ||
+          null,
+      },
+    });
+
+
+  await prisma.historyLog
+    .create({
+      data: {
+        entityType:
+          "AGENCY",
+
+        entityId:
+          user.agencyId,
+
+        action:
+          "SECRETARY_IDENTITY_SAVED",
+
+        description:
+          "Identidade da Secretária IA atualizada.",
+
+        authorName:
+          user.name ||
+          user.email ||
+          "Diretoria",
+      },
+    })
+    .catch(
+      () =>
+        null
+    );
+
+
+  revalidatePath(
+    "/secretaria"
+  );
+
+  revalidatePath(
+    "/secretaria/configuracoes"
+  );
+
+
+  redirect(
+    "/secretaria/configuracoes?identity=saved"
+  );
+}
+
+
 export async function saveWhatsappConnectionAction(
   formData:
     FormData

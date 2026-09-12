@@ -31,6 +31,59 @@ export default async function SecretaryPage() {
     );
 
 
+  const [
+    agency,
+    secretaryIdentity,
+  ] =
+    await Promise.all([
+      prisma.agency
+        .findUnique({
+          where: {
+            id:
+              user.agencyId,
+          },
+
+          select: {
+            name:
+              true,
+          },
+        }),
+
+      prisma
+        .secretaryWhatsappConnection
+        .findUnique({
+          where: {
+            agencyId:
+              user.agencyId,
+          },
+
+          select: {
+            secretaryName:
+              true,
+
+            secretaryCompanyName:
+              true,
+          },
+        }),
+    ]);
+
+
+  const secretaryName =
+    secretaryIdentity
+      ?.secretaryName
+      ?.trim() ||
+    'Secretária IA';
+
+  const secretaryCompanyName =
+    secretaryIdentity
+      ?.secretaryCompanyName
+      ?.trim() ||
+    agency
+      ?.name
+      ?.trim() ||
+    'sua empresa';
+
+
   const thread =
     await prisma
       .secretaryThread
@@ -163,11 +216,11 @@ export default async function SecretaryPage() {
             </div>
 
             <h1 className="mt-3 text-3xl font-black">
-              Secretária IA
+              {secretaryName}
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">
-              Converse naturalmente por texto ou áudio. Ela consulta métricas, publicações, aprovações e Google Agenda.
+              Sua secretária IA operacional da {secretaryCompanyName}. Converse naturalmente por texto ou áudio.
             </p>
           </div>
 
@@ -203,6 +256,10 @@ export default async function SecretaryPage() {
 
 
       <SecretaryClient
+        secretaryName={
+          secretaryName
+        }
+
         initialThreadId={
           thread?.id ||
           null

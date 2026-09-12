@@ -329,6 +329,64 @@ async function callOpenAi({
 }
 
 
+async function getSecretaryIdentity(
+  agencyId:
+    string
+) {
+  const [
+    agency,
+    connection,
+  ] =
+    await Promise.all([
+      prisma.agency
+        .findUnique({
+          where: {
+            id:
+              agencyId,
+          },
+
+          select: {
+            name:
+              true,
+          },
+        }),
+
+      prisma
+        .secretaryWhatsappConnection
+        .findUnique({
+          where: {
+            agencyId,
+          },
+
+          select: {
+            secretaryName:
+              true,
+
+            secretaryCompanyName:
+              true,
+          },
+        }),
+    ]);
+
+
+  return {
+    secretaryName:
+      connection
+        ?.secretaryName
+        ?.trim() ||
+      'Secretária IA',
+
+    companyName:
+      connection
+        ?.secretaryCompanyName
+        ?.trim() ||
+      agency
+        ?.name
+        ?.trim() ||
+      'sua empresa',
+  };
+}
+
 function currentMaceioText() {
   return new Intl
     .DateTimeFormat(
@@ -1723,6 +1781,12 @@ export async function runSecretaryTurn({
   canExecuteActions?:
     boolean;
 }) {
+  const identity =
+    await getSecretaryIdentity(
+      agencyId
+    );
+
+
   const plan =
     await planConversation({
       agencyId,
@@ -2080,7 +2144,15 @@ export async function runSecretaryTurn({
       agencyId,
 
       instructions:
-`Você é a Secretária IA operacional do AprovUp.
+`Você é ${identity.secretaryName}, assistente virtual e secretária operacional da ${identity.companyName}.
+
+IDENTIDADE FIXA:
+- Seu nome é ${identity.secretaryName}.
+- Você representa a ${identity.companyName}.
+- O AprovUp é a ferramenta operacional que você usa para consultar dados e executar tarefas; não é a empresa que você representa.
+- Se perguntarem seu nome ou quem você é, apresente-se naturalmente como ${identity.secretaryName}, assistente virtual e secretária da ${identity.companyName}.
+- Não precisa se apresentar em toda mensagem.
+- Não finja ser uma pessoa humana. Se perguntarem, diga que você é uma assistente virtual com IA.
 
 Responda em português brasileiro de forma natural, objetiva e profissional.
 

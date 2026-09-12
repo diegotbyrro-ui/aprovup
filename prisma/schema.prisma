@@ -593,6 +593,9 @@ model SecretaryWhatsappConnection {
   phoneNumberId      String? @unique
   displayPhoneNumber String?
 
+  secretaryName        String?
+  secretaryCompanyName String?
+
   encryptedAccessToken String?
   encryptedVerifyToken String?
 

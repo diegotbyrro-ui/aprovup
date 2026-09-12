@@ -399,11 +399,15 @@ function MarkdownMessage({
 
 
 export function SecretaryClient({
+  secretaryName,
   initialThreadId,
   initialMessages,
   initialPendingAction,
   alerts,
 }: {
+  secretaryName:
+    string;
+
   initialThreadId:
     string |
     null;
@@ -1042,7 +1046,7 @@ export function SecretaryClient({
 
             <div>
               <p className="font-black text-slate-950">
-                Secretária IA
+                {secretaryName}
               </p>
 
               <p className="text-xs text-slate-500">
@@ -1248,7 +1252,7 @@ export function SecretaryClient({
 
           {busy ? (
             <div className="text-xs font-bold text-blue-600">
-              Secretária está analisando...
+              {secretaryName} está analisando...
             </div>
           ) : null}
 

@@ -28,6 +28,7 @@ import {
   deleteWhatsappMemberAction,
   pauseWhatsappConnectionAction,
   regenerateWhatsappVerifyTokenAction,
+  saveSecretaryIdentityAction,
   saveWhatsappConnectionAction,
   saveWhatsappMemberAction,
   subscribeWhatsappAppAction,
@@ -163,7 +164,10 @@ export default async function SecretarySettingsPage({
 
 
   const success =
-    params.wa ===
+    params.identity ===
+      "saved"
+      ? "Identidade da secretária salva."
+      : params.wa ===
       "connected"
       ? "Conexão validada com a Meta."
       : params.wa ===
@@ -214,7 +218,12 @@ export default async function SecretarySettingsPage({
         <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-black text-slate-950">
-              WhatsApp da Secretária IA
+              WhatsApp de {
+                connection
+                  ?.secretaryName
+                  ?.trim() ||
+                "sua Secretária IA"
+              }
             </h1>
 
             <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-slate-500">
@@ -247,6 +256,75 @@ export default async function SecretarySettingsPage({
       ) : null}
 
 
+
+      <form
+        action={
+          saveSecretaryIdentityAction
+        }
+        className="rounded-2xl border border-violet-200 bg-gradient-to-br from-white to-violet-50/60 p-5 shadow-sm"
+      >
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-violet-500">
+              Identidade da secretária
+            </p>
+
+            <h2 className="mt-1 text-[15px] font-black text-slate-950">
+              Como ela se apresenta
+            </h2>
+
+            <p className="mt-1 text-[9px] leading-relaxed text-slate-500">
+              Esses dados são usados no AprovUp e nas respostas enviadas pelo WhatsApp.
+            </p>
+          </div>
+
+          <button className="h-10 rounded-lg bg-violet-600 px-5 text-[10px] font-black text-white">
+            Salvar identidade
+          </button>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="space-y-1.5">
+            <span className="text-[8px] font-black uppercase tracking-[0.12em] text-slate-400">
+              Nome da secretária
+            </span>
+
+            <input
+              name="secretaryName"
+              maxLength={80}
+              defaultValue={
+                connection
+                  ?.secretaryName ||
+                ""
+              }
+              placeholder="Ex.: Liv"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[11px] font-bold text-slate-900 outline-none focus:border-violet-400"
+            />
+          </label>
+
+          <label className="space-y-1.5">
+            <span className="text-[8px] font-black uppercase tracking-[0.12em] text-slate-400">
+              Empresa que ela representa
+            </span>
+
+            <input
+              name="secretaryCompanyName"
+              maxLength={160}
+              defaultValue={
+                connection
+                  ?.secretaryCompanyName ||
+                ""
+              }
+              placeholder="Ex.: Level UP Marketing Digital"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-[11px] font-bold text-slate-900 outline-none focus:border-violet-400"
+            />
+          </label>
+        </div>
+
+        <p className="mt-3 text-[9px] leading-relaxed text-slate-500">
+          Exemplo: “Sou a Liv, assistente virtual e secretária da Level UP Marketing Digital.”
+        </p>
+      </form>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_390px]">
 
         <form
