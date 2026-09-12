@@ -746,6 +746,7 @@ export default async function SocialMediaPage({
 }: {
   searchParams?: Promise<{
     cliente?: string;
+    aprovacao?: string;
   }>;
 }) {
   const currentUser =
@@ -1097,7 +1098,7 @@ const query =
         },
 
         take:
-          12,
+          100,
       }),
 
 
@@ -1170,6 +1171,54 @@ const query =
         );
       }
     );
+
+
+  const approvalsPerPage =
+    2;
+
+  const requestedApprovalPage =
+    Math.max(
+      1,
+      Number.parseInt(
+        String(
+          query?.aprovacao ||
+          "1"
+        ),
+        10
+      ) ||
+      1
+    );
+
+  const approvalTotalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        finalApprovalQueue.length /
+        approvalsPerPage
+      )
+    );
+
+  const approvalPage =
+    Math.min(
+      requestedApprovalPage,
+      approvalTotalPages
+    );
+
+  const approvalPageStart =
+    (
+      approvalPage -
+      1
+    ) *
+    approvalsPerPage;
+
+  const approvalPageItems =
+    finalApprovalQueue.slice(
+      approvalPageStart,
+      approvalPageStart +
+        approvalsPerPage
+    );
+
+
   const clientQuestions =
     clientReturns.filter(
       (comment) => {
@@ -1618,8 +1667,9 @@ const query =
             </div>
           </div>
         ) : (
-          <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
-            {finalApprovalQueue.map(
+          <div className="mt-4">
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+            {approvalPageItems.map(
               (content) => {
                 const mediaUrl =
                   content.finalMediaUrl ||
@@ -1677,11 +1727,11 @@ const query =
                     }
                     className="self-start overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
                   >
-                    <div className="grid items-start lg:grid-cols-[280px_minmax(0,1fr)]">
-                      <div className="m-3 self-start overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+                    <div className="grid items-start lg:grid-cols-[190px_minmax(0,1fr)]">
+                      <div className="m-2 self-start overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
                       >
-                        <div className="flex h-11 items-center gap-2.5 border-b border-slate-100 px-3">
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-orange-400 text-[9px] font-black text-white">
+                        <div className="flex h-9 items-center gap-2 border-b border-slate-100 px-2.5">
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-orange-400 text-[8px] font-black text-white">
                             {selectedClient.name
                               ?.slice(
                                 0,
@@ -1791,7 +1841,7 @@ const query =
                       </div>
                     </div>
 
-                    <div className="flex min-w-0 flex-col p-4 pt-0 lg:py-4 lg:pl-1 lg:pr-4">
+                    <div className="flex min-w-0 flex-col p-3 pt-0 lg:py-3 lg:pl-1 lg:pr-3">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="rounded-md bg-white px-1.5 py-1 text-[7px] font-bold text-slate-600">
                             {content.area ===
@@ -1833,7 +1883,7 @@ const query =
                         </h3>
 
 
-                        <div className="mt-3 rounded-lg border border-slate-200 bg-white p-2.5">
+                        <div className="mt-2 rounded-lg border border-slate-200 bg-white p-2">
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-[7px] font-bold uppercase tracking-[0.08em] text-slate-400">
                               Legenda
@@ -1860,7 +1910,7 @@ const query =
                         </div>
 
 
-                        <div className="mt-auto pt-3">
+                        <div className="mt-auto pt-2">
                           {canSend ? (
                             <div className="space-y-2">
                               <InternalReviewAdjustment
@@ -1940,6 +1990,76 @@ const query =
                 );
               }
             )}
+            </div>
+
+
+            {approvalTotalPages > 1 ? (
+              <div className="mt-4 flex flex-col items-center justify-center gap-2 border-t border-slate-100 pt-4">
+                <p className="text-[8px] font-semibold text-slate-400">
+                  Página {approvalPage} de {approvalTotalPages} • {approvalsPerPage} conteúdos por página
+                </p>
+
+                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                  {Array.from(
+                    {
+                      length:
+                        approvalTotalPages,
+                    },
+                    (
+                      _,
+                      index
+                    ) =>
+                      index +
+                      1
+                  ).map(
+                    (
+                      pageNumber
+                    ) => (
+                      <Link
+                        key={
+                          pageNumber
+                        }
+                        href={
+                          `/social-media?cliente=${encodeURIComponent(
+                            clientId
+                          )}&aprovacao=${pageNumber}`
+                        }
+                        scroll={
+                          false
+                        }
+                        aria-current={
+                          pageNumber ===
+                          approvalPage
+                            ? "page"
+                            : undefined
+                        }
+                        className={[
+                          "flex",
+                          "h-8",
+                          "min-w-8",
+                          "items-center",
+                          "justify-center",
+                          "rounded-lg",
+                          "border",
+                          "px-2.5",
+                          "text-[9px]",
+                          "font-black",
+                          "transition",
+                          pageNumber ===
+                          approvalPage
+                            ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700",
+                        ].join(
+                          " "
+                        )}
+                      >
+                        {pageNumber}
+                      </Link>
+                    )
+                  )}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </section>
