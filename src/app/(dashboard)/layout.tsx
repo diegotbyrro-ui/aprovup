@@ -35,10 +35,10 @@ export default function DashboardLayout({
     React.ReactNode;
 }) {
   return (
-    <div className="aprovup-app-shell flex h-[100dvh] min-h-[100dvh] w-full overflow-hidden">
+    <div className="aprovup-app-shell fixed inset-0 flex h-[100dvh] max-h-[100dvh] w-full overflow-hidden">
       <AppSidebar />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <AppHeader />
         <DirectorIntegrationAlert />
 

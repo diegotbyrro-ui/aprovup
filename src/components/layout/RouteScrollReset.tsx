@@ -139,16 +139,78 @@ export function RouteScrollReset({
         window.history
           .scrollRestoration;
 
+      const html =
+        document.documentElement;
+
+      const body =
+        document.body;
+
+      const previousHtmlOverflow =
+        html.style.overflow;
+
+      const previousHtmlHeight =
+        html.style.height;
+
+      const previousBodyOverflow =
+        body.style.overflow;
+
+      const previousBodyHeight =
+        body.style.height;
+
+      const previousBodyMinHeight =
+        body.style.minHeight;
+
 
       window.history
         .scrollRestoration =
         'manual';
 
 
+      /*
+       * O dashboard possui seu proprio viewport rolavel (.ap-app-main).
+       * O documento externo nunca deve rolar.
+       *
+       * Quando window/html/body rolam, o shell inteiro sobe junto
+       * (inclusive sidebar) e aparece uma grande area vazia abaixo.
+       */
+      html.style.overflow =
+        'hidden';
+
+      html.style.height =
+        '100%';
+
+      body.style.overflow =
+        'hidden';
+
+      body.style.height =
+        '100%';
+
+      body.style.minHeight =
+        '0';
+
+
+      setDocumentTop();
+
+
       return () => {
         window.history
           .scrollRestoration =
           previousRestoration;
+
+        html.style.overflow =
+          previousHtmlOverflow;
+
+        html.style.height =
+          previousHtmlHeight;
+
+        body.style.overflow =
+          previousBodyOverflow;
+
+        body.style.height =
+          previousBodyHeight;
+
+        body.style.minHeight =
+          previousBodyMinHeight;
       };
     },
     []
@@ -311,10 +373,13 @@ export function RouteScrollReset({
       data-scroll-route={
         pathname
       }
-      className="ap-app-main min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+      className="ap-app-main min-h-0 h-full flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
       style={{
         overflowAnchor:
           'none',
+
+        overscrollBehavior:
+          'contain',
       }}
     >
       <div className="mx-auto w-full max-w-[1680px] px-3 py-4 sm:px-4 sm:py-5 lg:px-6 lg:py-6 2xl:px-8">
