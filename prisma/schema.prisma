@@ -595,6 +595,7 @@ model SecretaryWhatsappConnection {
 
   secretaryName        String?
   secretaryCompanyName String?
+  secretaryAvatarUrl   String?
 
   encryptedAccessToken String?
   encryptedVerifyToken String?

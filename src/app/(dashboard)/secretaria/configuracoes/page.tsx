@@ -321,6 +321,47 @@ export default async function SecretarySettingsPage({
           </label>
         </div>
 
+
+        <div className="mt-4 grid gap-4 rounded-2xl border border-violet-100 bg-white/80 p-4 sm:grid-cols-[88px_minmax(0,1fr)] sm:items-center">
+          <div className="flex h-[88px] w-[88px] items-center justify-center overflow-hidden rounded-3xl border border-violet-100 bg-violet-100 text-2xl font-black text-violet-700">
+            {connection?.secretaryAvatarUrl ? (
+              <img
+                src={connection.secretaryAvatarUrl}
+                alt={`Foto de ${connection.secretaryName || "Secretária"}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              connection?.secretaryName?.trim().charAt(0) || "IA"
+            )}
+          </div>
+
+          <div>
+            <p className="text-[8px] font-black uppercase tracking-[0.12em] text-slate-400">
+              Foto da secretária
+            </p>
+
+            <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
+              Envie JPG, PNG ou WebP de até 5 MB. De preferência uma imagem quadrada.
+            </p>
+
+            <input
+              type="file"
+              name="secretaryAvatar"
+              accept="image/jpeg,image/png,image/webp"
+              className="mt-3 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-violet-600 file:px-3 file:py-2 file:text-[9px] file:font-black file:text-white"
+            />
+
+            {connection?.secretaryAvatarUrl ? (
+              <label className="mt-3 flex items-center gap-2 text-[9px] font-bold text-red-600">
+                <input
+                  type="checkbox"
+                  name="removeAvatar"
+                />
+                Remover foto atual ao salvar
+              </label>
+            ) : null}
+          </div>
+        </div>
         <p className="mt-3 text-[9px] leading-relaxed text-slate-500">
           Exemplo: “Sou a Liv, assistente virtual e secretária da Level UP Marketing Digital.”
         </p>

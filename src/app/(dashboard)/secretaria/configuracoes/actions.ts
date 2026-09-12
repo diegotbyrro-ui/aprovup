@@ -29,6 +29,10 @@ import {
   normalizeWhatsappPhone,
 } from "@/lib/secretaryWhatsApp";
 
+import {
+  uploadAprovUpFile,
+} from "@/lib/aprovupStorage";
+
 
 function cleanGraphVersion(
   value:
@@ -100,6 +104,77 @@ export async function saveSecretaryIdentityAction(
         160
       );
 
+  const avatarValue =
+    formData.get(
+      "secretaryAvatar"
+    );
+
+  const avatarFile =
+    avatarValue instanceof File
+      ? avatarValue
+      : null;
+
+  const removeAvatar =
+    formData.get(
+      "removeAvatar"
+    ) === "on";
+
+  const currentIdentity =
+    await prisma
+      .secretaryWhatsappConnection
+      .findUnique({
+        where: {
+          agencyId:
+            user.agencyId,
+        },
+        select: {
+          secretaryAvatarUrl:
+            true,
+        },
+      });
+
+  let secretaryAvatarUrl =
+    removeAvatar
+      ? null
+      : currentIdentity
+          ?.secretaryAvatarUrl ||
+        null;
+
+  if (
+    avatarFile &&
+    avatarFile.size > 0
+  ) {
+    if (
+      ![
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+      ].includes(
+        avatarFile.type
+      )
+    ) {
+      throw new Error(
+        "A foto precisa ser JPG, PNG ou WebP."
+      );
+    }
+
+    if (
+      avatarFile.size >
+      5 * 1024 * 1024
+    ) {
+      throw new Error(
+        "A foto deve ter no maximo 5 MB."
+      );
+    }
+
+    secretaryAvatarUrl =
+      await uploadAprovUpFile(
+        avatarFile,
+        "secretary-avatars",
+        `secretaria-${user.agencyId}`
+      );
+  }
+
 
   await prisma
     .secretaryWhatsappConnection
@@ -117,6 +192,8 @@ export async function saveSecretaryIdentityAction(
         secretaryCompanyName:
           secretaryCompanyName ||
           null,
+
+        secretaryAvatarUrl,
       },
 
       create: {
@@ -130,6 +207,8 @@ export async function saveSecretaryIdentityAction(
         secretaryCompanyName:
           secretaryCompanyName ||
           null,
+
+        secretaryAvatarUrl,
       },
     });
 

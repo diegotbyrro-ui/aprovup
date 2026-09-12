@@ -63,6 +63,9 @@ export default async function SecretaryPage() {
 
             secretaryCompanyName:
               true,
+
+            secretaryAvatarUrl:
+              true,
           },
         }),
     ]);
@@ -82,6 +85,12 @@ export default async function SecretaryPage() {
       ?.name
       ?.trim() ||
     'sua empresa';
+
+  const secretaryAvatarUrl =
+    secretaryIdentity
+      ?.secretaryAvatarUrl
+      ?.trim() ||
+    '';
 
 
   const thread =
@@ -243,10 +252,18 @@ export default async function SecretaryPage() {
                 : null
             }
 
-            <div className="hidden h-16 w-16 items-center justify-center rounded-3xl bg-white/10 text-blue-200 sm:flex">
-              <Bot
-                size={30}
-              />
+            <div className="hidden h-16 w-16 items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-white/10 text-blue-200 sm:flex">
+              {secretaryAvatarUrl ? (
+                <img
+                  src={secretaryAvatarUrl}
+                  alt={`Foto de ${secretaryName}`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <Bot
+                  size={30}
+                />
+              )}
             </div>
           </div>
 
@@ -258,6 +275,10 @@ export default async function SecretaryPage() {
       <SecretaryClient
         secretaryName={
           secretaryName
+        }
+
+        secretaryAvatarUrl={
+          secretaryAvatarUrl
         }
 
         initialThreadId={

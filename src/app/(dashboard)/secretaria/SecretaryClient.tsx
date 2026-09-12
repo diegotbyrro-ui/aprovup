@@ -400,12 +400,16 @@ function MarkdownMessage({
 
 export function SecretaryClient({
   secretaryName,
+  secretaryAvatarUrl,
   initialThreadId,
   initialMessages,
   initialPendingAction,
   alerts,
 }: {
   secretaryName:
+    string;
+
+  secretaryAvatarUrl:
     string;
 
   initialThreadId:
@@ -1038,10 +1042,18 @@ export function SecretaryClient({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
 
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white">
-              <Bot
-                size={20}
-              />
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-blue-600 text-white">
+              {secretaryAvatarUrl ? (
+                <img
+                  src={secretaryAvatarUrl}
+                  alt={`Foto de ${secretaryName}`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <Bot
+                  size={20}
+                />
+              )}
             </div>
 
             <div>
