@@ -448,3 +448,144 @@ export async function createGoogleCalendarEvent({
 
   return result;
 }
+
+
+type SecretaryCalendarEvent = {
+  id: string;
+  summary: string;
+  description: string;
+  location: string;
+  start: string | null;
+  end: string | null;
+  htmlLink: string | null;
+};
+
+function normalizeCalendarText(value: string) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+export async function findGoogleCalendarEvents({
+  agencyId,
+  query,
+  timeMin,
+  timeMax,
+}: {
+  agencyId: string;
+  query: string;
+  timeMin: Date;
+  timeMax: Date;
+}): Promise<SecretaryCalendarEvent[]> {
+  const auth = await getGoogleCalendarAccessTokenForAgency(agencyId);
+  if (!auth) return [];
+
+  // O TypeScript nao preserva o narrowing de auth
+  // dentro de uma funcao interna assincrona. Copiamos
+  // os valores ja validados para constantes nao anulaveis.
+  const calendarId =
+    auth.calendarId;
+
+  const accessToken =
+    auth.accessToken;
+
+  async function load(q: string) {
+    const params = new URLSearchParams({
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: '80',
+    });
+    if (q.trim()) params.set('q', q.trim());
+
+    const response = await fetch(
+      'https://www.googleapis.com/calendar/v3/calendars/' +
+        encodeURIComponent(calendarId) + '/events?' + params.toString(),
+      { headers: { Authorization: 'Bearer ' + accessToken } }
+    );
+    const payload = await response.json() as {
+      items?: Array<{
+        id?: string;
+        summary?: string;
+        description?: string;
+        location?: string;
+        htmlLink?: string;
+        status?: string;
+        start?: { dateTime?: string; date?: string };
+        end?: { dateTime?: string; date?: string };
+      }>;
+      error?: { message?: string };
+    };
+    if (!response.ok) throw new Error(payload.error?.message || 'Erro ao consultar Google Agenda.');
+
+    return (payload.items || [])
+      .filter((item) => item.status !== 'cancelled' && Boolean(item.id))
+      .map((item) => ({
+        id: item.id || '',
+        summary: item.summary || 'Sem título',
+        description: item.description || '',
+        location: item.location || '',
+        start: item.start?.dateTime || item.start?.date || null,
+        end: item.end?.dateTime || item.end?.date || null,
+        htmlLink: item.htmlLink || null,
+      }));
+  }
+
+  const direct = await load(query);
+  if (direct.length > 0 || !query.trim()) return direct;
+
+  const all = await load('');
+  const tokens = normalizeCalendarText(query).split(' ').filter((token) => token.length >= 4);
+  if (!tokens.length) return [];
+  return all.filter((event) => {
+    const title = normalizeCalendarText(event.summary);
+    return tokens.some((token) => title.includes(token));
+  });
+}
+
+export async function updateGoogleCalendarEvent({
+  agencyId,
+  eventId,
+  title,
+  description,
+  location,
+  startDate,
+  endDate,
+}: {
+  agencyId: string;
+  eventId: string;
+  title: string;
+  description?: string;
+  location?: string;
+  startDate: Date;
+  endDate: Date;
+}) {
+  const auth = await getGoogleCalendarAccessTokenForAgency(agencyId);
+  if (!auth) return null;
+
+  const response = await fetch(
+    'https://www.googleapis.com/calendar/v3/calendars/' +
+      encodeURIComponent(auth.calendarId) + '/events/' + encodeURIComponent(eventId),
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: 'Bearer ' + auth.accessToken,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        summary: title,
+        description: description || '',
+        location: location || '',
+        start: { dateTime: startDate.toISOString(), timeZone: 'America/Maceio' },
+        end: { dateTime: endDate.toISOString(), timeZone: 'America/Maceio' },
+      }),
+    }
+  );
+  const result = await response.json() as { id?: string; htmlLink?: string; error?: { message?: string } };
+  if (!response.ok) throw new Error('Google Calendar recusou a alteração: ' + (result.error?.message || response.status));
+  return result;
+}

@@ -2164,6 +2164,15 @@ export async function deliverSecretaryAlertsToWhatsapp() {
       ]);
 
 
+    const memberUserIds = members.map((member) => member.userId).filter((value): value is string => Boolean(value));
+    const alertUsers = memberUserIds.length
+      ? await prisma.user.findMany({
+          where: { agencyId: connection.agencyId, id: { in: memberUserIds }, status: 'APROVADO' },
+          select: { id: true, role: true },
+        })
+      : [];
+    const roleByUserId = new Map(alertUsers.map((item) => [item.id, item.role] as const));
+
     for (
       const alert
       of alerts
@@ -2172,6 +2181,16 @@ export async function deliverSecretaryAlertsToWhatsapp() {
         const member
         of members
       ) {
+        const role = member.userId ? roleByUserId.get(member.userId) || '' : '';
+        const socialAlert = [
+          'INSTAGRAM_PUBLICATION_ERROR',
+          'INSTAGRAM_PUBLICATION_OVERDUE',
+          'APPROVAL_WAITING',
+          'MONTHLY_APPROVAL_WAITING',
+        ].includes(alert.type);
+
+        if (socialAlert && !['DIRECTOR', 'SOCIAL_MEDIA'].includes(role)) continue;
+
         attempts +=
           1;
 
@@ -2558,6 +2577,115 @@ export async function deliverSecretaryDailyBriefs() {
     }
   }
 
+
+  return sent;
+}
+
+
+
+function formatCaptureWhatsappTime(value: Date) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Maceio', hour: '2-digit', minute: '2-digit',
+  }).format(value);
+}
+
+function captureMessage(schedule: {
+  clientName: string;
+  scheduledAt: Date;
+  location: string | null;
+  notes: string | null;
+}) {
+  return [
+    '*Cliente:* ' + schedule.clientName,
+    '*Horário:* ' + formatCaptureWhatsappTime(schedule.scheduledAt),
+    schedule.location ? '*Local:* ' + schedule.location : '',
+    schedule.notes ? '*Observações:* ' + schedule.notes : '',
+  ].filter(Boolean).join('\n');
+}
+
+export async function deliverSecretaryCaptureReminders() {
+  const now = new Date();
+  const local = maceioParts();
+  const dayStart = new Date(local.dateKey + 'T03:00:00.000Z');
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+  const upcomingStart = new Date(now.getTime() + 45 * 60 * 1000);
+  const upcomingEnd = new Date(now.getTime() + 75 * 60 * 1000);
+
+  const connections = await prisma.secretaryWhatsappConnection.findMany({
+    where: { status: 'ATIVO', proactiveEnabled: true },
+  });
+  let sent = 0;
+
+  for (const connection of connections) {
+    const clients = await prisma.client.findMany({
+      where: { agencyId: connection.agencyId }, select: { id: true },
+    });
+    const clientIds = clients.map((client) => client.id);
+    if (!clientIds.length) continue;
+
+    const members = await prisma.secretaryWhatsappMember.findMany({
+      where: {
+        agencyId: connection.agencyId, isActive: true, receiveAlerts: true,
+        userId: { not: null },
+      },
+    });
+    if (!members.length) continue;
+
+    const users = await prisma.user.findMany({
+      where: {
+        agencyId: connection.agencyId, status: 'APROVADO', role: 'FILMMAKER',
+        id: { in: members.map((member) => member.userId).filter((value): value is string => Boolean(value)) },
+      },
+      select: { id: true },
+    });
+    const filmmakerIds = new Set(users.map((user) => user.id));
+    const filmmakers = members.filter((member) => Boolean(member.userId && filmmakerIds.has(member.userId)));
+    if (!filmmakers.length) continue;
+
+    const todaySchedules = local.hour === 8
+      ? await prisma.captureSchedule.findMany({
+          where: {
+            clientId: { in: clientIds }, status: { not: 'CANCELADO' },
+            scheduledAt: { gte: dayStart, lt: dayEnd },
+          },
+          orderBy: { scheduledAt: 'asc' },
+        })
+      : [];
+
+    if (todaySchedules.length) {
+      const message = todaySchedules.map((schedule, index) =>
+        String(index + 1) + '. ' + captureMessage(schedule)
+      ).join('\n\n');
+
+      for (const member of filmmakers) {
+        const result = await sendProactive({
+          agencyId: connection.agencyId, memberId: member.id, toPhone: member.phoneE164,
+          title: 'Sua agenda de captações de hoje', message,
+          dedupKey: 'capture-daily:' + local.dateKey + ':' + member.id,
+        });
+        if (result.status === 'SENT') sent += 1;
+      }
+    }
+
+    const upcoming = await prisma.captureSchedule.findMany({
+      where: {
+        clientId: { in: clientIds }, status: { not: 'CANCELADO' },
+        scheduledAt: { gte: upcomingStart, lte: upcomingEnd },
+      },
+      orderBy: { scheduledAt: 'asc' },
+    });
+
+    for (const schedule of upcoming) {
+      for (const member of filmmakers) {
+        const result = await sendProactive({
+          agencyId: connection.agencyId, memberId: member.id, toPhone: member.phoneE164,
+          title: 'Captação em cerca de 1 hora', message: captureMessage(schedule),
+          dedupKey: 'capture-upcoming:' + schedule.id + ':' + member.id,
+        });
+        if (result.status === 'SENT') sent += 1;
+      }
+    }
+  }
 
   return sent;
 }

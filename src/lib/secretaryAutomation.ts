@@ -5,6 +5,7 @@ import {
 
 import {
   deliverSecretaryAlertsToWhatsapp,
+  deliverSecretaryCaptureReminders,
   deliverSecretaryDailyBriefs,
   processPendingWhatsappEvents,
 } from '@/lib/secretaryWhatsApp';
@@ -77,6 +78,22 @@ export async function runSecretaryAutomation() {
       );
 
 
+  const captureReminders =
+    await deliverSecretaryCaptureReminders()
+      .catch(
+        (
+          error
+        ) => {
+          console.error(
+            'SECRETARY CAPTURE REMINDER ERROR',
+            error
+          );
+
+          return 0;
+        }
+      );
+
+
   const dailyBriefs =
     await deliverSecretaryDailyBriefs()
       .catch(
@@ -98,6 +115,7 @@ export async function runSecretaryAutomation() {
     publications,
     approvals,
     alertDeliveries,
+    captureReminders,
     dailyBriefs,
   };
 }

@@ -7,6 +7,7 @@ import {
 } from '@/lib/aiProviderCredentials';
 
 import {
+  findGoogleCalendarEvents,
   getGoogleCalendarAccessTokenForAgency,
 } from '@/lib/googleCalendar';
 
@@ -27,7 +28,8 @@ type SecretaryAction = {
     | 'PUBLICATIONS'
     | 'APPROVALS'
     | 'CALENDAR_LIST'
-    | 'CALENDAR_CREATE';
+    | 'CALENDAR_CREATE'
+    | 'CALENDAR_UPDATE';
 
   client_name:
     string;
@@ -1619,8 +1621,10 @@ PUBLICATIONS = posts publicados, agendados ou com erro.
 APPROVALS = conteúdos aguardando aprovação.
 CALENDAR_LIST = consultar Google Agenda.
 CALENDAR_CREATE = preparar criação de compromisso.
+CALENDAR_UPDATE = preparar alteração de um compromisso existente.
 
-CALENDAR_CREATE nunca executa diretamente. Apenas prepara uma confirmação.
+CALENDAR_CREATE e CALENDAR_UPDATE nunca executam diretamente. Apenas preparam uma confirmação.
+Em CALENDAR_UPDATE, title deve identificar o compromisso existente e start_iso/end_iso representam o NOVO horário quando informados.
 
 Datas devem ser ISO 8601 quando forem inferíveis.
 Use o fuso America/Maceio, UTC-03:00.
@@ -1688,6 +1692,7 @@ ${recent}`,
                       'APPROVALS',
                       'CALENDAR_LIST',
                       'CALENDAR_CREATE',
+                      'CALENDAR_UPDATE',
                     ],
                   },
 
@@ -1968,6 +1973,102 @@ export async function runSecretaryTurn({
 
     if (
       action.type ===
+        'CALENDAR_UPDATE' &&
+      !pendingAction
+    ) {
+      if (!canExecuteActions) {
+        facts.push({ type: action.type, data: { error: 'O usuário pode consultar a operação, mas não tem permissão para executar ações.' } });
+        continue;
+      }
+
+      const query = action.title.trim();
+      if (!query) {
+        facts.push({ type: action.type, data: { error: 'Informe qual compromisso deve ser alterado.' } });
+        continue;
+      }
+
+      const matches = await findGoogleCalendarEvents({
+        agencyId,
+        query,
+        timeMin: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        timeMax: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+      });
+
+      if (matches.length === 0) {
+        facts.push({ type: action.type, data: { error: 'Não encontrei compromisso correspondente no Google Agenda.' } });
+        continue;
+      }
+
+      if (matches.length > 1) {
+        facts.push({
+          type: action.type,
+          data: {
+            error: 'Encontrei mais de um compromisso possível. Peça data, horário ou nome mais específico antes de alterar.',
+            matches: matches.slice(0, 5).map((item) => ({ title: item.summary, start: item.start, location: item.location })),
+          },
+        });
+        continue;
+      }
+
+      const match = matches[0];
+      const currentStart = parseDate(match.start || '');
+      const currentEnd = parseDate(match.end || '');
+      if (!currentStart || !currentEnd) {
+        facts.push({ type: action.type, data: { error: 'O compromisso encontrado não possui horário válido para alteração.' } });
+        continue;
+      }
+
+      const newStart = parseDate(action.start_iso) || currentStart;
+      let newEnd = parseDate(action.end_iso);
+      if (!newEnd && action.start_iso) {
+        newEnd = new Date(newStart.getTime() + (currentEnd.getTime() - currentStart.getTime()));
+      }
+      newEnd = newEnd || currentEnd;
+      if (newEnd <= newStart) {
+        facts.push({ type: action.type, data: { error: 'O novo horário final precisa ser posterior ao início.' } });
+        continue;
+      }
+
+      const created = await prisma.secretaryPendingAction.create({
+        data: {
+          agencyId, userId, threadId,
+          type: 'GOOGLE_CALENDAR_UPDATE', status: 'PENDING',
+          payload: {
+            eventId: match.id,
+            title: match.summary,
+            description: action.description.trim() || match.description || '',
+            location: action.location.trim() || match.location || '',
+            startDate: newStart.toISOString(),
+            endDate: newEnd.toISOString(),
+            previousStartDate: currentStart.toISOString(),
+            previousEndDate: currentEnd.toISOString(),
+          },
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        },
+      });
+
+      pendingAction = {
+        id: created.id,
+        type: created.type,
+        payload: created.payload as Record<string, unknown>,
+        expiresAt: created.expiresAt?.toISOString() || null,
+      };
+
+      facts.push({
+        type: action.type,
+        data: {
+          prepared: true,
+          requires_confirmation: true,
+          previous_event: { title: match.summary, start: currentStart.toISOString(), end: currentEnd.toISOString(), location: match.location || null },
+          updated_event: pendingAction.payload,
+        },
+      });
+      continue;
+    }
+
+
+    if (
+      action.type ===
         'CALENDAR_CREATE' &&
       !pendingAction
     ) {
@@ -2174,9 +2275,11 @@ REGRAS:
 - Para métricas, deixe claro o período comparado.
 - Ausência de dado não é zero.
 - Se faltarem dados, diga isso.
-- Se uma ação de agenda tiver requires_confirmation=true, ela AINDA NÃO foi criada.
-- Diga que o agendamento foi preparado e precisa ser confirmado.
-- Nunca diga que criou um evento antes da confirmação.
+- Se uma ação de agenda tiver requires_confirmation=true, ela AINDA NÃO foi executada.
+- Em criação ou alteração de agenda, diga claramente o que será criado/alterado e peça confirmação.
+- Nunca diga que criou ou alterou um evento antes da confirmação.
+- Você também pode ajudar a equipe com dúvidas profissionais de marketing digital, conteúdo, social media, design e audiovisual.
+- Quando a pergunta depender de uma regra interna da empresa ou dado que não esteja nos fatos consultados, diga que não encontrou esse dado em vez de inventar.
 - Não mencione Prisma, tabelas, JSON ou nomes internos das ferramentas.
 - Se a pergunta for apenas conversa casual, responda normalmente.`,
 
