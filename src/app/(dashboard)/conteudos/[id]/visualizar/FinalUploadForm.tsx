@@ -184,7 +184,7 @@ function CurrentAsset({
     !coverUrl
   ) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-200 bg-white/70 px-3 py-3 text-xs font-semibold text-slate-400">
+      <div className="flex min-h-14 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-3 py-2.5 text-center text-[10px] font-bold text-slate-400">
         Nenhum {title.toLowerCase()} enviado ainda.
       </div>
     );
@@ -378,10 +378,10 @@ function ExternalDeliveryField({
   onDelete: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/70 p-4">
+    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
 
       <div className="flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-700 shadow-sm">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-600 shadow-sm ring-1 ring-slate-200">
           <Link2
             size={17}
           />
@@ -390,12 +390,12 @@ function ExternalDeliveryField({
         <div className="min-w-0">
           <label
             htmlFor="finalExternalUrl"
-            className="block text-xs font-black uppercase tracking-wider text-blue-700"
+            className="block text-[10px] font-black uppercase tracking-[0.1em] text-slate-700"
           >
             Link do Google Drive / arquivo externo
           </label>
 
-          <p className="mt-1 text-xs leading-relaxed text-blue-700/80">
+          <p className="mt-1 text-[10px] leading-4 text-slate-500">
             Para arquivos muito pesados, envie pelo Google Drive e cole aqui o link compartilhado.
           </p>
         </div>
@@ -461,10 +461,10 @@ function ExternalDeliveryField({
         disabled={
           disabled
         }
-        className="mt-3 block w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-3 block h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
       />
 
-      <p className="mt-2 text-[11px] font-medium leading-relaxed text-slate-500">
+      <p className="mt-2 text-[9px] font-medium leading-4 text-slate-400">
         Antes de enviar, confira se o arquivo está liberado para visualização pelo link.
       </p>
 
@@ -1080,7 +1080,7 @@ export default function FinalUploadForm({
         onSubmit={
           handleSubmit
         }
-        className="mt-5 space-y-4"
+        className="space-y-3"
       >
 
         <CurrentAsset
@@ -1127,7 +1127,7 @@ export default function FinalUploadForm({
 
 
         <div>
-          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-blue-700">
+          <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.1em] text-slate-600">
             Arquivo final
           </label>
 
@@ -1140,13 +1140,13 @@ export default function FinalUploadForm({
               deletingKind !==
                 null
             }
-            className="block w-full cursor-pointer rounded-2xl border border-blue-100 bg-white text-sm font-medium text-slate-700 file:mr-4 file:border-0 file:bg-blue-600 file:px-4 file:py-3 file:text-sm file:font-bold file:text-white hover:file:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-blue-600 file:px-3 file:py-2.5 file:text-[11px] file:font-black file:text-white hover:file:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
 
 
         <div>
-          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-blue-700">
+          <label className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.1em] text-slate-600">
             Capa / thumbnail
           </label>
 
@@ -1159,7 +1159,7 @@ export default function FinalUploadForm({
               deletingKind !==
                 null
             }
-            className="block w-full cursor-pointer rounded-2xl border border-blue-100 bg-white text-sm font-medium text-slate-700 file:mr-4 file:border-0 file:bg-slate-900 file:px-4 file:py-3 file:text-sm file:font-bold file:text-white hover:file:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-slate-900 file:px-3 file:py-2.5 file:text-[11px] file:font-black file:text-white hover:file:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
 
@@ -1178,7 +1178,7 @@ export default function FinalUploadForm({
               deletingKind !==
                 null
             }
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-[11px] font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <UploadCloud
             size={18}
@@ -1199,15 +1199,15 @@ export default function FinalUploadForm({
       onSubmit={
         handleSubmit
       }
-      className="mt-5 space-y-5"
+      className="space-y-4"
     >
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3">
 
         {feedMode ===
         'carousel' ? (
 
-          <section className="rounded-2xl border border-blue-200 bg-white/80 p-4">
+          <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
                 <LayoutTemplate
@@ -1233,7 +1233,7 @@ export default function FinalUploadForm({
 
         ) : (
 
-          <section className="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm">
+          <section className="rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
 
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
@@ -1294,7 +1294,7 @@ export default function FinalUploadForm({
               deletingKind !==
                 null
             }
-                  className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-blue-600 file:px-3 file:py-2.5 file:text-xs file:font-bold file:text-white hover:file:bg-blue-700 disabled:opacity-60"
+                  className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-white text-[10px] font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-blue-600 file:px-3 file:py-2.5 file:text-[10px] file:font-black file:text-white hover:file:bg-blue-700 disabled:opacity-60"
                 />
               </div>
 
@@ -1313,7 +1313,7 @@ export default function FinalUploadForm({
               deletingKind !==
                 null
             }
-                  className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-slate-900 file:px-3 file:py-2.5 file:text-xs file:font-bold file:text-white hover:file:bg-slate-800 disabled:opacity-60"
+                  className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-white text-[10px] font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-slate-900 file:px-3 file:py-2.5 file:text-[10px] file:font-black file:text-white hover:file:bg-slate-800 disabled:opacity-60"
                 />
               </div>
 
@@ -1324,7 +1324,7 @@ export default function FinalUploadForm({
         )}
 
 
-        <section className="rounded-2xl border border-violet-200 bg-white p-4 shadow-sm">
+        <section className="rounded-2xl border border-violet-100 bg-violet-50/35 p-4">
 
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
@@ -1386,7 +1386,7 @@ export default function FinalUploadForm({
               deletingKind !==
                 null
             }
-                className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-violet-600 file:px-3 file:py-2.5 file:text-xs file:font-bold file:text-white hover:file:bg-violet-700 disabled:opacity-60"
+                className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-white text-[10px] font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-violet-600 file:px-3 file:py-2.5 file:text-[10px] file:font-black file:text-white hover:file:bg-violet-700 disabled:opacity-60"
               />
             </div>
 
@@ -1405,7 +1405,7 @@ export default function FinalUploadForm({
               deletingKind !==
                 null
             }
-                className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-slate-900 file:px-3 file:py-2.5 file:text-xs file:font-bold file:text-white hover:file:bg-slate-800 disabled:opacity-60"
+                className="block w-full cursor-pointer rounded-xl border border-slate-200 bg-white text-[10px] font-semibold text-slate-600 file:mr-3 file:border-0 file:bg-slate-900 file:px-3 file:py-2.5 file:text-[10px] file:font-black file:text-white hover:file:bg-slate-800 disabled:opacity-60"
               />
             </div>
 
@@ -1438,7 +1438,7 @@ export default function FinalUploadForm({
       />
 
 
-      <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs font-medium leading-relaxed text-blue-700">
+      <p className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-[10px] font-semibold leading-4 text-slate-500">
         Você pode enviar Feed e Stories juntos ou atualizar apenas um deles. Campos sem novo arquivo mantêm o material que já está salvo.
       </p>
 
@@ -1457,7 +1457,7 @@ export default function FinalUploadForm({
               deletingKind !==
                 null
             }
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-[11px] font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <UploadCloud
           size={18}

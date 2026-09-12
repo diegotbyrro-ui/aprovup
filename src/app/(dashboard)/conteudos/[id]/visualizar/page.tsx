@@ -35,12 +35,16 @@ function TextBlock({
   if (!value) return null;
 
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-        {title}
-      </p>
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_-26px_rgba(15,23,42,0.45)]">
+      <div className="flex items-center gap-2">
+        <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
 
-      <div className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
+          {title}
+        </p>
+      </div>
+
+      <div className="mt-3 whitespace-pre-line text-[13px] leading-6 text-slate-700">
         {value}
       </div>
     </section>
@@ -57,18 +61,20 @@ function InfoCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+    <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-[0_8px_24px_-24px_rgba(15,23,42,0.5)]">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
         {icon}
       </div>
 
-      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-        {label}
-      </p>
+      <div className="min-w-0">
+        <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">
+          {label}
+        </p>
 
-      <p className="mt-1 text-base font-bold text-slate-950">
-        {value}
-      </p>
+        <p className="mt-0.5 truncate text-[13px] font-black text-slate-950">
+          {value}
+        </p>
+      </div>
     </div>
   );
 }
@@ -245,7 +251,7 @@ export default async function ViewContentPage({
     `/conteudos/${item.id}`;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
+    <div className="mx-auto max-w-[1500px] space-y-5 px-4 py-5 lg:px-6">
       <Link
         href={backHref}
         className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-950"
@@ -254,21 +260,47 @@ export default async function ViewContentPage({
         Voltar para o conteúdo
       </Link>
 
-      <section className="rounded-3xl bg-slate-950 p-8 text-white shadow-sm">
-        <p className="text-sm font-bold uppercase tracking-wider text-blue-300">
-          Visualização da demanda
-        </p>
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_45px_-34px_rgba(15,23,42,0.55)]">
+        <div className="h-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-violet-500" />
 
-        <h1 className="mt-2 max-w-4xl text-3xl font-bold leading-tight md:text-4xl">
-          {title}
-        </h1>
+        <div className="flex flex-col gap-4 px-5 py-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-slate-950 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-white">
+                Produção
+              </span>
 
-        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
-          Esta tela é apenas para consulta. Use as informações abaixo para executar a demanda. Caso tenha dúvida, volte ao Kanban e envie uma dúvida para o Social Media.
-        </p>
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-slate-500">
+                {formatLabel(item.area) || 'Área'}
+              </span>
+
+              <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-emerald-700">
+                {formatLabel(item.status) || 'Status'}
+              </span>
+            </div>
+
+            <h1 className="mt-3 max-w-4xl text-2xl font-black leading-tight tracking-tight text-slate-950 lg:text-3xl">
+              {title}
+            </h1>
+
+            <p className="mt-1.5 max-w-3xl text-[12px] leading-5 text-slate-500">
+              Briefing, legenda, arquivos finais e histórico reunidos em um único workspace de entrega.
+            </p>
+          </div>
+
+          <div className="shrink-0 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-blue-500">
+              Cliente
+            </p>
+
+            <p className="mt-0.5 max-w-[260px] truncate text-[13px] font-black text-blue-950">
+              {clientName}
+            </p>
+          </div>
+        </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <InfoCard
           label="Cliente"
           value={clientName}
@@ -294,8 +326,8 @@ export default async function ViewContentPage({
         />
       </section>
 
-      <section className="grid grid-cols-1 gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="space-y-5">
+      <section className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_460px] xl:grid-cols-[minmax(0,1fr)_520px]">
+        <div className="space-y-4">
           <TextBlock
             title="Objetivo estratégico"
             value={objective}
@@ -328,30 +360,58 @@ export default async function ViewContentPage({
         </div>
 
         <aside className="space-y-5">
-          <section className="rounded-3xl border border-blue-100 bg-blue-50 p-6 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
-              Upload do material final
-            </p>
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_16px_45px_-34px_rgba(15,23,42,0.55)]">
+            <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.14em] text-blue-600">
+                    Central de entrega
+                  </p>
 
-            <h2 className="mt-2 text-lg font-bold text-blue-950">
-              {
-                isDesignCarousel
-                  ? 'Carrossel + Stories'
-                  : isDesignContent
-                    ? 'Entregar Feed + Stories'
-                    : 'Enviar arquivo pronto para conferência'
-              }
-            </h2>
+                  <h2 className="mt-1 text-[17px] font-black tracking-tight text-slate-950">
+                    {
+                      isDesignCarousel
+                        ? 'Carrossel + Stories'
+                        : isDesignContent
+                          ? 'Feed + Stories'
+                          : 'Entrega do material final'
+                    }
+                  </h2>
+                </div>
 
-            <p className="mt-2 text-sm leading-relaxed text-blue-800">
-              {
-                isDesignCarousel
-                  ? 'Monte o carrossel na ordem correta e, quando existir uma versão vertical, envie também o material dos Stories.'
-                  : isDesignContent
-                    ? 'Envie separadamente o arquivo final e a thumbnail do Feed e dos Stories. Você pode atualizar cada formato sem apagar o outro.'
-                    : 'Suba aqui o vídeo editado ou a capa do vídeo. Depois do envio, o material segue para conferência interna.'
-              }
-            </p>
+                <span
+                  className={[
+                    "rounded-full",
+                    "border",
+                    "px-2.5",
+                    "py-1",
+                    "text-[9px]",
+                    "font-black",
+                    "uppercase",
+                    "tracking-[0.1em]",
+                    isDesignContent
+                      ? "border-violet-100 bg-violet-50 text-violet-700"
+                      : "border-blue-100 bg-blue-50 text-blue-700",
+                  ].join(" ")}
+                >
+                  {isDesignContent
+                    ? 'Design'
+                    : 'Filmmaker'}
+                </span>
+              </div>
+
+              <p className="mt-2 max-w-xl text-[11px] leading-5 text-slate-500">
+                {
+                  isDesignCarousel
+                    ? 'Organize as páginas do carrossel e envie a versão de Stories quando houver.'
+                    : isDesignContent
+                      ? 'Envie Feed e Stories de forma organizada. Você pode substituir apenas o arquivo que precisar.'
+                      : 'Envie o vídeo final e, se necessário, a capa. Arquivos grandes também podem ser entregues por link.'
+                }
+              </p>
+            </div>
+
+            <div className="p-4">
 
 
             {isDesignCarousel ? (
@@ -477,12 +537,13 @@ export default async function ViewContentPage({
                 storyMediaType
               }
             />
+            </div>
           </section>
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_30px_-26px_rgba(15,23,42,0.45)]">
+            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-3">
               <MessageSquare size={18} className="text-slate-500" />
 
-              <h2 className="text-lg font-bold text-slate-950">
+              <h2 className="text-[15px] font-black text-slate-950">
                 Histórico / comentários
               </h2>
             </div>
@@ -492,7 +553,7 @@ export default async function ViewContentPage({
                 {item.comments.map((comment: any) => (
                   <div
                     key={comment.id}
-                    className="rounded-2xl bg-slate-50 p-4"
+                    className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5"
                   >
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                       {comment.authorName || 'Equipe'} • {comment.authorRole || 'Comentário'}
@@ -520,20 +581,23 @@ export default async function ViewContentPage({
             )}
           </section>
 
-          <Link
-            href={backHref}
-            className="block rounded-2xl bg-slate-950 px-5 py-4 text-center text-sm font-bold text-white transition hover:bg-slate-800"
-          >
-            Voltar
-          </Link>
-          <form action={deleteContentAction.bind(null, item.id)}>
-            <button
-              type="submit"
-              className="mt-3 w-full rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-center text-sm font-bold text-red-600 transition hover:bg-red-100"
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            <Link
+              href={backHref}
+              className="flex h-11 items-center justify-center rounded-xl bg-slate-950 px-4 text-[11px] font-black text-white transition hover:bg-slate-800"
             >
-              Excluir conteúdo
-            </button>
-          </form>
+              Voltar ao conteúdo
+            </Link>
+
+            <form action={deleteContentAction.bind(null, item.id)}>
+              <button
+                type="submit"
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-red-100 bg-white px-4 text-[11px] font-black text-red-600 transition hover:bg-red-50"
+              >
+                Excluir conteúdo
+              </button>
+            </form>
+          </div>
         </aside>
       </section>
     </div>
