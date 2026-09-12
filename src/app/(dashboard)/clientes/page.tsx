@@ -40,7 +40,79 @@ function isDirectorRole(role: string | null | undefined) {
 
 function getPercentage(value: number, total: number) {
   if (!total || total <= 0) return 0;
-  return Math.min(100, Math.round((value / total) * 100));
+  return Math.round((value / total) * 100);
+}
+
+function getProgressWidth(value: number) {
+  return Math.min(100, Math.max(0, value));
+}
+
+function getMaceioMonthRange() {
+  const now =
+    new Date();
+
+  const parts =
+    new Intl.DateTimeFormat(
+      'en-US',
+      {
+        timeZone:
+          'America/Maceio',
+
+        year:
+          'numeric',
+
+        month:
+          '2-digit',
+      }
+    )
+      .formatToParts(now);
+
+  const year =
+    Number(
+      parts.find(
+        (part) =>
+          part.type === 'year'
+      )?.value ||
+      now.getUTCFullYear()
+    );
+
+  const month =
+    Number(
+      parts.find(
+        (part) =>
+          part.type === 'month'
+      )?.value ||
+      (
+        now.getUTCMonth() +
+        1
+      )
+    );
+
+  return {
+    start:
+      new Date(
+        Date.UTC(
+          year,
+          month - 1,
+          1,
+          3,
+          0,
+          0
+        )
+      ),
+
+    end:
+      new Date(
+        Date.UTC(
+          year,
+          month,
+          1,
+          3,
+          0,
+          0
+        )
+      ),
+  };
 }
 
 function getInitial(name: string) {
@@ -80,7 +152,14 @@ export default async function ClientesPage({
       currentUser,
       'social.manage'
     );
-const query = searchParams ? await searchParams : {};
+
+  const monthlyRange =
+    getMaceioMonthRange();
+
+  const query =
+    searchParams
+      ? await searchParams
+      : {};
   const search = String(query?.busca || '').trim();
   const order = String(query?.ordem || 'az');
 
@@ -91,7 +170,17 @@ const query = searchParams ? await searchParams : {};
     },
 
     include: {
-      contents: true,
+      contents: {
+        where: {
+          plannedDate: {
+            gte:
+              monthlyRange.start,
+
+            lt:
+              monthlyRange.end,
+          },
+        },
+      },
     },
     orderBy: {
       name: order === 'za' ? 'desc' : 'asc',
@@ -117,20 +206,43 @@ const query = searchParams ? await searchParams : {};
     return target.includes(normalize(search));
   });
 
-  const totalClients = filteredClients.length;
-  const totalContents = filteredClients.reduce(
-    (sum, client) => sum + client.contents.length,
-    0
-  );
+  const totalClients =
+    filteredClients.length;
 
-  const totalApproved = filteredClients.reduce(
-    (sum, client) =>
-      sum +
-      client.contents.filter((content) =>
-        ['APROVADO', 'AGENDAMENTO_PRODUCAO', 'PRONTO_PARA_POSTAR', 'PUBLICADO'].includes(content.status)
-      ).length,
-    0
-  );
+  const totalContents =
+    filteredClients.reduce(
+      (
+        sum,
+        client
+      ) =>
+        sum +
+        client.contents.length,
+      0
+    );
+
+  const completedStatuses = [
+    'PRONTO_PARA_POSTAR',
+    'PUBLICADO',
+    'PUBLICADO_MANUALMENTE',
+  ];
+
+  const totalCompleted =
+    filteredClients.reduce(
+      (
+        sum,
+        client
+      ) =>
+        sum +
+        client.contents.filter(
+          (
+            content
+          ) =>
+            completedStatuses.includes(
+              content.status
+            )
+        ).length,
+      0
+    );
 
   return (
     <div className="space-y-6">
@@ -183,18 +295,18 @@ const query = searchParams ? await searchParams : {};
 
         <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-wider text-blue-500">
-            Conteúdos
+            Conteúdos no mês
           </p>
           <p className="mt-2 text-3xl font-bold text-blue-800">{totalContents}</p>
-          <p className="mt-1 text-sm text-slate-500">criados ou planejados</p>
+          <p className="mt-1 text-sm text-slate-500">planejados para o mês atual</p>
         </div>
 
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">
-            Aprovados
+            Concluídos no mês
           </p>
-          <p className="mt-2 text-3xl font-bold text-emerald-800">{totalApproved}</p>
-          <p className="mt-1 text-sm text-slate-500">conteúdos aprovados ou avançados</p>
+          <p className="mt-2 text-3xl font-bold text-emerald-800">{totalCompleted}</p>
+          <p className="mt-1 text-sm text-slate-500">prontos para postar ou publicados</p>
         </div>
       </section>
 
@@ -234,24 +346,61 @@ const query = searchParams ? await searchParams : {};
           filteredClients.map((client, index) => {
             const total = client.contents.length;
 
-            const drafts = client.contents.filter((content) =>
-              ['IDEIA', 'RASCUNHO'].includes(content.status)
-            ).length;
+            const drafts =
+              client.contents.filter(
+                (
+                  content
+                ) =>
+                  [
+                    'IDEIA',
+                    'RASCUNHO',
+                    'ROTEIRO',
+                  ].includes(
+                    content.status
+                  )
+              ).length;
 
-            const adjustments = client.contents.filter(
-              (content) => content.status === 'ALTERACAO_SOLICITADA'
-            ).length;
+            const adjustments =
+              client.contents.filter(
+                (
+                  content
+                ) =>
+                  content.status ===
+                  'ALTERACAO_SOLICITADA'
+              ).length;
 
-            const approval = client.contents.filter((content) =>
-              ['AGUARDANDO_CLIENTE', 'APROVADO'].includes(content.status)
-            ).length;
+            const approval =
+              client.contents.filter(
+                (
+                  content
+                ) =>
+                  [
+                    'ENVIADO_CLIENTE',
+                    'AGUARDANDO_CLIENTE',
+                  ].includes(
+                    content.status
+                  )
+              ).length;
 
-            const approved = client.contents.filter((content) =>
-              ['APROVADO', 'AGENDAMENTO_PRODUCAO', 'PRONTO_PARA_POSTAR', 'PUBLICADO'].includes(content.status)
-            ).length;
+            const completed =
+              client.contents.filter(
+                (
+                  content
+                ) =>
+                  completedStatuses.includes(
+                    content.status
+                  )
+              ).length;
 
-            const goal = client.monthlyContentGoal || 0;
-            const progress = getPercentage(total, goal);
+            const goal =
+              client.monthlyContentGoal ||
+              0;
+
+            const progress =
+              getPercentage(
+                completed,
+                goal
+              );
 
             return (
               <article
@@ -346,7 +495,7 @@ const query = searchParams ? await searchParams : {};
                       <div className="rounded-xl bg-emerald-50 px-3 py-2">
                         <p className="flex items-center gap-1 text-xs font-bold text-emerald-700">
                           <CheckCircle2 size={13} />
-                          {approved} Aprovados
+                          {completed} Concluídos
                         </p>
                       </div>
                     </div>
@@ -354,15 +503,33 @@ const query = searchParams ? await searchParams : {};
                     <div className="mt-5 border-t border-slate-100 pt-4">
                       <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-500">
                         <span>Meta mensal</span>
-                        <span>{total} / {goal} — {progress}%</span>
+                        <span>
+                          {goal > 0
+                            ? (
+                                completed +
+                                ' / ' +
+                                goal +
+                                ' — ' +
+                                progress +
+                                '%'
+                              )
+                            : 'Meta não definida'}
+                        </span>
                       </div>
 
                       <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                         <div
                           className="h-full rounded-full bg-slate-900"
-                          style={{ width: `${progress}%` }}
+                          style={{
+                            width:
+                              `${getProgressWidth(progress)}%`,
+                          }}
                         />
                       </div>
+
+                      <p className="mt-2 text-[11px] font-medium text-slate-400">
+                        {total} conteúdo{total === 1 ? '' : 's'} planejado{total === 1 ? '' : 's'} neste mês
+                      </p>
                     </div>
                   </div>
                 </Link>

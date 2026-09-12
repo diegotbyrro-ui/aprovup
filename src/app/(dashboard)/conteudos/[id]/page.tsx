@@ -116,15 +116,6 @@ function responsibleDisplayName(
     return '';
   }
 
-  if (
-    normalizeResponsibleName(
-      raw
-    ) ===
-    'taketo'
-  ) {
-    return 'Diego Taketomi';
-  }
-
   return raw;
 }
 
