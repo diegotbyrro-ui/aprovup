@@ -1,7 +1,6 @@
 'use client';
 
 import type {
-  MouseEvent as ReactMouseEvent,
   ReactNode,
 } from 'react';
 
@@ -13,6 +12,7 @@ import {
 
 import {
   usePathname,
+  useRouter,
 } from 'next/navigation';
 
 
@@ -36,6 +36,56 @@ function setDocumentTop() {
 }
 
 
+function isContentDetailPath(
+  pathname:
+    string
+) {
+  const parts =
+    pathname
+      .split(
+        '/'
+      )
+      .filter(
+        Boolean
+      );
+
+
+  if (
+    parts[0] !==
+      'conteudos' ||
+    parts.length <
+      2
+  ) {
+    return false;
+  }
+
+
+  if (
+    [
+      'novo',
+      'novo-dia',
+      'kanban',
+    ].includes(
+      parts[1]
+    )
+  ) {
+    return false;
+  }
+
+
+  return (
+    parts.length ===
+      2 ||
+    (
+      parts.length ===
+        3 &&
+      parts[2] ===
+        'visualizar'
+    )
+  );
+}
+
+
 export function RouteScrollReset({
   children,
 }: {
@@ -44,6 +94,9 @@ export function RouteScrollReset({
 }) {
   const pathname =
     usePathname();
+
+  const router =
+    useRouter();
 
   const scrollRef =
     useRef<HTMLElement>(
@@ -102,6 +155,141 @@ export function RouteScrollReset({
   );
 
 
+  useEffect(
+    () => {
+      function handleDocumentNavigation(
+        event:
+          MouseEvent
+      ) {
+        if (
+          event.defaultPrevented ||
+          event.button !==
+            0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        ) {
+          return;
+        }
+
+
+        const target =
+          event.target;
+
+
+        if (
+          !(
+            target instanceof
+            Element
+          )
+        ) {
+          return;
+        }
+
+
+        const anchor =
+          target.closest<HTMLAnchorElement>(
+            'a[href]'
+          );
+
+
+        if (
+          !anchor ||
+          anchor.target ===
+            '_blank' ||
+          anchor.hasAttribute(
+            'download'
+          )
+        ) {
+          return;
+        }
+
+
+        const destination =
+          new URL(
+            anchor.href,
+            window.location.href
+          );
+
+        const current =
+          new URL(
+            window.location.href
+          );
+
+
+        if (
+          destination.origin !==
+            current.origin ||
+          !isContentDetailPath(
+            destination.pathname
+          )
+        ) {
+          return;
+        }
+
+
+        const changesLocation =
+          destination.pathname !==
+            current.pathname ||
+          destination.search !==
+            current.search;
+
+
+        if (
+          !changesLocation
+        ) {
+          return;
+        }
+
+
+        event.preventDefault();
+
+
+        resetScroll();
+
+
+        const nextHref =
+          [
+            destination.pathname,
+            destination.search,
+            destination.hash,
+          ].join(
+            ''
+          );
+
+
+        router.push(
+          nextHref,
+          {
+            scroll:
+              false,
+          }
+        );
+      }
+
+
+      document.addEventListener(
+        'click',
+        handleDocumentNavigation,
+        true
+      );
+
+
+      return () => {
+        document.removeEventListener(
+          'click',
+          handleDocumentNavigation,
+          true
+        );
+      };
+    },
+    [
+      router,
+    ]
+  );
+
+
   useLayoutEffect(
     () => {
       resetScroll();
@@ -110,93 +298,6 @@ export function RouteScrollReset({
       pathname,
     ]
   );
-
-
-  function handleNavigationCapture(
-    event:
-      ReactMouseEvent<HTMLElement>
-  ) {
-    if (
-      event.defaultPrevented ||
-      event.button !==
-        0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return;
-    }
-
-
-    const target =
-      event.target;
-
-
-    if (
-      !(
-        target instanceof
-        Element
-      )
-    ) {
-      return;
-    }
-
-
-    const anchor =
-      target.closest<HTMLAnchorElement>(
-        'a[href]'
-      );
-
-
-    if (
-      !anchor ||
-      anchor.target ===
-        '_blank' ||
-      anchor.hasAttribute(
-        'download'
-      )
-    ) {
-      return;
-    }
-
-
-    const destination =
-      new URL(
-        anchor.href,
-        window.location.href
-      );
-
-    const current =
-      new URL(
-        window.location.href
-      );
-
-
-    if (
-      destination.origin !==
-      current.origin
-    ) {
-      return;
-    }
-
-
-    const changesRoute =
-      destination.pathname !==
-        current.pathname ||
-      destination.search !==
-        current.search;
-
-
-    if (
-      !changesRoute
-    ) {
-      return;
-    }
-
-
-    resetScroll();
-  }
 
 
   return (
@@ -209,9 +310,6 @@ export function RouteScrollReset({
       }
       data-scroll-route={
         pathname
-      }
-      onClickCapture={
-        handleNavigationCapture
       }
       className="ap-app-main min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
       style={{
