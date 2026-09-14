@@ -1190,15 +1190,23 @@ export async function processWhatsappEvent(
         });
 
 
-    if (
-      !user ||
-      !hasPermission(
-        user,
-        'secretary.use'
-      )
-    ) {
+    /*
+     * No WhatsApp, a autorização é controlada
+     * pelo cadastro SecretaryWhatsappMember.
+     *
+     * O usuário já passou acima pelas validações:
+     * - membro ativo
+     * - canUseSecretary = true
+     * - usuário vinculado
+     *
+     * A permissão secretary.use continua sendo
+     * utilizada para controlar o acesso pela WEB,
+     * mas não deve bloquear um membro explicitamente
+     * autorizado no canal WhatsApp.
+     */
+    if (!user) {
       throw new Error(
-        'Usuário vinculado sem permissão para usar a Secretária IA.'
+        'Usuário vinculado não está aprovado ou não pertence à agência.'
       );
     }
 
