@@ -1622,6 +1622,14 @@ const query =
                   content.finalCoverUrl ||
                   "";
 
+                const isVideoPreview =
+                  String(
+                    content.finalMediaType ||
+                    ""
+                  ).startsWith(
+                    "video/"
+                  );
+
                 const hasCaption =
                   Boolean(
                     String(
@@ -1705,14 +1713,15 @@ const query =
                           </span>
                         </div>
 
-                        <div className="aspect-[9/16] overflow-hidden bg-black">
+                        <div
+                          className={
+                            isVideoPreview
+                              ? "aspect-[9/16] overflow-hidden bg-black"
+                              : "aspect-[4/5] overflow-hidden bg-black"
+                          }
+                        >
                         {mediaUrl ? (
-                          String(
-                            content.finalMediaType ||
-                            ""
-                          ).startsWith(
-                            "video/"
-                          ) ? (
+                          isVideoPreview ? (
                             <video
                               src={
                                 mediaUrl
@@ -1726,7 +1735,7 @@ const query =
                                 mediaUrl
                               }
                               alt=""
-                              className="h-full w-full object-cover"
+                              className="h-full w-full object-contain"
                             />
                           )
                         ) : (

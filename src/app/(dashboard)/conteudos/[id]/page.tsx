@@ -9,7 +9,10 @@ import { updateContent, addComment, addTask, completeTask } from '@/app/actions'
 import { InstagramPreview } from '@/components/content/InstagramPreview';
 import { CarouselFinalUpload } from '@/components/content/CarouselFinalUpload';
 import { inputClasses, labelClasses } from '@/lib/styles';
-import { generateApprovalLink } from './contentActions';
+import {
+  generateApprovalLink,
+  markContentAsPublishedByDirectorAction,
+} from './contentActions';
 import { hasPermission } from '@/lib/userAccess';
 import { SocialMediaProductionPanel } from './SocialMediaProductionPanel';
 import { DownloadContentButton } from '@/components/content/DownloadContentButton';
@@ -781,7 +784,27 @@ export default async function ConteudoDetailPage({
     );
   const addCommentAction = addComment.bind(null, id);
   const addTaskAction = addTask.bind(null, id);
-  const generateApprovalLinkAction = generateApprovalLink.bind(null, id);
+  const generateApprovalLinkAction =
+    generateApprovalLink.bind(
+      null,
+      id
+    );
+
+  const markPublishedByDirectorAction =
+    markContentAsPublishedByDirectorAction.bind(
+      null,
+      id
+    );
+
+  const canDirectorMarkPublished =
+    currentUser.role ===
+      'DIRECTOR' &&
+    ![
+      'PUBLICADO',
+      'PUBLICADO_MANUALMENTE',
+    ].includes(
+      contentSafe.status
+    );
 
   const currentArea = contentSafe.area || 'GERAL';
   const currentPriority = contentSafe.priority || 'MEDIA';
@@ -1062,6 +1085,22 @@ export default async function ConteudoDetailPage({
                   className="w-full rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white hover:bg-indigo-700 sm:w-auto"
                 >
                   Gerar link final
+                </button>
+              </form>
+            )}
+
+            {canDirectorMarkPublished && (
+              <form
+                action={
+                  markPublishedByDirectorAction
+                }
+              >
+                <button
+                  type="submit"
+                  title="Use quando o conteúdo já foi publicado, mas o status não foi atualizado no AprovUp."
+                  className="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-700 sm:w-auto"
+                >
+                  ✓ Confirmar que já foi postado
                 </button>
               </form>
             )}
