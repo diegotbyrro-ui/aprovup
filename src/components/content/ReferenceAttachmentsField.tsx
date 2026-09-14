@@ -315,22 +315,26 @@ export function ReferenceAttachmentsField({
                     </a>
 
                     <div className="min-w-0 flex-1">
-                      <a
-                        href={
+                      <input
+                        type="hidden"
+                        name="referenceRenameUrl"
+                        value={
                           image.url
                         }
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block truncate text-sm font-black text-slate-800 underline decoration-slate-300 underline-offset-2 transition hover:text-blue-700"
-                        title={
-                          image.originalName
-                        }
-                      >
-                        {image.originalName ||
-                          image.name}
-                      </a>
+                      />
 
-                      <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                      <input
+                        type="text"
+                        name="referenceRenameName"
+                        defaultValue={
+                          image.originalName ||
+                          image.name
+                        }
+                        title="Você pode editar o nome do anexo"
+                        className="h-8 w-full min-w-0 rounded-lg border border-transparent bg-transparent px-2 text-sm font-black text-slate-800 outline-none transition hover:border-slate-200 hover:bg-white focus:border-blue-300 focus:bg-white"
+                      />
+
+                      <p className="mt-0.5 truncate px-2 text-[11px] text-slate-500">
                         Adicionado em {formatAttachmentDate(
                           image.createdAt
                         )}
@@ -464,7 +468,7 @@ export function ReferenceAttachmentsField({
       </div>
 
       <p className="mt-3 text-[10px] leading-4 text-slate-400">
-        Até 8 fotos por envio, máximo de 8 MB por foto e 18 MB no total. Para excluir um anexo existente, marque o X e salve as alterações.
+        Até 8 fotos por envio, máximo de 8 MB por foto e 18 MB no total. Edite o nome diretamente no campo e salve as alterações. Para excluir um anexo existente, marque o X.
       </p>
     </section>
   );

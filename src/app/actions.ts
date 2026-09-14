@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation';
 
 import {
   deleteAprovUpReferenceFile,
+  renameAprovUpReferenceFile,
   uploadAprovUpReferenceFile,
 } from '@/lib/aprovupStorage';
 
@@ -211,6 +212,93 @@ async function removeContentReferenceImages(
     await deleteAprovUpReferenceFile(
       contentId,
       url
+    );
+  }
+}
+
+
+async function renameContentReferenceImages(
+  contentId:
+    string,
+  formData:
+    FormData
+) {
+  const urls =
+    formData
+      .getAll(
+        'referenceRenameUrl'
+      )
+      .map(
+        (value) =>
+          String(
+            value ||
+            ''
+          ).trim()
+      );
+
+
+  const names =
+    formData
+      .getAll(
+        'referenceRenameName'
+      )
+      .map(
+        (value) =>
+          String(
+            value ||
+            ''
+          ).trim()
+      );
+
+
+  const removed =
+    new Set(
+      formData
+        .getAll(
+          'removeReferenceUrl'
+        )
+        .map(
+          (value) =>
+            String(
+              value ||
+              ''
+            ).trim()
+        )
+        .filter(
+          Boolean
+        )
+    );
+
+
+  for (
+    let index = 0;
+    index < urls.length;
+    index++
+  ) {
+    const url =
+      urls[index] ||
+      '';
+
+    const name =
+      names[index] ||
+      '';
+
+
+    if (
+      !url ||
+      !name ||
+      removed.has(
+        url
+      )
+    ) {
+      continue;
+    }
+
+
+    await renameAprovUpReferenceFile(
+      contentId,
+      url,
+      name
     );
   }
 }
@@ -783,6 +871,12 @@ export async function updateContent(contentId: string, formData: FormData) {
       coverImageUrl: text('coverImageUrl', currentContent.coverImageUrl || ''),
     },
   });
+
+  await renameContentReferenceImages(
+    contentId,
+    formData
+  );
+
 
   await removeContentReferenceImages(
     contentId,

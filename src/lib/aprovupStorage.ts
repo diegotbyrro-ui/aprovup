@@ -665,6 +665,277 @@ export async function listAprovUpReferenceFiles(
 }
 
 
+export async function renameAprovUpReferenceFile(
+  contentId:
+    string,
+  publicUrl:
+    string,
+  requestedName:
+    string
+) {
+  if (
+    !contentId ||
+    !publicUrl
+  ) {
+    return {
+      changed:
+        false,
+
+      url:
+        publicUrl,
+    };
+  }
+
+
+  let parsed:
+    URL;
+
+
+  try {
+    parsed =
+      new URL(
+        publicUrl
+      );
+  }
+  catch {
+    return {
+      changed:
+        false,
+
+      url:
+        publicUrl,
+    };
+  }
+
+
+  const marker =
+    '/storage/v1/object/public/' +
+    BUCKET +
+    '/';
+
+
+  const markerIndex =
+    parsed.pathname.indexOf(
+      marker
+    );
+
+
+  if (
+    markerIndex ===
+    -1
+  ) {
+    return {
+      changed:
+        false,
+
+      url:
+        publicUrl,
+    };
+  }
+
+
+  let objectPath =
+    parsed.pathname.slice(
+      markerIndex +
+      marker.length
+    );
+
+
+  try {
+    objectPath =
+      decodeURIComponent(
+        objectPath
+      );
+  }
+  catch {
+    return {
+      changed:
+        false,
+
+      url:
+        publicUrl,
+    };
+  }
+
+
+  const expectedPrefix =
+    `content-reference/${safePart(
+      `referencia-${contentId}`
+    )}-`;
+
+
+  if (
+    !objectPath.startsWith(
+      expectedPrefix
+    )
+  ) {
+    return {
+      changed:
+        false,
+
+      url:
+        publicUrl,
+    };
+  }
+
+
+  const storedName =
+    objectPath
+      .split('/')
+      .pop() ||
+    '';
+
+
+  const currentName =
+    referenceOriginalName(
+      storedName
+    );
+
+
+  let cleanRequested =
+    String(
+      requestedName ||
+      ''
+    )
+      .replace(
+        /[\\/]+/g,
+        '-'
+      )
+      .trim();
+
+
+  if (!cleanRequested) {
+    return {
+      changed:
+        false,
+
+      url:
+        publicUrl,
+    };
+  }
+
+
+  const currentExtension =
+    extensionFromName(
+      currentName
+    );
+
+
+  if (currentExtension) {
+    const requestedExtension =
+      extensionFromName(
+        cleanRequested
+      );
+
+
+    if (requestedExtension) {
+      cleanRequested =
+        cleanRequested.slice(
+          0,
+          -requestedExtension.length
+        );
+    }
+
+
+    cleanRequested =
+      (
+        cleanRequested.trim() ||
+        'imagem'
+      ) +
+      currentExtension;
+  }
+
+
+  if (
+    cleanRequested ===
+    currentName
+  ) {
+    return {
+      changed:
+        false,
+
+      url:
+        publicUrl,
+    };
+  }
+
+
+  const delimiterIndex =
+    objectPath.lastIndexOf(
+      '--'
+    );
+
+
+  if (
+    delimiterIndex ===
+    -1
+  ) {
+    throw new Error(
+      'Formato do anexo de referência inválido.'
+    );
+  }
+
+
+  const encodedName =
+    Buffer.from(
+      cleanRequested,
+      'utf8'
+    ).toString(
+      'base64url'
+    );
+
+
+  const newObjectPath =
+    objectPath.slice(
+      0,
+      delimiterIndex
+    ) +
+    '--' +
+    encodedName;
+
+
+  const supabase =
+    storageClient();
+
+
+  const {
+    error,
+  } =
+    await supabase.storage
+      .from(
+        BUCKET
+      )
+      .move(
+        objectPath,
+        newObjectPath
+      );
+
+
+  if (error) {
+    console.error(
+      'AprovUp reference rename:',
+      error
+    );
+
+
+    throw new Error(
+      'Não foi possível renomear o anexo de referência.'
+    );
+  }
+
+
+  return {
+    changed:
+      true,
+
+    url:
+      getAprovUpPublicUrl(
+        newObjectPath
+      ),
+  };
+}
+
+
 export async function deleteAprovUpReferenceFile(
   contentId:
     string,

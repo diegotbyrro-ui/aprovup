@@ -1,5 +1,6 @@
 import { formatLabel } from '@/lib/formatLabel';
 import { prisma } from '@/lib/prisma';
+import { listAprovUpReferenceFiles } from '@/lib/aprovupStorage';
 import { requireAgencyContext } from '@/lib/tenant';
 import { requirePermission } from '@/lib/userAccess';
 import Link from 'next/link';
@@ -9,7 +10,9 @@ import { CarouselFinalUpload } from '@/components/content/CarouselFinalUpload';
 import {
   ArrowLeft,
   CalendarDays,
+  Download,
   FileText,
+  Paperclip,
   MessageSquare,
   Target,
   User,
@@ -154,6 +157,11 @@ export default async function ViewContentPage({
   );
 
   const item: any = content;
+
+  const referenceImages =
+    await listAprovUpReferenceFiles(
+      item.id
+    );
 
   const title = item.title || 'Conteúdo sem título';
   const clientName = item.client?.name || 'Cliente';
@@ -300,7 +308,7 @@ export default async function ViewContentPage({
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <InfoCard
           label="Cliente"
           value={clientName}
@@ -308,8 +316,14 @@ export default async function ViewContentPage({
         />
 
         <InfoCard
-          label="Data prevista"
+          label="Data de publicação"
           value={formatDate(item.plannedDate)}
+          icon={<CalendarDays size={18} />}
+        />
+
+        <InfoCard
+          label="Prazo de produção"
+          value={formatDate(item.productionDeadline)}
           icon={<CalendarDays size={18} />}
         />
 
@@ -337,6 +351,87 @@ export default async function ViewContentPage({
             title="Direcionamento / briefing"
             value={briefing}
           />
+
+          {referenceImages.length > 0 ? (
+            <section className="rounded-2xl border border-blue-100 bg-white p-5 shadow-[0_10px_30px_-26px_rgba(15,23,42,0.45)]">
+              <div className="flex items-center gap-2">
+                <Paperclip
+                  size={16}
+                  className="text-blue-600"
+                />
+
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-600">
+                    Referências para produção
+                  </p>
+
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Imagens anexadas pela Social Media para auxiliar na criação.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {referenceImages.map(
+                  (image) => (
+                    <div
+                      key={
+                        image.url
+                      }
+                      className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                    >
+                      <a
+                        href={
+                          image.url
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block aspect-[16/10] overflow-hidden bg-slate-100"
+                      >
+                        <img
+                          src={
+                            image.url
+                          }
+                          alt={
+                            image.originalName ||
+                            'Referência'
+                          }
+                          className="h-full w-full object-cover transition hover:scale-[1.02]"
+                        />
+                      </a>
+
+                      <div className="p-3">
+                        <p
+                          className="truncate text-[12px] font-black text-slate-800"
+                          title={
+                            image.originalName
+                          }
+                        >
+                          {image.originalName ||
+                            image.name}
+                        </p>
+
+                        <a
+                          href={
+                            `/api/conteudos/${item.id}/reference-download?url=${encodeURIComponent(
+                              image.url
+                            )}`
+                          }
+                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-[11px] font-black text-white transition hover:bg-blue-700"
+                        >
+                          <Download
+                            size={14}
+                          />
+
+                          Baixar imagem
+                        </a>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </section>
+          ) : null}
 
           <TextBlock
             title="Roteiro / orientação de vídeo"
