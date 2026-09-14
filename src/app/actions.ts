@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { requireAnyPermission, requirePermission } from '@/lib/userAccess';
+import { hasPermission, requireAnyPermission, requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -555,6 +555,32 @@ export async function createContent(formData: FormData) {
   }
 
   const plannedDateValue = String(formData.get("plannedDate") || "").trim();
+  const productionDeadlineValue = String(formData.get("productionDeadline") || "").trim();
+  const areaValue = String(formData.get("area") || "GERAL").trim().toUpperCase();
+
+  if (
+    ['DESIGN', 'FILMMAKER'].includes(areaValue) &&
+    plannedDateValue &&
+    !productionDeadlineValue
+  ) {
+    redirect(
+      `/clientes/${clientId}/conteudos/novo?date=${encodeURIComponent(
+        plannedDateValue
+      )}&error=production-deadline-required`
+    );
+  }
+
+  if (
+    plannedDateValue &&
+    productionDeadlineValue &&
+    productionDeadlineValue >= plannedDateValue
+  ) {
+    redirect(
+      `/clientes/${clientId}/conteudos/novo?date=${encodeURIComponent(
+        plannedDateValue
+      )}&error=production-deadline-before`
+    );
+  }
 
   const content = await prisma.content.create({
     data: {
@@ -564,9 +590,14 @@ export async function createContent(formData: FormData) {
       objective: String(formData.get("objective") || "").trim(),
       format: String(formData.get("format") || "").trim(),
       platform: String(formData.get("platform") || "").trim(),
-      plannedDate: plannedDateValue ? new Date(plannedDateValue) : null,
+      plannedDate: plannedDateValue
+        ? new Date(`${plannedDateValue}T12:00:00.000Z`)
+        : null,
+      productionDeadline: productionDeadlineValue
+        ? new Date(`${productionDeadlineValue}T12:00:00.000Z`)
+        : null,
       responsible: String(formData.get("responsible") || "").trim(),
-      area: String(formData.get("area") || "GERAL").trim(),
+      area: areaValue,
       priority: String(formData.get("priority") || "MEDIA").trim(),
       caption: String(formData.get("caption") || "").trim(),
       artText: String(formData.get("artText") || "").trim(),
@@ -684,6 +715,45 @@ export async function updateContent(contentId: string, formData: FormData) {
 
   const plannedDateValue = text('plannedDate');
 
+  const existingProductionDeadlineValue =
+    currentContent.productionDeadline
+      ? currentContent.productionDeadline.toISOString().split('T')[0]
+      : '';
+
+  const requestedProductionDeadlineValue =
+    formData.has('productionDeadline')
+      ? String(formData.get('productionDeadline') || '').trim()
+      : existingProductionDeadlineValue;
+
+  const canManageProductionDeadline =
+    hasPermission(
+      currentUser,
+      'social.manage'
+    );
+
+  const productionDeadlineValue =
+    canManageProductionDeadline
+      ? requestedProductionDeadlineValue
+      : existingProductionDeadlineValue;
+
+  const nextArea =
+    normalizeArea(
+      text(
+        'area',
+        currentContent.area
+      )
+    );
+
+  if (
+    plannedDateValue &&
+    productionDeadlineValue &&
+    productionDeadlineValue >= plannedDateValue
+  ) {
+    redirect(
+      `/conteudos/${contentId}?error=production-deadline-before`
+    );
+  }
+
   const updatedContent =
     await prisma.content.update({
       where: {
@@ -692,14 +762,19 @@ export async function updateContent(contentId: string, formData: FormData) {
       },
     data: {
       status: text('status', currentContent.status),
-      area: normalizeArea(text('area', currentContent.area)),
+      area: nextArea,
       priority: normalizePriority(text('priority', currentContent.priority)),
       responsible: text('responsible', currentContent.responsible || ''),
       title: text('title', currentContent.title),
       objective: text('objective', currentContent.objective || ''),
       format: text('format', currentContent.format || ''),
       platform: text('platform', currentContent.platform || ''),
-      plannedDate: plannedDateValue ? new Date(`${plannedDateValue}T12:00:00`) : currentContent.plannedDate,
+      plannedDate: plannedDateValue
+        ? new Date(`${plannedDateValue}T12:00:00.000Z`)
+        : currentContent.plannedDate,
+      productionDeadline: productionDeadlineValue
+        ? new Date(`${productionDeadlineValue}T12:00:00.000Z`)
+        : currentContent.productionDeadline,
       briefing: text('briefing', currentContent.briefing || ''),
       artText: text('artText', currentContent.artText || ''),
       caption: text('caption', currentContent.caption || ''),

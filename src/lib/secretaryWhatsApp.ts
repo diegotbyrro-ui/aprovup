@@ -11,6 +11,11 @@ import {
 } from '@/lib/userAccess';
 
 import {
+  ensureWeeklyAgencyMeeting,
+  findGoogleCalendarEvents,
+} from '@/lib/googleCalendar';
+
+import {
   transcribeSecretaryAudio,
 } from '@/lib/secretaryAudio';
 
@@ -2246,6 +2251,9 @@ function maceioParts() {
           day:
             '2-digit',
 
+          weekday:
+            'short',
+
           hour:
             '2-digit',
 
@@ -2301,6 +2309,12 @@ function maceioParts() {
         ) ||
         0
       ),
+
+    weekday:
+      map.get(
+        'weekday'
+      ) ||
+      '',
   };
 }
 
@@ -2683,6 +2697,723 @@ export async function deliverSecretaryCaptureReminders() {
           dedupKey: 'capture-upcoming:' + schedule.id + ':' + member.id,
         });
         if (result.status === 'SENT') sent += 1;
+      }
+    }
+  }
+
+  return sent;
+}
+
+type SecretaryCalendarReminderEvent =
+  Awaited<
+    ReturnType<
+      typeof findGoogleCalendarEvents
+    >
+  >[number];
+
+function normalizeCalendarAssignmentText(
+  value:
+    string
+) {
+  return (
+    ' ' +
+    String(
+      value ||
+      ''
+    )
+      .normalize(
+        'NFD'
+      )
+      .replace(
+        /[\u0300-\u036f]/g,
+        ''
+      )
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9]+/g,
+        ' '
+      )
+      .trim() +
+    ' '
+  );
+}
+
+function calendarMemberAliases({
+  displayName,
+  userName,
+}: {
+  displayName:
+    string |
+    null;
+
+  userName:
+    string |
+    null;
+}) {
+  const raw =
+    [
+      displayName,
+      userName,
+    ]
+      .filter(
+        Boolean
+      )
+      .map(
+        (
+          value
+        ) =>
+          normalizeCalendarAssignmentText(
+            String(
+              value
+            )
+          ).trim()
+      )
+      .filter(
+        Boolean
+      );
+
+  const aliases =
+    new Set<string>();
+
+  for (
+    const value
+    of raw
+  ) {
+    aliases.add(
+      value
+    );
+
+    const first =
+      value
+        .split(
+          /\s+/
+        )[0];
+
+    if (first) {
+      aliases.add(
+        first
+      );
+    }
+
+    if (
+      first?.startsWith(
+        'gabri'
+      )
+    ) {
+      aliases.add(
+        'gabi'
+      );
+    }
+
+    if (
+      first ===
+        'bia' ||
+      first?.startsWith(
+        'beatriz'
+      ) ||
+      first?.startsWith(
+        'bianca'
+      )
+    ) {
+      aliases.add(
+        'bia'
+      );
+    }
+
+    if (
+      first?.startsWith(
+        'leonio'
+      )
+    ) {
+      aliases.add(
+        'leo'
+      );
+    }
+  }
+
+  return [
+    ...aliases,
+  ];
+}
+
+function calendarEventMatchesMember({
+  summary,
+  displayName,
+  userName,
+}: {
+  summary:
+    string;
+
+  displayName:
+    string |
+    null;
+
+  userName:
+    string |
+    null;
+}) {
+  const normalized =
+    normalizeCalendarAssignmentText(
+      summary
+    );
+
+  if (
+    normalized.includes(
+      ' equipe '
+    ) ||
+    normalized.includes(
+      ' todos '
+    ) ||
+    normalized.includes(
+      ' toda equipe '
+    )
+  ) {
+    return true;
+  }
+
+  return calendarMemberAliases({
+    displayName,
+    userName,
+  }).some(
+    (
+      alias
+    ) =>
+      normalized.includes(
+        ' ' +
+          alias +
+          ' '
+      )
+  );
+}
+
+function formatCalendarReminderTime(
+  value:
+    string |
+    null
+) {
+  if (!value) {
+    return 'Sem horário';
+  }
+
+  if (
+    !value.includes(
+      'T'
+    )
+  ) {
+    return 'Dia inteiro';
+  }
+
+  const parsed =
+    new Date(
+      value
+    );
+
+  if (
+    Number.isNaN(
+      parsed.getTime()
+    )
+  ) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(
+    'pt-BR',
+    {
+      timeZone:
+        'America/Maceio',
+
+      hour:
+        '2-digit',
+
+      minute:
+        '2-digit',
+    }
+  ).format(
+    parsed
+  );
+}
+
+function calendarReminderMessage(
+  event:
+    SecretaryCalendarReminderEvent
+) {
+  return [
+    '*Compromisso:* ' +
+      event.summary,
+
+    '*Horário:* ' +
+      formatCalendarReminderTime(
+        event.start
+      ),
+
+    event.location
+      ? '*Local:* ' +
+        event.location
+      : '',
+  ]
+    .filter(
+      Boolean
+    )
+    .join(
+      '\n'
+    );
+}
+
+export async function deliverSecretaryCalendarReminders() {
+  const now =
+    new Date();
+
+  const local =
+    maceioParts();
+
+  const dayStart =
+    new Date(
+      local.dateKey +
+      'T03:00:00.000Z'
+    );
+
+  const dayEnd =
+    new Date(
+      dayStart.getTime() +
+      24 *
+        60 *
+        60 *
+        1000
+    );
+
+  const upcomingStart =
+    new Date(
+      now.getTime() +
+      45 *
+        60 *
+        1000
+    );
+
+  const upcomingEnd =
+    new Date(
+      now.getTime() +
+      75 *
+        60 *
+        1000
+    );
+
+  const connections =
+    await prisma
+      .secretaryWhatsappConnection
+      .findMany({
+        where: {
+          status:
+            'ATIVO',
+
+          proactiveEnabled:
+            true,
+        },
+      });
+
+  let sent =
+    0;
+
+  for (
+    const connection
+    of connections
+  ) {
+    const members =
+      await prisma
+        .secretaryWhatsappMember
+        .findMany({
+          where: {
+            agencyId:
+              connection.agencyId,
+
+            isActive:
+              true,
+
+            receiveAlerts:
+              true,
+
+            userId: {
+              not:
+                null,
+            },
+          },
+        });
+
+    if (!members.length) {
+      continue;
+    }
+
+    const userIds =
+      members
+        .map(
+          (
+            member
+          ) =>
+            member.userId
+        )
+        .filter(
+          (
+            value
+          ): value is string =>
+            Boolean(
+              value
+            )
+        );
+
+    const users =
+      await prisma
+        .user
+        .findMany({
+          where: {
+            agencyId:
+              connection.agencyId,
+
+            id: {
+              in:
+                userIds,
+            },
+
+            status:
+              'APROVADO',
+          },
+
+          select: {
+            id:
+              true,
+
+            name:
+              true,
+          },
+        });
+
+    const userById =
+      new Map(
+        users.map(
+          (
+            user
+          ) => [
+            user.id,
+            user,
+          ] as const
+        )
+      );
+
+    const recipients =
+      members
+        .map(
+          (
+            member
+          ) => {
+            const user =
+              member.userId
+                ? userById.get(
+                    member.userId
+                  )
+                : null;
+
+            return user
+              ? {
+                  member,
+                  user,
+                }
+              : null;
+          }
+        )
+        .filter(
+          (
+            value
+          ): value is NonNullable<
+            typeof value
+          > =>
+            Boolean(
+              value
+            )
+        );
+
+    if (!recipients.length) {
+      continue;
+    }
+
+    const events =
+      await findGoogleCalendarEvents({
+        agencyId:
+          connection.agencyId,
+
+        query:
+          '',
+
+        timeMin:
+          dayStart,
+
+        timeMax:
+          dayEnd,
+      }).catch(
+        (
+          error
+        ) => {
+          console.error(
+            'SECRETARY GOOGLE CALENDAR LIST ERROR',
+            connection.agencyId,
+            error
+          );
+
+          return [] as SecretaryCalendarReminderEvent[];
+        }
+      );
+
+    if (
+      local.hour ===
+        8 &&
+      events.length
+    ) {
+      for (
+        const recipient
+        of recipients
+      ) {
+        const personalEvents =
+          events.filter(
+            (
+              event
+            ) =>
+              calendarEventMatchesMember({
+                summary:
+                  event.summary,
+
+                displayName:
+                  recipient
+                    .member
+                    .displayName,
+
+                userName:
+                  recipient
+                    .user
+                    .name,
+              })
+          );
+
+        if (!personalEvents.length) {
+          continue;
+        }
+
+        const message =
+          personalEvents
+            .map(
+              (
+                event,
+                index
+              ) =>
+                String(
+                  index +
+                    1
+                ) +
+                '. ' +
+                calendarReminderMessage(
+                  event
+                )
+            )
+            .join(
+              '\n\n'
+            );
+
+        const result =
+          await sendProactive({
+            agencyId:
+              connection.agencyId,
+
+            memberId:
+              recipient
+                .member
+                .id,
+
+            toPhone:
+              recipient
+                .member
+                .phoneE164,
+
+            title:
+              'Seus compromissos de hoje',
+
+            message,
+
+            dedupKey:
+              'calendar-daily:' +
+              local.dateKey +
+              ':' +
+              recipient
+                .member
+                .id,
+          });
+
+        if (
+          result.status ===
+          'SENT'
+        ) {
+          sent +=
+            1;
+        }
+      }
+    }
+
+    const upcoming =
+      events.filter(
+        (
+          event
+        ) => {
+          if (
+            !event.start ||
+            !event.start.includes(
+              'T'
+            )
+          ) {
+            return false;
+          }
+
+          const start =
+            new Date(
+              event.start
+            );
+
+          return (
+            !Number.isNaN(
+              start.getTime()
+            ) &&
+            start >=
+              upcomingStart &&
+            start <=
+              upcomingEnd
+          );
+        }
+      );
+
+    for (
+      const event
+      of upcoming
+    ) {
+      for (
+        const recipient
+        of recipients
+      ) {
+        if (
+          !calendarEventMatchesMember({
+            summary:
+              event.summary,
+
+            displayName:
+              recipient
+                .member
+                .displayName,
+
+            userName:
+              recipient
+                .user
+                .name,
+          })
+        ) {
+          continue;
+        }
+
+        const result =
+          await sendProactive({
+            agencyId:
+              connection.agencyId,
+
+            memberId:
+              recipient
+                .member
+                .id,
+
+            toPhone:
+              recipient
+                .member
+                .phoneE164,
+
+            title:
+              'Compromisso em cerca de 1 hora',
+
+            message:
+              calendarReminderMessage(
+                event
+              ),
+
+            dedupKey:
+              'calendar-upcoming:' +
+              event.id +
+              ':' +
+              recipient
+                .member
+                .id,
+          });
+
+        if (
+          result.status ===
+          'SENT'
+        ) {
+          sent +=
+            1;
+        }
+      }
+    }
+
+    if (
+      local.weekday ===
+        'Sun' &&
+      local.hour ===
+        18
+    ) {
+      await ensureWeeklyAgencyMeeting(
+        connection.agencyId
+      ).catch(
+        (
+          error
+        ) => {
+          console.error(
+            'SECRETARY WEEKLY MEETING ENSURE ERROR',
+            connection.agencyId,
+            error
+          );
+        }
+      );
+
+      for (
+        const recipient
+        of recipients
+      ) {
+        const result =
+          await sendProactive({
+            agencyId:
+              connection.agencyId,
+
+            memberId:
+              recipient
+                .member
+                .id,
+
+            toPhone:
+              recipient
+                .member
+                .phoneE164,
+
+            title:
+              'Reunião semanal amanhã às 9h',
+
+            message:
+              'Amanhã, segunda-feira, às 9h, temos a reunião semanal da Level UP. Reserve esse horário na sua agenda.',
+
+            dedupKey:
+              'weekly-meeting:' +
+              local.dateKey +
+              ':' +
+              recipient
+                .member
+                .id,
+          });
+
+        if (
+          result.status ===
+          'SENT'
+        ) {
+          sent +=
+            1;
+        }
       }
     }
   }

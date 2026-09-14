@@ -589,3 +589,253 @@ export async function updateGoogleCalendarEvent({
   if (!response.ok) throw new Error('Google Calendar recusou a alteração: ' + (result.error?.message || response.status));
   return result;
 }
+
+type EnsureWeeklyMeetingResult = {
+  created: boolean;
+  eventId: string | null;
+  htmlLink: string | null;
+  start: string | null;
+};
+
+function maceioDatePartsNow() {
+  const parts = new Intl.DateTimeFormat(
+    'en-US',
+    {
+      timeZone: 'America/Maceio',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }
+  ).formatToParts(new Date());
+
+  const map = new Map(
+    parts.map((item) => [item.type, item.value])
+  );
+
+  return {
+    year: Number(map.get('year') || 0),
+    month: Number(map.get('month') || 0),
+    day: Number(map.get('day') || 0),
+    hour: Number(map.get('hour') || 0),
+    minute: Number(map.get('minute') || 0),
+  };
+}
+
+export async function ensureWeeklyAgencyMeeting(
+  agencyId: string
+): Promise<EnsureWeeklyMeetingResult> {
+  const auth =
+    await getGoogleCalendarAccessTokenForAgency(
+      agencyId
+    );
+
+  if (!auth) {
+    return {
+      created: false,
+      eventId: null,
+      htmlLink: null,
+      start: null,
+    };
+  }
+
+  const now =
+    new Date();
+
+  const existing =
+    await findGoogleCalendarEvents({
+      agencyId,
+      query:
+        'Reunião semanal Level UP',
+      timeMin:
+        new Date(
+          now.getTime() -
+            24 *
+              60 *
+              60 *
+              1000
+        ),
+      timeMax:
+        new Date(
+          now.getTime() +
+            120 *
+              24 *
+              60 *
+              60 *
+              1000
+        ),
+    });
+
+  const match =
+    existing.find(
+      (
+        item
+      ) =>
+        normalizeCalendarText(
+          item.summary
+        ).includes(
+          'reuniao semanal level up'
+        )
+    );
+
+  if (match) {
+    return {
+      created: false,
+      eventId: match.id,
+      htmlLink: match.htmlLink,
+      start: match.start,
+    };
+  }
+
+  const local =
+    maceioDatePartsNow();
+
+  const todayUtc =
+    new Date(
+      Date.UTC(
+        local.year,
+        local.month - 1,
+        local.day
+      )
+    );
+
+  const weekday =
+    todayUtc.getUTCDay();
+
+  let daysUntilMonday =
+    (
+      1 -
+      weekday +
+      7
+    ) %
+    7;
+
+  if (
+    daysUntilMonday === 0 &&
+    (
+      local.hour > 9 ||
+      (
+        local.hour === 9 &&
+        local.minute >= 0
+      )
+    )
+  ) {
+    daysUntilMonday =
+      7;
+  }
+
+  const target =
+    new Date(
+      Date.UTC(
+        local.year,
+        local.month - 1,
+        local.day +
+          daysUntilMonday
+      )
+    );
+
+  const dateKey =
+    target
+      .toISOString()
+      .slice(
+        0,
+        10
+      );
+
+  const startText =
+    dateKey +
+    'T09:00:00-03:00';
+
+  const endText =
+    dateKey +
+    'T10:00:00-03:00';
+
+  const response =
+    await fetch(
+      'https://www.googleapis.com/calendar/v3/calendars/' +
+        encodeURIComponent(
+          auth.calendarId
+        ) +
+        '/events',
+      {
+        method:
+          'POST',
+
+        headers: {
+          Authorization:
+            'Bearer ' +
+            auth.accessToken,
+
+          'Content-Type':
+            'application/json',
+        },
+
+        body:
+          JSON.stringify({
+            summary:
+              'Reunião semanal Level UP - Equipe',
+
+            description:
+              'Reunião semanal da equipe Level UP Marketing Digital.',
+
+            start: {
+              dateTime:
+                startText,
+
+              timeZone:
+                'America/Maceio',
+            },
+
+            end: {
+              dateTime:
+                endText,
+
+              timeZone:
+                'America/Maceio',
+            },
+
+            recurrence: [
+              'RRULE:FREQ=WEEKLY;BYDAY=MO',
+            ],
+
+            reminders: {
+              useDefault:
+                true,
+            },
+          }),
+      }
+    );
+
+  const payload =
+    await response.json() as {
+      id?: string;
+      htmlLink?: string;
+      error?: {
+        message?: string;
+      };
+    };
+
+  if (!response.ok) {
+    throw new Error(
+      'Google Calendar recusou a reunião semanal: ' +
+        (
+          payload.error?.message ||
+          response.status
+        )
+    );
+  }
+
+  return {
+    created: true,
+    eventId:
+      payload.id ||
+      null,
+    htmlLink:
+      payload.htmlLink ||
+      null,
+    start:
+      startText,
+  };
+}

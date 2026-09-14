@@ -80,6 +80,20 @@ export default async function NovoConteudoClientePage({
         </div>
       ) : null}
 
+      {error ===
+      'production-deadline-required' ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+          Defina a data limite de entrega da produção antes de salvar o conteúdo.
+        </div>
+      ) : null}
+
+      {error ===
+      'production-deadline-before' ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+          A data limite da produção precisa ser anterior à data de publicação.
+        </div>
+      ) : null}
+
       <form
         action={createContent}
         className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6"
@@ -111,7 +125,7 @@ export default async function NovoConteudoClientePage({
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
 
           <div>
             <label className={labelClasses}>
@@ -191,7 +205,7 @@ export default async function NovoConteudoClientePage({
 
           <div>
             <label className={labelClasses}>
-              Data Prevista
+              Data de publicação
             </label>
 
             <input
@@ -200,6 +214,22 @@ export default async function NovoConteudoClientePage({
               defaultValue={date || ''}
               className={inputClasses}
             />
+          </div>
+
+          <div>
+            <label className={labelClasses}>
+              Data limite da produção
+            </label>
+
+            <input
+              name="productionDeadline"
+              type="date"
+              className={inputClasses}
+            />
+
+            <p className="mt-1 text-xs text-slate-500">
+              Prazo interno para Design/Filmmaker entregar antes da conferência e aprovação do cliente.
+            </p>
           </div>
 
         </div>

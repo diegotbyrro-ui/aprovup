@@ -117,6 +117,7 @@ const reviewStatuses = [
 
 const completedStatuses = [
   "PRONTO_PARA_POSTAR",
+  "PUBLICADO",
   "PUBLICADO_MANUALMENTE",
 ];
 
@@ -284,13 +285,7 @@ function percentageDelta(
   if (
     previous === 0
   ) {
-    if (
-      current === 0
-    ) {
-      return 0;
-    }
-
-    return 100;
+    return 0;
   }
 
   return Math.round(
@@ -1428,6 +1423,18 @@ export default async function OperacaoPage({
     );
 
 
+  const portfolioCoverage =
+    accessibleClients.length > 0
+      ? Math.round(
+          (
+            currentClientIds.size /
+            accessibleClients.length
+          ) *
+            100
+        )
+      : 0;
+
+
   const previousClientIds =
     new Set(
       previousMonthContents.map(
@@ -1948,24 +1955,27 @@ export default async function OperacaoPage({
           label={
             selectedClient
               ? "Cliente em análise"
-              : "Clientes ativos"
+              : "Cobertura da carteira (%)"
           }
           value={
             selectedClient
               ? 1
-              : currentClientIds.size
+              : portfolioCoverage
           }
-          delta={
-            selectedClient
-              ? 0
-              : clientsDelta
-          }
+          delta={0}
           helper={
             selectedClient
               ? cleanName(
                   selectedClient.name
                 )
-              : "com conteúdo neste mês"
+              : (
+                  currentClientIds.size +
+                  " de " +
+                  accessibleClients.length +
+                  " clientes com conteúdo no mês (" +
+                  portfolioCoverage +
+                  "%)"
+                )
           }
           icon={
             <UsersRound

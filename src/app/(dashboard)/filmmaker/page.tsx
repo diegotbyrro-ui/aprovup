@@ -365,8 +365,12 @@ function isLate(
   content:
     any
 ) {
+  const deadline =
+    content.productionDeadline ||
+    content.plannedDate;
+
   if (
-    !content.plannedDate
+    !deadline
   ) {
     return false;
   }
@@ -397,7 +401,7 @@ function isLate(
 
   const date =
     new Date(
-      content.plannedDate
+      deadline
     );
 
   date.setHours(
@@ -1030,12 +1034,25 @@ function FilmmakerCard({
 
 
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-1 text-[8px] font-semibold text-slate-500">
+          <span
+            className={[
+              "inline-flex items-center gap-1 rounded-md border px-1.5 py-1 text-[8px] font-semibold",
+              late
+                ? "border-red-200 bg-red-50 text-red-700"
+                : "border-amber-100 bg-amber-50 text-amber-700",
+            ].join(" ")}
+          >
             <Clock3
               size={10}
             />
 
-            {formatDate(
+            Entrega: {formatDate(
+              content.productionDeadline
+            )}
+          </span>
+
+          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-1 text-[8px] font-semibold text-slate-500">
+            Publicação: {formatDate(
               content.plannedDate
             )}
           </span>

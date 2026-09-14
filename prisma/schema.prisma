@@ -229,9 +229,10 @@ model Content {
   title         String
   objective     String?
   format        String?
-  platform      String?
-  plannedDate   DateTime?
-  responsible   String?
+  platform           String?
+  plannedDate        DateTime?
+  productionDeadline DateTime?
+  responsible        String?
   area          String    @default("GERAL")
   priority      String    @default("MEDIA")
   caption       String?

@@ -822,7 +822,17 @@ export default async function ConteudoDetailPage({
           contentSafe.storyCoverUrl
         );
 
-  const late = isLate(contentSafe.plannedDate, contentSafe.status);
+  const operationalDeadline =
+    ['DESIGN', 'SOCIAL_DESIGN', 'FILMMAKER', 'AUDIOVISUAL'].includes(
+      currentArea
+    )
+      ? (
+          contentSafe.productionDeadline ||
+          contentSafe.plannedDate
+        )
+      : contentSafe.plannedDate;
+
+  const late = isLate(operationalDeadline, contentSafe.status);
 
   const pendingTasks = contentSafe.tasks.filter(
     (task) => task.status !== 'FINALIZADO'
@@ -875,6 +885,11 @@ export default async function ConteudoDetailPage({
           type="hidden"
           name="plannedDate"
           value={formatDateInput(contentSafe.plannedDate)}
+        />
+        <input
+          type="hidden"
+          name="productionDeadline"
+          value={formatDateInput(contentSafe.productionDeadline)}
         />
         <input type="hidden" name="briefing" value={contentSafe.briefing || ''} />
         <input type="hidden" name="artText" value={contentSafe.artText || ''} />
@@ -942,9 +957,13 @@ export default async function ConteudoDetailPage({
               <strong className="text-white">
                 {contentSafe.client?.name || 'Cliente não informado'}
               </strong>{' '}
-              ⬢ Data prevista:{' '}
-              <strong className={late ? 'text-red-300' : 'text-white'}>
+              ⬢ Publicação:{' '}
+              <strong className="text-white">
                 {formatDate(contentSafe.plannedDate)}
+              </strong>{' '}
+              ⬢ Prazo interno:{' '}
+              <strong className={late ? 'text-red-300' : 'text-white'}>
+                {formatDate(contentSafe.productionDeadline)}
               </strong>{' '}
               ⬢ Responsável:{' '}
               <strong className="text-white">
@@ -1189,7 +1208,7 @@ export default async function ConteudoDetailPage({
         </section>
 
       )}
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-5">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
             Status
@@ -1224,18 +1243,27 @@ export default async function ConteudoDetailPage({
           </p>
         </div>
 
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Publicação
+          </p>
+          <p className="mt-3 text-xl font-bold text-slate-900">
+            {formatDate(contentSafe.plannedDate)}
+          </p>
+        </div>
+
         <div
           className={`rounded-2xl border p-5 shadow-sm ${late ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'
             }`}
         >
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Data prevista
+            Prazo interno
           </p>
           <p
             className={`mt-3 text-xl font-bold ${late ? 'text-red-700' : 'text-slate-900'
               }`}
           >
-            {formatDate(contentSafe.plannedDate)}
+            {formatDate(contentSafe.productionDeadline)}
           </p>
         </div>
       </section>
@@ -1469,13 +1497,27 @@ export default async function ConteudoDetailPage({
                 </div>
 
                 <div>
-                  <label className={labelClasses}>Data Prevista</label>
+                  <label className={labelClasses}>Data de publicação</label>
                   <input
                     name="plannedDate"
                     defaultValue={formatDateInput(contentSafe.plannedDate)}
                     type="date"
                     className={inputClasses}
                   />
+                </div>
+
+                <div>
+                  <label className={labelClasses}>Prazo interno da produção</label>
+                  <input
+                    name="productionDeadline"
+                    defaultValue={formatDateInput(contentSafe.productionDeadline)}
+                    type="date"
+                    disabled={!canManageSocial}
+                    className={inputClasses}
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Apenas Social Media e Diretoria definem este prazo.
+                  </p>
                 </div>
               </div>
 
