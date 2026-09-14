@@ -2793,6 +2793,383 @@ export async function deliverSecretaryCaptureReminders() {
   return sent;
 }
 
+
+function formatProductionDeadline(
+  value:
+    Date
+) {
+  return new Intl.DateTimeFormat(
+    'pt-BR',
+    {
+      timeZone:
+        'America/Maceio',
+
+      day:
+        '2-digit',
+
+      month:
+        '2-digit',
+
+      hour:
+        '2-digit',
+
+      minute:
+        '2-digit',
+    }
+  ).format(value);
+}
+
+
+export async function deliverSecretaryProductionDeadlineReminders() {
+  const now =
+    new Date();
+
+  const connections =
+    await prisma
+      .secretaryWhatsappConnection
+      .findMany({
+        where: {
+          status:
+            'ATIVO',
+
+          proactiveEnabled:
+            true,
+        },
+      });
+
+
+  let sent =
+    0;
+
+
+  for (
+    const connection
+    of connections
+  ) {
+    const members =
+      await prisma
+        .secretaryWhatsappMember
+        .findMany({
+          where: {
+            agencyId:
+              connection.agencyId,
+
+            isActive:
+              true,
+
+            receiveAlerts:
+              true,
+
+            userId: {
+              not:
+                null,
+            },
+          },
+        });
+
+
+    const userIds =
+      members
+        .map(
+          (member) =>
+            member.userId
+        )
+        .filter(
+          (value): value is string =>
+            Boolean(value)
+        );
+
+
+    if (!userIds.length) {
+      continue;
+    }
+
+
+    const users =
+      await prisma.user
+        .findMany({
+          where: {
+            agencyId:
+              connection.agencyId,
+
+            id: {
+              in:
+                userIds,
+            },
+
+            status:
+              'APROVADO',
+
+            role: {
+              in: [
+                'DESIGN',
+                'FILMMAKER',
+              ],
+            },
+          },
+
+          select: {
+            id:
+              true,
+
+            role:
+              true,
+          },
+        });
+
+
+    const roleByUserId =
+      new Map(
+        users.map(
+          (user) =>
+            [
+              user.id,
+              user.role,
+            ] as const
+        )
+      );
+
+
+    const productionMembers =
+      members.filter(
+        (member) =>
+          Boolean(
+            member.userId &&
+            roleByUserId.has(
+              member.userId
+            )
+          )
+      );
+
+
+    if (!productionMembers.length) {
+      continue;
+    }
+
+
+    const contents =
+      await prisma.content
+        .findMany({
+          where: {
+            client: {
+              agencyId:
+                connection.agencyId,
+            },
+
+            area: {
+              in: [
+                'DESIGN',
+                'FILMMAKER',
+              ],
+            },
+
+            status: {
+              notIn: [
+                'PRONTO_PARA_POSTAR',
+                'PUBLICADO',
+                'PUBLICADO_MANUALMENTE',
+              ],
+            },
+          },
+
+          select: {
+            id:
+              true,
+
+            title:
+              true,
+
+            area:
+              true,
+
+            status:
+              true,
+
+            priority:
+              true,
+
+            productionDeadline:
+              true,
+
+            plannedDate:
+              true,
+
+            client: {
+              select: {
+                name:
+                  true,
+              },
+            },
+          },
+
+          take:
+            500,
+        });
+
+
+    for (
+      const content
+      of contents
+    ) {
+      const deadline =
+        content.productionDeadline ||
+        content.plannedDate;
+
+      if (!deadline) {
+        continue;
+      }
+
+
+      const remaining =
+        deadline.getTime() -
+        now.getTime();
+
+      const hour =
+        60 * 60 * 1000;
+
+      let stage =
+        '';
+
+      let title =
+        '';
+
+
+      if (remaining <= 0) {
+        stage =
+          'OVERDUE';
+
+        title =
+          '⚠️ Demanda atrasada';
+      }
+      else if (
+        remaining >
+          5 * hour &&
+        remaining <=
+          7 * hour
+      ) {
+        stage =
+          '6H';
+
+        title =
+          'Entrega em cerca de 6 horas';
+      }
+      else if (
+        remaining >
+          23 * hour &&
+        remaining <=
+          25 * hour
+      ) {
+        stage =
+          '24H';
+
+        title =
+          'Entrega em cerca de 24 horas';
+      }
+      else {
+        continue;
+      }
+
+
+      for (
+        const member
+        of productionMembers
+      ) {
+        if (!member.userId) {
+          continue;
+        }
+
+
+        const role =
+          roleByUserId.get(
+            member.userId
+          );
+
+        const correctArea =
+          (
+            role ===
+              'DESIGN' &&
+            content.area ===
+              'DESIGN'
+          ) ||
+          (
+            role ===
+              'FILMMAKER' &&
+            content.area ===
+              'FILMMAKER'
+          );
+
+
+        if (!correctArea) {
+          continue;
+        }
+
+
+        const message =
+          [
+            '*Cliente:* ' +
+              content.client.name,
+
+            '*Demanda:* ' +
+              content.title,
+
+            '*Etapa:* ' +
+              String(content.status)
+                .replace(/_/g, ' '),
+
+            '*Prazo:* ' +
+              formatProductionDeadline(
+                deadline
+              ),
+
+            '*Prioridade:* ' +
+              String(
+                content.priority ||
+                'MEDIA'
+              ),
+          ].join('\n');
+
+
+        const result =
+          await sendProactive({
+            agencyId:
+              connection.agencyId,
+
+            memberId:
+              member.id,
+
+            toPhone:
+              member.phoneE164,
+
+            title,
+
+            message,
+
+            dedupKey:
+              'production-deadline:' +
+              stage +
+              ':' +
+              content.id +
+              ':' +
+              deadline.toISOString() +
+              ':' +
+              member.id,
+          });
+
+
+        if (
+          result.status ===
+          'SENT'
+        ) {
+          sent += 1;
+        }
+      }
+    }
+  }
+
+
+  return sent;
+}
+
 type SecretaryCalendarReminderEvent =
   Awaited<
     ReturnType<
@@ -3061,30 +3438,41 @@ export async function deliverSecretaryCalendarReminders() {
       'T03:00:00.000Z'
     );
 
-  const dayEnd =
+  const tomorrowStart =
     new Date(
       dayStart.getTime() +
-      24 *
-        60 *
-        60 *
-        1000
+      24 * 60 * 60 * 1000
     );
+
+  const dayAfterTomorrow =
+    new Date(
+      tomorrowStart.getTime() +
+      24 * 60 * 60 * 1000
+    );
+
+  const tomorrowKey =
+    tomorrowStart
+      .toISOString()
+      .slice(0, 10);
 
   const upcomingStart =
     new Date(
       now.getTime() +
-      45 *
-        60 *
-        1000
+      45 * 60 * 1000
     );
 
   const upcomingEnd =
     new Date(
       now.getTime() +
-      75 *
-        60 *
-        1000
+      75 * 60 * 1000
     );
+
+  const eveningCutoff =
+    new Date(
+      dayStart.getTime() +
+      18 * 60 * 60 * 1000
+    );
+
 
   const connections =
     await prisma
@@ -3099,13 +3487,41 @@ export async function deliverSecretaryCalendarReminders() {
         },
       });
 
+
   let sent =
     0;
+
 
   for (
     const connection
     of connections
   ) {
+
+    /*
+     * A reunião semanal precisa existir
+     * antes de buscarmos os compromissos
+     * de segunda-feira.
+     */
+    if (
+      local.weekday ===
+        'Sun' &&
+      local.hour ===
+        18
+    ) {
+      await ensureWeeklyAgencyMeeting(
+        connection.agencyId
+      ).catch(
+        (error) => {
+          console.error(
+            'SECRETARY WEEKLY MEETING ENSURE ERROR',
+            connection.agencyId,
+            error
+          );
+        }
+      );
+    }
+
+
     const members =
       await prisma
         .secretaryWhatsappMember
@@ -3131,26 +3547,21 @@ export async function deliverSecretaryCalendarReminders() {
       continue;
     }
 
+
     const userIds =
       members
         .map(
-          (
-            member
-          ) =>
+          (member) =>
             member.userId
         )
         .filter(
-          (
-            value
-          ): value is string =>
-            Boolean(
-              value
-            )
+          (value): value is string =>
+            Boolean(value)
         );
 
+
     const users =
-      await prisma
-        .user
+      await prisma.user
         .findMany({
           where: {
             agencyId:
@@ -3174,24 +3585,23 @@ export async function deliverSecretaryCalendarReminders() {
           },
         });
 
+
     const userById =
       new Map(
         users.map(
-          (
-            user
-          ) => [
-            user.id,
-            user,
-          ] as const
+          (user) =>
+            [
+              user.id,
+              user,
+            ] as const
         )
       );
+
 
     const recipients =
       members
         .map(
-          (
-            member
-          ) => {
+          (member) => {
             const user =
               member.userId
                 ? userById.get(
@@ -3200,27 +3610,20 @@ export async function deliverSecretaryCalendarReminders() {
                 : null;
 
             return user
-              ? {
-                  member,
-                  user,
-                }
+              ? { member, user }
               : null;
           }
         )
         .filter(
-          (
-            value
-          ): value is NonNullable<
-            typeof value
-          > =>
-            Boolean(
-              value
-            )
+          (value): value is NonNullable<typeof value> =>
+            Boolean(value)
         );
+
 
     if (!recipients.length) {
       continue;
     }
+
 
     const events =
       await findGoogleCalendarEvents({
@@ -3234,11 +3637,9 @@ export async function deliverSecretaryCalendarReminders() {
           dayStart,
 
         timeMax:
-          dayEnd,
+          dayAfterTomorrow,
       }).catch(
-        (
-          error
-        ) => {
+        (error) => {
           console.error(
             'SECRETARY GOOGLE CALENDAR LIST ERROR',
             connection.agencyId,
@@ -3249,59 +3650,77 @@ export async function deliverSecretaryCalendarReminders() {
         }
       );
 
+
+    const tomorrowEvents =
+      events.filter(
+        (event) => {
+          if (!event.start) {
+            return false;
+          }
+
+          if (
+            !event.start.includes('T')
+          ) {
+            return event.start ===
+              tomorrowKey;
+          }
+
+          const start =
+            new Date(event.start);
+
+          return (
+            !Number.isNaN(start.getTime()) &&
+            start >= tomorrowStart &&
+            start < dayAfterTomorrow
+          );
+        }
+      );
+
+
+    /* ================================================
+       18H - COMPROMISSOS DO DIA SEGUINTE
+       ================================================ */
+
     if (
       local.hour ===
-        8 &&
-      events.length
+        18 &&
+      tomorrowEvents.length
     ) {
       for (
         const recipient
         of recipients
       ) {
         const personalEvents =
-          events.filter(
-            (
-              event
-            ) =>
+          tomorrowEvents.filter(
+            (event) =>
               calendarEventMatchesMember({
                 summary:
                   event.summary,
 
                 displayName:
-                  recipient
-                    .member
-                    .displayName,
+                  recipient.member.displayName,
 
                 userName:
-                  recipient
-                    .user
-                    .name,
+                  recipient.user.name,
               })
           );
+
 
         if (!personalEvents.length) {
           continue;
         }
 
+
         const message =
           personalEvents
             .map(
-              (
-                event,
-                index
-              ) =>
-                String(
-                  index +
-                    1
-                ) +
+              (event, index) =>
+                String(index + 1) +
                 '. ' +
-                calendarReminderMessage(
-                  event
-                )
+                calendarReminderMessage(event)
             )
-            .join(
-              '\n\n'
-            );
+            .join('\n\n');
+
 
         const result =
           await sendProactive({
@@ -3309,69 +3728,171 @@ export async function deliverSecretaryCalendarReminders() {
               connection.agencyId,
 
             memberId:
-              recipient
-                .member
-                .id,
+              recipient.member.id,
 
             toPhone:
-              recipient
-                .member
-                .phoneE164,
+              recipient.member.phoneE164,
 
             title:
-              'Seus compromissos de hoje',
+              'Seus compromissos de amanhã',
 
             message,
 
             dedupKey:
-              'calendar-daily:' +
-              local.dateKey +
+              'calendar-tomorrow:' +
+              tomorrowKey +
               ':' +
-              recipient
-                .member
-                .id,
+              recipient.member.id,
           });
+
 
         if (
           result.status ===
           'SENT'
         ) {
-          sent +=
-            1;
+          sent += 1;
         }
       }
     }
 
+
+    /* ================================================
+       ALTERAÇÃO / NOVO EVENTO DEPOIS DAS 18H
+       ================================================ */
+
+    if (
+      local.hour > 18 &&
+      tomorrowEvents.length
+    ) {
+      const changedAfter18 =
+        tomorrowEvents.filter(
+          (event) => {
+            if (!event.updated) {
+              return false;
+            }
+
+            const updated =
+              new Date(event.updated);
+
+            return (
+              !Number.isNaN(updated.getTime()) &&
+              updated > eveningCutoff
+            );
+          }
+        );
+
+
+      for (
+        const event
+        of changedAfter18
+      ) {
+        for (
+          const recipient
+          of recipients
+        ) {
+          if (
+            !calendarEventMatchesMember({
+              summary:
+                event.summary,
+
+              displayName:
+                recipient.member.displayName,
+
+              userName:
+                recipient.user.name,
+            })
+          ) {
+            continue;
+          }
+
+
+          const created =
+            event.created
+              ? new Date(event.created)
+              : null;
+
+          const updated =
+            event.updated
+              ? new Date(event.updated)
+              : null;
+
+          const isNew =
+            Boolean(
+              created &&
+              updated &&
+              Math.abs(
+                created.getTime() -
+                updated.getTime()
+              ) <
+                5000
+            );
+
+
+          const result =
+            await sendProactive({
+              agencyId:
+                connection.agencyId,
+
+              memberId:
+                recipient.member.id,
+
+              toPhone:
+                recipient.member.phoneE164,
+
+              title:
+                isNew
+                  ? 'Novo compromisso para amanhã'
+                  : 'Compromisso de amanhã atualizado',
+
+              message:
+                calendarReminderMessage(event),
+
+              dedupKey:
+                'calendar-late-change:' +
+                event.id +
+                ':' +
+                String(event.updated || '') +
+                ':' +
+                recipient.member.id,
+            });
+
+
+          if (
+            result.status ===
+            'SENT'
+          ) {
+            sent += 1;
+          }
+        }
+      }
+    }
+
+
+    /* ================================================
+       CERCA DE 1 HORA ANTES
+       ================================================ */
+
     const upcoming =
       events.filter(
-        (
-          event
-        ) => {
+        (event) => {
           if (
             !event.start ||
-            !event.start.includes(
-              'T'
-            )
+            !event.start.includes('T')
           ) {
             return false;
           }
 
           const start =
-            new Date(
-              event.start
-            );
+            new Date(event.start);
 
           return (
-            !Number.isNaN(
-              start.getTime()
-            ) &&
-            start >=
-              upcomingStart &&
-            start <=
-              upcomingEnd
+            !Number.isNaN(start.getTime()) &&
+            start >= upcomingStart &&
+            start <= upcomingEnd
           );
         }
       );
+
 
     for (
       const event
@@ -3387,129 +3908,56 @@ export async function deliverSecretaryCalendarReminders() {
               event.summary,
 
             displayName:
-              recipient
-                .member
-                .displayName,
+              recipient.member.displayName,
 
             userName:
-              recipient
-                .user
-                .name,
+              recipient.user.name,
           })
         ) {
           continue;
         }
 
+
         const result =
           await sendProactive({
             agencyId:
               connection.agencyId,
 
             memberId:
-              recipient
-                .member
-                .id,
+              recipient.member.id,
 
             toPhone:
-              recipient
-                .member
-                .phoneE164,
+              recipient.member.phoneE164,
 
             title:
               'Compromisso em cerca de 1 hora',
 
             message:
-              calendarReminderMessage(
-                event
-              ),
+              calendarReminderMessage(event),
 
             dedupKey:
-              'calendar-upcoming:' +
+              'calendar-1h:' +
               event.id +
               ':' +
-              recipient
-                .member
-                .id,
-          });
-
-        if (
-          result.status ===
-          'SENT'
-        ) {
-          sent +=
-            1;
-        }
-      }
-    }
-
-    if (
-      local.weekday ===
-        'Sun' &&
-      local.hour ===
-        18
-    ) {
-      await ensureWeeklyAgencyMeeting(
-        connection.agencyId
-      ).catch(
-        (
-          error
-        ) => {
-          console.error(
-            'SECRETARY WEEKLY MEETING ENSURE ERROR',
-            connection.agencyId,
-            error
-          );
-        }
-      );
-
-      for (
-        const recipient
-        of recipients
-      ) {
-        const result =
-          await sendProactive({
-            agencyId:
-              connection.agencyId,
-
-            memberId:
-              recipient
-                .member
-                .id,
-
-            toPhone:
-              recipient
-                .member
-                .phoneE164,
-
-            title:
-              'Reunião semanal amanhã às 9h',
-
-            message:
-              'Amanhã, segunda-feira, às 9h, temos a reunião semanal da Level UP. Reserve esse horário na sua agenda.',
-
-            dedupKey:
-              'weekly-meeting:' +
-              local.dateKey +
+              String(event.start || '') +
               ':' +
-              recipient
-                .member
-                .id,
+              recipient.member.id,
           });
+
 
         if (
           result.status ===
           'SENT'
         ) {
-          sent +=
-            1;
+          sent += 1;
         }
       }
     }
   }
 
+
   return sent;
 }
-
 
 export async function sendSecretaryIntroductionToTeam({
   agencyName,

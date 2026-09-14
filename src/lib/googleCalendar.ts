@@ -457,6 +457,8 @@ type SecretaryCalendarEvent = {
   location: string;
   start: string | null;
   end: string | null;
+  created: string | null;
+  updated: string | null;
   htmlLink: string | null;
 };
 
@@ -515,6 +517,8 @@ export async function findGoogleCalendarEvents({
         location?: string;
         htmlLink?: string;
         status?: string;
+        created?: string;
+        updated?: string;
         start?: { dateTime?: string; date?: string };
         end?: { dateTime?: string; date?: string };
       }>;
@@ -531,6 +535,8 @@ export async function findGoogleCalendarEvents({
         location: item.location || '',
         start: item.start?.dateTime || item.start?.date || null,
         end: item.end?.dateTime || item.end?.date || null,
+        created: item.created || null,
+        updated: item.updated || null,
         htmlLink: item.htmlLink || null,
       }));
   }
