@@ -397,5 +397,10 @@ export async function sendDesignQuestionAction(contentId: string, formData: Form
   revalidatePath('/social-media');
   revalidatePath(`/conteudos/${contentId}`);
 
-  redirect('/design');
+  redirect(
+    content.format ===
+      'DESIGN_GRAFICO'
+      ? '/design?aba=grafico'
+      : '/design'
+  );
 }

@@ -384,6 +384,17 @@ export default async function CalendarioEditorialPage({
                     <Link
                         href={
                             selectedClient !== 'TODOS'
+                                ? `/design-grafico/nova?cliente=${selectedClient}`
+                                : '/design-grafico/nova'
+                        }
+                        className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800"
+                    >
+                        Design Gráfico
+                    </Link>
+
+                    <Link
+                        href={
+                            selectedClient !== 'TODOS'
                                 ? `/demandas-emergenciais/nova?cliente=${selectedClient}`
                                 : '/demandas-emergenciais/nova'
                         }

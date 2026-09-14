@@ -996,11 +996,18 @@ function DesignCard({
             )}
           </span>
 
-          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-1 text-[8px] font-semibold text-slate-500">
-            Publicação: {formatDate(
-              content.plannedDate
-            )}
-          </span>
+          {content.format ===
+          "DESIGN_GRAFICO" ? (
+            <span className="inline-flex items-center gap-1 rounded-md border border-violet-100 bg-violet-50 px-1.5 py-1 text-[8px] font-semibold text-violet-700">
+              Material offline
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-1 text-[8px] font-semibold text-slate-500">
+              Publicação: {formatDate(
+                content.plannedDate
+              )}
+            </span>
+          )}
 
           <span className="rounded-md border border-blue-100 bg-blue-50 px-1.5 py-1 text-[8px] font-bold text-blue-600">
             {formatLabel(
@@ -1226,11 +1233,31 @@ function CompactMetric({
 }
 
 
-export default async function DesignPage() {
+export default async function DesignPage({
+  searchParams,
+}: {
+  searchParams?:
+    Promise<{
+      aba?: string;
+    }>;
+}) {
   const {
     agencyId,
   } =
     await requireAgencyContext();
+
+
+  const params =
+    searchParams
+      ? await searchParams
+      : {};
+
+
+  const selectedTab =
+    params.aba ===
+      "grafico"
+      ? "grafico"
+      : "digital";
 
 
   const columnCount =
@@ -1359,6 +1386,29 @@ export default async function DesignPage() {
         area:
           "DESIGN",
 
+        OR:
+          selectedTab ===
+            "grafico"
+            ? [
+                {
+                  format:
+                    "DESIGN_GRAFICO",
+                },
+              ]
+            : [
+                {
+                  format:
+                    null,
+                },
+
+                {
+                  format: {
+                    not:
+                      "DESIGN_GRAFICO",
+                  },
+                },
+              ],
+
         status: {
           in:
             statusKeys,
@@ -1480,11 +1530,17 @@ export default async function DesignPage() {
           </p>
 
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-            Design
+            {selectedTab ===
+            "grafico"
+              ? "Design Gráfico"
+              : "Design"}
           </h1>
 
           <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-slate-500">
-            Organize as peças, acompanhe o fluxo e mova as demandas entre as etapas de produção.
+            {selectedTab ===
+            "grafico"
+              ? "Materiais gráficos, impressos e peças offline organizados por prazo de entrega."
+              : "Organize as peças, acompanhe o fluxo e mova as demandas entre as etapas de produção."}
           </p>
         </div>
 
@@ -1498,16 +1554,64 @@ export default async function DesignPage() {
           </Link>
 
           <Link
-            href="/conteudos/novo"
+            href={
+              selectedTab ===
+                "grafico"
+                ? "/design-grafico/nova"
+                : "/conteudos/novo"
+            }
             className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-[10px] font-bold text-white hover:bg-blue-700"
           >
             <Plus
               size={14}
             />
 
-            Nova demanda
+            {selectedTab ===
+            "grafico"
+              ? "Novo material gráfico"
+              : "Nova demanda"}
           </Link>
         </div>
+      </section>
+
+
+      <section className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+        <Link
+          href="/design"
+          className={[
+            "rounded-lg px-4 py-2 text-[10px] font-black transition",
+            selectedTab ===
+              "digital"
+              ? "bg-slate-950 text-white shadow-sm"
+              : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+          ].join(
+            " "
+          )}
+        >
+          Digital / Social
+        </Link>
+
+        <Link
+          href="/design?aba=grafico"
+          className={[
+            "rounded-lg px-4 py-2 text-[10px] font-black transition",
+            selectedTab ===
+              "grafico"
+              ? "bg-violet-600 text-white shadow-sm"
+              : "text-slate-500 hover:bg-violet-50 hover:text-violet-700",
+          ].join(
+            " "
+          )}
+        >
+          Design Gráfico
+        </Link>
+
+        <span className="ml-auto hidden text-[9px] font-semibold text-slate-400 sm:block">
+          {selectedTab ===
+          "grafico"
+            ? "Materiais offline e impressos"
+            : "Conteúdos digitais e redes sociais"}
+        </span>
       </section>
 
 
