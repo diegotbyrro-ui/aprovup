@@ -206,6 +206,59 @@ function isTodayDate(
 }
 
 
+function getPublicationTimingClass(
+  status: string,
+  dateKey: string,
+  nextDateKey: string | null
+) {
+  if (
+    [
+      "PUBLICADO",
+      "PUBLICADO_MANUALMENTE",
+    ].includes(status)
+  ) {
+    return "border-emerald-400 bg-emerald-50 ring-1 ring-emerald-200";
+  }
+
+
+  if (
+    status ===
+    "ARQUIVADO"
+  ) {
+    return "border-slate-200 bg-slate-50";
+  }
+
+
+  if (
+    isTodayDate(
+      dateKey
+    )
+  ) {
+    return "border-blue-400 bg-blue-50 ring-1 ring-blue-200";
+  }
+
+
+  if (
+    isPastDate(
+      dateKey
+    )
+  ) {
+    return "border-red-400 bg-red-50 ring-1 ring-red-200";
+  }
+
+
+  if (
+    dateKey ===
+    nextDateKey
+  ) {
+    return "border-amber-400 bg-amber-50 ring-1 ring-amber-200";
+  }
+
+
+  return "border-slate-200 bg-white";
+}
+
+
 function formatPtBr(
   dateKey: string
 ) {
@@ -409,6 +462,47 @@ export function DesktopEditorialCalendar({
       },
       [
         localContents,
+      ]
+    );
+
+
+  const calendarTodayKey =
+    makeDateKey(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      new Date().getDate()
+    );
+
+
+  const nextPublicationDateKey =
+    useMemo(
+      () => {
+        const dates =
+          localContents
+            .filter(
+              (content) =>
+                content.dateKey >
+                  calendarTodayKey &&
+                ![
+                  "PUBLICADO",
+                  "PUBLICADO_MANUALMENTE",
+                  "ARQUIVADO",
+                ].includes(
+                  content.status
+                )
+            )
+            .map(
+              (content) =>
+                content.dateKey
+            )
+            .sort();
+
+
+        return dates[0] || null;
+      },
+      [
+        localContents,
+        calendarTodayKey,
       ]
     );
 
@@ -674,6 +768,24 @@ export function DesktopEditorialCalendar({
           <p className="mt-0.5 text-[11px] text-blue-600">
             Segure um conteúdo, arraste para outro dia e solte para alterar a data prevista.
           </p>
+
+          <div className="mt-2 flex flex-wrap gap-2 text-[9px] font-bold">
+            <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-1 text-emerald-700">
+              Verde = publicado
+            </span>
+
+            <span className="rounded-full border border-blue-300 bg-blue-50 px-2 py-1 text-blue-700">
+              Azul = hoje
+            </span>
+
+            <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-1 text-amber-700">
+              Amarelo = próximo
+            </span>
+
+            <span className="rounded-full border border-red-300 bg-red-50 px-2 py-1 text-red-700">
+              Vermelho = atrasado
+            </span>
+          </div>
         </div>
 
         {feedback ? (
@@ -927,13 +1039,11 @@ export function DesktopEditorialCalendar({
                           content.area ||
                           "GERAL";
 
-                        const late =
-                          pastDay &&
-                          ![
-                            "PUBLICADO_MANUALMENTE",
-                            "ARQUIVADO",
-                          ].includes(
-                            content.status
+                        const timingClass =
+                          getPublicationTimingClass(
+                            content.status,
+                            dateKey,
+                            nextPublicationDateKey
                           );
 
                         const isDragging =
@@ -981,15 +1091,7 @@ export function DesktopEditorialCalendar({
                               isSaving
                                 ? "pointer-events-none opacity-60"
                                 : "",
-                              late
-                                ? "border-red-200 bg-red-50"
-                                : priority ===
-                                    "URGENTE"
-                                  ? "border-red-200 bg-white"
-                                  : priority ===
-                                      "ALTA"
-                                    ? "border-orange-200 bg-white"
-                                    : "border-slate-100 bg-white",
+                              timingClass,
                             ].join(
                               " "
                             )}

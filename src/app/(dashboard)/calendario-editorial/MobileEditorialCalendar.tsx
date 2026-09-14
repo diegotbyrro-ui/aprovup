@@ -304,6 +304,62 @@ function getPriorityClass(
 }
 
 
+function getMobilePublicationClass(
+  content: {
+    status: string;
+    dateKey: string;
+  },
+  todayKey: string,
+  nextDateKey: string | null
+) {
+  if (
+    [
+      "PUBLICADO",
+      "PUBLICADO_MANUALMENTE",
+    ].includes(
+      content.status
+    )
+  ) {
+    return "border-emerald-400 bg-emerald-50";
+  }
+
+
+  if (
+    content.status ===
+    "ARQUIVADO"
+  ) {
+    return "border-slate-200 bg-slate-50";
+  }
+
+
+  if (
+    content.dateKey ===
+    todayKey
+  ) {
+    return "border-blue-400 bg-blue-50";
+  }
+
+
+  if (
+    content.dateKey <
+    todayKey
+  ) {
+    return "border-red-400 bg-red-50";
+  }
+
+
+  if (
+    content.dateKey ===
+    nextDateKey
+  ) {
+    return "border-amber-400 bg-amber-50";
+  }
+
+
+  return "border-slate-200 bg-white";
+}
+
+
 export function MobileEditorialCalendar({
   month,
   year,
@@ -432,6 +488,39 @@ export function MobileEditorialCalendar({
       new Date().getFullYear(),
       new Date().getMonth(),
       new Date().getDate()
+    );
+
+
+  const nextMobilePublicationDate =
+    useMemo(
+      () => {
+        const dates =
+          contents
+            .filter(
+              (content) =>
+                content.dateKey >
+                  todayKey &&
+                ![
+                  "PUBLICADO",
+                  "PUBLICADO_MANUALMENTE",
+                  "ARQUIVADO",
+                ].includes(
+                  content.status
+                )
+            )
+            .map(
+              (content) =>
+                content.dateKey
+            )
+            .sort();
+
+
+        return dates[0] || null;
+      },
+      [
+        contents,
+        todayKey,
+      ]
     );
 
 
@@ -706,7 +795,14 @@ export function MobileEditorialCalendar({
                       href={
                         `/conteudos/${content.id}`
                       }
-                      className="block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition active:scale-[0.99]"
+                      className={[
+                        "block rounded-2xl border p-4 shadow-sm transition active:scale-[0.99]",
+                        getMobilePublicationClass(
+                          content,
+                          todayKey,
+                          nextMobilePublicationDate
+                        ),
+                      ].join(" ")}
                     >
 
                       <div className="flex items-start justify-between gap-3">

@@ -274,7 +274,11 @@ export default async function CalendarioEditorialPage({
 
         return (
             isPast(new Date(content.plannedDate)) &&
-            !['PUBLICADO_MANUALMENTE', 'ARQUIVADO'].includes(content.status)
+            ![
+                'PUBLICADO',
+                'PUBLICADO_MANUALMENTE',
+                'ARQUIVADO',
+            ].includes(content.status)
         );
     });
 
@@ -283,7 +287,11 @@ export default async function CalendarioEditorialPage({
     );
 
     const publishedContents = contents.filter(
-        (content) => content.status === 'PUBLICADO_MANUALMENTE'
+        (content) =>
+            [
+                'PUBLICADO',
+                'PUBLICADO_MANUALMENTE',
+            ].includes(content.status)
     );
 
     const hasActiveFilters =
