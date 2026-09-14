@@ -51,7 +51,7 @@ export default async function BasePage({ params }: PageProps) {
         </h1>
 
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
-          Área restrita para gestão sensivel do AprovUp. O endereço desta área muda automaticamente todos os dias e o acesso continua protegido pela sua conta principal.
+          Área restrita para gestão sensível do AprovUp. O endereço desta área muda automaticamente todos os dias e o acesso continua protegido pela sua conta principal.
         </p>
       </section>
 

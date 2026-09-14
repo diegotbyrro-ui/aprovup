@@ -177,7 +177,7 @@ export default async function FinalApprovalManagerPage({
 
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
           {
-            'Aqui ficam apenas artes e vídeos que já passaram pela produção e estao prontos para a aprovação final do cliente.'
+            'Aqui ficam apenas artes e vídeos que já passaram pela produção e estão prontos para a aprovação final do cliente.'
           }
         </p>
 

@@ -438,7 +438,7 @@ export default async function StoriesPage({
                                       )
                                       : (
                                         <div className="flex h-full items-center justify-center p-5 text-center text-xs font-bold text-slate-400">
-                                          Material indisponivel
+                                          Material indisponível
                                         </div>
                                       )
                                 }
@@ -494,7 +494,7 @@ export default async function StoriesPage({
                                           !connected
                                             ? 'Instagram não conectado'
                                             : !mediaReady
-                                              ? 'Material indisponivel'
+                                              ? 'Material indisponível'
                                               : undefined
                                         }
                                       />
@@ -506,7 +506,7 @@ export default async function StoriesPage({
                                           !connected
                                             ? 'Instagram não conectado'
                                             : !mediaReady
-                                              ? 'Material indisponivel'
+                                              ? 'Material indisponível'
                                               : undefined
                                         }
                                         publicationStatus={status}
@@ -555,7 +555,7 @@ export default async function StoriesPage({
 
         <p className="mt-2 max-w-3xl text-sm text-slate-500">
           Fotos e vídeos aprovados para o Feed podem entrar também na fila de Stories.
-          Carrosseis ficam de fora porque precisam de tratamento próprio.
+          Carrosséis ficam de fora porque precisam de tratamento próprio.
         </p>
 
         {

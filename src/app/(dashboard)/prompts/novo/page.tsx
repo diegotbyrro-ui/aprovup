@@ -32,7 +32,7 @@ return (
         <div>
           <label className={labelClasses}>Estrutura do Prompt *</label>
           <textarea required name="prompt" rows={8} placeholder="Escreva o prompt completo que servirá de modelo..." className={inputClasses}></textarea>
-          <p className="text-xs text-slate-500 mt-2">Dica: use chaves como {'{cliente}'} ou {'{conteúdo}'} para marcar onde os dados devem ser inseridos depois.</p>
+          <p className="text-xs text-slate-500 mt-2">Dica: use chaves como {'{cliente}'} ou {'{conteudo}'} para marcar onde os dados devem ser inseridos depois.</p>
         </div>
 
         <div className="flex justify-end pt-4">

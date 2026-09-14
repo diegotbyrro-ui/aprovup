@@ -1203,7 +1203,7 @@ function FilmmakerCard({
 
           <div className="mt-2 grid grid-cols-2 gap-2">
             <Link
-              href={`/captacoes/nova?cliente=${content.clientId}&conteúdo=${content.id}`}
+              href={`/captacoes/nova?cliente=${content.clientId}&conteudo=${content.id}`}
               className="flex h-9 items-center justify-center gap-1 rounded-lg border border-blue-100 bg-blue-50 px-2 text-[8px] font-bold text-blue-600 hover:bg-blue-100"
             >
               <CalendarDays

@@ -1607,7 +1607,7 @@ function drawReachViews({
         ),
 
       helper:
-        "Número de contas únicas alcancadas no período disponível pela Meta.",
+        "Número de contas únicas alcançadas no período disponível pela Meta.",
     },
 
     {
@@ -1628,7 +1628,7 @@ function drawReachViews({
         ),
 
       helper:
-        "Número de visualizacoes registradas pela Meta no período atual.",
+        "Número de visualizações registradas pela Meta no período atual.",
     },
   ];
 
@@ -3109,7 +3109,7 @@ function drawNextSteps({
       0
       ? "Testar novas abordagens para recuperar alcance."
       : "Escalar formatos que sustentam o alcance.",
-    "Continuar acompanhando o historico no AprovUp.",
+    "Continuar acompanhando o histórico no AprovUp.",
   ];
 
 
@@ -3746,7 +3746,7 @@ export async function GET(
           null
         ),
       helper:
-        "vs período comparavel",
+        "vs período comparável",
       bold,
       regular,
     });
@@ -3770,7 +3770,7 @@ export async function GET(
           null
         ),
       helper:
-        "vs período comparavel",
+        "vs período comparável",
       bold,
       regular,
     });
@@ -3794,7 +3794,7 @@ export async function GET(
           null
         ),
       helper:
-        "vs período comparavel",
+        "vs período comparável",
       bold,
       regular,
     });

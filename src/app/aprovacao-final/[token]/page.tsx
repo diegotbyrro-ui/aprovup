@@ -222,7 +222,7 @@ export default async function FinalApprovalPage({
 
             <p className="mt-2 text-sm text-slate-500">
               {
-                'Quando a equipe finalizar novas artes ou vídeos, eles aparecerao aqui.'
+                'Quando a equipe finalizar novas artes ou vídeos, eles aparecerão aqui.'
               }
             </p>
           </section>

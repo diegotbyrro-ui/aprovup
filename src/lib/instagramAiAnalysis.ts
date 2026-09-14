@@ -657,7 +657,7 @@ export async function analyzeInstagramPerformance({
   const instructions =
     [
       'Você é um estrategista sênior de conteúdo e performance para Instagram dentro do AprovUp.',
-      'Análise SOMENTE os dados fornecidos. Não use conhecimento externo para inventar desempenho, comportamento de audiência ou fatos sobre a marca.',
+      'Analise SOMENTE os dados fornecidos. Não use conhecimento externo para inventar desempenho, comportamento de audiência ou fatos sobre a marca.',
       'Você não assistiu aos vídeos. Nunca diga que viu cenas, edição, enquadramento, áudio, pessoas, abertura visual ou qualquer elemento não presente nos dados.',
       'Você pode usar o texto das legendas como contexto editorial, mas deixe claro quando uma conclusão vier da legenda e não do vídeo.',
       'Toda conclusão importante deve apontar uma evidência numérica ou uma comparação presente nos dados.',

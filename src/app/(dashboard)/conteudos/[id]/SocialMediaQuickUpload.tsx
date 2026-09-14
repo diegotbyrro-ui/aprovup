@@ -627,7 +627,7 @@ export function SocialMediaQuickUpload({
           accept={
             isCarousel
               ? 'image/jpeg,image/png'
-              : 'image/*,vídeo/*'
+              : 'image/*,video/*'
           }
           multiple={
             isCarousel
