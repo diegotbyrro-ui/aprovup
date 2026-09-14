@@ -792,13 +792,6 @@ export default async function ProntoParaPostarPage({
                                                                 hasFinalMedia
                                                             }
                                                             canReplaceVideo={
-                                                                [
-                                                                    'FILMMAKER',
-                                                                    'AUDIOVISUAL',
-                                                                ].includes(
-                                                                    content.area ||
-                                                                    ''
-                                                                ) &&
                                                                 Boolean(
                                                                     previewVideoUrl
                                                                 )

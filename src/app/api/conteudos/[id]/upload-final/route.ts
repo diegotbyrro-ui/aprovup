@@ -329,14 +329,11 @@ export async function POST(
       isReadyVideoAction &&
       content.status ===
         'PRONTO_PARA_POSTAR' &&
-      [
-        'FILMMAKER',
-        'AUDIOVISUAL',
-      ].includes(
-        String(
-          content.area ||
-          ''
-        ).toUpperCase()
+      String(
+        content.finalMediaType ||
+        ''
+      ).startsWith(
+        'video/'
       ) &&
       hasPermission(
         currentUser,
