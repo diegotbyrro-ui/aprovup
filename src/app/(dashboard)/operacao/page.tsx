@@ -498,6 +498,7 @@ function KpiCard({
   icon,
   tone,
   invertTrend = false,
+  progress,
 }: {
   label:
     string;
@@ -522,6 +523,9 @@ function KpiCard({
 
   invertTrend?:
     boolean;
+
+  progress?:
+    number;
 }) {
   const iconTones = {
     violet:
@@ -565,27 +569,39 @@ function KpiCard({
                 "gap-0.5",
                 "text-[11px]",
                 "font-bold",
-                good
-                  ? "text-emerald-600"
-                  : "text-red-500",
+                typeof progress ===
+                  "number"
+                  ? "text-violet-600"
+                  : good
+                    ? "text-emerald-600"
+                    : "text-red-500",
               ].join(" ")}
             >
-              {delta >=
-              0 ? (
-                <TrendingUp
-                  size={10}
-                />
+              {typeof progress ===
+              "number" ? (
+                <>
+                  {progress}%
+                </>
               ) : (
-                <TrendingDown
-                  size={10}
-                />
-              )}
+                <>
+                  {delta >=
+                  0 ? (
+                    <TrendingUp
+                      size={10}
+                    />
+                  ) : (
+                    <TrendingDown
+                      size={10}
+                    />
+                  )}
 
-              {delta >=
-              0
-                ? "+"
-                : ""}
-              {delta}%
+                  {delta >=
+                  0
+                    ? "+"
+                    : ""}
+                  {delta}%
+                </>
+              )}
             </span>
           </div>
 
@@ -1435,6 +1451,36 @@ export default async function OperacaoPage({
       : 0;
 
 
+  const monthlyContentGoalTotal =
+    allClients.reduce(
+      (
+        total,
+        client
+      ) =>
+        total +
+        Math.max(
+          0,
+          Number(
+            client.monthlyContentGoal ||
+            0
+          )
+        ),
+      0
+    );
+
+
+  const monthlyContentProgress =
+    monthlyContentGoalTotal > 0
+      ? Math.round(
+          (
+            monthContents.length /
+            monthlyContentGoalTotal
+          ) *
+            100
+        )
+      : 0;
+
+
   const previousClientIds =
     new Set(
       previousMonthContents.map(
@@ -1939,10 +1985,20 @@ export default async function OperacaoPage({
           value={
             monthContents.length
           }
-          delta={
-            contentDelta
+          delta={0}
+          progress={
+            monthlyContentProgress
           }
-          helper="vs. mês anterior"
+          helper={
+            monthlyContentGoalTotal > 0
+              ? (
+                  monthContents.length +
+                  " de " +
+                  monthlyContentGoalTotal +
+                  " conteúdos da meta mensal"
+                )
+              : "Meta mensal ainda não configurada"
+          }
           icon={
             <FileText
               size={18}
