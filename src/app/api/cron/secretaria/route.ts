@@ -8,6 +8,7 @@ import {
 } from '@/lib/secretaryAutomation';
 
 import {
+  processPendingWhatsappEvents,
   sendSecretaryIntroductionToTeam,
 } from '@/lib/secretaryWhatsApp';
 
@@ -130,41 +131,65 @@ export async function POST(
       };
 
   if (
-    body.action !==
-    'INTRODUCE_TEAM'
+    body.action ===
+    'PROCESS_WHATSAPP'
   ) {
-    return NextResponse.json(
-      {
-        ok:
-          false,
+    const processed =
+      await processPendingWhatsappEvents(
+        50
+      );
 
-        message:
-          'Ação inválida.',
-      },
-      {
-        status:
-          400,
-      }
-    );
+    return NextResponse.json({
+      ok:
+        true,
+
+      action:
+        'PROCESS_WHATSAPP',
+
+      processed,
+
+      executedAt:
+        new Date()
+          .toISOString(),
+    });
   }
 
-  const result =
-    await sendSecretaryIntroductionToTeam({
-      agencyName:
-        String(
-          body.agencyName ||
-          ''
-        ),
+  if (
+    body.action ===
+    'INTRODUCE_TEAM'
+  ) {
+    const result =
+      await sendSecretaryIntroductionToTeam({
+        agencyName:
+          String(
+            body.agencyName ||
+            ''
+          ),
+      });
+
+    return NextResponse.json({
+      ok:
+        true,
+
+      executedAt:
+        new Date()
+          .toISOString(),
+
+      ...result,
     });
+  }
 
-  return NextResponse.json({
-    ok:
-      true,
+  return NextResponse.json(
+    {
+      ok:
+        false,
 
-    executedAt:
-      new Date()
-        .toISOString(),
-
-    ...result,
-  });
+      message:
+        'Ação inválida.',
+    },
+    {
+      status:
+        400,
+    }
+  );
 }
