@@ -531,7 +531,7 @@ function ContentRow({
               ? "Social Media"
               : content.area ===
                   "FILMMAKER"
-                ? "Filmaker"
+                ? "Filmmaker"
                 : "Design"}
           </span>
 
@@ -1978,7 +1978,7 @@ const query =
                         href={
                           `/social-media?cliente=${encodeURIComponent(
                             clientId
-                          )}&aprovacao=${pageNumber}`
+                          )}&aprovação=${pageNumber}`
                         }
                         scroll={
                           false

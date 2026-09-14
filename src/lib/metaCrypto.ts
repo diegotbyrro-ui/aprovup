@@ -13,7 +13,7 @@ function getEncryptionKey() {
 
   if (!secret) {
     throw new Error(
-      'META_TOKEN_ENCRYPTION_KEY nao configurada.'
+      'META_TOKEN_ENCRYPTION_KEY não configurada.'
     );
   }
 

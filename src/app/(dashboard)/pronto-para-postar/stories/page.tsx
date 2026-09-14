@@ -233,7 +233,7 @@ export default async function StoriesPage({
           </Link>
 
           <p className="text-sm font-bold uppercase tracking-wider text-fuchsia-300">
-            Central de publicacao
+            Central de publicação
           </p>
 
           <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">
@@ -241,8 +241,8 @@ export default async function StoriesPage({
           </h1>
 
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
-            Feed e Stories possuem publicacao e agendamento independentes.
-            Um material do Feed tambem pode ser enviado aos Stories.
+            Feed e Stories possuem publicação e agendamento independentes.
+            Um material do Feed também pode ser enviado aos Stories.
           </p>
         </div>
       </section>
@@ -340,7 +340,7 @@ export default async function StoriesPage({
                 </p>
 
                 <p className="mt-2 text-sm text-slate-500">
-                  Adicione abaixo uma foto ou video aprovado do Feed ou use o material especifico de Story enviado na producao.
+                  Adicione abaixo uma foto ou vídeo aprovado do Feed ou use o material específico de Story enviado na produção.
                 </p>
               </div>
             )
@@ -454,7 +454,7 @@ export default async function StoriesPage({
                                 <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black text-slate-600">
                                   {
                                     content.storyMediaUrl
-                                      ? 'Arte especifica'
+                                      ? 'Arte específica'
                                       : 'Material do Feed'
                                   }
                                 </span>
@@ -492,7 +492,7 @@ export default async function StoriesPage({
                                         scheduled={scheduled}
                                         disabledReason={
                                           !connected
-                                            ? 'Instagram nao conectado'
+                                            ? 'Instagram não conectado'
                                             : !mediaReady
                                               ? 'Material indisponivel'
                                               : undefined
@@ -504,7 +504,7 @@ export default async function StoriesPage({
                                         enabled={ready}
                                         disabledReason={
                                           !connected
-                                            ? 'Instagram nao conectado'
+                                            ? 'Instagram não conectado'
                                             : !mediaReady
                                               ? 'Material indisponivel'
                                               : undefined
@@ -550,19 +550,19 @@ export default async function StoriesPage({
         </p>
 
         <h2 className="mt-1 text-xl font-black text-slate-900">
-          Tambem publicar nos Stories
+          Também publicar nos Stories
         </h2>
 
         <p className="mt-2 max-w-3xl text-sm text-slate-500">
-          Fotos e videos aprovados para o Feed podem entrar tambem na fila de Stories.
-          Carrosseis ficam de fora porque precisam de tratamento proprio.
+          Fotos e vídeos aprovados para o Feed podem entrar também na fila de Stories.
+          Carrosseis ficam de fora porque precisam de tratamento próprio.
         </p>
 
         {
           available.length === 0
             ? (
               <p className="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">
-                Nenhum material do Feed disponivel para adicionar.
+                Nenhum material do Feed disponível para adicionar.
               </p>
             )
             : (
@@ -594,7 +594,7 @@ export default async function StoriesPage({
                           <p className="mt-2 text-xs text-slate-500">
                             {
                               content.finalMediaType?.startsWith('video/')
-                                ? 'Video / Reel'
+                                ? 'Vídeo / Reel'
                                 : 'Imagem do Feed'
                             }
                             {' · '}

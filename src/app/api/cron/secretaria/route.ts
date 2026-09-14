@@ -160,7 +160,7 @@ export async function POST(
             false,
 
           message:
-            'Conexao ativa nao encontrada.',
+            'Conexão ativa não encontrada.',
         });
       }
 
@@ -321,7 +321,7 @@ export async function POST(
             false,
 
           message:
-            'Nenhuma conexao ativa.',
+            'Nenhuma conexão ativa.',
         });
       }
 

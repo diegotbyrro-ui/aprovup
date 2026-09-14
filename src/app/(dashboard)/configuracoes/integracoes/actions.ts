@@ -240,7 +240,7 @@ export async function saveGoogleCalendarCredentialsAction(
         "GOOGLE_CALENDAR_CREDENTIALS_SAVED",
 
       description:
-        "Credenciais OAuth do Google Calendar configuradas para a agencia.",
+        "Credenciais OAuth do Google Calendar configuradas para a agência.",
 
       authorName:
         user.name ||
@@ -437,7 +437,7 @@ export async function saveOpenAiCredentialsAction(
           "OPENAI_CREDENTIALS_SAVED",
 
         description:
-          "Credenciais OpenAI configuradas para a agencia.",
+          "Credenciais OpenAI configuradas para a agência.",
 
         authorName:
           user.name ||
@@ -569,7 +569,7 @@ export async function saveAnthropicCredentialsAction(
           "ANTHROPIC_CREDENTIALS_SAVED",
 
         description:
-          "Credenciais Claude Anthropic configuradas para a agencia.",
+          "Credenciais Claude Anthropic configuradas para a agência.",
 
         authorName:
           user.name ||

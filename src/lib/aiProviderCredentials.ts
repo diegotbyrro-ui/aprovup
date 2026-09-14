@@ -39,7 +39,7 @@ function getEncryptionKey() {
     !encryptionSecret
   ) {
     throw new Error(
-      "APROVUP_INTEGRATION_ENCRYPTION_KEY nao configurada."
+      "APROVUP_INTEGRATION_ENCRYPTION_KEY não configurada."
     );
   }
 
@@ -120,7 +120,7 @@ export function decryptAiSecret(
     !encryptedText
   ) {
     throw new Error(
-      "Segredo de IA invalido."
+      "Segredo de IA inválido."
     );
   }
 

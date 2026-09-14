@@ -56,7 +56,7 @@ export async function approveClientContentAction(
     destination === 'SOCIAL_MEDIA'
       ? 'Social Media'
       : destination === 'FILMMAKER'
-        ? 'Filmaker'
+        ? 'Filmmaker'
         : 'Design';
 
   await prisma.content.update({

@@ -209,7 +209,7 @@ export default async function EquipePage() {
 
             Apenas usuários com cargo DIRECTOR podem gerar links.
 
-            O link expira em 30 minutos, funciona apenas uma vez e um novo link invalida imediatamente o anterior.
+            O link expira em 30 minutos, funciona apenas uma vez e um novo link inválida imediatamente o anterior.
 
           </div>
 

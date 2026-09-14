@@ -218,7 +218,7 @@ export async function enableStoryForContent(contentId: string) {
 
     if (!content) {
         throw new Error(
-            "Conteudo nao encontrado ou ainda nao esta liberado para publicacao."
+            "Conteúdo não encontrado ou ainda não esta liberado para publicação."
         );
     }
 
@@ -227,7 +227,7 @@ export async function enableStoryForContent(contentId: string) {
 
     if (!source.valid) {
         throw new Error(
-            "Este conteudo precisa possuir uma imagem ou video final para ir aos Stories."
+            "Este conteúdo precisa possuir uma imagem ou vídeo final para ir aos Stories."
         );
     }
 
@@ -305,7 +305,7 @@ export async function enableStoryForContent(contentId: string) {
                 "INSTAGRAM_STORY_ENABLED",
 
             description:
-                `Conteudo "${content.title}" adicionado a fila de Stories.`,
+                `Conteúdo "${content.title}" adicionado a fila de Stories.`,
 
             authorName:
                 currentUser.name ||
@@ -344,7 +344,7 @@ export async function markStoryAsPublished(contentId: string) {
 
     if (!content) {
         throw new Error(
-            "Conteudo nao encontrado."
+            "Conteúdo não encontrado."
         );
     }
 
@@ -353,7 +353,7 @@ export async function markStoryAsPublished(contentId: string) {
 
     if (!source.valid) {
         throw new Error(
-            "Material de Story nao encontrado."
+            "Material de Story não encontrado."
         );
     }
 
@@ -433,7 +433,7 @@ export async function markStoryAsPublished(contentId: string) {
                         "INSTAGRAM_STORY_MARKED_AS_PUBLISHED",
 
                     description:
-                        `Story do conteudo "${content.title}" marcado como publicado manualmente.`,
+                        `Story do conteúdo "${content.title}" marcado como publicado manualmente.`,
 
                     authorName:
                         currentUser.name ||

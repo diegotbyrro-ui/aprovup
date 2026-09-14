@@ -7,7 +7,7 @@ type FeatureBlockedCardProps = {
 
 export function FeatureBlockedCard({
   title,
-  description = 'Este recurso nao esta liberado para a assinatura atual da sua agencia.',
+  description = 'Este recurso não esta liberado para a assinatura atual da sua agência.',
 }: FeatureBlockedCardProps) {
   return (
     <section className="rounded-3xl border border-amber-200 bg-amber-50 p-8 shadow-sm">

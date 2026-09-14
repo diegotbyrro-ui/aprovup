@@ -84,7 +84,7 @@ async function approveContentBase(
     destination === 'SOCIAL_MEDIA'
       ? 'Social Media'
       : destination === 'FILMMAKER'
-        ? 'Filmaker'
+        ? 'Filmmaker'
         : 'Design';
 
   await prisma.$transaction(async (transaction) => {

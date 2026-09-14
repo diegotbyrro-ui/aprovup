@@ -17,12 +17,12 @@ const READY_STATUSES = [
 
 function statusLabel(status: string) {
   const labels: Record<string, string> = {
-    REVISAO_INTERNA: 'Revisao interna',
-    DESIGN_ANALISE: 'Analise do Design',
-    FILMMAKER_ANALISE: 'Analise do Filmmaker',
+    REVISAO_INTERNA: 'Revisão interna',
+    DESIGN_ANALISE: 'Análise do Design',
+    FILMMAKER_ANALISE: 'Análise do Filmmaker',
     ENVIADO_CLIENTE: 'Aguardando cliente',
-    ALTERACAO_SOLICITADA: 'Alteracao solicitada',
-    PRONTO_PARA_POSTAR: 'Aprovado na 2a etapa',
+    ALTERACAO_SOLICITADA: 'Alteração solicitada',
+    PRONTO_PARA_POSTAR: 'Aprovado na 2ª etapa',
   };
 
   return labels[status] || status;
@@ -177,7 +177,7 @@ export default async function FinalApprovalManagerPage({
 
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
           {
-            'Aqui ficam apenas artes e videos que ja passaram pela producao e estao prontos para a aprovacao final do cliente.'
+            'Aqui ficam apenas artes e vídeos que já passaram pela produção e estao prontos para a aprovação final do cliente.'
           }
         </p>
 
@@ -189,7 +189,7 @@ export default async function FinalApprovalManagerPage({
           ) : (
             <div className="rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white/60">
               {
-                'O link sera criado quando um material for enviado.'
+                'O link será criado quando um material for enviado.'
               }
             </div>
           )}
@@ -258,7 +258,7 @@ export default async function FinalApprovalManagerPage({
         {contents.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center">
             <h2 className="font-bold text-slate-900">
-              Nenhum material chegou a 2a etapa ainda.
+              Nenhum material chegou a 2ª etapa ainda.
             </h2>
 
             <p className="mt-2 text-sm text-slate-500">
@@ -324,7 +324,7 @@ export default async function FinalApprovalManagerPage({
                           </div>
                         ) : (
                           <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm font-bold text-slate-500">
-                            Material final ainda nao disponivel para preview.
+                            Material final ainda não disponível para preview.
                           </div>
                         )}
 
@@ -341,7 +341,7 @@ export default async function FinalApprovalManagerPage({
 
                       <aside className="border-t border-slate-200 bg-slate-50 p-6 xl:border-l xl:border-t-0">
                         <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                          Situacao
+                          Situação
                         </p>
 
                         <p className="mt-2 text-lg font-black text-slate-900">

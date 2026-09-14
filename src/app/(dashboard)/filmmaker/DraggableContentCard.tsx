@@ -192,7 +192,7 @@ export function DroppableFilmmakerColumn({
               );
 
               window.alert(
-                'Nao foi possivel mover o conteudo. Tente novamente.'
+                'Não foi possível mover o conteúdo. Tente novamente.'
               );
             }
           }

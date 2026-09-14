@@ -31,7 +31,7 @@ async function sendContentToClient(
   });
 
   if (!content) {
-    throw new Error('Conteudo nao encontrado.');
+    throw new Error('Conteúdo não encontrado.');
   }
 
   if (content.format === 'DEMANDA_EMERGENCIAL') {

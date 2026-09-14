@@ -9,7 +9,7 @@ export function createClient() {
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(
-      "As variaveis publicas do Supabase CRM nao foram configuradas."
+      "As variaveis publicas do Supabase CRM não foram configuradas."
     );
   }
 

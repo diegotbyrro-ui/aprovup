@@ -111,7 +111,7 @@ export async function processScheduledInstagramStories(
 
       if (!connection) {
         throw new Error(
-          'Instagram do cliente nao conectado.'
+          'Instagram do cliente não conectado.'
         );
       }
 
@@ -123,7 +123,7 @@ export async function processScheduledInstagramStories(
         ].includes(content.status)
       ) {
         throw new Error(
-          `Conteudo nao liberado para Story. Status: ${content.status}.`
+          `Conteúdo não liberado para Story. Status: ${content.status}.`
         );
       }
 
@@ -154,7 +154,7 @@ export async function processScheduledInstagramStories(
         )
       ) {
         throw new Error(
-          'Material do Story nao encontrado.'
+          'Material do Story não encontrado.'
         );
       }
 
@@ -236,7 +236,7 @@ export async function processScheduledInstagramStories(
                 'INSTAGRAM_STORY_SCHEDULED_PUBLISHED',
 
               description:
-                `Story do conteudo "${content.title}" publicado automaticamente no horario agendado.`,
+                `Story do conteúdo "${content.title}" publicado automaticamente no horario agendado.`,
 
               authorName:
                 'AprovUp Automacao',
@@ -289,7 +289,7 @@ export async function processScheduledInstagramStories(
             'INSTAGRAM_STORY_SCHEDULED_ERROR',
 
           description:
-            `Falha na publicacao automatica do Story: ${message.slice(0, 500)}`,
+            `Falha na publicação automática do Story: ${message.slice(0, 500)}`,
 
           authorName:
             'AprovUp Automacao',

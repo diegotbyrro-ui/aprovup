@@ -240,7 +240,7 @@ function CurrentAsset({
               'bg-black',
               story
                 ? 'aspect-[9/16]'
-                : 'aspect-video',
+                : 'aspect-vídeo',
             ].join(
               ' '
             )}

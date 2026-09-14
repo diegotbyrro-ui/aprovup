@@ -37,7 +37,7 @@ export default async function MinhaAssinaturaPage() {
         </h1>
 
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
-          Veja qual plano esta ativo e quais recursos estao liberados para sua agencia.
+          Veja qual plano esta ativo e quais recursos estao liberados para sua agência.
         </p>
       </section>
 
@@ -76,7 +76,7 @@ export default async function MinhaAssinaturaPage() {
         {moduleCard('IA', access.permissions.canUseAi)}
         {moduleCard('CRM', access.permissions.canUseCrm)}
         {moduleCard('Social / Postagem', access.permissions.canUseSocialPosting)}
-        {moduleCard('Relatorios', access.permissions.canUseReports)}
+        {moduleCard('Relatórios', access.permissions.canUseReports)}
       </section>
     </div>
   );

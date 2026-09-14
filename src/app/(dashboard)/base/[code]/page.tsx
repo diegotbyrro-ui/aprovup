@@ -51,7 +51,7 @@ export default async function BasePage({ params }: PageProps) {
         </h1>
 
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
-          Area restrita para gestao sensivel do AprovUp. O endereco desta area muda automaticamente todos os dias e o acesso continua protegido pela sua conta principal.
+          Área restrita para gestão sensivel do AprovUp. O endereço desta área muda automaticamente todos os dias e o acesso continua protegido pela sua conta principal.
         </p>
       </section>
 
@@ -141,7 +141,7 @@ export default async function BasePage({ params }: PageProps) {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Planos</h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Editar precos, limites e modulos liberados por pacote.
+            Editar preços, limites e módulos liberados por pacote.
           </p>
 
           <Link
@@ -155,7 +155,7 @@ export default async function BasePage({ params }: PageProps) {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Assinaturas</h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Liberar planos por agencia, pausar acesso e controlar modulos contratados.
+            Liberar planos por agência, pausar acesso e controlar módulos contratados.
           </p>
 
           <Link
@@ -169,7 +169,7 @@ export default async function BasePage({ params }: PageProps) {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Pagamentos</h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Registrar cobrancas, pagamentos recebidos, pendentes e cancelados.
+            Registrar cobranças, pagamentos recebidos, pendentes e cancelados.
           </p>
 
           <Link
@@ -183,7 +183,7 @@ export default async function BasePage({ params }: PageProps) {
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Cupons</h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Criar codigos promocionais, limitar validade e controlar uso.
+            Criar códigos promocionais, limitar validade e controlar uso.
           </p>
 
           <Link

@@ -26,13 +26,13 @@ export function createSupabaseAdminClient() {
 
   if (!supabaseUrl) {
     throw new Error(
-      "NEXT_PUBLIC_SUPABASE_URL nao configurada."
+      "NEXT_PUBLIC_SUPABASE_URL não configurada."
     );
   }
 
   if (!adminKey) {
     throw new Error(
-      "Nenhuma chave administrativa valida do Supabase foi configurada."
+      "Nenhuma chave administrativa válida do Supabase foi configurada."
     );
   }
 

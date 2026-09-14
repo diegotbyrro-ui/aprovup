@@ -12,7 +12,7 @@ import {
 
 function statusLabel(status: string) {
   if (status === 'ENVIADO_CLIENTE') {
-    return 'Aguardando aprovacao';
+    return 'Aguardando aprovação';
   }
 
   if (status === 'ALTERACAO_SOLICITADA') {
@@ -153,7 +153,7 @@ export default async function FinalApprovalPage({
 
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
             {
-              'Revise as artes e videos finalizados. Aprove o material ou descreva o ajuste necessario.'
+              'Revise as artes e vídeos finalizados. Aprove o material ou descreva o ajuste necessário.'
             }
           </p>
         </section>
@@ -166,7 +166,7 @@ export default async function FinalApprovalPage({
 
         {query.feedback === 'alteracao' && (
           <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 font-bold text-orange-800">
-            Solicitacao enviada para a equipe.
+            Solicitação enviada para a equipe.
           </div>
         )}
 
@@ -178,7 +178,7 @@ export default async function FinalApprovalPage({
 
         {query.error === 'not-pending' && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">
-            Este material nao possui aprovacao pendente.
+            Este material não possui aprovação pendente.
           </div>
         )}
 
@@ -217,12 +217,12 @@ export default async function FinalApprovalPage({
         {contents.length === 0 ? (
           <section className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center">
             <h2 className="text-xl font-black text-slate-900">
-              Nenhum material aguardando aprovacao final.
+              Nenhum material aguardando aprovação final.
             </h2>
 
             <p className="mt-2 text-sm text-slate-500">
               {
-                'Quando a equipe finalizar novas artes ou videos, eles aparecerao aqui.'
+                'Quando a equipe finalizar novas artes ou vídeos, eles aparecerao aqui.'
               }
             </p>
           </section>
@@ -331,7 +331,7 @@ export default async function FinalApprovalPage({
                               </p>
 
                               <p className="text-xs text-slate-400">
-                                Publicacao em aprovacao
+                                Publicação em aprovação
                               </p>
                             </div>
                           </div>
@@ -525,7 +525,7 @@ export default async function FinalApprovalPage({
                     <aside className="border-t border-slate-200 bg-slate-50 p-6 xl:border-l xl:border-t-0 xl:pt-16">
 
                       <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                        Aprovacao
+                        Aprovação
                       </p>
 
                       <p className="mt-2 text-xl font-black text-slate-900">
@@ -535,11 +535,11 @@ export default async function FinalApprovalPage({
                       {approvedContent ? (
                         <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
                           <p className="font-black text-emerald-800">
-                            Conteudo aprovado
+                            Conteúdo aprovado
                           </p>
 
                           <p className="mt-1 text-sm text-emerald-700">
-                            Este material ja foi aprovado na segunda etapa.
+                            Este material já foi aprovado na segunda etapa.
                           </p>
                         </div>
                       ) : adjustmentContent ? (
@@ -549,7 +549,7 @@ export default async function FinalApprovalPage({
                           </p>
 
                           <p className="mt-1 text-sm text-orange-700">
-                            A solicitacao foi enviada para a equipe.
+                            A solicitação foi enviada para a equipe.
                           </p>
                         </div>
                       ) : (
@@ -566,7 +566,7 @@ export default async function FinalApprovalPage({
                               type="submit"
                               className="w-full rounded-2xl bg-emerald-600 px-5 py-4 text-sm font-black text-white shadow-sm transition hover:bg-emerald-700"
                             >
-                              Aprovar conteudo
+                              Aprovar conteúdo
                             </button>
                           </form>
 

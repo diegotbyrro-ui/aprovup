@@ -91,7 +91,7 @@ export async function approveFinalContentAction(
         authorName: client.name,
         authorRole: 'CLIENTE',
         message:
-          'APROVACAO FINAL: material aprovado na 2a Etapa de Aprovacao.',
+          'APROVAÇÃO FINAL: material aprovado na 2ª Etapa de Aprovação.',
       },
     });
 
@@ -400,7 +400,7 @@ export async function requestFinalChangesAction(
         entityId: contentId,
         action: 'FINAL_APPROVAL_CHANGE_REQUESTED',
         description:
-          `Cliente solicitou alteracao no material final: ${content.title}. Retornado para ${returnLabel}.`,
+          `Cliente solicitou alteração no material final: ${content.title}. Retornado para ${returnLabel}.`,
         authorName: client.name,
       },
     });

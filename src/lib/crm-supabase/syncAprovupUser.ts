@@ -62,7 +62,7 @@ export async function syncAprovupUserToCrm(
 
     if (error) {
       throw new Error(
-        `Nao foi possivel consultar o Auth CRM: ${error.message}`
+        `Não foi possível consultar o Auth CRM: ${error.message}`
       );
     }
 

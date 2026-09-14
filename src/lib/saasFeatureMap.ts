@@ -11,5 +11,5 @@ export const saasFeatureLabels: Record<SaasFeature, string> = {
   ai: 'IA',
   crm: 'CRM',
   socialPosting: 'Social / Postagem',
-  reports: 'Relatorios',
+  reports: 'Relatórios',
 };

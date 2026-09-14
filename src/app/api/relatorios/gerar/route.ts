@@ -825,7 +825,7 @@ function topMediaTitle(
   if (
     !caption
   ) {
-    return "Conteudo publicado";
+    return "Conteúdo publicado";
   }
 
 
@@ -1443,7 +1443,7 @@ function drawGrowthChart({
     textAt({
       page,
       text:
-        "Historico ainda em coleta",
+        "Histórico ainda em coleta",
       x:
         180,
       y:
@@ -1518,7 +1518,7 @@ function drawGrowthChart({
     text:
       `Crescimento de ${percentText(
         followersPercent
-      )} dentro do historico atualmente disponivel no AprovUp.`,
+      )} dentro do histórico atualmente disponível no AprovUp.`,
     x:
       221,
     y:
@@ -1607,7 +1607,7 @@ function drawReachViews({
         ),
 
       helper:
-        "Numero de contas unicas alcancadas no periodo disponivel pela Meta.",
+        "Número de contas únicas alcancadas no período disponível pela Meta.",
     },
 
     {
@@ -1628,7 +1628,7 @@ function drawReachViews({
         ),
 
       helper:
-        "Numero de visualizacoes registradas pela Meta no periodo atual.",
+        "Número de visualizacoes registradas pela Meta no período atual.",
     },
   ];
 
@@ -1897,7 +1897,7 @@ function drawInteractions({
 
 
   const interactionLabel =
-    "interacoes";
+    "interações";
 
 
   const interactionLabelSize =
@@ -2048,7 +2048,7 @@ function drawInteractions({
     text:
       `No periodo analisado foram registradas ${numberText(
         interactions
-      )} interacoes, com taxa de ${percentText(
+      )} interações, com taxa de ${percentText(
         engagement,
         false
       )} sobre o alcance.`,
@@ -2401,7 +2401,7 @@ function drawAudience({
   multiline({
     page,
     text:
-      "Genero, faixa etaria e localizacao ainda nao sao coletados pelo AprovUp nesta integracao.",
+      "Genero, faixa etaria e localizacao ainda não sao coletados pelo AprovUp nesta integração.",
     x:
       759,
     y:
@@ -2508,7 +2508,7 @@ async function drawTopFive({
     textAt({
       page,
       text:
-        "Nenhum conteudo recente disponivel para ranking.",
+        "Nenhum conteúdo recente disponível para ranking.",
       x:
         50,
       y:
@@ -2804,7 +2804,7 @@ function buildHighlights({
       undefined
   ) {
     lines.push(
-      `Melhor conteudo alcancou ${numberText(
+      `Melhor conteúdo alcancou ${numberText(
         topMedia[0]
           .reach
       )} contas`
@@ -2817,7 +2817,7 @@ function buildHighlights({
       5
   ) {
     lines.push(
-      "Acompanhamento continuo das metricas no AprovUp"
+      "Acompanhamento continuo das métricas no AprovUp"
     );
   }
 
@@ -2971,7 +2971,7 @@ function drawInsights({
         )}.`
       : "Visualizacoes em acompanhamento.",
 
-    `Taxa de interacoes sobre alcance: ${percentText(
+    `Taxa de interações sobre alcance: ${percentText(
       engagement,
       false
     )}.`,
@@ -2980,9 +2980,9 @@ function drawInsights({
       ? `Destaque: ${topMediaTitle(
           topMedia[0]
         )}.`
-      : "Ranking de conteudos em coleta.",
+      : "Ranking de conteúdos em coleta.",
 
-    "Dados historicos ficam mais precisos a cada nova coleta.",
+    "Dados históricos ficam mais precisos a cada nova coleta.",
   ];
 
 
@@ -3090,13 +3090,13 @@ function drawNextSteps({
       ? mediaFormat(
           topMedia[0]
         )
-      : "conteudos de melhor desempenho";
+      : "conteúdos de melhor desempenho";
 
 
   const steps = [
-    "Manter consistencia de publicacao.",
+    "Manter consistencia de publicação.",
     `Explorar mais ${bestFormat}.`,
-    "Repetir temas dos melhores conteudos.",
+    "Repetir temas dos melhores conteúdos.",
     metrics
       ?.change
       .reach !==
@@ -3184,7 +3184,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Acesso nao autorizado.",
+            "Acesso não autorizado.",
         },
         {
           status:
@@ -3207,7 +3207,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Seu plano nao possui acesso aos relatorios.",
+            "Seu plano não possui acesso aos relatórios.",
         },
         {
           status:
@@ -3269,7 +3269,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Cliente ou modelo nao informado.",
+            "Cliente ou modelo não informado.",
         },
         {
           status:
@@ -3356,7 +3356,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Cliente nao encontrado.",
+            "Cliente não encontrado.",
         },
         {
           status:
@@ -3375,7 +3375,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Voce nao possui acesso a este cliente.",
+            "Você não possui acesso a este cliente.",
         },
         {
           status:
@@ -3391,7 +3391,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Modelo de relatorio nao encontrado.",
+            "Modelo de relatório não encontrado.",
         },
         {
           status:
@@ -3582,7 +3582,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Nao foi possivel carregar o PDF base.",
+            "Não foi possível carregar o PDF base.",
         },
         {
           status:
@@ -3614,7 +3614,7 @@ export async function GET(
       return NextResponse.json(
         {
           message:
-            "Modelo sem pagina.",
+            "Modelo sem página.",
         },
         {
           status:
@@ -3668,7 +3668,7 @@ export async function GET(
     textAt({
       page,
       text:
-        "PERIODO ANALISADO",
+        "PERÍODO ANALISADO",
       x:
         721,
       y:
@@ -3746,7 +3746,7 @@ export async function GET(
           null
         ),
       helper:
-        "vs periodo comparavel",
+        "vs período comparavel",
       bold,
       regular,
     });
@@ -3770,7 +3770,7 @@ export async function GET(
           null
         ),
       helper:
-        "vs periodo comparavel",
+        "vs período comparavel",
       bold,
       regular,
     });
@@ -3785,7 +3785,7 @@ export async function GET(
           interactions
         ),
       label:
-        "Interacoes",
+        "Interações",
       change:
         percentText(
           dashboardMetrics
@@ -3794,7 +3794,7 @@ export async function GET(
           null
         ),
       helper:
-        "vs periodo comparavel",
+        "vs período comparavel",
       bold,
       regular,
     });
@@ -4013,8 +4013,8 @@ export async function GET(
         message:
           error instanceof
             Error
-            ? `Nao foi possivel gerar o relatorio: ${error.message}`
-            : "Nao foi possivel gerar o relatorio.",
+            ? `Não foi possível gerar o relatório: ${error.message}`
+            : "Não foi possível gerar o relatório.",
       },
       {
         status:

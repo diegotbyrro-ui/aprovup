@@ -11,13 +11,13 @@ export function createCrmAdminClient() {
 
   if (!supabaseUrl) {
     throw new Error(
-      "NEXT_PUBLIC_CRM_SUPABASE_URL nao configurada."
+      "NEXT_PUBLIC_CRM_SUPABASE_URL não configurada."
     );
   }
 
   if (!secretKey) {
     throw new Error(
-      "CRM_SUPABASE_SECRET_KEY nao configurada."
+      "CRM_SUPABASE_SECRET_KEY não configurada."
     );
   }
 

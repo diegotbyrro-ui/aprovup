@@ -32,7 +32,7 @@ export async function GET(
           false,
 
         error:
-          'Cron nao configurado.',
+          'Cron não configurado.',
       },
       {
         status:
@@ -60,7 +60,7 @@ export async function GET(
           false,
 
         error:
-          'Nao autorizado.',
+          'Não autorizado.',
       },
       {
         status:

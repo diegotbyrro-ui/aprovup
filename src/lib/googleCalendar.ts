@@ -48,7 +48,7 @@ function getEncryptionKey() {
   if (!encryptionSecret) {
 
     throw new Error(
-      "APROVUP_INTEGRATION_ENCRYPTION_KEY nao configurada."
+      "APROVUP_INTEGRATION_ENCRYPTION_KEY não configurada."
     );
   }
 

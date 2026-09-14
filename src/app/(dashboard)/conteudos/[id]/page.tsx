@@ -355,7 +355,7 @@ function getClientCommentTone(
     'aprovacao',
     'material aprovado',
     'planejamento aprovado',
-    'conteudo aprovado',
+    'conteúdo aprovado',
   ];
 
 
@@ -2002,7 +2002,7 @@ export default async function ConteudoDetailPage({
                     (comment) => (
                       <div
                         key={
-                          `history-audio-${comment.id}`
+                          `history-áudio-${comment.id}`
                         }
                         className="rounded-xl border border-slate-100 bg-slate-50 p-3"
                       >

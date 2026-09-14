@@ -228,7 +228,7 @@ export default async function AssistantPage() {
             </h2>
 
             <p>
-              Analise o contexto de cada empresa,
+              Análise o contexto de cada empresa,
               prepare abordagens melhores e defina
               o próximo passo da negociação.
             </p>

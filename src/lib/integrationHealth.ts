@@ -393,7 +393,7 @@ async function getMetaHealth(
         "warning";
 
       summary =
-        `${recentPublicationErrors} publicacao(oes) com erro nas ultimas 24 horas.`;
+        `${recentPublicationErrors} publicação(oes) com erro nas últimas 24 horas.`;
     }
     else if (
       expiringTokens >
@@ -403,7 +403,7 @@ async function getMetaHealth(
         "warning";
 
       summary =
-        `${expiringTokens} conexao(oes) com token proximo do vencimento.`;
+        `${expiringTokens} conexão(oes) com token próximo do vencimento.`;
     }
     else if (
       updateDetected
@@ -412,7 +412,7 @@ async function getMetaHealth(
         "warning";
 
       summary =
-        `Nova versao da Graph API detectada: ${latestDetectedVersion}.`;
+        `Nova versão da Graph API detectada: ${latestDetectedVersion}.`;
     }
 
     return {
@@ -437,7 +437,7 @@ async function getMetaHealth(
 
         {
           label:
-            "Versao mais recente detectada",
+            "Versão mais recente detectada",
 
           value:
             latestDetectedVersion ||
@@ -446,7 +446,7 @@ async function getMetaHealth(
 
         {
           label:
-            "Conexoes Instagram ativas",
+            "Conexões Instagram ativas",
 
           value:
             String(
@@ -456,7 +456,7 @@ async function getMetaHealth(
 
         {
           label:
-            "Erros de publicacao em 24h",
+            "Erros de publicação em 24h",
 
           value:
             String(
@@ -466,7 +466,7 @@ async function getMetaHealth(
 
         {
           label:
-            "Tokens vencendo em ate 7 dias",
+            "Tokens vencendo em até 7 dias",
 
           value:
             String(
@@ -506,7 +506,7 @@ async function getMetaHealth(
           : "error",
 
       summary:
-        "Nao foi possivel concluir o diagnostico da integracao Meta.",
+        "Não foi possível concluir o diagnóstico da integração Meta.",
 
       details: [
         {
@@ -519,7 +519,7 @@ async function getMetaHealth(
 
         {
           label:
-            "Configuracao tecnica",
+            "Configuração técnica",
 
           value:
             technicalReady
@@ -574,7 +574,7 @@ async function getGoogleHealth(
           "inactive",
 
         summary:
-          "Google Calendar ainda nao foi configurado para esta agencia.",
+          "Google Calendar ainda não foi configurado para esta agência.",
 
         details: [
           {
@@ -582,7 +582,7 @@ async function getGoogleHealth(
               "Credenciais OAuth",
 
             value:
-              "Nao configuradas",
+              "Não configuradas",
           },
 
           {
@@ -613,7 +613,7 @@ async function getGoogleHealth(
           "inactive",
 
         summary:
-          "Credenciais salvas, aguardando conexao da conta Google.",
+          "Credenciais salvas, aguardando conexão da conta Google.",
 
         details: [
           {
@@ -629,7 +629,7 @@ async function getGoogleHealth(
               "Conta conectada",
 
             value:
-              "Ainda nao",
+              "Ainda não",
           },
         ],
       };
@@ -664,7 +664,7 @@ async function getGoogleHealth(
 
           {
             label:
-              "Calendario",
+              "Calendário",
 
             value:
               connection
@@ -715,7 +715,7 @@ async function getGoogleHealth(
 
         {
           label:
-            "Calendario",
+            "Calendário",
 
           value:
             auth.calendarId ||
@@ -744,12 +744,12 @@ async function getGoogleHealth(
         "error",
 
       summary:
-        "A autorizacao do Google Calendar precisa de atencao.",
+        "A autorizacao do Google Calendar precisa de atenção.",
 
       details: [
         {
           label:
-            "Teste de autenticacao",
+            "Teste de autenticação",
 
           value:
             "Falhou",
@@ -810,7 +810,7 @@ async function getOpenAiHealth(
             "API Key",
 
           value:
-            "Nao configurada",
+            "Não configurada",
         },
       ],
 
@@ -1083,7 +1083,7 @@ async function getOpenAiHealth(
         "error",
 
       summary:
-        "Nao foi possivel validar a conexao com a OpenAI.",
+        "Não foi possível validar a conexão com a OpenAI.",
 
       details: [
         {
@@ -1152,7 +1152,7 @@ async function getAnthropicHealth(
         "inactive",
 
       summary:
-        "Claude ainda nao possui uma API Key configurada no AprovUp.",
+        "Claude ainda não possui uma API Key configurada no AprovUp.",
 
       details: [
         {
@@ -1168,7 +1168,7 @@ async function getAnthropicHealth(
             "API Key",
 
           value:
-            "Nao configurada",
+            "Não configurada",
         },
       ],
 
@@ -1347,7 +1347,7 @@ async function getAnthropicHealth(
         "healthy",
 
       summary:
-        "Anthropic respondendo normalmente e o modelo configurado esta disponivel.",
+        "Anthropic respondendo normalmente e o modelo configurado esta disponível.",
 
       details: [
         {
@@ -1404,7 +1404,7 @@ async function getAnthropicHealth(
         "error",
 
       summary:
-        "Nao foi possivel validar a conexao com a Anthropic.",
+        "Não foi possível validar a conexão com a Anthropic.",
 
       details: [
         {
@@ -1552,7 +1552,7 @@ export async function getDirectorIntegrationAlerts(
       !metaReady
     ) {
       alerts.push(
-        "Configuracao da Meta incompleta"
+        "Configuração da Meta incompleta"
       );
     }
   }
@@ -1616,7 +1616,7 @@ export async function getDirectorIntegrationAlerts(
         0
     ) {
       alerts.push(
-        `${publicationErrors} erro(s) de publicacao Meta nas ultimas 24h`
+        `${publicationErrors} erro(s) de publicação Meta nas últimas 24h`
       );
     }
   }

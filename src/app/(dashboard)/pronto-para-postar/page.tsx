@@ -27,8 +27,8 @@ const areaLabels: Record<string, string> = {
     SOCIAL_MEDIA: 'Social Media',
     SOCIAL_DESIGN: 'Design',
     DESIGN: 'Design',
-    AUDIOVISUAL: 'Filmaker',
-    FILMMAKER: 'Filmaker',
+    AUDIOVISUAL: 'Filmmaker',
+    FILMMAKER: 'Filmmaker',
 };
 
 function formatDate(date: Date | null) {
@@ -372,7 +372,7 @@ export default async function ProntoParaPostarPage({
 
                 <div className="rounded-xl border border-indigo-100 bg-white p-4 shadow-sm">
                     <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">
-                        Filmaker
+                        Filmmaker
                     </p>
 
                     <p className="mt-2 text-3xl font-bold text-indigo-700">

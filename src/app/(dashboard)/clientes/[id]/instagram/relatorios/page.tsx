@@ -964,7 +964,7 @@ export default async function InstagramReportsPage({
 
               <a
                 href={
-                  `/api/relatorios/gerar?cliente=${client.id}&modelo=${reportTemplate.id}&periodo=${period}`
+                  `/api/relatorios/gerar?cliente=${client.id}&modelo=${reportTemplate.id}&período=${period}`
                 }
                 title={
                   `Gerar PDF usando o modelo ${reportTemplate.name}`

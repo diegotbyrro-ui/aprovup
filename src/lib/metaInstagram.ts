@@ -71,7 +71,7 @@ function requiredConfig() {
     !appSecret
   ) {
     throw new Error(
-      'Credenciais Meta nao configuradas.'
+      'Credenciais Meta não configuradas.'
     );
   }
 
@@ -110,7 +110,7 @@ export function getMetaRedirectUri(
 
   if (!baseUrl) {
     throw new Error(
-      'URL publica do AprovUp nao configurada.'
+      'URL publica do AprovUp não configurada.'
     );
   }
 

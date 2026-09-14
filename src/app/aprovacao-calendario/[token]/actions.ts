@@ -93,7 +93,7 @@ export async function approvePlanningContent(
     destination === 'SOCIAL_MEDIA'
       ? 'Social Media'
       : destination === 'FILMMAKER'
-        ? 'Filmaker'
+        ? 'Filmmaker'
         : 'Design';
 
   await prisma.historyLog.create({

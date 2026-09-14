@@ -813,7 +813,7 @@ async function buildPdf({
   }
 
   drawBlock(
-    'Analise de desempenho do Instagram',
+    'Análise de desempenho do Instagram',
     {
       size:
         23,
@@ -924,7 +924,7 @@ async function buildPdf({
   );
 
   sectionTitle(
-    'Pontos de atencao'
+    'Pontos de atenção'
   );
 
   numberedItems(
@@ -990,7 +990,7 @@ async function buildPdf({
           item.test,
 
         body:
-          `${item.hypothesis} Metrica de sucesso: ${item.successMetric}`,
+          `${item.hypothesis} Métrica de sucesso: ${item.successMetric}`,
       })
     )
   );
@@ -1000,7 +1000,7 @@ async function buildPdf({
   );
 
   drawBlock(
-    'Documento gerado pelo AprovUp a partir da analise IA exibida na plataforma.',
+    'Documento gerado pelo AprovUp a partir da análise IA exibida na plataforma.',
     {
       size:
         8.5,

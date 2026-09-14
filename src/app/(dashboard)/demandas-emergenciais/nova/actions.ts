@@ -175,7 +175,7 @@ export async function createEmergencyDemandAction(
   const areaLabel =
     area === "DESIGN"
       ? "Design"
-      : "Filmaker";
+      : "Filmmaker";
 
   await prisma.historyLog.create({
     data: {

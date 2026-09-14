@@ -127,7 +127,7 @@ export async function POST(
       {
         ok: false,
         message:
-          'Voce nao tem permissao para agendar Stories.',
+          'Você não tem permissão para agendar Stories.',
       },
       {
         status: 403,
@@ -163,7 +163,7 @@ export async function POST(
       {
         ok: false,
         message:
-          'Escolha uma data e horario futuros.',
+          'Escolha uma data e horário futuros.',
       },
       {
         status: 400,
@@ -209,7 +209,7 @@ export async function POST(
       {
         ok: false,
         message:
-          'Conteudo nao encontrado.',
+          'Conteúdo não encontrado.',
       },
       {
         status: 404,
@@ -225,7 +225,7 @@ export async function POST(
       {
         ok: false,
         message:
-          'Instagram do cliente nao conectado.',
+          'Instagram do cliente não conectado.',
       },
       {
         status: 400,
@@ -247,7 +247,7 @@ export async function POST(
       {
         ok: false,
         message:
-          'Material de Story nao encontrado.',
+          'Material de Story não encontrado.',
       },
       {
         status: 400,
@@ -369,7 +369,7 @@ export async function DELETE(
       {
         ok: false,
         message:
-          'Voce nao tem permissao para cancelar este agendamento.',
+          'Você não tem permissão para cancelar este agendamento.',
       },
       {
         status: 403,
@@ -404,7 +404,7 @@ export async function DELETE(
       {
         ok: false,
         message:
-          'Conteudo nao encontrado.',
+          'Conteúdo não encontrado.',
       },
       {
         status: 404,
@@ -428,7 +428,7 @@ export async function DELETE(
       {
         ok: false,
         message:
-          'Este Story nao possui agendamento ativo.',
+          'Este Story não possui agendamento ativo.',
       },
       {
         status: 409,

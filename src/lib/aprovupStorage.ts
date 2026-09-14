@@ -22,14 +22,14 @@ function storageClient() {
 
   if (!url) {
     throw new Error(
-      "NEXT_PUBLIC_SUPABASE_URL nao configurada."
+      "NEXT_PUBLIC_SUPABASE_URL não configurada."
     );
   }
 
 
   if (!secret) {
     throw new Error(
-      "SUPABASE_SECRET_KEY nao configurada."
+      "SUPABASE_SECRET_KEY não configurada."
     );
   }
 
@@ -141,7 +141,7 @@ export async function uploadAprovUpFile(
     );
 
     throw new Error(
-      "Nao foi possivel salvar o arquivo."
+      "Não foi possível salvar o arquivo."
     );
   }
 
@@ -191,7 +191,7 @@ export async function createAprovUpSignedUpload(
     );
 
     throw new Error(
-      "Nao foi possivel preparar o upload."
+      "Não foi possível preparar o upload."
     );
   }
 
@@ -372,7 +372,7 @@ export async function deleteAprovUpPublicFile(
 
 
     throw new Error(
-      'Nao foi possivel remover o arquivo do Storage.'
+      'Não foi possível remover o arquivo do Storage.'
     );
   }
 
@@ -526,7 +526,7 @@ export async function uploadAprovUpReferenceFile(
     );
 
     throw new Error(
-      'Nao foi possivel salvar a foto de referencia.'
+      'Não foi possível salvar a foto de referência.'
     );
   }
 
@@ -1039,7 +1039,7 @@ export async function deleteAprovUpReferenceFile(
     );
 
     throw new Error(
-      'Nao foi possivel remover a foto de referencia.'
+      'Não foi possível remover a foto de referência.'
     );
   }
 

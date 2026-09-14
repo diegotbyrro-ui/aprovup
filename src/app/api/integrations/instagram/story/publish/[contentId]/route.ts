@@ -123,7 +123,7 @@ export async function POST(
       {
         ok: false,
         message:
-          'Voce nao tem permissao para publicar Stories.',
+          'Você não tem permissão para publicar Stories.',
       },
       {
         status: 403,
@@ -136,7 +136,7 @@ export async function POST(
       {
         ok: false,
         message:
-          'A integracao com a Meta ainda esta em liberacao controlada.',
+          'A integração com a Meta ainda esta em liberacao controlada.',
       },
       {
         status: 403,
@@ -187,7 +187,7 @@ export async function POST(
       {
         ok: false,
         message:
-          'Conteudo nao encontrado ou ainda nao esta liberado.',
+          'Conteúdo não encontrado ou ainda não esta liberado.',
       },
       {
         status: 404,
@@ -203,7 +203,7 @@ export async function POST(
       {
         ok: false,
         message:
-          'Instagram do cliente nao conectado.',
+          'Instagram do cliente não conectado.',
       },
       {
         status: 400,
@@ -219,7 +219,7 @@ export async function POST(
       {
         ok: false,
         message:
-          'Este Story ja foi publicado.',
+          'Este Story já foi publicado.',
       },
       {
         status: 409,
@@ -241,7 +241,7 @@ export async function POST(
       {
         ok: false,
         message:
-          'O Story precisa possuir imagem ou video final.',
+          'O Story precisa possuir imagem ou vídeo final.',
       },
       {
         status: 400,
@@ -399,7 +399,7 @@ export async function POST(
               'INSTAGRAM_STORY_PUBLISHED',
 
             description:
-              `Story do conteudo "${content.title}" publicado automaticamente.`,
+              `Story do conteúdo "${content.title}" publicado automaticamente.`,
 
             authorName:
               user.name ||

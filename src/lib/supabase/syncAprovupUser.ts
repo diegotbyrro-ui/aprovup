@@ -97,7 +97,7 @@ export async function syncAprovupUserToSupabase(
 
   if (!data.user) {
     throw new Error(
-      'Usuario nao retornado pelo Supabase.'
+      'Usuário não retornado pelo Supabase.'
     );
   }
 
