@@ -181,10 +181,21 @@ export default async function CalendarioEditorialPage({
             client: {
                 agencyId,
             },
-            plannedDate: {
-                gte: monthStart,
-                lte: monthEnd,
-            },
+            OR: [
+                {
+                    plannedDate: {
+                        gte: monthStart,
+                        lte: monthEnd,
+                    },
+                },
+                {
+                    format: 'DESIGN_GRAFICO',
+                    productionDeadline: {
+                        gte: monthStart,
+                        lte: monthEnd,
+                    },
+                },
+            ],
             ...(selectedClient !== 'TODOS'
                 ? {
                     clientId: selectedClient,
@@ -265,11 +276,21 @@ export default async function CalendarioEditorialPage({
         year: currentYear,
     });
 
-    const urgentContents = contents.filter(
+    /*
+     * Design Gráfico aparece no calendário operacional,
+     * mas não interfere nas métricas de publicação.
+     */
+    const editorialContents =
+        contents.filter(
+            (content) =>
+                content.format !== 'DESIGN_GRAFICO'
+        );
+
+    const urgentContents = editorialContents.filter(
         (content) => content.priority === 'URGENTE'
     );
 
-    const lateContents = contents.filter((content) => {
+    const lateContents = editorialContents.filter((content) => {
         if (!content.plannedDate) return false;
 
         return (
@@ -282,11 +303,11 @@ export default async function CalendarioEditorialPage({
         );
     });
 
-    const readyToPostContents = contents.filter(
+    const readyToPostContents = editorialContents.filter(
         (content) => content.status === 'PRONTO_PARA_POSTAR'
     );
 
-    const publishedContents = contents.filter(
+    const publishedContents = editorialContents.filter(
         (content) =>
             [
                 'PUBLICADO',
@@ -488,13 +509,35 @@ export default async function CalendarioEditorialPage({
                         id: content.id,
                         title: content.title,
                         clientName: content.client.name,
-                        dateKey: content.plannedDate
-                            ? getDateKey(new Date(content.plannedDate))
-                            : '',
+                        dateKey:
+                            content.format === 'DESIGN_GRAFICO'
+                                ? content.productionDeadline
+                                    ? getDateKey(
+                                          new Date(
+                                              content.productionDeadline
+                                          )
+                                      )
+                                    : ''
+                                : content.plannedDate
+                                  ? getDateKey(
+                                        new Date(
+                                            content.plannedDate
+                                        )
+                                    )
+                                  : '',
                         format: content.format,
                         area: content.area,
                         priority: content.priority,
                         status: content.status,
+                        hasFinalMaterial: Boolean(
+                            content.finalMediaUrl ||
+                            content.finalCoverUrl ||
+                            content.storyMediaUrl ||
+                            content.storyCoverUrl ||
+                            content.finalExternalUrl
+                        ),
+                        externalUrl:
+                            content.finalExternalUrl,
                     }))}
                 />
 
@@ -506,13 +549,35 @@ export default async function CalendarioEditorialPage({
                         id: content.id,
                         title: content.title,
                         clientName: content.client.name,
-                        dateKey: content.plannedDate
-                            ? getDateKey(new Date(content.plannedDate))
-                            : '',
+                        dateKey:
+                            content.format === 'DESIGN_GRAFICO'
+                                ? content.productionDeadline
+                                    ? getDateKey(
+                                          new Date(
+                                              content.productionDeadline
+                                          )
+                                      )
+                                    : ''
+                                : content.plannedDate
+                                  ? getDateKey(
+                                        new Date(
+                                            content.plannedDate
+                                        )
+                                    )
+                                  : '',
                         format: content.format,
                         area: content.area,
                         priority: content.priority,
                         status: content.status,
+                        hasFinalMaterial: Boolean(
+                            content.finalMediaUrl ||
+                            content.finalCoverUrl ||
+                            content.storyMediaUrl ||
+                            content.storyCoverUrl ||
+                            content.finalExternalUrl
+                        ),
+                        externalUrl:
+                            content.finalExternalUrl,
                     }))}
                 />
             </div>

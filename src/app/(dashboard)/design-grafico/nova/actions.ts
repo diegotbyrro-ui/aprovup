@@ -32,6 +32,25 @@ function text(
 }
 
 
+function normalizeGraphicLabel(
+  value: string
+) {
+  return String(
+    value ||
+    ""
+  )
+    .trim()
+    .toLowerCase()
+    .normalize(
+      "NFD"
+    )
+    .replace(
+      /[̀-ͯ]/g,
+      ""
+    );
+}
+
+
 export async function createGraphicDesignDemandAction(
   formData: FormData
 ) {
@@ -207,6 +226,59 @@ export async function createGraphicDesignDemandAction(
       .trim();
 
 
+  /*
+   * Procura a coluna criada para o fluxo offline.
+   * Se ela não existir, mantém o fallback APROVADO.
+   */
+  const designColumns =
+    await prisma
+      .designKanbanColumn
+      .findMany({
+        where: {
+          agencyId:
+            currentUser.agencyId,
+
+          isActive:
+            true,
+        },
+
+        orderBy: {
+          order:
+            "asc",
+        },
+      });
+
+
+  const offlineColumn =
+    designColumns.find(
+      (
+        column
+      ) => {
+        const normalized =
+          normalizeGraphicLabel(
+            column.title
+          );
+
+
+        return (
+          normalized.includes(
+            "design offline"
+          ) ||
+          normalized ===
+            "offline" ||
+          normalized.includes(
+            "design grafico"
+          )
+        );
+      }
+    );
+
+
+  const initialDesignStatus =
+    offlineColumn?.statusKey ||
+    "APROVADO";
+
+
   const content =
     await prisma.content.create({
       data: {
@@ -251,11 +323,11 @@ export async function createGraphicDesignDemandAction(
           references,
 
         /*
-         * Vai direto para a coluna inicial
-         * do Design.
+         * Design Gráfico entra direto na
+         * coluna Design Offline quando ela existe.
          */
         status:
-          "APROVADO",
+          initialDesignStatus,
       },
     });
 
@@ -273,7 +345,7 @@ export async function createGraphicDesignDemandAction(
           "GRAPHIC_DESIGN_DEMAND_CREATED",
 
         description:
-          `Solicitação de Design Gráfico criada por ${requester}. Material: ${materialType}. Prazo: ${deadline}.`,
+          `Solicitação de Design Gráfico criada por ${requester}. Material: ${materialType}. Prazo: ${deadline}. Destino: ${offlineColumn?.title || "Demandas"}.`,
 
         authorName:
           currentUser.name ||

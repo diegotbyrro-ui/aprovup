@@ -22,6 +22,8 @@ type EditorialCalendarContent = {
   area: string;
   priority: string;
   status: string;
+  hasFinalMaterial: boolean;
+  externalUrl: string | null;
 };
 
 
@@ -209,8 +211,21 @@ function isTodayDate(
 function getPublicationTimingClass(
   status: string,
   dateKey: string,
-  nextDateKey: string | null
+  nextDateKey: string | null,
+  format: string | null
 ) {
+  /*
+   * Roxo é reservado para materiais de Design Gráfico,
+   * independentemente do status editorial.
+   */
+  if (
+    format ===
+    "DESIGN_GRAFICO"
+  ) {
+    return "border-violet-400 bg-violet-50 ring-1 ring-violet-200";
+  }
+
+
   if (
     [
       "PUBLICADO",
@@ -481,6 +496,8 @@ export function DesktopEditorialCalendar({
           localContents
             .filter(
               (content) =>
+                content.format !==
+                  "DESIGN_GRAFICO" &&
                 content.dateKey >
                   calendarTodayKey &&
                 ![
@@ -785,6 +802,10 @@ export function DesktopEditorialCalendar({
             <span className="rounded-full border border-red-300 bg-red-50 px-2 py-1 text-red-700">
               Vermelho = atrasado
             </span>
+
+            <span className="rounded-full border border-violet-300 bg-violet-50 px-2 py-1 text-violet-700">
+              Roxo = Design Gráfico
+            </span>
           </div>
         </div>
 
@@ -1039,11 +1060,33 @@ export function DesktopEditorialCalendar({
                           content.area ||
                           "GERAL";
 
+                        const graphicDesign =
+                          content.format ===
+                          "DESIGN_GRAFICO";
+
+
+                        const graphicLate =
+                          graphicDesign &&
+                          !content.hasFinalMaterial &&
+                          isPastDate(
+                            dateKey
+                          );
+
+
+                        const cardHref =
+                          graphicDesign &&
+                          content.hasFinalMaterial
+                            ? content.externalUrl ||
+                              `/api/conteudos/${content.id}/download`
+                            : `/conteudos/${content.id}`;
+
+
                         const timingClass =
                           getPublicationTimingClass(
                             content.status,
                             dateKey,
-                            nextPublicationDateKey
+                            nextPublicationDateKey,
+                            content.format
                           );
 
                         const isDragging =
@@ -1059,9 +1102,29 @@ export function DesktopEditorialCalendar({
                             key={
                               content.id
                             }
-                            href={`/conteudos/${content.id}`}
+                            href={
+                              cardHref
+                            }
+                            target={
+                              graphicDesign &&
+                              content.hasFinalMaterial &&
+                              content.externalUrl
+                                ? "_blank"
+                                : undefined
+                            }
+                            rel={
+                              graphicDesign &&
+                              content.hasFinalMaterial &&
+                              content.externalUrl
+                                ? "noreferrer"
+                                : undefined
+                            }
+                            prefetch={
+                              !graphicDesign
+                            }
                             draggable={
-                              !savingId
+                              !savingId &&
+                              !graphicDesign
                             }
                             onDragStart={(
                               event
@@ -1074,10 +1137,18 @@ export function DesktopEditorialCalendar({
                             onDragEnd={
                               handleDragEnd
                             }
-                            title="Arraste para outro dia ou clique para abrir"
+                            title={
+                              graphicDesign
+                                ? content.hasFinalMaterial
+                                  ? "Material pronto — clique para baixar"
+                                  : "Design Gráfico — clique para abrir a demanda"
+                                : "Arraste para outro dia ou clique para abrir"
+                            }
                             className={[
                               "block",
-                              "cursor-grab",
+                              graphicDesign
+                                ? "cursor-pointer"
+                                : "cursor-grab",
                               "rounded-lg",
                               "border",
                               "p-2",
@@ -1152,7 +1223,33 @@ export function DesktopEditorialCalendar({
                                       area
                                     }
                                   </span>
+
+                                  {graphicDesign ? (
+                                    <span className="rounded-full border border-violet-200 bg-violet-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-violet-700">
+                                      DESIGN GRÁFICO
+                                    </span>
+                                  ) : null}
+
+                                  {graphicDesign &&
+                                  content.hasFinalMaterial ? (
+                                    <span className="rounded-full border border-emerald-200 bg-emerald-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-emerald-700">
+                                      MATERIAL PRONTO
+                                    </span>
+                                  ) : null}
+
+                                  {graphicLate ? (
+                                    <span className="rounded-full border border-red-200 bg-red-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-red-700">
+                                      ATRASADO
+                                    </span>
+                                  ) : null}
                                 </div>
+
+                                {graphicDesign &&
+                                content.hasFinalMaterial ? (
+                                  <div className="mt-2 rounded-md bg-violet-600 px-2 py-1.5 text-center text-[9px] font-black uppercase tracking-wide text-white">
+                                    ↓ Baixar material
+                                  </div>
+                                ) : null}
                               </div>
                             </div>
                           </Link>

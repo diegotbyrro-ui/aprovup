@@ -2133,10 +2133,22 @@ export async function notifyEmergencyDemandReadyToSocialMedia({
       });
 
 
+  const isEmergencyDemand =
+    content?.format ===
+    'DEMANDA_EMERGENCIAL';
+
+
+  const isGraphicDesign =
+    content?.format ===
+    'DESIGN_GRAFICO';
+
+
   if (
     !content ||
-    content.format !==
-      'DEMANDA_EMERGENCIAL' ||
+    (
+      !isEmergencyDemand &&
+      !isGraphicDesign
+    ) ||
     ![
       'DESIGN',
       'FILMMAKER',
@@ -2289,23 +2301,37 @@ export async function notifyEmergencyDemandReadyToSocialMedia({
 
 
   const title =
-    '🚨 Demanda emergencial pronta';
+    isGraphicDesign
+      ? '🎨 Design gráfico pronto'
+      : '🚨 Demanda emergencial pronta';
 
 
   const message =
-    [
-      'O material de *' +
-        content.title +
-        '*, do cliente *' +
-        content.client.name +
-        '*, acabou de ser finalizado pelo ' +
-        areaLabel +
-        '.',
+    isGraphicDesign
+      ? [
+          'O material *' +
+            content.title +
+            '*, do cliente *' +
+            content.client.name +
+            '*, acabou de ser finalizado pelo Design.',
 
-      'Já está disponível no AprovUp para você revisar e encaminhar ao cliente para aprovação.',
-    ].join(
-      '\n\n'
-    );
+          'Já está disponível no AprovUp para você conferir e baixar pelo calendário.',
+        ].join(
+          '\n\n'
+        )
+      : [
+          'O material de *' +
+            content.title +
+            '*, do cliente *' +
+            content.client.name +
+            '*, acabou de ser finalizado pelo ' +
+            areaLabel +
+            '.',
+
+          'Já está disponível no AprovUp para você revisar e encaminhar ao cliente para aprovação.',
+        ].join(
+          '\n\n'
+        );
 
 
   let sent =
@@ -2342,7 +2368,11 @@ export async function notifyEmergencyDemandReadyToSocialMedia({
          * mas uma nova versão poderá avisar novamente.
          */
         dedupKey:
-          'emergency-ready:' +
+          (
+            isGraphicDesign
+              ? 'graphic-ready:'
+              : 'emergency-ready:'
+          ) +
           content.id +
           ':' +
           uploadKey +
@@ -2385,10 +2415,16 @@ export async function notifyEmergencyDemandReadyToSocialMedia({
           content.id,
 
         action:
-          'EMERGENCY_READY_SOCIAL_NOTIFIED',
+          isGraphicDesign
+            ? 'GRAPHIC_DESIGN_READY_SOCIAL_NOTIFIED'
+            : 'EMERGENCY_READY_SOCIAL_NOTIFIED',
 
         description:
-          'LIV processou o aviso da demanda emergencial pronta para a Social Media responsável. ' +
+          (
+            isGraphicDesign
+              ? 'LIV processou o aviso do Design Gráfico pronto para a Social Media responsável. '
+              : 'LIV processou o aviso da demanda emergencial pronta para a Social Media responsável. '
+          ) +
           'Enviados: ' +
           sent +
           '. Aguardando template: ' +

@@ -17,6 +17,8 @@ type MobileCalendarContent = {
   area: string;
   priority: string;
   status: string;
+  hasFinalMaterial: boolean;
+  externalUrl: string | null;
 };
 
 
@@ -308,10 +310,19 @@ function getMobilePublicationClass(
   content: {
     status: string;
     dateKey: string;
+    format: string | null;
   },
   todayKey: string,
   nextDateKey: string | null
 ) {
+  if (
+    content.format ===
+    "DESIGN_GRAFICO"
+  ) {
+    return "border-violet-400 bg-violet-50";
+  }
+
+
   if (
     [
       "PUBLICADO",
@@ -498,6 +509,8 @@ export function MobileEditorialCalendar({
           contents
             .filter(
               (content) =>
+                content.format !==
+                  "DESIGN_GRAFICO" &&
                 content.dateKey >
                   todayKey &&
                 ![
@@ -793,7 +806,32 @@ export function MobileEditorialCalendar({
                         content.id
                       }
                       href={
-                        `/conteudos/${content.id}`
+                        content.format ===
+                          "DESIGN_GRAFICO" &&
+                        content.hasFinalMaterial
+                          ? content.externalUrl ||
+                            `/api/conteudos/${content.id}/download`
+                          : `/conteudos/${content.id}`
+                      }
+                      target={
+                        content.format ===
+                          "DESIGN_GRAFICO" &&
+                        content.hasFinalMaterial &&
+                        content.externalUrl
+                          ? "_blank"
+                          : undefined
+                      }
+                      rel={
+                        content.format ===
+                          "DESIGN_GRAFICO" &&
+                        content.hasFinalMaterial &&
+                        content.externalUrl
+                          ? "noreferrer"
+                          : undefined
+                      }
+                      prefetch={
+                        content.format !==
+                        "DESIGN_GRAFICO"
                       }
                       className={[
                         "block rounded-2xl border p-4 shadow-sm transition active:scale-[0.99]",
@@ -840,7 +878,10 @@ export function MobileEditorialCalendar({
 
                           <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold uppercase text-slate-600">
 
-                            {content.format}
+                            {content.format ===
+                            "DESIGN_GRAFICO"
+                              ? "DESIGN GRÁFICO"
+                              : content.format}
 
                           </span>
 
@@ -882,16 +923,40 @@ export function MobileEditorialCalendar({
 
                       <div className="mt-3 border-t border-slate-100 pt-3">
 
-                        <span className="text-[11px] font-semibold text-slate-500">
+                        {content.format ===
+                        "DESIGN_GRAFICO" ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            {content.hasFinalMaterial ? (
+                              <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase text-emerald-700">
+                                ✓ Material pronto
+                              </span>
+                            ) : content.dateKey <
+                              todayKey ? (
+                              <span className="rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-[10px] font-black uppercase text-red-700">
+                                Atrasado
+                              </span>
+                            ) : (
+                              <span className="rounded-full border border-violet-200 bg-violet-100 px-2.5 py-1 text-[10px] font-black uppercase text-violet-700">
+                                Em produção
+                              </span>
+                            )}
 
-                          {
-                            statusLabels[
+                            {content.hasFinalMaterial ? (
+                              <span className="text-[11px] font-black text-violet-700">
+                                Toque para baixar
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-slate-500">
+                            {
+                              statusLabels[
+                                content.status
+                              ] ||
                               content.status
-                            ] ||
-                            content.status
-                          }
-
-                        </span>
+                            }
+                          </span>
+                        )}
 
                       </div>
 

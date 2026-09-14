@@ -915,8 +915,15 @@ export async function POST(
        * final, a Social Media responsável é avisada.
        */
       if (
-        content.format ===
-          'DEMANDA_EMERGENCIAL' &&
+        [
+          'DEMANDA_EMERGENCIAL',
+          'DESIGN_GRAFICO',
+        ].includes(
+          String(
+            content.format ||
+            ''
+          )
+        ) &&
         [
           'DESIGN',
           'FILMMAKER',
@@ -1020,9 +1027,12 @@ export async function POST(
               'SOCIAL_MEDIA'
               ? 'Material final salvo pela Social Media e enviado para Pronto para Postar.'
               : content.format ===
-                  'DEMANDA_EMERGENCIAL'
-                ? 'Demanda emergencial finalizada. A LIV avisou a Social Media responsável para revisar e encaminhar ao cliente.'
-                : 'Materiais finais enviados para conferência interna antes da 2ª Etapa de Aprovação.',
+                  'DESIGN_GRAFICO'
+                ? 'Material de Design Gráfico finalizado. A LIV avisou a Social Media responsável que o arquivo está disponível para download.'
+                : content.format ===
+                    'DEMANDA_EMERGENCIAL'
+                  ? 'Demanda emergencial finalizada. A LIV avisou a Social Media responsável para revisar e encaminhar ao cliente.'
+                  : 'Materiais finais enviados para conferência interna antes da 2ª Etapa de Aprovação.',
         },
       }).catch(
         () => null
