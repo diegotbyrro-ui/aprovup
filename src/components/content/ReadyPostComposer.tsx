@@ -33,6 +33,10 @@ import {
   DownloadContentButton,
 } from '@/components/content/DownloadContentButton';
 
+import {
+  ReadyVideoReplace,
+} from '@/components/content/ReadyVideoReplace';
+
 
 type PreviewAsset = {
   id:
@@ -137,6 +141,7 @@ export function ReadyPostComposer({
   previewImageUrl,
   previewVideoUrl,
   hasFinalMedia,
+  canReplaceVideo,
 }: {
   contentId:
     string;
@@ -166,6 +171,9 @@ export function ReadyPostComposer({
     string | null;
 
   hasFinalMedia:
+    boolean;
+
+  canReplaceVideo:
     boolean;
 }) {
   const router =
@@ -442,6 +450,16 @@ export function ReadyPostComposer({
             compact
           />
         ) : null}
+
+
+        {canReplaceVideo ? (
+          <ReadyVideoReplace
+            contentId={
+              contentId
+            }
+          />
+        ) : null}
+
 
         <p className="text-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
           Prévia aproximada do feed do Instagram

@@ -791,6 +791,18 @@ export default async function ProntoParaPostarPage({
                                                             hasFinalMedia={
                                                                 hasFinalMedia
                                                             }
+                                                            canReplaceVideo={
+                                                                [
+                                                                    'FILMMAKER',
+                                                                    'AUDIOVISUAL',
+                                                                ].includes(
+                                                                    content.area ||
+                                                                    ''
+                                                                ) &&
+                                                                Boolean(
+                                                                    previewVideoUrl
+                                                                )
+                                                            }
                                                         />
                                                         {content.fileLinks && (
                                                             <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">

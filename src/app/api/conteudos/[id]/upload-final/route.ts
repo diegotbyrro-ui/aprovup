@@ -21,6 +21,10 @@ import {
 } from '@/lib/userAccess';
 
 import {
+  canAccessClient,
+} from '@/lib/clientAccess';
+
+import {
   notifyEmergencyDemandReadyToSocialMedia,
 } from '@/lib/secretaryWhatsApp';
 
@@ -306,6 +310,62 @@ export async function POST(
     }
 
 
+    const body =
+      await request.json();
+
+
+    const isReadyVideoAction =
+      body?.action ===
+        'prepare-ready-video' ||
+      body?.action ===
+        'replace-ready-video';
+
+
+    let canSocialReplaceReadyVideo =
+      false;
+
+
+    if (
+      isReadyVideoAction &&
+      content.status ===
+        'PRONTO_PARA_POSTAR' &&
+      [
+        'FILMMAKER',
+        'AUDIOVISUAL',
+      ].includes(
+        String(
+          content.area ||
+          ''
+        ).toUpperCase()
+      ) &&
+      hasPermission(
+        currentUser,
+        'social.manage'
+      )
+    ) {
+      const client =
+        await prisma.client.findFirst({
+          where: {
+            id:
+              content.clientId,
+
+            agencyId:
+              currentUser.agencyId,
+          },
+        });
+
+
+      canSocialReplaceReadyVideo =
+        Boolean(
+          client &&
+          canAccessClient(
+            currentUser,
+            client
+          )
+        );
+    }
+
+
     const requiredPermission =
       permissionForArea(
         content.area
@@ -313,6 +373,7 @@ export async function POST(
 
 
     if (
+      !canSocialReplaceReadyVideo &&
       !hasPermission(
         currentUser,
         requiredPermission
@@ -331,8 +392,171 @@ export async function POST(
     }
 
 
-    const body =
-      await request.json();
+    if (
+      body?.action ===
+      'prepare-ready-video'
+    ) {
+      if (
+        !canSocialReplaceReadyVideo
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Somente a Social Media responsável pode substituir este vídeo.',
+          },
+          {
+            status:
+              403,
+          }
+        );
+      }
+
+
+      const publication =
+        await prisma
+          .instagramPublication
+          .findUnique({
+            where: {
+              contentId:
+                id,
+            },
+          });
+
+
+      if (
+        publication &&
+        [
+          'AGENDADO',
+          'PUBLICANDO',
+          'PUBLICADO',
+        ].includes(
+          publication.status
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              publication.status ===
+              'AGENDADO'
+                ? 'Cancele o agendamento antes de substituir o vídeo.'
+                : 'Não é possível substituir um vídeo que já está sendo publicado ou foi publicado.',
+          },
+          {
+            status:
+              409,
+          }
+        );
+      }
+
+
+      const fileName =
+        typeof body.fileName ===
+        'string'
+          ? body.fileName
+          : 'video.mp4';
+
+
+      const contentType =
+        typeof body.contentType ===
+        'string'
+          ? body.contentType
+          : '';
+
+
+      const fileSize =
+        Number(
+          body.fileSize ||
+          0
+        );
+
+
+      const acceptedName =
+        /\.(mp4|mov|m4v)$/i.test(
+          fileName
+        );
+
+
+      if (
+        !contentType.startsWith(
+          'video/'
+        ) &&
+        !acceptedName
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Envie um vídeo MP4 ou MOV.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+
+      if (
+        fileSize <=
+          0 ||
+        fileSize >
+          500 *
+          1024 *
+          1024
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'O vídeo deve possuir no máximo 500 MB.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+
+      const prepared =
+        await createAprovUpSignedUpload({
+          folder:
+            'final-content',
+
+          prefix:
+            `${uploadPrefixes.final}-${id}`,
+
+          fileName,
+        });
+
+
+      return NextResponse.json({
+        ok:
+          true,
+
+        bucket:
+          'aprovup-files',
+
+        path:
+          prepared.path,
+
+        token:
+          prepared.token,
+
+        endpoint:
+          prepared.endpoint,
+      });
+    }
 
 
     if (
@@ -395,6 +619,289 @@ export async function POST(
       });
     }
 
+
+
+    if (
+      body?.action ===
+      'replace-ready-video'
+    ) {
+      if (
+        !canSocialReplaceReadyVideo
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Somente a Social Media responsável pode substituir este vídeo.',
+          },
+          {
+            status:
+              403,
+          }
+        );
+      }
+
+
+      const finalPath =
+        typeof body.finalPath ===
+        'string'
+          ? body.finalPath
+          : '';
+
+
+      const finalMediaType =
+        typeof body.finalMediaType ===
+        'string' &&
+        body.finalMediaType.startsWith(
+          'video/'
+        )
+          ? body.finalMediaType
+          : 'video/mp4';
+
+
+      if (
+        !finalPath ||
+        !validObjectPath(
+          id,
+          'final',
+          finalPath
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Caminho do novo vídeo inválido.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+
+      const exists =
+        await storagePathExists(
+          finalPath
+        );
+
+
+      if (!exists) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'O novo vídeo ainda não chegou ao Storage.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+
+      const publication =
+        await prisma
+          .instagramPublication
+          .findUnique({
+            where: {
+              contentId:
+                id,
+            },
+          });
+
+
+      if (
+        publication &&
+        [
+          'AGENDADO',
+          'PUBLICANDO',
+          'PUBLICADO',
+        ].includes(
+          publication.status
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              publication.status ===
+              'AGENDADO'
+                ? 'Cancele o agendamento antes de substituir o vídeo.'
+                : 'Não é possível substituir um vídeo que já está sendo publicado ou foi publicado.',
+          },
+          {
+            status:
+              409,
+          }
+        );
+      }
+
+
+      const previousVideoUrl =
+        content.finalMediaUrl ||
+        '';
+
+
+      const newVideoUrl =
+        getAprovUpPublicUrl(
+          finalPath
+        );
+
+
+      await prisma.content.update({
+        where: {
+          id,
+        },
+
+        data: {
+          finalMediaUrl:
+            newVideoUrl,
+
+          finalMediaType:
+            finalMediaType,
+
+          finalUploadedAt:
+            new Date(),
+
+          finalExternalUrl:
+            null,
+
+          status:
+            'PRONTO_PARA_POSTAR',
+        },
+      });
+
+
+      if (
+        publication &&
+        [
+          'PRONTO',
+          'ERRO',
+        ].includes(
+          publication.status
+        )
+      ) {
+        await prisma
+          .instagramPublication
+          .update({
+            where: {
+              contentId:
+                id,
+            },
+
+            data: {
+              mediaUrl:
+                newVideoUrl,
+
+              mediaType:
+                finalMediaType,
+
+              status:
+                'PRONTO',
+
+              scheduledFor:
+                null,
+
+              lastError:
+                null,
+            },
+          });
+      }
+
+
+      const authorName =
+        currentUser.name ||
+        currentUser.email ||
+        'Social Media';
+
+
+      await prisma.historyLog
+        .create({
+          data: {
+            entityType:
+              'CONTENT',
+
+            entityId:
+              id,
+
+            action:
+              'READY_VIDEO_REPLACED',
+
+            description:
+              'Social Media substituiu o vídeo final pela versão preparada para publicação.',
+
+            authorName,
+          },
+        })
+        .catch(
+          () =>
+            null
+        );
+
+
+      await prisma.comment
+        .create({
+          data: {
+            contentId:
+              id,
+
+            authorName,
+
+            authorRole:
+              'SOCIAL_MEDIA',
+
+            message:
+              'Vídeo final substituído pela Social Media após finalização para publicação.',
+          },
+        })
+        .catch(
+          () =>
+            null
+        );
+
+
+      if (
+        previousVideoUrl &&
+        previousVideoUrl !==
+          newVideoUrl
+      ) {
+        await deleteAprovUpPublicFile(
+          previousVideoUrl
+        ).catch(
+          (
+            error
+          ) => {
+            console.error(
+              'AprovUp old ready video delete:',
+              error
+            );
+          }
+        );
+      }
+
+
+      return NextResponse.json({
+        ok:
+          true,
+
+        mediaUrl:
+          newVideoUrl,
+
+        message:
+          'Vídeo final substituído com sucesso.',
+      });
+    }
 
 
     if (
