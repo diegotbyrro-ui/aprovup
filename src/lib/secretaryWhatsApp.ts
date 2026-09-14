@@ -2404,6 +2404,87 @@ export async function deliverSecretaryDailyBriefs() {
     }
 
 
+    const memberUserIds =
+      members
+        .map(
+          (member) =>
+            member.userId
+        )
+        .filter(
+          (value): value is string =>
+            Boolean(value)
+        );
+
+
+    const briefUsers =
+      memberUserIds.length
+        ? await prisma.user
+            .findMany({
+              where: {
+                agencyId:
+                  connection.agencyId,
+
+                id: {
+                  in:
+                    memberUserIds,
+                },
+
+                status:
+                  'APROVADO',
+              },
+
+              select: {
+                id:
+                  true,
+
+                role:
+                  true,
+              },
+            })
+        : [];
+
+
+    const briefRoleByUser =
+      new Map(
+        briefUsers.map(
+          (user) =>
+            [
+              user.id,
+              user.role,
+            ] as const
+        )
+      );
+
+
+    const operationMembers =
+      members.filter(
+        (member) => {
+          const role =
+            member.userId
+              ? briefRoleByUser.get(
+                  member.userId
+                ) ||
+                ''
+              : '';
+
+          return [
+            'DIRECTOR',
+            'SOCIAL_MEDIA',
+          ].includes(
+            role
+          );
+        }
+      );
+
+
+    if (
+      operationMembers.length ===
+      0
+    ) {
+      continue;
+    }
+
+
     const [
       planned,
       pendingApprovals,
@@ -2560,7 +2641,7 @@ export async function deliverSecretaryDailyBriefs() {
 
     for (
       const member
-      of members
+      of operationMembers
     ) {
       const result =
         await sendProactive({

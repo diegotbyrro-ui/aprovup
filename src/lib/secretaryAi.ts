@@ -23,6 +23,7 @@ type ConversationItem = {
 
 type SecretaryAction = {
   type:
+    | 'ROLE_WORK'
     | 'OVERVIEW'
     | 'METRICS'
     | 'PUBLICATIONS'
@@ -80,6 +81,63 @@ type PendingActionResult = {
     string |
     null;
 };
+
+
+type SecretaryUserContext = {
+  name:
+    string;
+
+  role:
+    string;
+};
+
+
+async function getSecretaryUserContext(
+  agencyId:
+    string,
+  userId:
+    string
+):
+  Promise<SecretaryUserContext> {
+  const user =
+    await prisma.user
+      .findFirst({
+        where: {
+          id:
+            userId,
+
+          agencyId,
+
+          status:
+            'APROVADO',
+        },
+
+        select: {
+          name:
+            true,
+
+          role:
+            true,
+        },
+      });
+
+
+  return {
+    name:
+      user
+        ?.name
+        ?.trim() ||
+      'Usuário',
+
+    role:
+      String(
+        user?.role ||
+        'EQUIPE'
+      )
+        .trim()
+        .toUpperCase(),
+  };
+}
 
 
 function extractResponseText(
@@ -1562,15 +1620,257 @@ async function getCalendar(
 }
 
 
+async function getRoleWork(
+  agencyId:
+    string,
+  userContext:
+    SecretaryUserContext
+) {
+  if (
+    userContext.role !==
+    'FILMMAKER'
+  ) {
+    return {
+      user:
+        userContext.name,
+
+      role:
+        userContext.role,
+
+      scope:
+        'ROLE',
+    };
+  }
+
+
+  const now =
+    new Date();
+
+  const futureLimit =
+    new Date(
+      now.getTime() +
+      30 *
+        24 *
+        60 *
+        60 *
+        1000
+    );
+
+
+  const clients =
+    await prisma.client
+      .findMany({
+        where: {
+          agencyId,
+        },
+
+        select: {
+          id:
+            true,
+        },
+      });
+
+
+  const clientIds =
+    clients.map(
+      (client) =>
+        client.id
+    );
+
+
+  const [
+    demands,
+    captures,
+  ] =
+    await Promise.all([
+      prisma.content
+        .findMany({
+          where: {
+            client: {
+              agencyId,
+            },
+
+            area:
+              'FILMMAKER',
+
+            status: {
+              notIn: [
+                'PRONTO_PARA_POSTAR',
+                'PUBLICADO',
+                'PUBLICADO_MANUALMENTE',
+              ],
+            },
+          },
+
+          select: {
+            id:
+              true,
+
+            title:
+              true,
+
+            status:
+              true,
+
+            priority:
+              true,
+
+            productionDeadline:
+              true,
+
+            plannedDate:
+              true,
+
+            format:
+              true,
+
+            client: {
+              select: {
+                name:
+                  true,
+              },
+            },
+          },
+
+          orderBy: [
+            {
+              productionDeadline:
+                'asc',
+            },
+
+            {
+              plannedDate:
+                'asc',
+            },
+          ],
+
+          take:
+            100,
+        }),
+
+      clientIds.length
+        ? prisma.captureSchedule
+            .findMany({
+              where: {
+                clientId: {
+                  in:
+                    clientIds,
+                },
+
+                status: {
+                  not:
+                    'CANCELADO',
+                },
+
+                scheduledAt: {
+                  gte:
+                    now,
+
+                  lte:
+                    futureLimit,
+                },
+              },
+
+              orderBy: {
+                scheduledAt:
+                  'asc',
+              },
+
+              take:
+                30,
+            })
+        : Promise.resolve([]),
+    ]);
+
+
+  return {
+    user:
+      userContext.name,
+
+    role:
+      'FILMMAKER',
+
+    responsibility:
+      'Produção audiovisual: pré-produção, captação, gravação, edição, ajustes e entrega.',
+
+    not_responsible_for: [
+      'criação de calendário editorial',
+      'criação de pauta de social media',
+      'aprovação de cliente',
+      'publicação no Instagram',
+      'métricas de Instagram como responsabilidade principal',
+    ],
+
+    active_demands:
+      demands.map(
+        (content) => ({
+          client:
+            content.client.name,
+
+          title:
+            content.title,
+
+          stage:
+            content.status,
+
+          priority:
+            content.priority,
+
+          delivery_date:
+            (
+              content.productionDeadline ||
+              content.plannedDate
+            )
+              ?.toISOString() ||
+            null,
+
+          publication_date:
+            content.plannedDate
+              ?.toISOString() ||
+            null,
+
+          format:
+            content.format,
+        })
+      ),
+
+    upcoming_captures:
+      captures.map(
+        (capture) => ({
+          client:
+            capture.clientName,
+
+          scheduled_at:
+            capture.scheduledAt
+              .toISOString(),
+
+          location:
+            capture.location,
+
+          notes:
+            capture.notes,
+
+          content_id:
+            capture.contentId,
+        })
+      ),
+  };
+}
+
+
 async function planConversation({
   agencyId,
   conversation,
+  userContext,
 }: {
   agencyId:
     string;
 
   conversation:
     ConversationItem[];
+
+  userContext:
+    SecretaryUserContext;
 }) {
   const recent =
     conversation
@@ -1602,6 +1902,17 @@ O usuário fala português brasileiro naturalmente e NÃO precisa decorar comand
 
 Entenda perguntas livres e continuações de contexto.
 
+RESPONSABILIDADES POR CARGO:
+- Leia sempre o PERFIL DO USUÁRIO.
+- FILMMAKER cuida de produção audiovisual: pré-produção, captação, gravação, edição, ajustes, prazos e entregas.
+- Para FILMMAKER, perguntas como "minhas prioridades", "o que tenho hoje", "minha agenda", "minhas demandas" ou "o que preciso entregar" devem usar ROLE_WORK.
+- Para FILMMAKER, "minha agenda" significa prioritariamente agenda de captações.
+- Só use CALENDAR_LIST para FILMMAKER se ele pedir explicitamente Google Agenda, reunião ou compromisso.
+- Não atribua ao FILMMAKER criação de calendário editorial, pauta, legenda, aprovação de cliente, publicação no Instagram ou métricas como responsabilidade dele.
+- DIRETOR pode consultar toda a operação.
+- SOCIAL_MEDIA cuida do fluxo editorial, conteúdo, aprovações, publicações e clientes.
+- DESIGN deve receber foco em demandas e entregas de design.
+
 Escolha somente as consultas necessárias.
 
 REGRAS DE ESCOPO:
@@ -1615,6 +1926,7 @@ REGRAS DE ESCOPO:
 - Quando houver período explícito como hoje, esta semana ou este mês, preencha start_iso e end_iso também em OVERVIEW.
 
 Ações disponíveis:
+ROLE_WORK = prioridades, demandas, prazos e agenda adequados ao cargo. Para FILMMAKER, consulta o fluxo audiovisual e as captações.
 OVERVIEW = resumo da operação e alertas.
 METRICS = métricas do Instagram.
 PUBLICATIONS = posts publicados, agendados ou com erro.
@@ -1640,6 +1952,10 @@ Não invente nomes de clientes nem datas impossíveis de inferir.`,
       input:
 `DATA/HORA ATUAL:
 ${currentMaceioText()}
+
+PERFIL DO USUÁRIO:
+Nome: ${userContext.name}
+Cargo: ${userContext.role}
 
 CONVERSA:
 ${recent}`,
@@ -1686,6 +2002,7 @@ ${recent}`,
                       'string',
 
                     enum: [
+                      'ROLE_WORK',
                       'OVERVIEW',
                       'METRICS',
                       'PUBLICATIONS',
@@ -1792,10 +2109,18 @@ export async function runSecretaryTurn({
     );
 
 
+  const userContext =
+    await getSecretaryUserContext(
+      agencyId,
+      userId
+    );
+
+
   const plan =
     await planConversation({
       agencyId,
       conversation,
+      userContext,
     });
 
 
@@ -1875,6 +2200,31 @@ export async function runSecretaryTurn({
           }
         : originalAction;
 
+
+    if (
+      action.type ===
+        'ROLE_WORK' ||
+      (
+        userContext.role ===
+          'FILMMAKER' &&
+        action.type ===
+          'OVERVIEW' &&
+        !action.client_name.trim()
+      )
+    ) {
+      facts.push({
+        type:
+          'ROLE_WORK',
+
+        data:
+          await getRoleWork(
+            agencyId,
+            userContext
+          ),
+      });
+
+      continue;
+    }
 
     if (
       action.type ===
@@ -2259,6 +2609,15 @@ Responda em português brasileiro de forma natural, objetiva e profissional.
 
 O usuário NÃO usa comandos padronizados. Entenda o contexto da conversa.
 
+RESPONSABILIDADE E CARGO:
+- Considere sempre o PERFIL DO USUÁRIO.
+- FILMMAKER: foque em audiovisual, demandas, prazos, captações, gravações, edição e ajustes.
+- Nunca trate calendário editorial, pauta, legenda, aprovação de cliente, postagem ou métricas como responsabilidade operacional do FILMMAKER.
+- Se houver ROLE_WORK para FILMMAKER, destaque primeiro atrasos, próximas entregas e próximas captações.
+- DIRETOR pode receber visão ampla da agência.
+- SOCIAL_MEDIA deve receber contexto editorial e operacional dos clientes.
+- DESIGN deve receber foco em produção e entregas de design.
+
 Você recebeu fatos consultados diretamente da operação.
 
 REGRAS:
@@ -2286,6 +2645,10 @@ REGRAS:
       input:
 `DATA/HORA:
 ${currentMaceioText()}
+
+PERFIL DO USUÁRIO:
+Nome: ${userContext.name}
+Cargo: ${userContext.role}
 
 OBJETIVO:
 ${plan.response_goal}
