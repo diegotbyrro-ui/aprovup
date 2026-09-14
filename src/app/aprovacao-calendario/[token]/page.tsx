@@ -1,10 +1,10 @@
 import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 import { PreserveApprovalScroll } from '@/components/approval/PreserveApprovalScroll';
+import { PlanningAdjustmentForm } from './PlanningAdjustmentForm';
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import {
     approvePlanningContent,
-    requestPlanningChanges,
 } from "./actions";
 
 const monthNames: Record<number, string> = {
@@ -331,9 +331,6 @@ export default async function MonthlyApprovalCalendarPage({
                                                 content.id
                                             );
 
-                                            const requestChangeAction =
-                                                requestPlanningChanges.bind(null, token, content.id);
-
                                             const alreadyApproved = isPlanningAlreadyApproved(
                                                 content.status
                                             );
@@ -487,29 +484,16 @@ export default async function MonthlyApprovalCalendarPage({
                                                                         </button>
                                                                     </form>
 
-                                                                    <form
-                                                                        action={requestChangeAction}
-                                                                        className="rounded-xl border border-slate-200 bg-white p-4"
-                                                                    >
+                                                                    <div className="rounded-xl border border-slate-200 bg-white p-4">
                                                                         <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
                                                                             Solicitar alteração
                                                                         </label>
 
-                                                                        <textarea
-                                                                            name="clientComment"
-                                                                            required
-                                                                            rows={5}
-                                                                            placeholder="Escreva aqui o que precisa ser ajustado neste conteúdo..."
-                                                                            className="mt-2 w-full rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                                                                        ></textarea>
-
-                                                                        <button
-                                                                            type="submit"
-                                                                            className="mt-3 w-full rounded-xl bg-orange-600 px-4 py-3 text-sm font-bold text-white hover:bg-orange-700"
-                                                                        >
-                                                                            Enviar alteração
-                                                                        </button>
-                                                                    </form>
+                                                                        <PlanningAdjustmentForm
+                                                                            token={token}
+                                                                            contentId={content.id}
+                                                                        />
+                                                                    </div>
                                                                 </div>
                                                             )}
                                                         </aside>
@@ -537,4 +521,3 @@ export default async function MonthlyApprovalCalendarPage({
         </main>
     );
 }
-

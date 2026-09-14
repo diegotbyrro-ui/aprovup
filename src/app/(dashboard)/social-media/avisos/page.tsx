@@ -34,7 +34,7 @@ function getTone(message: string) {
     };
   }
 
-  if (value.includes('ALTERAÇÃO') || value.includes('AJUSTE')) {
+  if (value.includes('ALTERAÇÃO') || value.includes('ALTERACAO') || value.includes('AJUSTE')) {
     return {
       label: 'Ajuste solicitado',
       className: 'border-amber-100 bg-amber-50 text-amber-800',
@@ -75,6 +75,20 @@ export default async function SocialMediaAlertsPage() {
         },
       },
       OR: [
+        {
+          AND: [
+            {
+              authorRole: 'CLIENTE',
+            },
+            {
+              content: {
+                is: {
+                  status: 'ALTERACAO_SOLICITADA',
+                },
+              },
+            },
+          ],
+        },
         {
           message: {
             contains: 'APROVAÇÃO',
@@ -211,6 +225,17 @@ export default async function SocialMediaAlertsPage() {
                       <p className="mt-4 whitespace-pre-line text-sm leading-relaxed">
                         {comment.message}
                       </p>
+
+                      {comment.audioUrl ? (
+                        <audio
+                          controls
+                          preload="metadata"
+                          src={comment.audioUrl}
+                          className="mt-3 h-10 w-full max-w-xl"
+                        >
+                          Seu navegador não suporta áudio.
+                        </audio>
+                      ) : null}
                     </div>
 
                     {comment.contentId && (

@@ -2,6 +2,12 @@
 
 import { prisma } from '@/lib/prisma';
 import { getApprovedContentDestination } from '@/lib/contentRouting';
+
+import {
+  aprovUpFileExists,
+  getAprovUpPublicUrl,
+} from '@/lib/aprovupStorage';
+
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -140,67 +146,310 @@ export async function requestPlanningChanges(
   contentId: string,
   formData: FormData
 ) {
-  const comment = String(
-    formData.get('clientComment') || ''
-  ).trim();
+  const message =
+    String(
+      formData.get(
+        'message'
+      ) ||
+      ''
+    ).trim();
 
-  if (!comment) {
-    throw new Error('Informe o que precisa ser alterado.');
-  }
+  const audioPath =
+    String(
+      formData.get(
+        'audioPath'
+      ) ||
+      ''
+    ).trim();
 
-  const { monthlyApproval, content } =
-    await validateMonthlyApproval(token, contentId);
+  const audioMimeType =
+    String(
+      formData.get(
+        'audioMimeType'
+      ) ||
+      ''
+    )
+      .split(';')[0]
+      .trim()
+      .toLowerCase();
 
-  await prisma.content.update({
-    where: {
-      id: contentId,
-    },
-    data: {
-      status: 'ALTERACAO_SOLICITADA',
-      area: 'SOCIAL_MEDIA',
-    },
-  });
-
-  await prisma.comment.create({
-    data: {
-      contentId,
-      authorName: 'Cliente',
-      authorRole: 'CLIENTE',
-      message: comment,
-    },
-  });
-
-  await prisma.historyLog.create({
-    data: {
-      entityType: 'CONTENT',
-      entityId: contentId,
-      action: 'MONTHLY_PLANNING_CHANGE_REQUESTED',
-      description:
-        `Cliente solicitou alteração no planejamento do conteúdo "${content.title}".`,
-      authorName: 'Cliente',
-    },
-  });
-
-  revalidatePath(`/aprovacao-calendario/${token}`);
-  revalidatePath(`/conteudos/${contentId}`);
-  revalidatePath('/clientes');
-  revalidatePath('/calendario-editorial');
-  revalidatePath('/social-media/avisos');
-  revalidatePath('/design');
-  revalidatePath('/filmmaker');
-  revalidatePath('/social-media/agendamentos');
-
-  if (monthlyApproval.clientId) {
-    revalidatePath(
-      `/clientes/${monthlyApproval.clientId}`
+  const rawDuration =
+    Number(
+      formData.get(
+        'audioDurationMs'
+      ) ||
+      0
     );
 
-    revalidatePath(
-      `/clientes/${monthlyApproval.clientId}/visao`
-    );
+  const audioDurationMs =
+    Number.isFinite(
+      rawDuration
+    )
+      ? Math.max(
+          0,
+          Math.min(
+            Math.round(
+              rawDuration
+            ),
+            180000
+          )
+        )
+      : 0;
+
+  if (
+    !message &&
+    !audioPath
+  ) {
+    return {
+      ok: false,
+      message:
+        'Escreva o ajuste ou grave um áudio.',
+    };
   }
 
-  redirect(
-    `/aprovacao-calendario/${token}?feedback=alteracao`
+  if (
+    message.length >
+    2000
+  ) {
+    return {
+      ok: false,
+      message:
+        'O ajuste deve ter no máximo 2000 caracteres.',
+    };
+  }
+
+  const allowedAudioTypes =
+    new Set([
+      'audio/webm',
+      'audio/ogg',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/wav',
+      'audio/x-m4a',
+    ]);
+
+  if (
+    audioPath &&
+    !allowedAudioTypes.has(
+      audioMimeType
+    )
+  ) {
+    return {
+      ok: false,
+      message:
+        'Formato de áudio não permitido.',
+    };
+  }
+
+  const {
+    monthlyApproval,
+    content,
+  } =
+    await validateMonthlyApproval(
+      token,
+      contentId
+    );
+
+  if (
+    [
+      'AGENDAMENTO_PRODUCAO',
+      'DESIGN',
+      'EDICAO',
+      'REVISAO_INTERNA',
+      'ENVIADO_CLIENTE',
+      'APROVADO',
+      'PRONTO_PARA_POSTAR',
+      'PUBLICADO',
+      'PUBLICADO_MANUALMENTE',
+      'ARQUIVADO',
+      'ALTERACAO_SOLICITADA',
+    ].includes(
+      content.status
+    )
+  ) {
+    return {
+      ok: false,
+      message:
+        'Este conteúdo não está mais pendente da primeira aprovação.',
+    };
+  }
+
+  let audioUrl =
+    '';
+
+  if (audioPath) {
+    const expectedPrefix =
+      'client-planning-audio/ajuste-planejamento-' +
+      contentId +
+      '-';
+
+    if (
+      !audioPath.startsWith(
+        expectedPrefix
+      )
+    ) {
+      return {
+        ok: false,
+        message:
+          'Caminho do áudio inválido.',
+      };
+    }
+
+    const exists =
+      await aprovUpFileExists(
+        audioPath
+      );
+
+    if (!exists) {
+      return {
+        ok: false,
+        message:
+          'O áudio ainda não chegou ao Storage.',
+      };
+    }
+
+    audioUrl =
+      getAprovUpPublicUrl(
+        audioPath
+      );
+  }
+
+  const visibleMessage =
+    message ||
+    'Áudio de ajuste anexado.';
+
+  await prisma.$transaction(
+    async (
+      transaction
+    ) => {
+      await transaction
+        .content
+        .update({
+          where: {
+            id:
+              contentId,
+          },
+
+          data: {
+            status:
+              'ALTERACAO_SOLICITADA',
+
+            area:
+              'SOCIAL_MEDIA',
+          },
+        });
+
+      await transaction
+        .comment
+        .create({
+          data: {
+            contentId,
+
+            authorName:
+              content.client?.name ||
+              'Cliente',
+
+            authorRole:
+              'CLIENTE',
+
+            message:
+              'ALTERACAO SOLICITADA PELO CLIENTE: ' +
+              visibleMessage,
+
+            audioUrl:
+              audioUrl ||
+              null,
+
+            audioMimeType:
+              audioMimeType ||
+              null,
+
+            audioDurationMs:
+              audioDurationMs ||
+              null,
+          },
+        });
+
+      await transaction
+        .historyLog
+        .create({
+          data: {
+            entityType:
+              'CONTENT',
+
+            entityId:
+              contentId,
+
+            action:
+              'MONTHLY_PLANNING_CHANGE_REQUESTED',
+
+            description:
+              'Cliente solicitou alteração no planejamento do conteúdo "' +
+              content.title +
+              '".',
+
+            authorName:
+              content.client?.name ||
+              'Cliente',
+          },
+        });
+    }
   );
+
+  revalidatePath(
+    '/aprovacao-calendario/' +
+    token
+  );
+
+  revalidatePath(
+    '/conteudos/' +
+    contentId
+  );
+
+  revalidatePath(
+    '/clientes'
+  );
+
+  revalidatePath(
+    '/calendario-editorial'
+  );
+
+  revalidatePath(
+    '/social-media'
+  );
+
+  revalidatePath(
+    '/social-media/avisos'
+  );
+
+  revalidatePath(
+    '/design'
+  );
+
+  revalidatePath(
+    '/filmmaker'
+  );
+
+  revalidatePath(
+    '/social-media/agendamentos'
+  );
+
+  if (
+    monthlyApproval.clientId
+  ) {
+    revalidatePath(
+      '/clientes/' +
+      monthlyApproval.clientId
+    );
+
+    revalidatePath(
+      '/clientes/' +
+      monthlyApproval.clientId +
+      '/visao'
+    );
+  }
+
+  return {
+    ok: true,
+  };
 }

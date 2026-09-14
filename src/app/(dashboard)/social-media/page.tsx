@@ -939,6 +939,15 @@ const query =
           },
 
           OR: [
+
+            {
+              content: {
+                is: {
+                  status:
+                    "ALTERACAO_SOLICITADA",
+                },
+              },
+            },
             {
               message: {
                 startsWith:
@@ -1111,43 +1120,6 @@ const query =
     ]);
 
 
-  const socialProductionContents =
-    await prisma.content.findMany({
-      where: {
-        clientId,
-
-        area:
-          "SOCIAL_MEDIA",
-
-        status: {
-          in: [
-            "APROVADO",
-            "ALTERACAO_SOLICITADA",
-          ],
-        },
-      },
-
-      include: {
-        client:
-          true,
-      },
-
-      orderBy: [
-        {
-          plannedDate:
-            "asc",
-        },
-        {
-          updatedAt:
-            "desc",
-        },
-      ],
-
-      take:
-        12,
-    });
-
-
   const finalApprovalQueue =
     finalApprovalContents.filter(
       (content) => {
@@ -1221,11 +1193,46 @@ const query =
 
   const clientQuestions =
     clientReturns.filter(
-      (comment) => {
+      (comment, index, list) => {
         const value =
           normalizeText(
             comment.message
           );
+
+        const isFinalAdjustment =
+          value.includes(
+            "alteracao final solicitada pelo cliente"
+          );
+
+        /*
+         * Retornos da 2a aprovacao pertencem ao
+         * fluxo de correcao do material final,
+         * nao a este card da 1a etapa.
+         */
+        if (isFinalAdjustment) {
+          return false;
+        }
+
+        const contentNeedsAdjustment =
+          comment.content?.status ===
+          "ALTERACAO_SOLICITADA";
+
+        /*
+         * Para conteudo em ajuste, considera somente
+         * o retorno mais recente daquele conteudo.
+         *
+         * Isso tambem recupera ajustes antigos como
+         * "teste" ou "trocar essa foto", mesmo sem prefixo.
+         */
+        if (contentNeedsAdjustment) {
+          return (
+            list.findIndex(
+              (item) =>
+                item.contentId ===
+                comment.contentId
+            ) === index
+          );
+        }
 
         return (
           value.includes(
@@ -1245,8 +1252,6 @@ const query =
     );
 
 
-
-
   /*
    * Esta lista representa apenas retornos do cliente
    * que ainda exigem alguma ação.
@@ -1263,7 +1268,11 @@ const query =
             comment.message
           );
 
-        const isAdjustment =
+        const contentNeedsAdjustment =
+          comment.content?.status ===
+          "ALTERACAO_SOLICITADA";
+
+        const isAdjustmentMessage =
           normalized.includes(
             "ajuste"
           ) ||
@@ -1271,16 +1280,18 @@ const query =
             "alteracao"
           );
 
-        if (isAdjustment) {
-          return (
-            comment.content?.status ===
-            "ALTERACAO_SOLICITADA"
-          );
+        if (contentNeedsAdjustment) {
+          return true;
+        }
+
+        if (isAdjustmentMessage) {
+          return false;
         }
 
         return true;
       }
     );
+
 
   return (
     <div className="space-y-4">
@@ -1449,72 +1460,7 @@ const query =
           PRODUCAO PELA SOCIAL MEDIA
           =================================================== */}
 
-      <section className="rounded-xl border border-blue-200 bg-blue-50/40 p-4 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
-                <ImageIcon
-                  size={15}
-                />
-              </div>
 
-              <div>
-                <h2 className="text-[13px] font-bold text-slate-900">
-                  Produção pela Social Media
-                </h2>
-
-                <p className="mt-0.5 text-[9px] text-slate-500">
-                  Conteúdos que já passaram pela 1ª aprovação e serão produzidos por você.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <span className="w-fit rounded-md bg-white px-2.5 py-1 text-[8px] font-bold text-blue-700 shadow-sm">
-            {socialProductionContents.length} para produzir
-          </span>
-        </div>
-
-        {socialProductionContents.length === 0 ? (
-          <div className="mt-4 flex min-h-[100px] items-center justify-center rounded-xl border border-dashed border-blue-200 bg-white/70">
-            <div className="text-center">
-              <CheckCircle2
-                size={20}
-                className="mx-auto text-blue-300"
-              />
-
-              <p className="mt-2 text-[10px] font-bold text-slate-600">
-                Nenhum material aguardando produção
-              </p>
-
-              <p className="mt-1 text-[8px] text-slate-400">
-                Ao criar um conteúdo, escolha Social Media como área responsável.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-4 divide-y divide-blue-100 rounded-xl border border-blue-100 bg-white px-3">
-            {socialProductionContents.map(
-              (
-                content
-              ) => (
-                <ContentRow
-                  key={
-                    content.id
-                  }
-                  content={
-                    content
-                  }
-                  href={
-                    `/conteudos/${content.id}/visualizar`
-                  }
-                />
-              )
-            )}
-          </div>
-        )}
-      </section>
 
 
       {/* ===================================================
@@ -1586,9 +1532,9 @@ const query =
             </p>
           </div>
 
-          {clientReturns.length > 0 ? (
+          {activeClientQuestions.length > 0 ? (
             <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[8px] font-black text-white">
-              {clientReturns.length}
+              {activeClientQuestions.length}
             </span>
           ) : null}
         </Link>
@@ -2205,6 +2151,8 @@ const query =
                       );
 
                     const adjustment =
+                      comment.content?.status ===
+                        "ALTERACAO_SOLICITADA" ||
                       normalized.includes(
                         "ajuste"
                       ) ||
