@@ -8,7 +8,7 @@ import {
 } from '@/lib/auth';
 
 import {
-  canUseMetaIntegration,
+  canUseMetaPublishing,
 } from '@/lib/metaAccess';
 
 import {
@@ -39,7 +39,7 @@ async function authorizedUser() {
       user,
       'social.manage'
     ) ||
-    !canUseMetaIntegration(
+    !canUseMetaPublishing(
       user
     )
   ) {

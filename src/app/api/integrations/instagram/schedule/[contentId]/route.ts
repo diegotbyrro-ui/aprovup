@@ -7,7 +7,7 @@ import {
   getCurrentUser,
 } from '@/lib/auth';
 import {
-  canUseMetaIntegration,
+  canUseMetaPublishing,
 } from '@/lib/metaAccess';
 
 import {
@@ -128,7 +128,7 @@ async function currentAuthorizedUser() {
 
 
   if (
-    !canUseMetaIntegration(
+    !canUseMetaPublishing(
       user
     )
   ) {

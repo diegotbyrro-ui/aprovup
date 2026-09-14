@@ -55,9 +55,56 @@ export async function getCurrentUserSaasAccess(): Promise<SaasAccessResult> {
     };
   }
 
+  const subscriptionOwnerIds = [
+    user.id,
+  ];
+
+
+  if (user.agencyId) {
+    const directors =
+      await prisma.user.findMany({
+        where: {
+          agencyId:
+            user.agencyId,
+
+          role:
+            'DIRECTOR',
+
+          status:
+            'APROVADO',
+        },
+
+        select: {
+          id:
+            true,
+        },
+      });
+
+
+    for (
+      const director
+      of directors
+    ) {
+      if (
+        !subscriptionOwnerIds.includes(
+          director.id
+        )
+      ) {
+        subscriptionOwnerIds.push(
+          director.id
+        );
+      }
+    }
+  }
+
+
   const subscription = await prisma.saasSubscription.findFirst({
     where: {
-      ownerUserId: user.id,
+      ownerUserId: {
+        in:
+          subscriptionOwnerIds,
+      },
+
       status: {
         in: [...activeStatuses],
       },

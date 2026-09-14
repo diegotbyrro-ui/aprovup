@@ -49,3 +49,45 @@ export function canUseMetaIntegration(
     user
   );
 }
+
+
+export function canUseMetaPublishing(
+  user:
+    MetaAccessUser |
+    null |
+    undefined
+) {
+  if (
+    canUseMetaIntegration(
+      user
+    )
+  ) {
+    return true;
+  }
+
+
+  if (
+    !user ||
+    user.status !==
+      "APROVADO"
+  ) {
+    return false;
+  }
+
+
+  const role =
+    String(
+      user.role ||
+      ""
+    )
+      .trim()
+      .toUpperCase();
+
+
+  return [
+    "DIRECTOR",
+    "SOCIAL_MEDIA",
+  ].includes(
+    role
+  );
+}

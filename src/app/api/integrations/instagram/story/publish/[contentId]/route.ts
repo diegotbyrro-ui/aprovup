@@ -8,7 +8,7 @@ import {
 } from '@/lib/auth';
 
 import {
-  canUseMetaIntegration,
+  canUseMetaPublishing,
 } from '@/lib/metaAccess';
 
 import {
@@ -131,7 +131,7 @@ export async function POST(
     );
   }
 
-  if (!canUseMetaIntegration(user)) {
+  if (!canUseMetaPublishing(user)) {
     return NextResponse.json(
       {
         ok: false,

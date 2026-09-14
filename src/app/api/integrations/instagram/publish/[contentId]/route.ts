@@ -7,7 +7,7 @@ import {
   getCurrentUser,
 } from '@/lib/auth';
 import {
-  canUseMetaIntegration,
+  canUseMetaPublishing,
 } from '@/lib/metaAccess';
 
 import {
@@ -174,7 +174,7 @@ export async function POST(
 
 
   if (
-    !canUseMetaIntegration(
+    !canUseMetaPublishing(
       currentUser
     )
   ) {

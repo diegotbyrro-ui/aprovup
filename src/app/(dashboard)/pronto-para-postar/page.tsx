@@ -1,6 +1,8 @@
 import { requireSaasFeature } from '@/lib/saasAccess';
 import { prisma } from '@/lib/prisma';
 import { requireAgencyContext } from '@/lib/tenant';
+import { requirePermission } from '@/lib/userAccess';
+import { canAccessClient } from '@/lib/clientAccess';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { markContentAsPublished } from './actions';
@@ -77,15 +79,20 @@ export default async function ProntoParaPostarPage({
 }) {
   await requireSaasFeature('socialPosting');
 
+    const socialUser =
+        await requirePermission(
+            'social.manage'
+        );
+
     const {
         agencyId,
     } =
         await requireAgencyContext();
 
     const params = await searchParams;
-    const selectedClient = params.cliente || 'TODOS';
+    let selectedClient = params.cliente || 'TODOS';
 
-    const clients = await prisma.client.findMany({
+    const agencyClients = await prisma.client.findMany({
         where: {
             agencyId,
         },
@@ -95,6 +102,35 @@ export default async function ProntoParaPostarPage({
         },
     });
 
+
+    const clients =
+        agencyClients.filter(
+            (client) =>
+                canAccessClient(
+                    socialUser,
+                    client
+                )
+        );
+
+
+    const accessibleClientIds =
+        clients.map(
+            (client) =>
+                client.id
+        );
+
+
+    if (
+        selectedClient !== 'TODOS' &&
+        !accessibleClientIds.includes(
+            selectedClient
+        )
+    ) {
+        selectedClient =
+            'TODOS';
+    }
+
+
     const selectedClientName =
         clients.find((client) => client.id === selectedClient)?.name || 'Todos';
 
@@ -102,7 +138,13 @@ export default async function ProntoParaPostarPage({
         where: {
             client: {
                 agencyId,
+
+                id: {
+                    in:
+                        accessibleClientIds,
+                },
             },
+
             status: 'PRONTO_PARA_POSTAR',
             NOT: {
                 format: {

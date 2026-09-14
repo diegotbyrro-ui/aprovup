@@ -13,6 +13,14 @@ import {
 } from '@/lib/tenant';
 
 import {
+  requirePermission,
+} from '@/lib/userAccess';
+
+import {
+  canAccessClient,
+} from '@/lib/clientAccess';
+
+import {
   enableStoryForContent,
   markStoryAsPublished,
 } from '../actions';
@@ -81,6 +89,11 @@ export default async function StoriesPage({
     'socialPosting'
   );
 
+  const socialUser =
+    await requirePermission(
+      'social.manage'
+    );
+
   const {
     agencyId,
   } =
@@ -89,11 +102,11 @@ export default async function StoriesPage({
   const params =
     await searchParams;
 
-  const selectedClient =
+  let selectedClient =
     params.cliente ||
     'TODOS';
 
-  const clients =
+  const agencyClients =
     await prisma.client.findMany({
       where: {
         agencyId,
@@ -105,11 +118,51 @@ export default async function StoriesPage({
       },
     });
 
+
+  const clients =
+    agencyClients.filter(
+      (
+        client
+      ) =>
+        canAccessClient(
+          socialUser,
+          client
+        )
+    );
+
+
+  const accessibleClientIds =
+    clients.map(
+      (
+        client
+      ) =>
+        client.id
+    );
+
+
+  if (
+    selectedClient !==
+      'TODOS' &&
+    !accessibleClientIds.includes(
+      selectedClient
+    )
+  ) {
+    selectedClient =
+      'TODOS';
+  }
+
+
+
   const contents =
     await prisma.content.findMany({
       where: {
         client: {
           agencyId,
+
+          id: {
+            in:
+              accessibleClientIds,
+          },
         },
 
         status: {
