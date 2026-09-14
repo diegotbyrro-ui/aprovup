@@ -136,6 +136,158 @@ export async function POST(
 
   if (
     body.action ===
+    'WHATSAPP_EVENT_PHONES'
+  ) {
+    try {
+      const connection =
+        await prisma
+          .secretaryWhatsappConnection
+          .findFirst({
+            where: {
+              status:
+                'ATIVO',
+            },
+
+            select: {
+              agencyId:
+                true,
+            },
+          });
+
+      if (!connection) {
+        return NextResponse.json({
+          ok:
+            false,
+
+          message:
+            'Conexao ativa nao encontrada.',
+        });
+      }
+
+      const events =
+        await prisma
+          .secretaryWhatsappEvent
+          .findMany({
+            where: {
+              agencyId:
+                connection.agencyId,
+            },
+
+            orderBy: {
+              createdAt:
+                'desc',
+            },
+
+            take:
+              30,
+
+            select: {
+              fromPhone:
+                true,
+
+              status:
+                true,
+
+              messageType:
+                true,
+
+              createdAt:
+                true,
+
+              error:
+                true,
+            },
+          });
+
+      const describePhone =
+        (value: string) => {
+          const digits =
+            String(
+              value ||
+              ''
+            ).replace(
+              /\D/g,
+              ''
+            );
+
+          return {
+            masked:
+              digits.length >= 6
+                ? digits.slice(0, 4) +
+                    '*****' +
+                    digits.slice(-4)
+                : digits,
+
+            length:
+              digits.length,
+
+            starts55:
+              digits.startsWith(
+                '55'
+              ),
+
+            suffix:
+              digits.slice(-4),
+          };
+        };
+
+      return NextResponse.json({
+        ok:
+          true,
+
+        action:
+          'WHATSAPP_EVENT_PHONES',
+
+        events:
+          events.map(
+            (event) => ({
+              ...describePhone(
+                event.fromPhone
+              ),
+
+              status:
+                event.status,
+
+              type:
+                event.messageType,
+
+              createdAt:
+                event
+                  .createdAt
+                  .toISOString(),
+
+              error:
+                event.error ||
+                null,
+            })
+          ),
+      });
+    }
+    catch (error) {
+      return NextResponse.json(
+        {
+          ok:
+            false,
+
+          action:
+            'WHATSAPP_EVENT_PHONES',
+
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
+        },
+        {
+          status:
+            500,
+        }
+      );
+    }
+  }
+
+
+  if (
+    body.action ===
     'WHATSAPP_STATUS_LIGHT'
   ) {
     try {
