@@ -1681,8 +1681,8 @@ const query =
                     }
                     className="self-start overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
                   >
-                    <div className="grid items-start lg:grid-cols-[190px_minmax(0,1fr)]">
-                      <div className="m-2 self-start overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+                    <div className="grid items-start md:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]">
+                      <div className="m-3 self-start overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
                       >
                         <div className="flex h-9 items-center gap-2 border-b border-slate-100 px-2.5">
                           <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-orange-400 text-[8px] font-black text-white">
@@ -1714,11 +1714,12 @@ const query =
                         </div>
 
                         <div
-                          className={
+                          className={[
+                            "relative w-full overflow-hidden bg-black",
                             isVideoPreview
-                              ? "aspect-[9/16] overflow-hidden bg-black"
-                              : "aspect-[4/5] overflow-hidden bg-black"
-                          }
+                              ? "aspect-[9/16]"
+                              : "aspect-[4/5]",
+                          ].join(" ")}
                         >
                         {mediaUrl ? (
                           isVideoPreview ? (
