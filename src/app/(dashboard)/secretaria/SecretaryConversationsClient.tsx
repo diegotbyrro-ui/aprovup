@@ -420,11 +420,11 @@ export function SecretaryConversationsClient({
 
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:h-[680px] xl:h-[720px]">
 
-      <div className="grid min-h-[640px] lg:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid min-h-[640px] lg:h-full lg:min-h-0 lg:grid-cols-[340px_minmax(0,1fr)]">
 
-        <aside className="border-b border-slate-200 bg-slate-50/70 lg:border-b-0 lg:border-r">
+        <aside className="border-b border-slate-200 bg-slate-50/70 lg:flex lg:min-h-0 lg:flex-col lg:border-b-0 lg:border-r">
 
           <div className="border-b border-slate-200 bg-white p-4">
 
@@ -487,7 +487,7 @@ export function SecretaryConversationsClient({
           </div>
 
 
-          <div className="max-h-[610px] overflow-y-auto p-2">
+          <div className="max-h-[610px] overflow-y-auto p-2 [scrollbar-width:thin] lg:min-h-0 lg:max-h-none lg:flex-1">
             {
               filtered.length
                 ? filtered.map(
@@ -609,7 +609,7 @@ export function SecretaryConversationsClient({
         </aside>
 
 
-        <div className="flex min-w-0 flex-col bg-slate-100/70">
+        <div className="flex min-w-0 flex-col bg-slate-100/70 lg:min-h-0 lg:overflow-hidden">
 
           {
             selected
@@ -674,7 +674,7 @@ export function SecretaryConversationsClient({
                   </header>
 
 
-                  <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-7">
+                  <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 pr-3 [scrollbar-width:thin] sm:px-7 sm:pr-4">
 
                     {
                       selected
