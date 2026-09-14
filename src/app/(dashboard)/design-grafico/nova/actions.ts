@@ -227,8 +227,8 @@ export async function createGraphicDesignDemandAction(
 
 
   /*
-   * Procura a coluna criada para o fluxo offline.
-   * Se ela não existir, mantém o fallback APROVADO.
+   * Design Gráfico usa uma única coluna exclusiva
+   * dentro do mesmo Kanban do Design.
    */
   const designColumns =
     await prisma
@@ -237,9 +237,6 @@ export async function createGraphicDesignDemandAction(
         where: {
           agencyId:
             currentUser.agencyId,
-
-          isActive:
-            true,
         },
 
         orderBy: {
@@ -249,34 +246,92 @@ export async function createGraphicDesignDemandAction(
       });
 
 
-  const offlineColumn =
+  let graphicColumn =
     designColumns.find(
       (
         column
-      ) => {
-        const normalized =
+      ) =>
+        column.statusKey ===
+          "DESIGN_GRAFICO" ||
+        [
+          "design grafico",
+          "design offline",
+          "offline",
+        ].includes(
           normalizeGraphicLabel(
             column.title
-          );
-
-
-        return (
-          normalized.includes(
-            "design offline"
-          ) ||
-          normalized ===
-            "offline" ||
-          normalized.includes(
-            "design grafico"
           )
-        );
-      }
+        )
     );
 
 
+  if (
+    !graphicColumn
+  ) {
+    const maxOrder =
+      designColumns.reduce(
+        (
+          current,
+          column
+        ) =>
+          Math.max(
+            current,
+            column.order
+          ),
+        0
+      );
+
+
+    graphicColumn =
+      await prisma
+        .designKanbanColumn
+        .create({
+          data: {
+            agencyId:
+              currentUser.agencyId,
+
+            title:
+              "Design Gráfico",
+
+            statusKey:
+              "DESIGN_GRAFICO",
+
+            order:
+              maxOrder +
+              1,
+
+            isActive:
+              true,
+          },
+        });
+  }
+  else if (
+    graphicColumn.title !==
+      "Design Gráfico" ||
+    !graphicColumn.isActive
+  ) {
+    graphicColumn =
+      await prisma
+        .designKanbanColumn
+        .update({
+          where: {
+            id:
+              graphicColumn.id,
+          },
+
+          data: {
+            title:
+              "Design Gráfico",
+
+            isActive:
+              true,
+          },
+        });
+  }
+
+
   const initialDesignStatus =
-    offlineColumn?.statusKey ||
-    "APROVADO";
+    graphicColumn.statusKey;
 
 
   const content =
@@ -324,7 +379,7 @@ export async function createGraphicDesignDemandAction(
 
         /*
          * Design Gráfico entra direto na
-         * coluna Design Offline quando ela existe.
+         * coluna exclusiva Design Gráfico.
          */
         status:
           initialDesignStatus,
@@ -345,7 +400,7 @@ export async function createGraphicDesignDemandAction(
           "GRAPHIC_DESIGN_DEMAND_CREATED",
 
         description:
-          `Solicitação de Design Gráfico criada por ${requester}. Material: ${materialType}. Prazo: ${deadline}. Destino: ${offlineColumn?.title || "Demandas"}.`,
+          `Solicitação de Design Gráfico criada por ${requester}. Material: ${materialType}. Prazo: ${deadline}. Destino: Design Gráfico.`,
 
         authorName:
           currentUser.name ||
@@ -377,6 +432,6 @@ export async function createGraphicDesignDemandAction(
 
 
   redirect(
-    "/design?aba=grafico"
+    "/design"
   );
 }

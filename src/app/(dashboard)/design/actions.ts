@@ -35,11 +35,68 @@ function slugifyStatus(title: string) {
     .replace(/^_+|_+$/g, '')}`;
 }
 
+function isGraphicDesignColumn(
+  column: {
+    title?:
+      | string
+      | null;
+
+    statusKey?:
+      | string
+      | null;
+  }
+) {
+  const normalized =
+    normalizeRole(
+      column.title
+    );
+
+
+  return (
+    column.statusKey ===
+      'DESIGN_GRAFICO' ||
+    normalized ===
+      'design grafico' ||
+    normalized ===
+      'design offline' ||
+    normalized ===
+      'offline'
+  );
+}
+
+
+function isReservedGraphicTitle(
+  title: string
+) {
+  const normalized =
+    normalizeRole(
+      title
+    );
+
+
+  return [
+    'design grafico',
+    'design offline',
+    'offline',
+  ].includes(
+    normalized
+  );
+}
+
+
 export async function createDesignColumnAction(formData: FormData) {
   const currentUser = await checkAccess();
   const title = text(formData, 'title');
 
   if (!title) {
+    redirect('/design');
+  }
+
+  if (
+    isReservedGraphicTitle(
+      title
+    )
+  ) {
     redirect('/design');
   }
 
@@ -107,6 +164,14 @@ export async function updateDesignColumnTitleAction(columnId: string, formData: 
   const title = text(formData, 'title');
 
   if (!title) {
+    redirect('/design');
+  }
+
+  if (
+    isReservedGraphicTitle(
+      title
+    )
+  ) {
     redirect('/design');
   }
 
@@ -224,6 +289,14 @@ export async function archiveDesignColumnAction(columnId: string) {
     redirect('/design');
   }
 
+  if (
+    isGraphicDesignColumn(
+      column
+    )
+  ) {
+    redirect('/design');
+  }
+
   const targetColumn = await prisma.designKanbanColumn.findFirst({
     where: {
       agencyId:
@@ -314,6 +387,23 @@ export async function updateDesignStatusAction(contentId: string, nextStatus: st
     redirect('/design');
   }
 
+  const targetIsGraphic =
+    isGraphicDesignColumn(
+      column
+    );
+
+  const contentIsGraphic =
+    content.format ===
+      'DESIGN_GRAFICO';
+
+
+  if (
+    targetIsGraphic ||
+    contentIsGraphic
+  ) {
+    redirect('/design');
+  }
+
   await prisma.content.update({
     where: {
       id: contentId,
@@ -397,10 +487,5 @@ export async function sendDesignQuestionAction(contentId: string, formData: Form
   revalidatePath('/social-media');
   revalidatePath(`/conteudos/${contentId}`);
 
-  redirect(
-    content.format ===
-      'DESIGN_GRAFICO'
-      ? '/design?aba=grafico'
-      : '/design'
-  );
+  redirect('/design');
 }

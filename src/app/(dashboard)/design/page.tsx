@@ -102,6 +102,57 @@ function isDemoName(
 
 
 
+function normalizeDesignColumnTitle(
+  value?:
+    | string
+    | null
+) {
+  return String(
+    value ||
+    ""
+  )
+    .trim()
+    .toLowerCase()
+    .normalize(
+      "NFD"
+    )
+    .replace(
+      /[̀-ͯ]/g,
+      ""
+    );
+}
+
+
+function isGraphicDesignColumn(
+  column: {
+    title?:
+      | string
+      | null;
+
+    statusKey?:
+      | string
+      | null;
+  }
+) {
+  const normalized =
+    normalizeDesignColumnTitle(
+      column.title
+    );
+
+
+  return (
+    column.statusKey ===
+      "DESIGN_GRAFICO" ||
+    normalized ===
+      "design grafico" ||
+    normalized ===
+      "design offline" ||
+    normalized ===
+      "offline"
+  );
+}
+
+
 function getReturnNotice(
   content:
     any
@@ -1233,31 +1284,11 @@ function CompactMetric({
 }
 
 
-export default async function DesignPage({
-  searchParams,
-}: {
-  searchParams?:
-    Promise<{
-      aba?: string;
-    }>;
-}) {
+export default async function DesignPage() {
   const {
     agencyId,
   } =
     await requireAgencyContext();
-
-
-  const params =
-    searchParams
-      ? await searchParams
-      : {};
-
-
-  const selectedTab =
-    params.aba ===
-      "grafico"
-      ? "grafico"
-      : "digital";
 
 
   const columnCount =
@@ -1352,6 +1383,96 @@ export default async function DesignPage({
   }
 
 
+  const storedGraphicColumns =
+    await prisma
+      .designKanbanColumn
+      .findMany({
+        where: {
+          agencyId,
+        },
+
+        orderBy: {
+          order:
+            "asc",
+        },
+      });
+
+
+  let ensuredGraphicColumn =
+    storedGraphicColumns.find(
+      (
+        column
+      ) =>
+        isGraphicDesignColumn(
+          column
+        )
+    );
+
+
+  if (
+    !ensuredGraphicColumn
+  ) {
+    const maxOrder =
+      storedGraphicColumns.reduce(
+        (
+          current,
+          column
+        ) =>
+          Math.max(
+            current,
+            column.order
+          ),
+        0
+      );
+
+
+    ensuredGraphicColumn =
+      await prisma
+        .designKanbanColumn
+        .create({
+          data: {
+            agencyId,
+
+            title:
+              "Design Gráfico",
+
+            statusKey:
+              "DESIGN_GRAFICO",
+
+            order:
+              maxOrder +
+              1,
+
+            isActive:
+              true,
+          },
+        });
+  }
+  else if (
+    ensuredGraphicColumn.title !==
+      "Design Gráfico" ||
+    !ensuredGraphicColumn.isActive
+  ) {
+    ensuredGraphicColumn =
+      await prisma
+        .designKanbanColumn
+        .update({
+          where: {
+            id:
+              ensuredGraphicColumn.id,
+          },
+
+          data: {
+            title:
+              "Design Gráfico",
+
+            isActive:
+              true,
+          },
+        });
+  }
+
+
   const columns =
     await prisma.designKanbanColumn.findMany({
       where: {
@@ -1385,29 +1506,6 @@ export default async function DesignPage({
         },
         area:
           "DESIGN",
-
-        OR:
-          selectedTab ===
-            "grafico"
-            ? [
-                {
-                  format:
-                    "DESIGN_GRAFICO",
-                },
-              ]
-            : [
-                {
-                  format:
-                    null,
-                },
-
-                {
-                  format: {
-                    not:
-                      "DESIGN_GRAFICO",
-                  },
-                },
-              ],
 
         status: {
           in:
@@ -1466,8 +1564,28 @@ export default async function DesignPage({
     });
 
 
-  const doingCount =
+  const graphicDesignCount =
     contents.filter(
+      (
+        content
+      ) =>
+        content.format ===
+        "DESIGN_GRAFICO"
+    ).length;
+
+
+  const workflowContents =
+    contents.filter(
+      (
+        content
+      ) =>
+        content.format !==
+        "DESIGN_GRAFICO"
+    );
+
+
+  const doingCount =
+    workflowContents.filter(
       (
         content
       ) =>
@@ -1477,7 +1595,7 @@ export default async function DesignPage({
 
 
   const analysisCount =
-    contents.filter(
+    workflowContents.filter(
       (
         content
       ) =>
@@ -1487,7 +1605,7 @@ export default async function DesignPage({
 
 
   const questionCount =
-    contents.filter(
+    workflowContents.filter(
       (
         content
       ) =>
@@ -1497,7 +1615,7 @@ export default async function DesignPage({
 
 
   const doneCount =
-    contents.filter(
+    workflowContents.filter(
       (
         content
       ) =>
@@ -1530,17 +1648,11 @@ export default async function DesignPage({
           </p>
 
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-            {selectedTab ===
-            "grafico"
-              ? "Design Gráfico"
-              : "Design"}
+            Design
           </h1>
 
           <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-slate-500">
-            {selectedTab ===
-            "grafico"
-              ? "Materiais gráficos, impressos e peças offline organizados por prazo de entrega."
-              : "Organize as peças, acompanhe o fluxo e mova as demandas entre as etapas de produção."}
+            Organize conteúdos digitais e materiais gráficos no mesmo fluxo de produção.
           </p>
         </div>
 
@@ -1554,64 +1666,27 @@ export default async function DesignPage({
           </Link>
 
           <Link
-            href={
-              selectedTab ===
-                "grafico"
-                ? "/design-grafico/nova"
-                : "/conteudos/novo"
-            }
+            href="/design-grafico/nova"
+            className="flex h-9 items-center gap-2 rounded-lg bg-violet-600 px-3 text-[10px] font-bold text-white hover:bg-violet-700"
+          >
+            <Plus
+              size={14}
+            />
+
+            Design Gráfico
+          </Link>
+
+          <Link
+            href="/conteudos/novo"
             className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-[10px] font-bold text-white hover:bg-blue-700"
           >
             <Plus
               size={14}
             />
 
-            {selectedTab ===
-            "grafico"
-              ? "Novo material gráfico"
-              : "Nova demanda"}
+            Nova demanda
           </Link>
         </div>
-      </section>
-
-
-      <section className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-        <Link
-          href="/design"
-          className={[
-            "rounded-lg px-4 py-2 text-[10px] font-black transition",
-            selectedTab ===
-              "digital"
-              ? "bg-slate-950 text-white shadow-sm"
-              : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
-          ].join(
-            " "
-          )}
-        >
-          Digital / Social
-        </Link>
-
-        <Link
-          href="/design?aba=grafico"
-          className={[
-            "rounded-lg px-4 py-2 text-[10px] font-black transition",
-            selectedTab ===
-              "grafico"
-              ? "bg-violet-600 text-white shadow-sm"
-              : "text-slate-500 hover:bg-violet-50 hover:text-violet-700",
-          ].join(
-            " "
-          )}
-        >
-          Design Gráfico
-        </Link>
-
-        <span className="ml-auto hidden text-[9px] font-semibold text-slate-400 sm:block">
-          {selectedTab ===
-          "grafico"
-            ? "Materiais offline e impressos"
-            : "Conteúdos digitais e redes sociais"}
-        </span>
       </section>
 
 
@@ -1626,6 +1701,14 @@ export default async function DesignPage({
             contents.length
           }
           tone="blue"
+        />
+
+        <CompactMetric
+          label="Design Gráfico"
+          value={
+            graphicDesignCount
+          }
+          tone="violet"
         />
 
         <CompactMetric
@@ -1812,14 +1895,27 @@ export default async function DesignPage({
               (
                 column
               ) => {
+                const isGraphicColumn =
+                  isGraphicDesignColumn(
+                    column
+                  );
+
+
                 const items =
                   contents
                     .filter(
                       (
                         content
                       ) =>
-                        content.status ===
-                        column.statusKey
+                        isGraphicColumn
+                          ? content.format ===
+                              "DESIGN_GRAFICO"
+                          : (
+                              content.format !==
+                                "DESIGN_GRAFICO" &&
+                              content.status ===
+                                column.statusKey
+                            )
                     )
                     .sort(
                       (
@@ -1864,9 +1960,11 @@ export default async function DesignPage({
                                 "w-2",
                                 "shrink-0",
                                 "rounded-full",
-                                getColumnAccent(
-                                  column.statusKey
-                                ),
+                                isGraphicColumn
+                                  ? "bg-violet-600"
+                                  : getColumnAccent(
+                                      column.statusKey
+                                    ),
                               ].join(" ")}
                             />
 
@@ -1880,19 +1978,27 @@ export default async function DesignPage({
                           </div>
 
                           <p className="mt-1 truncate text-[8px] text-slate-400">
-                            {getColumnDescription(
-                              column.statusKey,
-                              column.title
-                            )}
+                            {isGraphicColumn
+                              ? "Materiais gráficos e peças offline."
+                              : getColumnDescription(
+                                  column.statusKey,
+                                  column.title
+                                )}
                           </p>
                         </div>
 
 
-                        <ColumnMenu
-                          column={
-                            column
-                          }
-                        />
+                        {isGraphicColumn ? (
+                          <span className="rounded-md border border-violet-100 bg-violet-50 px-2 py-1 text-[8px] font-black uppercase tracking-wide text-violet-700">
+                            Exclusiva
+                          </span>
+                        ) : (
+                          <ColumnMenu
+                            column={
+                              column
+                            }
+                          />
+                        )}
                       </div>
                     </div>
 
@@ -1900,6 +2006,9 @@ export default async function DesignPage({
                     <DroppableDesignColumn
                       statusKey={
                         column.statusKey
+                      }
+                      disabled={
+                        isGraphicColumn
                       }
                     >
                       <div className="min-h-[540px] space-y-3 p-3">
@@ -1928,6 +2037,9 @@ export default async function DesignPage({
                                 }
                                 contentId={
                                   content.id
+                                }
+                                disabled={
+                                  isGraphicColumn
                                 }
                               >
                                 <DesignCard

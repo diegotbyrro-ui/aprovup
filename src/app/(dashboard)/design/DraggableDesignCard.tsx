@@ -16,9 +16,11 @@ import {
 export function DraggableDesignCard({
   contentId,
   children,
+  disabled = false,
 }: {
   contentId: string;
   children: ReactNode;
+  disabled?: boolean;
 }) {
   const [
     isDragging,
@@ -28,12 +30,21 @@ export function DraggableDesignCard({
   return (
     <div
       data-aprovup-content-id={contentId}
-      draggable
+      draggable={
+        !disabled
+      }
       onDragEnd={(event) => {
         event.stopPropagation();
         setIsDragging(false);
       }}
       onDragStart={(event) => {
+        if (
+          disabled
+        ) {
+          event.preventDefault();
+          return;
+        }
+
         event.stopPropagation();
 
         setIsDragging(true);
@@ -72,9 +83,11 @@ export function DraggableDesignCard({
 export function DroppableDesignColumn({
   statusKey,
   children,
+  disabled = false,
 }: {
   statusKey: string;
   children: ReactNode;
+  disabled?: boolean;
 }) {
   const router =
     useRouter();
@@ -98,6 +111,12 @@ export function DroppableDesignColumn({
           : 'false'
       }
       onDragEnter={(event) => {
+        if (
+          disabled
+        ) {
+          return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
 
@@ -124,6 +143,12 @@ export function DroppableDesignColumn({
         setIsOver(false);
       }}
       onDragOver={(event) => {
+        if (
+          disabled
+        ) {
+          return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
 
@@ -133,6 +158,12 @@ export function DroppableDesignColumn({
         setIsOver(true);
       }}
       onDrop={(event) => {
+        if (
+          disabled
+        ) {
+          return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
 
