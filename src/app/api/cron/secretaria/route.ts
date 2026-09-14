@@ -136,6 +136,174 @@ export async function POST(
 
   if (
     body.action ===
+    'WHATSAPP_STATUS_LIGHT'
+  ) {
+    try {
+      const connection =
+        await prisma
+          .secretaryWhatsappConnection
+          .findFirst({
+            where: {
+              status:
+                'ATIVO',
+            },
+
+            select: {
+              agencyId:
+                true,
+
+              secretaryName:
+                true,
+
+              displayPhoneNumber:
+                true,
+
+              lastWebhookAt:
+                true,
+            },
+          });
+
+      if (!connection) {
+        return NextResponse.json({
+          ok:
+            false,
+
+          message:
+            'Nenhuma conexao ativa.',
+        });
+      }
+
+      const members =
+        await prisma
+          .secretaryWhatsappMember
+          .findMany({
+            where: {
+              agencyId:
+                connection.agencyId,
+
+              isActive:
+                true,
+            },
+
+            orderBy: {
+              displayName:
+                'asc',
+            },
+
+            select: {
+              displayName:
+                true,
+
+              phoneE164:
+                true,
+
+              canUseSecretary:
+                true,
+
+              receiveAlerts:
+                true,
+
+              lastInboundAt:
+                true,
+
+              userId:
+                true,
+            },
+          });
+
+      const maskPhone =
+        (value: string) => {
+          const clean =
+            String(
+              value ||
+              ''
+            );
+
+          return clean.length > 4
+            ? '***' +
+                clean.slice(-4)
+            : clean;
+        };
+
+      return NextResponse.json({
+        ok:
+          true,
+
+        action:
+          'WHATSAPP_STATUS_LIGHT',
+
+        secretary:
+          connection
+            .secretaryName,
+
+        lastWebhookAt:
+          connection
+            .lastWebhookAt
+            ?.toISOString() ||
+          null,
+
+        members:
+          members.map(
+            (member) => ({
+              name:
+                member
+                  .displayName,
+
+              phone:
+                maskPhone(
+                  member
+                    .phoneE164
+                ),
+
+              authorized:
+                member
+                  .canUseSecretary,
+
+              alerts:
+                member
+                  .receiveAlerts,
+
+              linked:
+                Boolean(
+                  member.userId
+                ),
+
+              lastInboundAt:
+                member
+                  .lastInboundAt
+                  ?.toISOString() ||
+                null,
+            })
+          ),
+      });
+    }
+    catch (error) {
+      return NextResponse.json(
+        {
+          ok:
+            false,
+
+          action:
+            'WHATSAPP_STATUS_LIGHT',
+
+          error:
+            error instanceof Error
+              ? error.message
+              : String(
+                  error
+                ),
+        },
+        {
+          status:
+            500,
+        }
+      );
+    }
+  }
+
+
+  if (
+    body.action ===
     'WHATSAPP_STATUS'
   ) {
     const connection =
