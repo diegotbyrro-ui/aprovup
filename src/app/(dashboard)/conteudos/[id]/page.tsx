@@ -127,6 +127,9 @@ function formatDate(date: Date | null) {
   if (!date) return 'Sem data';
 
   return new Date(date).toLocaleDateString('pt-BR', {
+    timeZone:
+      'America/Maceio',
+
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -137,6 +140,9 @@ function formatDateTime(date: Date | null) {
   if (!date) return 'Sem data';
 
   return new Date(date).toLocaleString('pt-BR', {
+    timeZone:
+      'America/Maceio',
+
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -147,7 +153,73 @@ function formatDateTime(date: Date | null) {
 
 function formatDateInput(date: Date | null) {
   if (!date) return '';
-  return new Date(date).toISOString().split('T')[0];
+
+  const parts =
+    new Intl.DateTimeFormat(
+      'en-CA',
+      {
+        timeZone:
+          'America/Maceio',
+
+        year:
+          'numeric',
+
+        month:
+          '2-digit',
+
+        day:
+          '2-digit',
+      }
+    )
+      .formatToParts(
+        new Date(
+          date
+        )
+      );
+
+
+  const get =
+    (
+      type:
+        string
+    ) =>
+      parts.find(
+        (
+          part
+        ) =>
+          part.type ===
+          type
+      )?.value ||
+      '';
+
+
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+
+function formatTimeInput(date: Date | null) {
+  if (!date) return '';
+
+  return new Intl.DateTimeFormat(
+    'en-GB',
+    {
+      timeZone:
+        'America/Maceio',
+
+      hour:
+        '2-digit',
+
+      minute:
+        '2-digit',
+
+      hourCycle:
+        'h23',
+    }
+  ).format(
+    new Date(
+      date
+    )
+  );
 }
 
 function isLate(date: Date | null, status: string) {
@@ -157,13 +229,15 @@ function isLate(date: Date | null, status: string) {
     return false;
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const current =
+    new Date(
+      date
+    );
 
-  const current = new Date(date);
-  current.setHours(0, 0, 0, 0);
-
-  return current < today;
+  return (
+    current.getTime() <
+    Date.now()
+  );
 }
 
 function getNextStep(status: string, area: string) {
@@ -914,6 +988,12 @@ export default async function ConteudoDetailPage({
           name="productionDeadline"
           value={formatDateInput(contentSafe.productionDeadline)}
         />
+
+        <input
+          type="hidden"
+          name="productionDeadlineTime"
+          value={formatTimeInput(contentSafe.productionDeadline)}
+        />
         <input type="hidden" name="briefing" value={contentSafe.briefing || ''} />
         <input type="hidden" name="artText" value={contentSafe.artText || ''} />
         <input type="hidden" name="caption" value={contentSafe.caption || ''} />
@@ -986,7 +1066,7 @@ export default async function ConteudoDetailPage({
               </strong>{' '}
               ⬢ Prazo interno:{' '}
               <strong className={late ? 'text-red-300' : 'text-white'}>
-                {formatDate(contentSafe.productionDeadline)}
+                {formatDateTime(contentSafe.productionDeadline)}
               </strong>{' '}
               ⬢ Responsável:{' '}
               <strong className="text-white">
@@ -1302,7 +1382,7 @@ export default async function ConteudoDetailPage({
             className={`mt-3 text-xl font-bold ${late ? 'text-red-700' : 'text-slate-900'
               }`}
           >
-            {formatDate(contentSafe.productionDeadline)}
+            {formatDateTime(contentSafe.productionDeadline)}
           </p>
         </div>
       </section>
@@ -1546,16 +1626,31 @@ export default async function ConteudoDetailPage({
                 </div>
 
                 <div>
-                  <label className={labelClasses}>Prazo interno da produção</label>
-                  <input
-                    name="productionDeadline"
-                    defaultValue={formatDateInput(contentSafe.productionDeadline)}
-                    type="date"
-                    disabled={!canManageSocial}
-                    className={inputClasses}
-                  />
+                  <label className={labelClasses}>
+                    Prazo interno da produção
+                  </label>
+
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <input
+                      name="productionDeadline"
+                      defaultValue={formatDateInput(contentSafe.productionDeadline)}
+                      type="date"
+                      disabled={!canManageSocial}
+                      className={inputClasses}
+                    />
+
+                    <input
+                      name="productionDeadlineTime"
+                      defaultValue={formatTimeInput(contentSafe.productionDeadline)}
+                      type="time"
+                      step="300"
+                      disabled={!canManageSocial}
+                      className={inputClasses}
+                    />
+                  </div>
+
                   <p className="mt-1 text-xs text-slate-500">
-                    Apenas Social Media e Diretoria definem este prazo.
+                    Apenas Social Media e Diretoria definem o dia e o horário deste prazo.
                   </p>
                 </div>
               </div>

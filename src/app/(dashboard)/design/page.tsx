@@ -72,6 +72,40 @@ function formatDate(
 }
 
 
+function formatDeliveryDate(
+  date?:
+    | Date
+    | null
+) {
+  if (!date) {
+    return "Sem data";
+  }
+
+
+  return new Date(
+    date
+  ).toLocaleString(
+    "pt-BR",
+    {
+      timeZone:
+        "America/Maceio",
+
+      day:
+        "2-digit",
+
+      month:
+        "short",
+
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit",
+    }
+  );
+}
+
+
 function cleanDemoName(
   value?:
     | string
@@ -1042,7 +1076,7 @@ function DesignCard({
               size={10}
             />
 
-            Entrega: {formatDate(
+            Entrega: {formatDeliveryDate(
               content.productionDeadline
             )}
           </span>

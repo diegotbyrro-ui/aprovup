@@ -609,6 +609,127 @@ export async function updateClientStrategy(clientId: string, formData: FormData)
   revalidatePath("/clientes");
 }
 
+function formatMaceioDatePart(
+  date:
+    Date |
+    null
+) {
+  if (!date) {
+    return '';
+  }
+
+  const parts =
+    new Intl.DateTimeFormat(
+      'en-CA',
+      {
+        timeZone:
+          'America/Maceio',
+
+        year:
+          'numeric',
+
+        month:
+          '2-digit',
+
+        day:
+          '2-digit',
+      }
+    )
+      .formatToParts(
+        date
+      );
+
+
+  const get =
+    (
+      type:
+        string
+    ) =>
+      parts.find(
+        (
+          part
+        ) =>
+          part.type ===
+          type
+      )?.value ||
+      '';
+
+
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+
+function formatMaceioTimePart(
+  date:
+    Date |
+    null
+) {
+  if (!date) {
+    return '';
+  }
+
+
+  return new Intl.DateTimeFormat(
+    'en-GB',
+    {
+      timeZone:
+        'America/Maceio',
+
+      hour:
+        '2-digit',
+
+      minute:
+        '2-digit',
+
+      hourCycle:
+        'h23',
+    }
+  ).format(
+    date
+  );
+}
+
+
+function parseProductionDeadline(
+  dateValue:
+    string,
+  timeValue:
+    string
+) {
+  if (
+    !dateValue
+  ) {
+    return null;
+  }
+
+
+  const time =
+    /^\d{2}:\d{2}$/.test(
+      timeValue
+    )
+      ? timeValue
+      : '12:00';
+
+
+  const parsed =
+    new Date(
+      `${dateValue}T${time}:00-03:00`
+    );
+
+
+  if (
+    Number.isNaN(
+      parsed.getTime()
+    )
+  ) {
+    return null;
+  }
+
+
+  return parsed;
+}
+
+
 export async function createContent(formData: FormData) {
   const currentUser =
     await requirePermission(
@@ -643,7 +764,23 @@ export async function createContent(formData: FormData) {
   }
 
   const plannedDateValue = String(formData.get("plannedDate") || "").trim();
-  const productionDeadlineValue = String(formData.get("productionDeadline") || "").trim();
+
+  const productionDeadlineValue =
+    String(
+      formData.get(
+        "productionDeadline"
+      ) ||
+      ""
+    ).trim();
+
+  const productionDeadlineTimeValue =
+    String(
+      formData.get(
+        "productionDeadlineTime"
+      ) ||
+      ""
+    ).trim();
+
   const areaValue = String(formData.get("area") || "GERAL").trim().toUpperCase();
 
   if (
@@ -657,6 +794,30 @@ export async function createContent(formData: FormData) {
       )}&error=production-deadline-required`
     );
   }
+
+  if (
+    productionDeadlineTimeValue &&
+    !productionDeadlineValue
+  ) {
+    redirect(
+      `/clientes/${clientId}/conteudos/novo?date=${encodeURIComponent(
+        plannedDateValue
+      )}&error=production-deadline-required`
+    );
+  }
+
+
+  if (
+    productionDeadlineValue &&
+    !productionDeadlineTimeValue
+  ) {
+    redirect(
+      `/clientes/${clientId}/conteudos/novo?date=${encodeURIComponent(
+        plannedDateValue
+      )}&error=production-deadline-time-required`
+    );
+  }
+
 
   if (
     plannedDateValue &&
@@ -681,9 +842,11 @@ export async function createContent(formData: FormData) {
       plannedDate: plannedDateValue
         ? new Date(`${plannedDateValue}T12:00:00.000Z`)
         : null,
-      productionDeadline: productionDeadlineValue
-        ? new Date(`${productionDeadlineValue}T12:00:00.000Z`)
-        : null,
+      productionDeadline:
+        parseProductionDeadline(
+          productionDeadlineValue,
+          productionDeadlineTimeValue
+        ),
       responsible: String(formData.get("responsible") || "").trim(),
       area: areaValue,
       priority: String(formData.get("priority") || "MEDIA").trim(),
@@ -804,14 +967,41 @@ export async function updateContent(contentId: string, formData: FormData) {
   const plannedDateValue = text('plannedDate');
 
   const existingProductionDeadlineValue =
-    currentContent.productionDeadline
-      ? currentContent.productionDeadline.toISOString().split('T')[0]
-      : '';
+    formatMaceioDatePart(
+      currentContent.productionDeadline
+    );
+
+
+  const existingProductionDeadlineTimeValue =
+    formatMaceioTimePart(
+      currentContent.productionDeadline
+    );
+
 
   const requestedProductionDeadlineValue =
-    formData.has('productionDeadline')
-      ? String(formData.get('productionDeadline') || '').trim()
+    formData.has(
+      'productionDeadline'
+    )
+      ? String(
+          formData.get(
+            'productionDeadline'
+          ) ||
+          ''
+        ).trim()
       : existingProductionDeadlineValue;
+
+
+  const requestedProductionDeadlineTimeValue =
+    formData.has(
+      'productionDeadlineTime'
+    )
+      ? String(
+          formData.get(
+            'productionDeadlineTime'
+          ) ||
+          ''
+        ).trim()
+      : existingProductionDeadlineTimeValue;
 
   const canManageProductionDeadline =
     hasPermission(
@@ -824,6 +1014,13 @@ export async function updateContent(contentId: string, formData: FormData) {
       ? requestedProductionDeadlineValue
       : existingProductionDeadlineValue;
 
+
+  const productionDeadlineTimeValue =
+    canManageProductionDeadline
+      ? requestedProductionDeadlineTimeValue
+      : existingProductionDeadlineTimeValue;
+
+
   const nextArea =
     normalizeArea(
       text(
@@ -831,6 +1028,16 @@ export async function updateContent(contentId: string, formData: FormData) {
         currentContent.area
       )
     );
+
+  if (
+    productionDeadlineValue &&
+    !productionDeadlineTimeValue
+  ) {
+    redirect(
+      `/conteudos/${contentId}?error=production-deadline-time-required`
+    );
+  }
+
 
   if (
     plannedDateValue &&
@@ -860,9 +1067,13 @@ export async function updateContent(contentId: string, formData: FormData) {
       plannedDate: plannedDateValue
         ? new Date(`${plannedDateValue}T12:00:00.000Z`)
         : currentContent.plannedDate,
-      productionDeadline: productionDeadlineValue
-        ? new Date(`${productionDeadlineValue}T12:00:00.000Z`)
-        : currentContent.productionDeadline,
+      productionDeadline:
+        productionDeadlineValue
+          ? parseProductionDeadline(
+              productionDeadlineValue,
+              productionDeadlineTimeValue
+            )
+          : currentContent.productionDeadline,
       briefing: text('briefing', currentContent.briefing || ''),
       artText: text('artText', currentContent.artText || ''),
       caption: text('caption', currentContent.caption || ''),

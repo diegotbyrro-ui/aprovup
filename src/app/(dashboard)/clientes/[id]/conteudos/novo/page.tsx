@@ -94,6 +94,13 @@ export default async function NovoConteudoClientePage({
         </div>
       ) : null}
 
+      {error ===
+      'production-deadline-time-required' ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+          Informe também o horário limite para a entrega da produção.
+        </div>
+      ) : null}
+
       <form
         action={createContent}
         className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6"
@@ -218,17 +225,28 @@ export default async function NovoConteudoClientePage({
 
           <div>
             <label className={labelClasses}>
-              Data limite da produção
+              Prazo da produção
             </label>
 
-            <input
-              name="productionDeadline"
-              type="date"
-              className={inputClasses}
-            />
+            <div className="grid grid-cols-1 gap-2">
+              <input
+                name="productionDeadline"
+                type="date"
+                aria-label="Data limite da produção"
+                className={inputClasses}
+              />
+
+              <input
+                name="productionDeadlineTime"
+                type="time"
+                step="300"
+                aria-label="Horário limite da produção"
+                className={inputClasses}
+              />
+            </div>
 
             <p className="mt-1 text-xs text-slate-500">
-              Prazo interno para Design/Filmmaker entregar antes da conferência e aprovação do cliente.
+              Defina o dia e o horário limite para Design/Filmmaker entregar antes da conferência e aprovação do cliente.
             </p>
           </div>
 
