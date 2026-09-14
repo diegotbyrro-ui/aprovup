@@ -3420,3 +3420,267 @@ export async function deliverSecretaryCalendarReminders() {
 
   return sent;
 }
+
+
+export async function sendSecretaryIntroductionToTeam({
+  agencyName,
+}: {
+  agencyName: string;
+}) {
+  const requestedAgency =
+    agencyName.trim();
+
+  if (!requestedAgency) {
+    throw new Error(
+      'Informe a agência.'
+    );
+  }
+
+  const agency =
+    await prisma.agency.findFirst({
+      where: {
+        name: {
+          contains:
+            requestedAgency,
+
+          mode:
+            'insensitive',
+        },
+      },
+
+      select: {
+        id:
+          true,
+
+        name:
+          true,
+      },
+    });
+
+  if (!agency) {
+    throw new Error(
+      'Agência não encontrada: ' +
+        requestedAgency
+    );
+  }
+
+  const connection =
+    await prisma
+      .secretaryWhatsappConnection
+      .findUnique({
+        where: {
+          agencyId:
+            agency.id,
+        },
+      });
+
+  if (
+    !connection ||
+    connection.status !==
+      'ATIVO' ||
+    !connection
+      .encryptedAccessToken ||
+    !connection
+      .phoneNumberId
+  ) {
+    throw new Error(
+      'O WhatsApp da LIV não está ativo para ' +
+        agency.name +
+        '.'
+    );
+  }
+
+  const members =
+    await prisma
+      .secretaryWhatsappMember
+      .findMany({
+        where: {
+          agencyId:
+            agency.id,
+
+          isActive:
+            true,
+        },
+
+        orderBy: {
+          displayName:
+            'asc',
+        },
+      });
+
+  const userIds =
+    members
+      .map(
+        (member) =>
+          member.userId
+      )
+      .filter(
+        (
+          value
+        ): value is string =>
+          Boolean(value)
+      );
+
+  const users =
+    userIds.length
+      ? await prisma.user.findMany({
+          where: {
+            agencyId:
+              agency.id,
+
+            id: {
+              in:
+                userIds,
+            },
+
+            status:
+              'APROVADO',
+          },
+
+          select: {
+            id:
+              true,
+
+            name:
+              true,
+          },
+        })
+      : [];
+
+  const userById =
+    new Map(
+      users.map(
+        (user) => [
+          user.id,
+          user,
+        ] as const
+      )
+    );
+
+  const secretaryName =
+    connection
+      .secretaryName
+      ?.trim() ||
+    'LIV';
+
+  const companyName =
+    connection
+      .secretaryCompanyName
+      ?.trim() ||
+    agency.name;
+
+  let sent =
+    0;
+
+  let waitingTemplate =
+    0;
+
+  let errors =
+    0;
+
+  const results:
+    Array<{
+      name: string;
+      status: string;
+    }> = [];
+
+  for (
+    const member
+    of members
+  ) {
+    const user =
+      member.userId
+        ? userById.get(
+            member.userId
+          )
+        : null;
+
+    const fullName =
+      (
+        member.displayName ||
+        user?.name ||
+        'Equipe'
+      ).trim();
+
+    const firstName =
+      fullName
+        .split(/\s+/)[0] ||
+      fullName;
+
+    const message =
+      'Eu sou a ' +
+      secretaryName +
+      ', assistente virtual da ' +
+      companyName +
+      '.\n\n' +
+      'A partir de agora, vou estar por aqui ajudando nossa equipe com lembretes, organização, compromissos, avisos e informações importantes do dia a dia.\n\n' +
+      'É um prazer falar com você pela primeira vez! 💙';
+
+    const result =
+      await sendProactive({
+        agencyId:
+          agency.id,
+
+        memberId:
+          member.id,
+
+        toPhone:
+          member.phoneE164,
+
+        title:
+          'Oi, ' +
+          firstName +
+          '! Eu sou a ' +
+          secretaryName +
+          ' 👋',
+
+        message,
+
+        dedupKey:
+          'liv-team-introduction-v1:' +
+          member.id,
+      });
+
+    results.push({
+      name:
+        fullName,
+
+      status:
+        result.status,
+    });
+
+    if (
+      result.status ===
+      'SENT'
+    ) {
+      sent += 1;
+    }
+    else if (
+      result.status ===
+      'WAITING_TEMPLATE'
+    ) {
+      waitingTemplate +=
+        1;
+    }
+    else {
+      errors +=
+        1;
+    }
+  }
+
+  return {
+    agency:
+      agency.name,
+
+    secretary:
+      secretaryName,
+
+    total:
+      members.length,
+
+    sent,
+    waitingTemplate,
+    errors,
+    results,
+  };
+}
