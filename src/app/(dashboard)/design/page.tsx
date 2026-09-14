@@ -1473,7 +1473,7 @@ export default async function DesignPage() {
   }
 
 
-  const columns =
+  const storedColumns =
     await prisma.designKanbanColumn.findMany({
       where: {
         agencyId,
@@ -1487,6 +1487,71 @@ export default async function DesignPage() {
           "asc",
       },
     });
+
+
+  /*
+   * Design Gráfico fica sempre logo depois de Demandas.
+   * A ordem do banco continua intacta; esta é apenas
+   * a organização visual do Kanban.
+   */
+  const graphicColumnForView =
+    storedColumns.find(
+      (
+        column
+      ) =>
+        isGraphicDesignColumn(
+          column
+        )
+    );
+
+
+  const regularColumns =
+    storedColumns.filter(
+      (
+        column
+      ) =>
+        !isGraphicDesignColumn(
+          column
+        )
+    );
+
+
+  const demandColumnIndex =
+    regularColumns.findIndex(
+      (
+        column
+      ) =>
+        column.statusKey ===
+        "APROVADO"
+    );
+
+
+  const graphicInsertIndex =
+    demandColumnIndex >=
+    0
+      ? demandColumnIndex +
+        1
+      : Math.min(
+          1,
+          regularColumns.length
+        );
+
+
+  const columns =
+    graphicColumnForView
+      ? [
+          ...regularColumns.slice(
+            0,
+            graphicInsertIndex
+          ),
+
+          graphicColumnForView,
+
+          ...regularColumns.slice(
+            graphicInsertIndex
+          ),
+        ]
+      : regularColumns;
 
 
   const statusKeys =
