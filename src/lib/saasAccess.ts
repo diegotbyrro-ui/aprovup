@@ -60,6 +60,10 @@ export async function getCurrentUserSaasAccess(): Promise<SaasAccessResult> {
   ];
 
 
+  let agencyHasCommander =
+    false;
+
+
   if (user.agencyId) {
     const directors =
       await prisma.user.findMany({
@@ -77,8 +81,25 @@ export async function getCurrentUserSaasAccess(): Promise<SaasAccessResult> {
         select: {
           id:
             true,
+
+          role:
+            true,
+
+          status:
+            true,
         },
       });
+
+
+    agencyHasCommander =
+      directors.some(
+        (
+          director
+        ) =>
+          isCommanderUser(
+            director
+          )
+      );
 
 
     for (
@@ -95,6 +116,44 @@ export async function getCurrentUserSaasAccess(): Promise<SaasAccessResult> {
         );
       }
     }
+  }
+
+
+  /*
+   * Equipe interna da agencia Commander:
+   * Social Media pode operar publicacoes mesmo
+   * quando nao existe uma assinatura SaaS separada
+   * para cada colaborador.
+   */
+  if (
+    user.role ===
+      'SOCIAL_MEDIA' &&
+    agencyHasCommander
+  ) {
+    return {
+      hasActiveSubscription:
+        true,
+
+      isCommander:
+        false,
+
+      subscription:
+        null,
+
+      permissions: {
+        canUseAi:
+          false,
+
+        canUseCrm:
+          false,
+
+        canUseSocialPosting:
+          true,
+
+        canUseReports:
+          false,
+      },
+    };
   }
 
 

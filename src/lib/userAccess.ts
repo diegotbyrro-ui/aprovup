@@ -142,6 +142,34 @@ export function getEffectivePermissions(
     stored !==
     null
   ) {
+
+    /*
+     * Social Media sempre precisa conseguir
+     * visualizar e operar o fluxo social.
+     *
+     * Permissoes personalizadas continuam
+     * valendo para os demais modulos.
+     */
+    if (
+      user.role ===
+      "SOCIAL_MEDIA"
+    ) {
+      const requiredSocialPermissions:
+        PermissionKey[] = [
+          "social.view",
+          "social.manage",
+        ];
+
+
+      return [
+        ...new Set([
+          ...stored,
+          ...requiredSocialPermissions,
+        ]),
+      ];
+    }
+
+
     return stored;
   }
 
