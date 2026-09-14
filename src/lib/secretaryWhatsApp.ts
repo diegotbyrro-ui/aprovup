@@ -3,6 +3,10 @@ import {
 } from '@/lib/prisma';
 
 import {
+  canAccessClient,
+} from '@/lib/clientAccess';
+
+import {
   decryptMetaSecret,
 } from '@/lib/metaCrypto';
 
@@ -2097,6 +2101,325 @@ async function sendProactive({
         'ERROR',
     };
   }
+}
+
+
+
+export async function notifyEmergencyDemandReadyToSocialMedia({
+  agencyId,
+  contentId,
+  uploadKey,
+}: {
+  agencyId: string;
+  contentId: string;
+  uploadKey: string;
+}) {
+  const content =
+    await prisma.content
+      .findFirst({
+        where: {
+          id:
+            contentId,
+
+          client: {
+            agencyId,
+          },
+        },
+
+        include: {
+          client:
+            true,
+        },
+      });
+
+
+  if (
+    !content ||
+    content.format !==
+      'DEMANDA_EMERGENCIAL' ||
+    ![
+      'DESIGN',
+      'FILMMAKER',
+    ].includes(
+      content.area
+    )
+  ) {
+    return {
+      status:
+        'SKIPPED' as const,
+
+      recipients:
+        0,
+
+      sent:
+        0,
+    };
+  }
+
+
+  /*
+   * Usa exatamente a mesma regra de acesso
+   * dos clientes para descobrir qual Social Media
+   * é responsável por este cliente.
+   */
+  const socialUsers =
+    await prisma.user
+      .findMany({
+        where: {
+          agencyId,
+
+          role:
+            'SOCIAL_MEDIA',
+
+          status:
+            'APROVADO',
+        },
+
+        select: {
+          id:
+            true,
+
+          name:
+            true,
+
+          email:
+            true,
+
+          role:
+            true,
+
+          agencyId:
+            true,
+        },
+      });
+
+
+  const responsibleUsers =
+    socialUsers.filter(
+      (
+        user
+      ) =>
+        canAccessClient(
+          user,
+          content.client
+        )
+    );
+
+
+  if (
+    responsibleUsers.length ===
+    0
+  ) {
+    console.warn(
+      'LIV EMERGENCY READY: nenhum Social Media responsável encontrado.',
+      content.id,
+      content.client.name
+    );
+
+    return {
+      status:
+        'NO_RESPONSIBLE_SOCIAL' as const,
+
+      recipients:
+        0,
+
+      sent:
+        0,
+    };
+  }
+
+
+  const responsibleUserIds =
+    responsibleUsers.map(
+      (
+        user
+      ) =>
+        user.id
+    );
+
+
+  const members =
+    await prisma
+      .secretaryWhatsappMember
+      .findMany({
+        where: {
+          agencyId,
+
+          isActive:
+            true,
+
+          receiveAlerts:
+            true,
+
+          userId: {
+            in:
+              responsibleUserIds,
+          },
+        },
+      });
+
+
+  if (
+    members.length ===
+    0
+  ) {
+    console.warn(
+      'LIV EMERGENCY READY: Social Media responsável não possui WhatsApp ativo para alertas.',
+      content.id
+    );
+
+    return {
+      status:
+        'NO_WHATSAPP_MEMBER' as const,
+
+      recipients:
+        responsibleUsers.length,
+
+      sent:
+        0,
+    };
+  }
+
+
+  const areaLabel =
+    content.area ===
+      'DESIGN'
+      ? 'Design'
+      : 'Filmmaker';
+
+
+  const title =
+    '🚨 Demanda emergencial pronta';
+
+
+  const message =
+    [
+      'O material de *' +
+        content.title +
+        '*, do cliente *' +
+        content.client.name +
+        '*, acabou de ser finalizado pelo ' +
+        areaLabel +
+        '.',
+
+      'Já está disponível no AprovUp para você revisar e encaminhar ao cliente para aprovação.',
+    ].join(
+      '\n\n'
+    );
+
+
+  let sent =
+    0;
+
+  let waitingTemplate =
+    0;
+
+  let errors =
+    0;
+
+
+  for (
+    const member
+    of members
+  ) {
+    const result =
+      await sendProactive({
+        agencyId,
+
+        memberId:
+          member.id,
+
+        toPhone:
+          member.phoneE164,
+
+        title,
+
+        message,
+
+        /*
+         * uploadKey identifica a versão enviada.
+         * O mesmo upload nunca dispara duas vezes,
+         * mas uma nova versão poderá avisar novamente.
+         */
+        dedupKey:
+          'emergency-ready:' +
+          content.id +
+          ':' +
+          uploadKey +
+          ':' +
+          member.id,
+      });
+
+
+    if (
+      result.status ===
+      'SENT'
+    ) {
+      sent +=
+        1;
+    }
+    else if (
+      result.status ===
+      'WAITING_TEMPLATE'
+    ) {
+      waitingTemplate +=
+        1;
+    }
+    else if (
+      result.status ===
+      'ERROR'
+    ) {
+      errors +=
+        1;
+    }
+  }
+
+
+  await prisma.historyLog
+    .create({
+      data: {
+        entityType:
+          'CONTENT',
+
+        entityId:
+          content.id,
+
+        action:
+          'EMERGENCY_READY_SOCIAL_NOTIFIED',
+
+        description:
+          'LIV processou o aviso da demanda emergencial pronta para a Social Media responsável. ' +
+          'Enviados: ' +
+          sent +
+          '. Aguardando template: ' +
+          waitingTemplate +
+          '. Erros: ' +
+          errors +
+          '.',
+
+        authorName:
+          'LIV',
+      },
+    })
+    .catch(
+      () =>
+        null
+    );
+
+
+  return {
+    status:
+      'PROCESSED' as const,
+
+    recipients:
+      members.length,
+
+    sent,
+
+    waitingTemplate,
+
+    errors,
+  };
 }
 
 

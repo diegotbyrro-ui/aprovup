@@ -84,8 +84,8 @@ export default async function NovaDemandaEmergencialPage({
           </h1>
 
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
-            Use este formulário para demandas que precisam ir diretamente
-            para Design ou Filmaker, sem passar pelas etapas de aprovação
+            Use este formulário para demandas urgentes que precisam entrar
+            diretamente em produção, sem aguardar a aprovação inicial
             do cliente.
           </p>
         </div>
@@ -242,12 +242,14 @@ export default async function NovaDemandaEmergencialPage({
 
         <div className="rounded-2xl border border-red-100 bg-red-50 p-5">
           <p className="text-sm font-black text-red-800">
-            Esta demanda não passa pela 1ª ou 2ª etapa de aprovação.
+            Esta demanda entra diretamente em produção.
           </p>
 
           <p className="mt-1 text-xs leading-relaxed text-red-600">
             Ao clicar em enviar, ela entra diretamente nas demandas do
-            Design ou do Filmaker com prioridade urgente e o prazo informado.
+            Design ou do Filmmaker com prioridade urgente e o prazo informado.
+            Quando o material ficar pronto, a LIV avisará a Social Media
+            responsável para revisar e encaminhar ao cliente.
           </p>
         </div>
 

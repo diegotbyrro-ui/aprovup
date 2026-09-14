@@ -1,4 +1,8 @@
 import {
+  createHash,
+} from 'node:crypto';
+
+import {
   NextRequest,
   NextResponse,
 } from 'next/server';
@@ -15,6 +19,10 @@ import {
   hasPermission,
   type PermissionKey,
 } from '@/lib/userAccess';
+
+import {
+  notifyEmergencyDemandReadyToSocialMedia,
+} from '@/lib/secretaryWhatsApp';
 
 import {
   aprovUpFileExists,
@@ -899,6 +907,100 @@ export async function POST(
       });
 
 
+      /*
+       * LIV_EMERGENCY_READY_NOTIFICATION
+       *
+       * Demanda emergencial:
+       * assim que Design ou Filmmaker envia o material
+       * final, a Social Media responsável é avisada.
+       */
+      if (
+        content.format ===
+          'DEMANDA_EMERGENCIAL' &&
+        [
+          'DESIGN',
+          'FILMMAKER',
+        ].includes(
+          content.area
+        )
+      ) {
+        const uploadedMaterialKey =
+          [
+            finalPath,
+            coverPath,
+            storyPath,
+            storyCoverPath,
+          ]
+            .filter(
+              Boolean
+            )
+            .join(
+              '|'
+            );
+
+
+        /*
+         * Arquivos enviados ao Storage possuem caminho
+         * único. Isso permite reconhecer exatamente
+         * a versão enviada.
+         *
+         * Quando a entrega for apenas por link externo,
+         * usamos também o horário porque o mesmo link
+         * do Drive pode receber uma nova versão.
+         */
+        const notificationSource =
+          uploadedMaterialKey ||
+          (
+            finalExternalUrl +
+            '|' +
+            String(
+              Date.now()
+            )
+          );
+
+
+        const uploadKey =
+          createHash(
+            'sha256'
+          )
+            .update(
+              notificationSource
+            )
+            .digest(
+              'hex'
+            )
+            .slice(
+              0,
+              24
+            );
+
+
+        await notifyEmergencyDemandReadyToSocialMedia({
+          agencyId:
+            currentUser.agencyId,
+
+          contentId:
+            id,
+
+          uploadKey,
+        }).catch(
+          (
+            error
+          ) => {
+            /*
+             * Falha no WhatsApp nunca pode impedir
+             * o Design/Filmmaker de concluir o upload.
+             */
+            console.error(
+              'LIV EMERGENCY READY NOTIFICATION ERROR',
+              id,
+              error
+            );
+          }
+        );
+      }
+
+
       await prisma.comment.create({
         data: {
           contentId:
@@ -917,7 +1019,10 @@ export async function POST(
             content.area ===
               'SOCIAL_MEDIA'
               ? 'Material final salvo pela Social Media e enviado para Pronto para Postar.'
-              : 'Materiais finais enviados para conferência interna antes da 2ª Etapa de Aprovação.',
+              : content.format ===
+                  'DEMANDA_EMERGENCIAL'
+                ? 'Demanda emergencial finalizada. A LIV avisou a Social Media responsável para revisar e encaminhar ao cliente.'
+                : 'Materiais finais enviados para conferência interna antes da 2ª Etapa de Aprovação.',
         },
       }).catch(
         () => null
