@@ -1776,70 +1776,786 @@ async function getCalendar(
 }
 
 
+function maceioWorkDayRange() {
+  const parts =
+    new Intl.DateTimeFormat(
+      'en-CA',
+      {
+        timeZone:
+          'America/Maceio',
+
+        year:
+          'numeric',
+
+        month:
+          '2-digit',
+
+        day:
+          '2-digit',
+      }
+    )
+      .formatToParts(
+        new Date()
+      );
+
+
+  const map =
+    new Map(
+      parts.map(
+        (
+          item
+        ) => [
+          item.type,
+          item.value,
+        ]
+      )
+    );
+
+
+  const dateKey =
+    (
+      map.get(
+        'year'
+      ) ||
+      ''
+    ) +
+    '-' +
+    (
+      map.get(
+        'month'
+      ) ||
+      ''
+    ) +
+    '-' +
+    (
+      map.get(
+        'day'
+      ) ||
+      ''
+    );
+
+
+  const start =
+    new Date(
+      dateKey +
+      'T03:00:00.000Z'
+    );
+
+
+  const end =
+    new Date(
+      start.getTime() +
+      24 *
+      60 *
+      60 *
+      1000
+    );
+
+
+  return {
+    dateKey,
+    start,
+    end,
+  };
+}
+
+
+function normalizeAssignment(
+  value:
+    string |
+    null |
+    undefined
+) {
+  return String(
+    value ||
+    ''
+  )
+    .normalize(
+      'NFD'
+    )
+    .replace(
+      /[\u0300-\u036f]/g,
+      ''
+    )
+    .toLowerCase()
+    .replace(
+      /[^a-z0-9@._-]+/g,
+      ' '
+    )
+    .trim();
+}
+
+
+function assignmentMatchesUser(
+  responsible:
+    string |
+    null,
+  userContext:
+    SecretaryUserContext
+) {
+  const assignment =
+    normalizeAssignment(
+      responsible
+    );
+
+
+  /*
+   * Sem responsável explícito = demanda
+   * compartilhada pelo cargo.
+   */
+  if (!assignment) {
+    return true;
+  }
+
+
+  if (
+    [
+      'design',
+      'filmmaker',
+      'audiovisual',
+      'equipe',
+      'time',
+    ].includes(
+      assignment
+    )
+  ) {
+    return true;
+  }
+
+
+  const name =
+    normalizeAssignment(
+      userContext.name
+    );
+
+
+  const email =
+    normalizeAssignment(
+      userContext.email
+    );
+
+
+  const firstName =
+    name
+      .split(
+        /\s+/
+      )[0] ||
+    '';
+
+
+  return [
+    name,
+    email,
+    firstName,
+  ]
+    .filter(
+      Boolean
+    )
+    .some(
+      (
+        identity
+      ) =>
+        assignment ===
+          identity ||
+        assignment.includes(
+          identity
+        ) ||
+        identity.includes(
+          assignment
+        )
+    );
+}
+
+
+function workDeadlineInfo(
+  productionDeadline:
+    Date |
+    null,
+  plannedDate:
+    Date |
+    null,
+  dayStart:
+    Date,
+  dayEnd:
+    Date
+) {
+  const deadline =
+    productionDeadline ||
+    plannedDate;
+
+
+  if (!deadline) {
+    return {
+      deadline:
+        null,
+
+      overdue:
+        false,
+
+      due_today:
+        false,
+    };
+  }
+
+
+  return {
+    deadline:
+      deadline
+        .toISOString(),
+
+    overdue:
+      deadline <
+      new Date(),
+
+    due_today:
+      deadline >=
+        dayStart &&
+      deadline <
+        dayEnd,
+  };
+}
+
+
 async function getRoleWork(
   agencyId:
     string,
   userContext:
     SecretaryUserContext
 ) {
-  if (
-    userContext.role !==
-    'FILMMAKER'
-  ) {
-    return {
-      user:
-        userContext.name,
-
-      role:
-        userContext.role,
-
-      scope:
-        'ROLE',
-    };
-  }
-
-
   const now =
     new Date();
+
+  const day =
+    maceioWorkDayRange();
 
   const futureLimit =
     new Date(
       now.getTime() +
       30 *
-        24 *
-        60 *
-        60 *
-        1000
+      24 *
+      60 *
+      60 *
+      1000
     );
 
 
-  const clients =
-    await prisma.client
-      .findMany({
-        where: {
-          agencyId,
-        },
-
-        select: {
-          id:
-            true,
-        },
-      });
-
-
-  const clientIds =
-    clients.map(
-      (client) =>
-        client.id
-    );
+  /*
+   * ========================================================
+   * SOCIAL MEDIA
+   * ========================================================
+   */
+  if (
+    userContext.role ===
+    'SOCIAL_MEDIA'
+  ) {
+    const accessibleClientIds =
+      await getAccessibleClientIds(
+        agencyId,
+        userContext
+      );
 
 
-  const [
-    demands,
-    captures,
-  ] =
-    await Promise.all([
-      prisma.content
+    if (
+      accessibleClientIds.length ===
+      0
+    ) {
+      return {
+        user:
+          userContext.name,
+
+        role:
+          'SOCIAL_MEDIA',
+
+        scope:
+          'OWN_PORTFOLIO',
+
+        active_clients:
+          0,
+
+        message:
+          'Nenhum cliente está atribuído à sua carteira.',
+      };
+    }
+
+
+    const [
+      clients,
+      contents,
+      approvals,
+      monthlyApprovals,
+      publications,
+      alerts,
+    ] =
+      await Promise.all([
+        prisma.client
+          .findMany({
+            where: {
+              agencyId,
+
+              id: {
+                in:
+                  accessibleClientIds,
+              },
+            },
+
+            select: {
+              id:
+                true,
+
+              name:
+                true,
+            },
+
+            orderBy: {
+              name:
+                'asc',
+            },
+          }),
+
+        prisma.content
+          .findMany({
+            where: {
+              clientId: {
+                in:
+                  accessibleClientIds,
+              },
+
+              status: {
+                notIn: [
+                  'PUBLICADO',
+                  'PUBLICADO_MANUALMENTE',
+                ],
+              },
+            },
+
+            select: {
+              id:
+                true,
+
+              title:
+                true,
+
+              status:
+                true,
+
+              area:
+                true,
+
+              priority:
+                true,
+
+              plannedDate:
+                true,
+
+              productionDeadline:
+                true,
+
+              responsible:
+                true,
+
+              client: {
+                select: {
+                  name:
+                    true,
+                },
+              },
+            },
+
+            orderBy: [
+              {
+                productionDeadline:
+                  'asc',
+              },
+
+              {
+                plannedDate:
+                  'asc',
+              },
+            ],
+
+            take:
+              150,
+          }),
+
+        prisma.approval
+          .findMany({
+            where: {
+              status:
+                'PENDENTE',
+
+              content: {
+                clientId: {
+                  in:
+                    accessibleClientIds,
+                },
+              },
+            },
+
+            select: {
+              id:
+                true,
+
+              createdAt:
+                true,
+
+              content: {
+                select: {
+                  title:
+                    true,
+
+                  status:
+                    true,
+
+                  client: {
+                    select: {
+                      name:
+                        true,
+                    },
+                  },
+                },
+              },
+            },
+
+            orderBy: {
+              createdAt:
+                'asc',
+            },
+
+            take:
+              100,
+          }),
+
+        prisma.monthlyApproval
+          .findMany({
+            where: {
+              status:
+                'PENDENTE',
+
+              clientId: {
+                in:
+                  accessibleClientIds,
+              },
+            },
+
+            select: {
+              id:
+                true,
+
+              month:
+                true,
+
+              year:
+                true,
+
+              createdAt:
+                true,
+
+              client: {
+                select: {
+                  name:
+                    true,
+                },
+              },
+            },
+
+            orderBy: {
+              createdAt:
+                'asc',
+            },
+
+            take:
+              100,
+          }),
+
+        prisma.instagramPublication
+          .findMany({
+            where: {
+              content: {
+                clientId: {
+                  in:
+                    accessibleClientIds,
+                },
+              },
+
+              OR: [
+                {
+                  status:
+                    'ERRO',
+                },
+
+                {
+                  scheduledFor: {
+                    gte:
+                      day.start,
+
+                    lt:
+                      day.end,
+                  },
+                },
+              ],
+            },
+
+            select: {
+              status:
+                true,
+
+              scheduledFor:
+                true,
+
+              publishedAt:
+                true,
+
+              lastError:
+                true,
+
+              content: {
+                select: {
+                  title:
+                    true,
+
+                  client: {
+                    select: {
+                      name:
+                        true,
+                    },
+                  },
+                },
+              },
+            },
+
+            orderBy: {
+              scheduledFor:
+                'asc',
+            },
+
+            take:
+              100,
+          }),
+
+        prisma.secretaryAlert
+          .findMany({
+            where: {
+              agencyId,
+
+              status:
+                'OPEN',
+
+              clientId: {
+                in:
+                  accessibleClientIds,
+              },
+            },
+
+            select: {
+              severity:
+                true,
+
+              type:
+                true,
+
+              title:
+                true,
+
+              message:
+                true,
+
+              createdAt:
+                true,
+            },
+
+            orderBy: {
+              createdAt:
+                'desc',
+            },
+
+            take:
+              50,
+          }),
+      ]);
+
+
+    return {
+      user:
+        userContext.name,
+
+      role:
+        'SOCIAL_MEDIA',
+
+      scope:
+        'OWN_PORTFOLIO',
+
+      responsibility:
+        'Gestão editorial e operacional dos clientes da própria carteira: conteúdo, aprovações, alterações, publicações e acompanhamento.',
+
+      clients:
+        clients.map(
+          (
+            client
+          ) =>
+            client.name
+        ),
+
+      active_demands:
+        contents.map(
+          (
+            content
+          ) => {
+            const deadline =
+              workDeadlineInfo(
+                content.productionDeadline,
+                content.plannedDate,
+                day.start,
+                day.end
+              );
+
+
+            return {
+              client:
+                content.client.name,
+
+              title:
+                content.title,
+
+              stage:
+                content.status,
+
+              area:
+                content.area,
+
+              priority:
+                content.priority,
+
+              responsible:
+                content.responsible,
+
+              needs_social_attention:
+                content.area ===
+                  'SOCIAL_MEDIA' ||
+                [
+                  'ALTERACAO_SOLICITADA',
+                  'DESIGN_DUVIDA',
+                  'FILMMAKER_DUVIDA_SOCIAL',
+                ].includes(
+                  content.status
+                ),
+
+              ...deadline,
+            };
+          }
+        ),
+
+      content_approvals:
+        approvals.map(
+          (
+            item
+          ) => ({
+            client:
+              item.content
+                .client.name,
+
+            content:
+              item.content
+                .title,
+
+            stage:
+              item.content
+                .status,
+
+            waiting_since:
+              item.createdAt
+                .toISOString(),
+          })
+        ),
+
+      monthly_approvals:
+        monthlyApprovals.map(
+          (
+            item
+          ) => ({
+            client:
+              item.client.name,
+
+            month:
+              item.month,
+
+            year:
+              item.year,
+
+            waiting_since:
+              item.createdAt
+                .toISOString(),
+          })
+        ),
+
+      publication_attention:
+        publications.map(
+          (
+            item
+          ) => ({
+            client:
+              item.content
+                .client.name,
+
+            content:
+              item.content
+                .title,
+
+            status:
+              item.status,
+
+            scheduled_for:
+              item.scheduledFor
+                ?.toISOString() ||
+              null,
+
+            published_at:
+              item.publishedAt
+                ?.toISOString() ||
+              null,
+
+            error:
+              item.lastError ||
+              null,
+          })
+        ),
+
+      open_alerts:
+        alerts.map(
+          (
+            alert
+          ) => ({
+            severity:
+              alert.severity,
+
+            type:
+              alert.type,
+
+            title:
+              alert.title,
+
+            message:
+              alert.message,
+
+            created_at:
+              alert.createdAt
+                .toISOString(),
+          })
+        ),
+    };
+  }
+
+
+  /*
+   * ========================================================
+   * DESIGN
+   * ========================================================
+   */
+  if (
+    userContext.role ===
+    'DESIGN'
+  ) {
+    const rawDemands =
+      await prisma.content
         .findMany({
           where: {
             client: {
@@ -1847,7 +2563,7 @@ async function getRoleWork(
             },
 
             area:
-              'FILMMAKER',
+              'DESIGN',
 
             status: {
               notIn: [
@@ -1880,6 +2596,9 @@ async function getRoleWork(
             format:
               true,
 
+            responsible:
+              true,
+
             client: {
               select: {
                 name:
@@ -1901,118 +2620,332 @@ async function getRoleWork(
           ],
 
           take:
-            100,
-        }),
+            150,
+        });
 
-      clientIds.length
-        ? prisma.captureSchedule
-            .findMany({
-              where: {
-                clientId: {
-                  in:
-                    clientIds,
-                },
 
-                status: {
-                  not:
-                    'CANCELADO',
-                },
+    const demands =
+      rawDemands.filter(
+        (
+          content
+        ) =>
+          assignmentMatchesUser(
+            content.responsible,
+            userContext
+          )
+      );
 
-                scheduledAt: {
-                  gte:
-                    now,
 
-                  lte:
-                    futureLimit,
-                },
+    return {
+      user:
+        userContext.name,
+
+      role:
+        'DESIGN',
+
+      scope:
+        'ROLE_WORK',
+
+      responsibility:
+        'Produção de peças gráficas, ajustes, dúvidas de criação e entrega dos materiais dentro do prazo.',
+
+      active_demands:
+        demands.map(
+          (
+            content
+          ) => ({
+            client:
+              content.client.name,
+
+            title:
+              content.title,
+
+            stage:
+              content.status,
+
+            priority:
+              content.priority,
+
+            format:
+              content.format,
+
+            responsible:
+              content.responsible,
+
+            waiting_social_response:
+              content.status ===
+              'DESIGN_DUVIDA',
+
+            ...workDeadlineInfo(
+              content.productionDeadline,
+              content.plannedDate,
+              day.start,
+              day.end
+            ),
+          })
+        ),
+    };
+  }
+
+
+  /*
+   * ========================================================
+   * FILMMAKER
+   * ========================================================
+   */
+  if (
+    userContext.role ===
+    'FILMMAKER'
+  ) {
+    const clients =
+      await prisma.client
+        .findMany({
+          where: {
+            agencyId,
+          },
+
+          select: {
+            id:
+              true,
+          },
+        });
+
+
+    const clientIds =
+      clients.map(
+        (
+          client
+        ) =>
+          client.id
+      );
+
+
+    const [
+      rawDemands,
+      captures,
+    ] =
+      await Promise.all([
+        prisma.content
+          .findMany({
+            where: {
+              client: {
+                agencyId,
               },
 
-              orderBy: {
-                scheduledAt:
+              area:
+                'FILMMAKER',
+
+              status: {
+                notIn: [
+                  'PRONTO_PARA_POSTAR',
+                  'PUBLICADO',
+                  'PUBLICADO_MANUALMENTE',
+                ],
+              },
+            },
+
+            select: {
+              id:
+                true,
+
+              title:
+                true,
+
+              status:
+                true,
+
+              priority:
+                true,
+
+              productionDeadline:
+                true,
+
+              plannedDate:
+                true,
+
+              format:
+                true,
+
+              responsible:
+                true,
+
+              client: {
+                select: {
+                  name:
+                    true,
+                },
+              },
+            },
+
+            orderBy: [
+              {
+                productionDeadline:
                   'asc',
               },
 
-              take:
-                30,
-            })
-        : Promise.resolve([]),
-    ]);
+              {
+                plannedDate:
+                  'asc',
+              },
+            ],
+
+            take:
+              150,
+          }),
+
+        clientIds.length
+          ? prisma.captureSchedule
+              .findMany({
+                where: {
+                  clientId: {
+                    in:
+                      clientIds,
+                  },
+
+                  status: {
+                    not:
+                      'CANCELADO',
+                  },
+
+                  scheduledAt: {
+                    gte:
+                      now,
+
+                    lte:
+                      futureLimit,
+                  },
+                },
+
+                orderBy: {
+                  scheduledAt:
+                    'asc',
+                },
+
+                take:
+                  30,
+              })
+          : Promise.resolve([]),
+      ]);
 
 
+    const demands =
+      rawDemands.filter(
+        (
+          content
+        ) =>
+          assignmentMatchesUser(
+            content.responsible,
+            userContext
+          )
+      );
+
+
+    return {
+      user:
+        userContext.name,
+
+      role:
+        'FILMMAKER',
+
+      scope:
+        'ROLE_WORK',
+
+      responsibility:
+        'Produção audiovisual: pré-produção, captação, gravação, edição, ajustes e entrega.',
+
+      not_responsible_for: [
+        'criação de calendário editorial',
+        'criação de pauta de social media',
+        'aprovação de cliente',
+        'publicação no Instagram',
+        'métricas de Instagram como responsabilidade principal',
+      ],
+
+      active_demands:
+        demands.map(
+          (
+            content
+          ) => ({
+            client:
+              content.client.name,
+
+            title:
+              content.title,
+
+            stage:
+              content.status,
+
+            priority:
+              content.priority,
+
+            responsible:
+              content.responsible,
+
+            waiting_social_response:
+              content.status ===
+              'FILMMAKER_DUVIDA_SOCIAL',
+
+            ...workDeadlineInfo(
+              content.productionDeadline,
+              content.plannedDate,
+              day.start,
+              day.end
+            ),
+
+            publication_date:
+              content.plannedDate
+                ?.toISOString() ||
+              null,
+
+            format:
+              content.format,
+          })
+        ),
+
+      capture_scope:
+        'ROLE_SHARED',
+
+      upcoming_captures:
+        captures.map(
+          (
+            capture
+          ) => ({
+            client:
+              capture.clientName,
+
+            scheduled_at:
+              capture.scheduledAt
+                .toISOString(),
+
+            location:
+              capture.location,
+
+            notes:
+              capture.notes,
+
+            content_id:
+              capture.contentId,
+          })
+        ),
+    };
+  }
+
+
+  /*
+   * DIRETOR e demais cargos continuam usando
+   * OVERVIEW para visão geral da operação.
+   */
   return {
     user:
       userContext.name,
 
     role:
-      'FILMMAKER',
+      userContext.role,
 
-    responsibility:
-      'Produção audiovisual: pré-produção, captação, gravação, edição, ajustes e entrega.',
-
-    not_responsible_for: [
-      'criação de calendário editorial',
-      'criação de pauta de social media',
-      'aprovação de cliente',
-      'publicação no Instagram',
-      'métricas de Instagram como responsabilidade principal',
-    ],
-
-    active_demands:
-      demands.map(
-        (content) => ({
-          client:
-            content.client.name,
-
-          title:
-            content.title,
-
-          stage:
-            content.status,
-
-          priority:
-            content.priority,
-
-          delivery_date:
-            (
-              content.productionDeadline ||
-              content.plannedDate
-            )
-              ?.toISOString() ||
-            null,
-
-          publication_date:
-            content.plannedDate
-              ?.toISOString() ||
-            null,
-
-          format:
-            content.format,
-        })
-      ),
-
-    upcoming_captures:
-      captures.map(
-        (capture) => ({
-          client:
-            capture.clientName,
-
-          scheduled_at:
-            capture.scheduledAt
-              .toISOString(),
-
-          location:
-            capture.location,
-
-          notes:
-            capture.notes,
-
-          content_id:
-            capture.contentId,
-        })
-      ),
+    scope:
+      'ROLE',
   };
 }
-
 
 async function planConversation({
   agencyId,
@@ -2061,13 +2994,19 @@ Entenda perguntas livres e continuações de contexto.
 RESPONSABILIDADES POR CARGO:
 - Leia sempre o PERFIL DO USUÁRIO.
 - FILMMAKER cuida de produção audiovisual: pré-produção, captação, gravação, edição, ajustes, prazos e entregas.
-- Para FILMMAKER, perguntas como "minhas prioridades", "o que tenho hoje", "minha agenda", "minhas demandas" ou "o que preciso entregar" devem usar ROLE_WORK.
+- Para FILMMAKER, perguntas como "minhas prioridades", "o que tenho hoje", "minha agenda", "minhas demandas", "o que está atrasado" ou "o que preciso entregar" devem usar ROLE_WORK.
 - Para FILMMAKER, "minha agenda" significa prioritariamente agenda de captações.
 - Só use CALENDAR_LIST para FILMMAKER se ele pedir explicitamente Google Agenda, reunião ou compromisso.
 - Não atribua ao FILMMAKER criação de calendário editorial, pauta, legenda, aprovação de cliente, publicação no Instagram ou métricas como responsabilidade dele.
-- DIRETOR pode consultar toda a operação.
-- SOCIAL_MEDIA cuida do fluxo editorial, conteúdo, aprovações, publicações e clientes.
-- DESIGN deve receber foco em demandas e entregas de design.
+
+- SOCIAL_MEDIA cuida exclusivamente da própria carteira: fluxo editorial, conteúdo, alterações, dúvidas da produção, aprovações, publicações e acompanhamento dos clientes.
+- Para SOCIAL_MEDIA, perguntas como "minhas prioridades", "o que tenho hoje", "meus clientes", "minha carteira", "o que está atrasado", "o que precisa da minha atenção" ou "o que preciso resolver" devem usar ROLE_WORK.
+- SOCIAL_MEDIA nunca deve receber dados de clientes fora da própria carteira.
+
+- DESIGN cuida de produção gráfica, ajustes, dúvidas, prazos e entregas.
+- Para DESIGN, perguntas como "minhas prioridades", "o que tenho hoje", "minhas demandas", "o que está atrasado", "o que preciso entregar" ou "o que está aguardando resposta" devem usar ROLE_WORK.
+
+- DIRETOR pode consultar toda a operação e deve usar OVERVIEW para visões gerais da agência.
 
 Escolha somente as consultas necessárias.
 
@@ -2082,7 +3021,7 @@ REGRAS DE ESCOPO:
 - Quando houver período explícito como hoje, esta semana ou este mês, preencha start_iso e end_iso também em OVERVIEW.
 
 Ações disponíveis:
-ROLE_WORK = prioridades, demandas, prazos e agenda adequados ao cargo. Para FILMMAKER, consulta o fluxo audiovisual e as captações.
+ROLE_WORK = prioridades, demandas, atrasos e itens que precisam de atenção adequados ao cargo. Para SOCIAL_MEDIA usa somente a própria carteira; para DESIGN usa demandas de design; para FILMMAKER usa o fluxo audiovisual e as captações.
 OVERVIEW = resumo da operação e alertas.
 METRICS = métricas do Instagram.
 PUBLICATIONS = posts publicados, agendados ou com erro.
@@ -2361,8 +3300,13 @@ export async function runSecretaryTurn({
       action.type ===
         'ROLE_WORK' ||
       (
-        userContext.role ===
-          'FILMMAKER' &&
+        [
+          'FILMMAKER',
+          'SOCIAL_MEDIA',
+          'DESIGN',
+        ].includes(
+          userContext.role
+        ) &&
         action.type ===
           'OVERVIEW' &&
         !action.client_name.trim()
@@ -2771,12 +3715,11 @@ O usuário NÃO usa comandos padronizados. Entenda o contexto da conversa.
 
 RESPONSABILIDADE E CARGO:
 - Considere sempre o PERFIL DO USUÁRIO.
-- FILMMAKER: foque em audiovisual, demandas, prazos, captações, gravações, edição e ajustes.
-- Nunca trate calendário editorial, pauta, legenda, aprovação de cliente, postagem ou métricas como responsabilidade operacional do FILMMAKER.
-- Se houver ROLE_WORK para FILMMAKER, destaque primeiro atrasos, próximas entregas e próximas captações.
+- FILMMAKER: foque em audiovisual, demandas, prazos, captações, gravações, edição e ajustes. Nunca trate calendário editorial, pauta, legenda, aprovação de cliente, postagem ou métricas como responsabilidade operacional do FILMMAKER. Em ROLE_WORK, destaque primeiro atrasos, entregas de hoje, próximas entregas e próximas captações.
+- SOCIAL_MEDIA: trate somente a própria carteira. Em ROLE_WORK, priorize nesta ordem: alterações ou dúvidas aguardando resposta da Social Media; erros de publicação; demandas atrasadas ou com prazo hoje; aprovações pendentes; publicações do dia; demais demandas.
+- DESIGN: foque em produção gráfica, ajustes e entrega. Em ROLE_WORK, destaque primeiro demandas atrasadas, demandas com prazo hoje, próximas entregas e itens em DESIGN_DUVIDA como aguardando resposta da Social Media.
 - DIRETOR pode receber visão ampla da agência.
-- SOCIAL_MEDIA deve receber contexto editorial e operacional dos clientes.
-- DESIGN deve receber foco em produção e entregas de design.
+- Nunca atribua ao usuário uma demanda explicitamente marcada para outra pessoa.
 
 Você recebeu fatos consultados diretamente da operação.
 
