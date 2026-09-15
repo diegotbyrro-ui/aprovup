@@ -4602,7 +4602,9 @@ export async function notifyResponsibleSocialMediaAboutQuestion({
   message,
 }: {
   agencyId:
-    string;
+    string |
+    null |
+    undefined;
 
   contentId:
     string;
@@ -4613,6 +4615,23 @@ export async function notifyResponsibleSocialMediaAboutQuestion({
   message:
     string;
 }) {
+
+  /*
+   * Alguns clientes antigos podem não possuir agencyId.
+   * Sem agência não existe conexão WhatsApp para notificar.
+   */
+  if (
+    !agencyId
+  ) {
+    return {
+      attempted:
+        0,
+
+      sent:
+        0,
+    };
+  }
+
   const connection =
     await getWhatsappConnection(
       agencyId
@@ -4868,10 +4887,7 @@ export async function notifyResponsibleSocialMediaAboutQuestion({
       '',
 
       'Abra o AprovUp > Social Media para responder.',
-    ].join(
-      '
-'
-    );
+    ].join(String.fromCharCode(10));
 
 
   /*
