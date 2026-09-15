@@ -103,7 +103,7 @@ export async function createEmergencyDemandAction(
 
   const deadlineDate =
     new Date(
-      `${deadline}T12:00:00`
+      `${deadline}T23:59:00-03:00`
     );
 
   if (
@@ -136,6 +136,9 @@ export async function createEmergencyDemandAction(
         platform: "",
 
         plannedDate:
+          null,
+
+        productionDeadline:
           deadlineDate,
 
         responsible:
@@ -218,13 +221,12 @@ export async function createEmergencyDemandAction(
     `/clientes/${clientId}/visao`
   );
 
-  const month =
-    deadlineDate.getMonth() + 1;
-
-  const year =
-    deadlineDate.getFullYear();
+  const destination =
+    area === "FILMMAKER"
+      ? `/filmmaker?cliente=${clientId}`
+      : `/design?cliente=${clientId}`;
 
   redirect(
-    `/calendario-editorial?cliente=${clientId}&mes=${month}&ano=${year}`
+    destination
   );
 }
