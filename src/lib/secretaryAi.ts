@@ -3,6 +3,10 @@ import {
 } from '@/lib/prisma';
 
 import {
+  canAccessClient,
+} from '@/lib/clientAccess';
+
+import {
   getOpenAiConfigForAgency,
 } from '@/lib/aiProviderCredentials';
 
@@ -87,7 +91,14 @@ type SecretaryUserContext = {
   name:
     string;
 
+  email:
+    string |
+    null;
+
   role:
+    string;
+
+  agencyId:
     string;
 };
 
@@ -116,7 +127,13 @@ async function getSecretaryUserContext(
           name:
             true,
 
+          email:
+            true,
+
           role:
+            true,
+
+          agencyId:
             true,
         },
       });
@@ -128,6 +145,14 @@ async function getSecretaryUserContext(
         ?.name
         ?.trim() ||
       'Usuário',
+
+    email:
+      user?.email ||
+      null,
+
+    agencyId:
+      user?.agencyId ||
+      agencyId,
 
     role:
       String(
@@ -558,11 +583,58 @@ function getActionRange(
 }
 
 
+async function getAccessibleClientIds(
+  agencyId:
+    string,
+  userContext:
+    SecretaryUserContext
+) {
+  const clients =
+    await prisma.client
+      .findMany({
+        where: {
+          agencyId,
+        },
+
+        select: {
+          id:
+            true,
+
+          agencyId:
+            true,
+
+          internalResponsible:
+            true,
+        },
+      });
+
+
+  return clients
+    .filter(
+      (
+        client
+      ) =>
+        canAccessClient(
+          userContext,
+          client
+        )
+    )
+    .map(
+      (
+        client
+      ) =>
+        client.id
+    );
+}
+
+
 async function resolveClient(
   agencyId:
     string,
   requestedName:
-    string
+    string,
+  userContext:
+    SecretaryUserContext
 ) {
   const name =
     requestedName
@@ -574,29 +646,49 @@ async function resolveClient(
   }
 
 
-  return prisma
-    .client
-    .findFirst({
-      where: {
-        agencyId,
+  const client =
+    await prisma.client
+      .findFirst({
+        where: {
+          agencyId,
 
-        name: {
-          contains:
-            name,
+          name: {
+            contains:
+              name,
 
-          mode:
-            'insensitive',
+            mode:
+              'insensitive',
+          },
         },
-      },
 
-      select: {
-        id:
-          true,
+        select: {
+          id:
+            true,
 
-        name:
-          true,
-      },
-    });
+          name:
+            true,
+
+          agencyId:
+            true,
+
+          internalResponsible:
+            true,
+        },
+      });
+
+
+  if (
+    !client ||
+    !canAccessClient(
+      userContext,
+      client
+    )
+  ) {
+    return null;
+  }
+
+
+  return client;
 }
 
 
@@ -604,12 +696,22 @@ async function getOverview(
   agencyId:
     string,
   action:
-    SecretaryAction
+    SecretaryAction,
+  userContext:
+    SecretaryUserContext
 ) {
   const client =
     await resolveClient(
       agencyId,
-      action.client_name
+      action.client_name,
+      userContext
+    );
+
+
+  const accessibleClientIds =
+    await getAccessibleClientIds(
+      agencyId,
+      userContext
     );
 
 
@@ -619,7 +721,7 @@ async function getOverview(
   ) {
     return {
       error:
-        'Cliente não encontrado: ' +
+        'Cliente não encontrado ou fora da sua carteira: ' +
         action.client_name,
     };
   }
@@ -635,6 +737,11 @@ async function getOverview(
         }
       : {
           agencyId,
+
+          id: {
+            in:
+              accessibleClientIds,
+          },
         };
 
 
@@ -669,9 +776,8 @@ async function getOverview(
           )
         : prisma.client
             .count({
-              where: {
-                agencyId,
-              },
+              where:
+                clientWhere,
             }),
 
       prisma.content
@@ -721,7 +827,12 @@ async function getOverview(
                   clientId:
                     client.id,
                 }
-              : {}),
+              : {
+                  clientId: {
+                    in:
+                      accessibleClientIds,
+                  },
+                }),
           },
 
           orderBy: {
@@ -820,12 +931,22 @@ async function getMetrics(
   agencyId:
     string,
   action:
-    SecretaryAction
+    SecretaryAction,
+  userContext:
+    SecretaryUserContext
 ) {
   const client =
     await resolveClient(
       agencyId,
-      action.client_name
+      action.client_name,
+      userContext
+    );
+
+
+  const accessibleClientIds =
+    await getAccessibleClientIds(
+      agencyId,
+      userContext
     );
 
 
@@ -835,7 +956,7 @@ async function getMetrics(
   ) {
     return {
       error:
-        'Cliente não encontrado: ' +
+        'Cliente não encontrado ou fora da sua carteira: ' +
         action.client_name,
     };
   }
@@ -865,7 +986,12 @@ async function getMetrics(
                 clientId:
                   client.id,
               }
-            : {}),
+            : {
+                clientId: {
+                  in:
+                    accessibleClientIds,
+                },
+              }),
 
           capturedAt: {
             gte:
@@ -1066,12 +1192,22 @@ async function getPublications(
   agencyId:
     string,
   action:
-    SecretaryAction
+    SecretaryAction,
+  userContext:
+    SecretaryUserContext
 ) {
   const client =
     await resolveClient(
       agencyId,
-      action.client_name
+      action.client_name,
+      userContext
+    );
+
+
+  const accessibleClientIds =
+    await getAccessibleClientIds(
+      agencyId,
+      userContext
     );
 
 
@@ -1081,7 +1217,7 @@ async function getPublications(
   ) {
     return {
       error:
-        'Cliente não encontrado: ' +
+        'Cliente não encontrado ou fora da sua carteira: ' +
         action.client_name,
     };
   }
@@ -1111,7 +1247,12 @@ async function getPublications(
                     id:
                       client.id,
                   }
-                : {}),
+                : {
+                    id: {
+                      in:
+                        accessibleClientIds,
+                    },
+                  }),
             },
           },
 
@@ -1265,12 +1406,22 @@ async function getApprovals(
   agencyId:
     string,
   action:
-    SecretaryAction
+    SecretaryAction,
+  userContext:
+    SecretaryUserContext
 ) {
   const client =
     await resolveClient(
       agencyId,
-      action.client_name
+      action.client_name,
+      userContext
+    );
+
+
+  const accessibleClientIds =
+    await getAccessibleClientIds(
+      agencyId,
+      userContext
     );
 
 
@@ -1280,7 +1431,7 @@ async function getApprovals(
   ) {
     return {
       error:
-        'Cliente não encontrado: ' +
+        'Cliente não encontrado ou fora da sua carteira: ' +
         action.client_name,
     };
   }
@@ -1296,6 +1447,11 @@ async function getApprovals(
         }
       : {
           agencyId,
+
+          id: {
+            in:
+              accessibleClientIds,
+          },
         };
 
 
@@ -2237,7 +2393,8 @@ export async function runSecretaryTurn({
         data:
           await getOverview(
             agencyId,
-            action
+            action,
+            userContext
           ),
       });
 
@@ -2256,7 +2413,8 @@ export async function runSecretaryTurn({
         data:
           await getMetrics(
             agencyId,
-            action
+            action,
+            userContext
           ),
       });
 
@@ -2275,7 +2433,8 @@ export async function runSecretaryTurn({
         data:
           await getPublications(
             agencyId,
-            action
+            action,
+            userContext
           ),
       });
 
@@ -2294,7 +2453,8 @@ export async function runSecretaryTurn({
         data:
           await getApprovals(
             agencyId,
-            action
+            action,
+            userContext
           ),
       });
 
