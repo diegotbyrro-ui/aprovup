@@ -31,6 +31,10 @@ import {
 } from "@/components/kanban/SyncedHorizontalScroll";
 
 import {
+  KanbanClientFilter,
+} from "@/components/kanban/KanbanClientFilter";
+
+import {
   requireAgencyContext,
 } from "@/lib/tenant";
 
@@ -1318,11 +1322,31 @@ function CompactMetric({
 }
 
 
-export default async function DesignPage() {
+export default async function DesignPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    cliente?: string;
+  }>;
+}) {
   const {
     agencyId,
   } =
     await requireAgencyContext();
+
+
+  const params =
+    searchParams
+      ? await searchParams
+      : {};
+
+
+  const requestedClient =
+    String(
+      params?.cliente ||
+      "TODOS"
+    ).trim() ||
+    "TODOS";
 
 
   const columnCount =
@@ -1597,12 +1621,48 @@ export default async function DesignPage() {
     );
 
 
+  const clients =
+    await prisma.client.findMany({
+      where: {
+        agencyId,
+      },
+
+      orderBy: {
+        name:
+          "asc",
+      },
+    });
+
+
+  const selectedClient =
+    requestedClient ===
+      "TODOS" ||
+    clients.some(
+      (
+        client
+      ) =>
+        client.id ===
+        requestedClient
+    )
+      ? requestedClient
+      : "TODOS";
+
+
   const contents =
     await prisma.content.findMany({
       where: {
         client: {
           agencyId,
         },
+
+        ...(selectedClient !==
+          "TODOS"
+          ? {
+              clientId:
+                selectedClient,
+            }
+          : {}),
+
         area:
           "DESIGN",
 
@@ -1647,19 +1707,6 @@ export default async function DesignPage() {
             "desc",
         },
       ],
-    });
-
-
-  const clients =
-    await prisma.client.findMany({
-      where: {
-        agencyId,
-      },
-
-      orderBy: {
-        name:
-          "asc",
-      },
     });
 
 
@@ -1975,12 +2022,34 @@ export default async function DesignPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[9px] font-semibold text-slate-400">
-            <Palette
-              size={13}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <KanbanClientFilter
+              selectedClient={
+                selectedClient
+              }
+              clients={
+                clients.map(
+                  (
+                    client
+                  ) => ({
+                    id:
+                      client.id,
+
+                    name:
+                      client.name,
+                  })
+                )
+              }
             />
 
-            {contents.length} demandas
+
+            <div className="flex items-center gap-1.5 text-[9px] font-semibold text-slate-400">
+              <Palette
+                size={13}
+              />
+
+              {contents.length} demandas
+            </div>
           </div>
         </div>
 

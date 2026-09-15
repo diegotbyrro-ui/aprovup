@@ -39,6 +39,10 @@ import {
 } from "@/components/kanban/SyncedHorizontalScroll";
 
 import {
+  KanbanClientFilter,
+} from "@/components/kanban/KanbanClientFilter";
+
+import {
   isDirector,
   requireCurrentUser,
 } from "@/lib/auth";
@@ -1350,10 +1354,32 @@ function CompactMetric({
 }
 
 
-export default async function FilmmakerPage() {
+export default async function FilmmakerPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    cliente?: string;
+  }>;
+}) {
   const currentUser =
     await requirePermission("filmmaker.view");
-await ensureDefaultFilmmakerColumns();
+
+
+  const params =
+    searchParams
+      ? await searchParams
+      : {};
+
+
+  const requestedClient =
+    String(
+      params?.cliente ||
+      "TODOS"
+    ).trim() ||
+    "TODOS";
+
+
+  await ensureDefaultFilmmakerColumns();
 
 
   const [
@@ -1390,6 +1416,20 @@ await ensureDefaultFilmmakerColumns();
     ]);
 
 
+  const selectedClient =
+    requestedClient ===
+      "TODOS" ||
+    clients.some(
+      (
+        client
+      ) =>
+        client.id ===
+        requestedClient
+    )
+      ? requestedClient
+      : "TODOS";
+
+
   const statusKeys =
     columns.map(
       (
@@ -1406,6 +1446,15 @@ await ensureDefaultFilmmakerColumns();
           agencyId:
             currentUser.agencyId,
         },
+
+        ...(selectedClient !==
+          "TODOS"
+          ? {
+              clientId:
+                selectedClient,
+            }
+          : {}),
+
         area:
           "FILMMAKER",
 
@@ -1771,12 +1820,34 @@ await ensureDefaultFilmmakerColumns();
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[9px] font-semibold text-slate-400">
-            <Film
-              size={13}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <KanbanClientFilter
+              selectedClient={
+                selectedClient
+              }
+              clients={
+                clients.map(
+                  (
+                    client
+                  ) => ({
+                    id:
+                      client.id,
+
+                    name:
+                      client.name,
+                  })
+                )
+              }
             />
 
-            {contents.length} demandas
+
+            <div className="flex items-center gap-1.5 text-[9px] font-semibold text-slate-400">
+              <Film
+                size={13}
+              />
+
+              {contents.length} demandas
+            </div>
           </div>
         </div>
 
