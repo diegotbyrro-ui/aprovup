@@ -25,6 +25,7 @@ type MobileCalendarContent = {
 type MobileEditorialCalendarProps = {
   month: number;
   year: number;
+  selectedClient: string;
   contents: MobileCalendarContent[];
 };
 
@@ -374,6 +375,7 @@ function getMobilePublicationClass(
 export function MobileEditorialCalendar({
   month,
   year,
+  selectedClient,
   contents,
 }: MobileEditorialCalendarProps) {
 
@@ -401,6 +403,27 @@ export function MobileEditorialCalendar({
           contents
         )
     );
+
+
+  /*
+   * Ao criar conteúdo pela agenda mobile/tablet,
+   * preservamos o cliente selecionado e a data
+   * que a Social Media acabou de escolher.
+   */
+  const newContentHref =
+    selectedClient !==
+    "TODOS"
+      ? (
+          "/conteudos/novo?cliente=" +
+          encodeURIComponent(
+            selectedClient
+          ) +
+          "&data=" +
+          encodeURIComponent(
+            selectedDate
+          )
+        )
+      : "/clientes";
 
 
   const numberOfDays =
@@ -780,7 +803,7 @@ export function MobileEditorialCalendar({
 
 
               <Link
-                href="/conteudos/novo"
+                href={newContentHref}
                 className="shrink-0 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm"
               >
 
@@ -992,7 +1015,7 @@ export function MobileEditorialCalendar({
 
 
                 <Link
-                  href="/conteudos/novo"
+                  href={newContentHref}
                   className="mt-4 inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-blue-700 shadow-sm"
                 >
 

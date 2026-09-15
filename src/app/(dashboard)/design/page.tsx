@@ -2110,7 +2110,24 @@ export default async function DesignPage() {
                         isGraphicColumn
                       }
                     >
-                      <div className="min-h-[540px] space-y-3 p-3">
+                      <div
+                        className="
+                          h-[540px]
+                          space-y-3
+                          overflow-y-auto
+                          overscroll-contain
+                          p-3
+                          pr-2
+                          [scrollbar-gutter:stable]
+                          [scrollbar-width:thin]
+                          [&::-webkit-scrollbar]:w-2
+                          [&::-webkit-scrollbar-track]:rounded-full
+                          [&::-webkit-scrollbar-track]:bg-slate-100
+                          [&::-webkit-scrollbar-thumb]:rounded-full
+                          [&::-webkit-scrollbar-thumb]:bg-slate-300
+                          hover:[&::-webkit-scrollbar-thumb]:bg-slate-400
+                        "
+                      >
                         {items.length ===
                         0 ? (
                           <div className="flex min-h-[130px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/60 px-4 text-center">

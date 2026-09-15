@@ -505,6 +505,7 @@ export default async function CalendarioEditorialPage({
                 <MobileEditorialCalendar
                     month={currentMonth}
                     year={currentYear}
+                    selectedClient={selectedClient}
                     contents={contents.map((content) => ({
                         id: content.id,
                         title: content.title,
