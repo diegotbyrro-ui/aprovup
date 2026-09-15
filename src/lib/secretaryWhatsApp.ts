@@ -3663,11 +3663,16 @@ function calendarMemberAliases({
 
 function calendarEventMatchesMember({
   summary,
+  description,
   displayName,
   userName,
 }: {
   summary:
     string;
+
+  description?:
+    string |
+    null;
 
   displayName:
     string |
@@ -3679,7 +3684,12 @@ function calendarEventMatchesMember({
 }) {
   const normalized =
     normalizeCalendarAssignmentText(
-      summary
+      [
+        summary,
+        description || '',
+      ]
+        .filter(Boolean)
+        .join(' ')
     );
 
   if (
@@ -3825,6 +3835,13 @@ export async function deliverSecretaryCalendarReminders() {
       now.getTime() +
       75 * 60 * 1000
     );
+
+  const morningCutoff =
+    new Date(
+      dayStart.getTime() +
+      8 * 60 * 60 * 1000
+    );
+
 
   const eveningCutoff =
     new Date(
@@ -4010,6 +4027,43 @@ export async function deliverSecretaryCalendarReminders() {
       );
 
 
+    const todayEvents =
+      events.filter(
+        (event) => {
+          if (!event.start) {
+            return false;
+          }
+
+
+          if (
+            !event.start.includes(
+              'T'
+            )
+          ) {
+            return event.start ===
+              local.dateKey;
+          }
+
+
+          const start =
+            new Date(
+              event.start
+            );
+
+
+          return (
+            !Number.isNaN(
+              start.getTime()
+            ) &&
+            start >=
+              dayStart &&
+            start <
+              tomorrowStart
+          );
+        }
+      );
+
+
     const tomorrowEvents =
       events.filter(
         (event) => {
@@ -4037,6 +4091,244 @@ export async function deliverSecretaryCalendarReminders() {
 
 
     /* ================================================
+       08H A 12H - COMPROMISSOS DE HOJE
+       ================================================ */
+
+    if (
+      local.hour >=
+        8 &&
+      local.hour <
+        12 &&
+      todayEvents.length
+    ) {
+      for (
+        const recipient
+        of recipients
+      ) {
+        const personalEvents =
+          todayEvents.filter(
+            (
+              event
+            ) =>
+              calendarEventMatchesMember({
+                summary:
+                  event.summary,
+
+                description:
+                  event.description,
+
+                displayName:
+                  recipient.member.displayName,
+
+                userName:
+                  recipient.user.name,
+              })
+          );
+
+
+        if (
+          !personalEvents.length
+        ) {
+          continue;
+        }
+
+
+        const message =
+          personalEvents
+            .map(
+              (
+                event,
+                index
+              ) =>
+                String(
+                  index +
+                  1
+                ) +
+                '. ' +
+                calendarReminderMessage(
+                  event
+                )
+            )
+            .join(
+              '\n\n'
+            );
+
+
+        const result =
+          await sendProactive({
+            agencyId:
+              connection.agencyId,
+
+            memberId:
+              recipient.member.id,
+
+            toPhone:
+              recipient.member.phoneE164,
+
+            title:
+              'Seus compromissos de hoje',
+
+            message,
+
+            dedupKey:
+              'calendar-today:' +
+              local.dateKey +
+              ':' +
+              recipient.member.id,
+          });
+
+
+        if (
+          result.status ===
+            'SENT'
+        ) {
+          sent +=
+            1;
+        }
+      }
+    }
+
+
+    /* ================================================
+       NOVO / ALTERADO HOJE DEPOIS DAS 08H
+       ================================================ */
+
+    if (
+      local.hour >=
+        8 &&
+      todayEvents.length
+    ) {
+      const changedToday =
+        todayEvents.filter(
+          (
+            event
+          ) => {
+            if (
+              !event.updated
+            ) {
+              return false;
+            }
+
+
+            const updated =
+              new Date(
+                event.updated
+              );
+
+
+            return (
+              !Number.isNaN(
+                updated.getTime()
+              ) &&
+              updated >
+                morningCutoff
+            );
+          }
+        );
+
+
+      for (
+        const event
+        of changedToday
+      ) {
+        for (
+          const recipient
+          of recipients
+        ) {
+          if (
+            !calendarEventMatchesMember({
+              summary:
+                event.summary,
+
+              description:
+                event.description,
+
+              displayName:
+                recipient.member.displayName,
+
+              userName:
+                recipient.user.name,
+            })
+          ) {
+            continue;
+          }
+
+
+          const created =
+            event.created
+              ? new Date(
+                  event.created
+                )
+              : null;
+
+
+          const updated =
+            event.updated
+              ? new Date(
+                  event.updated
+                )
+              : null;
+
+
+          const isNew =
+            Boolean(
+              created &&
+              updated &&
+              Math.abs(
+                created.getTime() -
+                updated.getTime()
+              ) <
+                5000
+            );
+
+
+          const result =
+            await sendProactive({
+              agencyId:
+                connection.agencyId,
+
+              memberId:
+                recipient.member.id,
+
+              toPhone:
+                recipient.member.phoneE164,
+
+              title:
+                isNew
+                  ? 'Novo compromisso para hoje'
+                  : 'Compromisso de hoje atualizado',
+
+              message:
+                calendarReminderMessage(
+                  event
+                ),
+
+              dedupKey:
+                'calendar-today-change:' +
+                event.id +
+                ':' +
+                String(
+                  event.updated ||
+                  ''
+                ) +
+                ':' +
+                recipient.member.id,
+            });
+
+
+          if (
+            result.status ===
+              'SENT'
+          ) {
+            sent +=
+              1;
+          }
+        }
+      }
+    }
+
+
+    /* ================================================
        18H - COMPROMISSOS DO DIA SEGUINTE
        ================================================ */
 
@@ -4055,6 +4347,9 @@ export async function deliverSecretaryCalendarReminders() {
               calendarEventMatchesMember({
                 summary:
                   event.summary,
+
+                description:
+                  event.description,
 
                 displayName:
                   recipient.member.displayName,
@@ -4153,6 +4448,9 @@ export async function deliverSecretaryCalendarReminders() {
             !calendarEventMatchesMember({
               summary:
                 event.summary,
+
+              description:
+                event.description,
 
               displayName:
                 recipient.member.displayName,
@@ -4265,6 +4563,9 @@ export async function deliverSecretaryCalendarReminders() {
           !calendarEventMatchesMember({
             summary:
               event.summary,
+
+            description:
+              event.description,
 
             displayName:
               recipient.member.displayName,
