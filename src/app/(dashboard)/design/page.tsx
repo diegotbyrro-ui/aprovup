@@ -872,6 +872,195 @@ function PriorityBadge({
 }
 
 
+function EmergencyDesignCard({
+  content,
+}: {
+  content:
+    any;
+}) {
+  const clientName =
+    cleanDemoName(
+      content.client?.name
+    ) ||
+    "Cliente";
+
+  const clientLogo =
+    content.client?.logoUrl ||
+    "";
+
+  const late =
+    isLate(
+      content
+    );
+
+  return (
+    <article className="overflow-hidden rounded-xl border-2 border-red-300 bg-white shadow-md ring-2 ring-red-100">
+      <div className="flex items-center justify-between gap-2 bg-red-600 px-3 py-2.5 text-white">
+        <div className="flex min-w-0 items-center gap-2">
+          <AlertTriangle
+            size={14}
+            className="shrink-0"
+          />
+
+          <span className="truncate text-[9px] font-black uppercase tracking-[0.08em]">
+            Demanda Emergencial
+          </span>
+        </div>
+
+        <span className="shrink-0 rounded-md bg-white/15 px-2 py-1 text-[7px] font-black uppercase tracking-[0.08em]">
+          Prioridade Máxima
+        </span>
+      </div>
+
+
+      <div className="p-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-red-100 bg-red-50">
+            {clientLogo ? (
+              <img
+                src={
+                  clientLogo
+                }
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-[8px] font-black text-red-600">
+                {getInitials(
+                  clientName
+                )}
+              </span>
+            )}
+          </div>
+
+          <div className="min-w-0">
+            <p className="truncate text-[9px] font-bold text-slate-700">
+              {clientName}
+            </p>
+
+            <p className="text-[8px] font-semibold text-red-600">
+              Solicitado por: {content.responsible || "Social Media"}
+            </p>
+          </div>
+        </div>
+
+
+        <h3 className="mt-3 line-clamp-3 text-[13px] font-black leading-[1.35] text-slate-950">
+          {cleanDemoName(
+            content.title
+          )}
+        </h3>
+
+
+        <div
+          className={[
+            "mt-3",
+            "flex",
+            "items-center",
+            "gap-1.5",
+            "rounded-lg",
+            "border",
+            "px-2.5",
+            "py-2",
+            "text-[9px]",
+            "font-bold",
+
+            late
+              ? "border-red-300 bg-red-50 text-red-700"
+              : "border-orange-200 bg-orange-50 text-orange-700",
+          ].join(" ")}
+        >
+          <Clock3
+            size={11}
+          />
+
+          <span>
+            Entrega: {formatDeliveryDate(
+              content.productionDeadline
+            )}
+          </span>
+
+          {late ? (
+            <span className="ml-auto rounded bg-red-600 px-1.5 py-0.5 text-[7px] font-black uppercase text-white">
+              Atrasado
+            </span>
+          ) : null}
+        </div>
+
+
+        {content.briefing ? (
+          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+            <p className="text-[7px] font-black uppercase tracking-[0.08em] text-slate-400">
+              Direcionamento
+            </p>
+
+            <p className="mt-1.5 line-clamp-4 text-[9px] font-medium leading-relaxed text-slate-600">
+              {content.briefing}
+            </p>
+          </div>
+        ) : null}
+
+
+        <div className="mt-3 border-t border-red-100 pt-3">
+          <details className="group/question">
+            <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-2 text-[9px] font-bold text-amber-700 [&::-webkit-details-marker]:hidden">
+              <span>
+                Dúvida para Social
+              </span>
+
+              <Send
+                size={11}
+              />
+            </summary>
+
+            <form
+              action={
+                sendDesignQuestionAction.bind(
+                  null,
+                  content.id
+                )
+              }
+              className="mt-2 space-y-2"
+            >
+              <textarea
+                name="message"
+                rows={3}
+                required
+                placeholder="Escreva a dúvida..."
+                className="w-full resize-none rounded-lg border border-amber-200 bg-white px-2.5 py-2 text-[9px] font-medium text-slate-900 outline-none placeholder:text-slate-400"
+              />
+
+              <button
+                type="submit"
+                className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-amber-500 text-[9px] font-bold text-white hover:bg-amber-600"
+              >
+                <Send
+                  size={11}
+                />
+
+                Enviar dúvida
+              </button>
+            </form>
+          </details>
+
+
+          <Link
+            href={`/conteudos/${content.id}/visualizar`}
+            className="mt-2 flex h-9 items-center justify-center gap-1.5 rounded-lg bg-red-600 text-[9px] font-black text-white transition hover:bg-red-700"
+          >
+            Abrir demanda emergencial
+
+            <ExternalLink
+              size={11}
+            />
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+
 function DesignCard({
   content,
 }: {
@@ -2090,6 +2279,30 @@ export default async function DesignPage({
                         a,
                         b
                       ) => {
+                        const aEmergency =
+                          a.format ===
+                          "DEMANDA_EMERGENCIAL"
+                            ? 1
+                            : 0;
+
+                        const bEmergency =
+                          b.format ===
+                          "DEMANDA_EMERGENCIAL"
+                            ? 1
+                            : 0;
+
+
+                        if (
+                          aEmergency !==
+                          bEmergency
+                        ) {
+                          return (
+                            bEmergency -
+                            aEmergency
+                          );
+                        }
+
+
                         const aPriority =
                           shouldEmphasizeReturn(
                             a
@@ -2227,11 +2440,20 @@ export default async function DesignPage({
                                   isGraphicColumn
                                 }
                               >
-                                <DesignCard
-                                  content={
-                                    content
-                                  }
-                                />
+                                {content.format ===
+                                "DEMANDA_EMERGENCIAL" ? (
+                                  <EmergencyDesignCard
+                                    content={
+                                      content
+                                    }
+                                  />
+                                ) : (
+                                  <DesignCard
+                                    content={
+                                      content
+                                    }
+                                  />
+                                )}
                               </DraggableDesignCard>
                             )
                           )
