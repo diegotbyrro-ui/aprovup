@@ -468,7 +468,7 @@ export function ReferenceAttachmentsField({
       </div>
 
       <p className="mt-3 text-[10px] leading-4 text-slate-400">
-        Até 8 fotos por envio, máximo de 8 MB por foto e 18 MB no total. Edite o nome diretamente no campo e salve as alterações. Para excluir um anexo existente, marque o X.
+        Você pode anexar várias fotos de referência no mesmo conteúdo. Edite o nome diretamente no campo e salve as alterações. Para excluir um anexo existente, marque o X.
       </p>
     </section>
   );

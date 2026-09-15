@@ -239,7 +239,7 @@ export default async function NovoConteudoClientePage({
               <input
                 name="productionDeadlineTime"
                 type="time"
-                step="300"
+                step="60"
                 aria-label="Horário limite da produção"
                 className={inputClasses}
               />

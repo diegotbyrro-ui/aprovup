@@ -12,14 +12,13 @@ import {
 } from '@/lib/aprovupStorage';
 
 
-const MAX_REFERENCE_IMAGES =
-  8;
-
-const MAX_REFERENCE_IMAGE_SIZE =
-  8 * 1024 * 1024;
-
-const MAX_REFERENCE_TOTAL_SIZE =
-  18 * 1024 * 1024;
+/*
+ * Fotos de referência não possuem mais limites
+ * artificiais de quantidade ou tamanho no AprovUp.
+ *
+ * O limite técnico da requisição é controlado pelo
+ * bodySizeLimit do Next.js.
+ */
 
 
 function referenceImageFiles(
@@ -46,20 +45,11 @@ function validateReferenceImages(
   files:
     File[]
 ) {
-  if (
-    files.length >
-    MAX_REFERENCE_IMAGES
-  ) {
-    throw new Error(
-      `Envie no máximo ${MAX_REFERENCE_IMAGES} fotos de referência por vez.`
-    );
-  }
-
-
-  let totalSize =
-    0;
-
-
+  /*
+   * Mantemos somente a validação de tipo.
+   * Quantidade e tamanho deixam de ser limitados
+   * artificialmente pelo AprovUp.
+   */
   for (
     const file
     of files
@@ -76,30 +66,6 @@ function validateReferenceImages(
         `O arquivo "${file.name}" não é uma imagem.`
       );
     }
-
-
-    if (
-      file.size >
-      MAX_REFERENCE_IMAGE_SIZE
-    ) {
-      throw new Error(
-        `A foto "${file.name}" ultrapassa 8 MB.`
-      );
-    }
-
-
-    totalSize +=
-      file.size;
-  }
-
-
-  if (
-    totalSize >
-    MAX_REFERENCE_TOTAL_SIZE
-  ) {
-    throw new Error(
-      'As fotos de referência ultrapassam 18 MB no total.'
-    );
   }
 }
 
