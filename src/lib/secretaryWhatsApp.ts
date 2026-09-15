@@ -3098,6 +3098,11 @@ export async function deliverSecretaryDailyBriefs() {
     maceioParts();
 
 
+  /*
+   * O resumo é enviado somente na janela das 08h.
+   * O dedup individual impede mais de uma mensagem
+   * para a mesma pessoa no mesmo dia.
+   */
   if (
     local.hour !==
     8
@@ -3112,13 +3117,14 @@ export async function deliverSecretaryDailyBriefs() {
       'T03:00:00.000Z'
     );
 
+
   const end =
     new Date(
       start.getTime() +
       24 *
-        60 *
-        60 *
-        1000
+      60 *
+      60 *
+      1000
     );
 
 
@@ -3150,281 +3156,487 @@ export async function deliverSecretaryDailyBriefs() {
         .findMany({
           where: {
             agencyId:
-              connection
-                .agencyId,
+              connection.agencyId,
 
             isActive:
               true,
 
             receiveAlerts:
               true,
+
+            userId: {
+              not:
+                null,
+            },
           },
         });
 
 
     if (
-      members.length ===
-      0
+      !members.length
     ) {
       continue;
     }
 
 
-    const memberUserIds =
+    const userIds =
       members
         .map(
-          (member) =>
+          (
+            member
+          ) =>
             member.userId
         )
         .filter(
-          (value): value is string =>
-            Boolean(value)
+          (
+            value
+          ): value is string =>
+            Boolean(
+              value
+            )
         );
 
 
-    const briefUsers =
-      memberUserIds.length
-        ? await prisma.user
-            .findMany({
-              where: {
-                agencyId:
-                  connection.agencyId,
-
-                id: {
-                  in:
-                    memberUserIds,
-                },
-
-                status:
-                  'APROVADO',
-              },
-
-              select: {
-                id:
-                  true,
-
-                role:
-                  true,
-              },
-            })
-        : [];
-
-
-    const briefRoleByUser =
-      new Map(
-        briefUsers.map(
-          (user) =>
-            [
-              user.id,
-              user.role,
-            ] as const
-        )
-      );
-
-
-    const operationMembers =
-      members.filter(
-        (member) => {
-          const role =
-            member.userId
-              ? briefRoleByUser.get(
-                  member.userId
-                ) ||
-                ''
-              : '';
-
-          return [
-            'DIRECTOR',
-            'SOCIAL_MEDIA',
-          ].includes(
-            role
-          );
-        }
-      );
-
-
-    if (
-      operationMembers.length ===
-      0
-    ) {
-      continue;
-    }
-
-
     const [
-      planned,
-      pendingApprovals,
-      publications,
-      openAlerts,
+      users,
+      clients,
     ] =
       await Promise.all([
-        prisma.content
-          .count({
-            where: {
-              client: {
-                agencyId:
-                  connection
-                    .agencyId,
-              },
-
-              plannedDate: {
-                gte:
-                  start,
-
-                lt:
-                  end,
-              },
-            },
-          }),
-
-        prisma.approval
-          .count({
-            where: {
-              status:
-                'PENDENTE',
-
-              content: {
-                client: {
-                  agencyId:
-                    connection
-                      .agencyId,
-                },
-              },
-            },
-          }),
-
-        prisma
-          .instagramPublication
+        prisma.user
           .findMany({
             where: {
-              content: {
-                client: {
-                  agencyId:
-                    connection
-                      .agencyId,
-                },
+              agencyId:
+                connection.agencyId,
+
+              id: {
+                in:
+                  userIds,
               },
 
-              OR: [
-                {
-                  scheduledFor: {
-                    gte:
-                      start,
+              status:
+                'APROVADO',
 
-                    lt:
-                      end,
-                  },
-                },
-
-                {
-                  publishedAt: {
-                    gte:
-                      start,
-
-                    lt:
-                      end,
-                  },
-                },
-              ],
+              role: {
+                in: [
+                  'DIRECTOR',
+                  'SOCIAL_MEDIA',
+                ],
+              },
             },
 
             select: {
-              status:
+              id:
+                true,
+
+              name:
+                true,
+
+              email:
+                true,
+
+              role:
+                true,
+
+              agencyId:
                 true,
             },
           }),
 
-        prisma
-          .secretaryAlert
-          .count({
+        prisma.client
+          .findMany({
             where: {
               agencyId:
-                connection
-                  .agencyId,
+                connection.agencyId,
+            },
 
-              status:
-                'OPEN',
+            select: {
+              id:
+                true,
+
+              name:
+                true,
+
+              agencyId:
+                true,
+
+              internalResponsible:
+                true,
+            },
+
+            orderBy: {
+              name:
+                'asc',
             },
           }),
       ]);
 
 
-    const published =
-      publications
-        .filter(
+    const userById =
+      new Map(
+        users.map(
           (
-            item
-          ) =>
-            item.status ===
-            'PUBLICADO'
+            user
+          ) => [
+            user.id,
+            user,
+          ] as const
         )
-        .length;
-
-    const errors =
-      publications
-        .filter(
-          (
-            item
-          ) =>
-            item.status ===
-            'ERRO'
-        )
-        .length;
-
-    const scheduled =
-      publications
-        .filter(
-          (
-            item
-          ) =>
-            item.status ===
-            'AGENDADO'
-        )
-        .length;
-
-
-    const message =
-      [
-        'Conteúdos planejados hoje: ' +
-          planned,
-
-        'Aprovações pendentes: ' +
-          pendingApprovals,
-
-        'Instagram hoje — publicados: ' +
-          published +
-          ', agendados: ' +
-          scheduled +
-          ', erros: ' +
-          errors,
-
-        'Alertas operacionais abertos: ' +
-          openAlerts,
-      ].join(
-        '\n'
       );
 
 
     for (
       const member
-      of operationMembers
+      of members
     ) {
+      if (
+        !member.userId
+      ) {
+        continue;
+      }
+
+
+      const user =
+        userById.get(
+          member.userId
+        );
+
+
+      if (!user) {
+        continue;
+      }
+
+
+      const isDirector =
+        user.role ===
+        'DIRECTOR';
+
+
+      /*
+       * Diretoria enxerga todos os clientes.
+       * Social Media usa exatamente a mesma regra
+       * oficial de carteira do restante do AprovUp.
+       */
+      const accessibleClients =
+        isDirector
+          ? clients
+          : clients.filter(
+              (
+                client
+              ) =>
+                canAccessClient(
+                  user,
+                  client
+                )
+            );
+
+
+      const clientIds =
+        accessibleClients.map(
+          (
+            client
+          ) =>
+            client.id
+        );
+
+
+      const [
+        planned,
+        pendingApprovals,
+        pendingMonthlyApprovals,
+        publications,
+        openAlerts,
+        socialAttention,
+      ] =
+        await Promise.all([
+          clientIds.length
+            ? prisma.content
+                .count({
+                  where: {
+                    clientId: {
+                      in:
+                        clientIds,
+                    },
+
+                    plannedDate: {
+                      gte:
+                        start,
+
+                      lt:
+                        end,
+                    },
+                  },
+                })
+            : Promise.resolve(
+                0
+              ),
+
+          clientIds.length
+            ? prisma.approval
+                .count({
+                  where: {
+                    status:
+                      'PENDENTE',
+
+                    content: {
+                      clientId: {
+                        in:
+                          clientIds,
+                      },
+                    },
+                  },
+                })
+            : Promise.resolve(
+                0
+              ),
+
+          clientIds.length
+            ? prisma.monthlyApproval
+                .count({
+                  where: {
+                    status:
+                      'PENDENTE',
+
+                    clientId: {
+                      in:
+                        clientIds,
+                    },
+                  },
+                })
+            : Promise.resolve(
+                0
+              ),
+
+          clientIds.length
+            ? prisma
+                .instagramPublication
+                .findMany({
+                  where: {
+                    content: {
+                      clientId: {
+                        in:
+                          clientIds,
+                      },
+                    },
+
+                    OR: [
+                      {
+                        scheduledFor: {
+                          gte:
+                            start,
+
+                          lt:
+                            end,
+                        },
+                      },
+
+                      {
+                        publishedAt: {
+                          gte:
+                            start,
+
+                          lt:
+                            end,
+                        },
+                      },
+                    ],
+                  },
+
+                  select: {
+                    status:
+                      true,
+                  },
+                })
+            : Promise.resolve(
+                []
+              ),
+
+          isDirector
+            ? prisma
+                .secretaryAlert
+                .count({
+                  where: {
+                    agencyId:
+                      connection.agencyId,
+
+                    status:
+                      'OPEN',
+                  },
+                })
+            : clientIds.length
+              ? prisma
+                  .secretaryAlert
+                  .count({
+                    where: {
+                      agencyId:
+                        connection.agencyId,
+
+                      status:
+                        'OPEN',
+
+                      clientId: {
+                        in:
+                          clientIds,
+                      },
+                    },
+                  })
+              : Promise.resolve(
+                  0
+                ),
+
+          clientIds.length
+            ? prisma.content
+                .count({
+                  where: {
+                    clientId: {
+                      in:
+                        clientIds,
+                    },
+
+                    status: {
+                      in: [
+                        'ALTERACAO_SOLICITADA',
+                        'DESIGN_DUVIDA',
+                        'FILMMAKER_DUVIDA_SOCIAL',
+                      ],
+                    },
+                  },
+                })
+            : Promise.resolve(
+                0
+              ),
+        ]);
+
+
+      const published =
+        publications.filter(
+          (
+            item
+          ) =>
+            item.status ===
+            'PUBLICADO'
+        ).length;
+
+
+      const errors =
+        publications.filter(
+          (
+            item
+          ) =>
+            item.status ===
+            'ERRO'
+        ).length;
+
+
+      const scheduled =
+        publications.filter(
+          (
+            item
+          ) =>
+            item.status ===
+            'AGENDADO'
+        ).length;
+
+
+      const firstName =
+        String(
+          user.name ||
+          ''
+        )
+          .trim()
+          .split(
+            /\s+/
+          )[0] ||
+        'Equipe';
+
+
+      const intro =
+        isDirector
+          ? 'Visão geral da agência.'
+          : (
+              'Sua carteira possui ' +
+              String(
+                accessibleClients.length
+              ) +
+              ' cliente(s).'
+            );
+
+
+      const attentionLabel =
+        isDirector
+          ? 'Itens aguardando ação da Social Media: '
+          : 'Itens que precisam da sua atenção: ';
+
+
+      const message =
+        [
+          'Bom dia, ' +
+            firstName +
+            '!',
+
+          intro,
+
+          'Conteúdos planejados hoje: ' +
+            String(
+              planned
+            ),
+
+          'Aprovações pendentes — conteúdos: ' +
+            String(
+              pendingApprovals
+            ) +
+            ', calendários mensais: ' +
+            String(
+              pendingMonthlyApprovals
+            ),
+
+          'Instagram hoje — publicados: ' +
+            String(
+              published
+            ) +
+            ', agendados: ' +
+            String(
+              scheduled
+            ) +
+            ', erros: ' +
+            String(
+              errors
+            ),
+
+          attentionLabel +
+            String(
+              socialAttention
+            ),
+
+          'Alertas operacionais abertos: ' +
+            String(
+              openAlerts
+            ),
+        ].join(
+          '\n'
+        );
+
+
       const result =
         await sendProactive({
           agencyId:
-            connection
-              .agencyId,
+            connection.agencyId,
 
           memberId:
             member.id,
 
           toPhone:
-            member
-              .phoneE164,
+            member.phoneE164,
 
           title:
-            'Resumo da operação — ' +
-            local.dateKey,
+            isDirector
+              ? (
+                  'Resumo da operação — ' +
+                  local.dateKey
+                )
+              : (
+                  'Resumo da sua carteira — ' +
+                  local.dateKey
+                ),
 
           message,
 
@@ -3449,7 +3661,6 @@ export async function deliverSecretaryDailyBriefs() {
 
   return sent;
 }
-
 
 
 function formatCaptureWhatsappTime(value: Date) {
