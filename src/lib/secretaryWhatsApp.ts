@@ -2488,6 +2488,10 @@ export async function deliverSecretaryAlertsToWhatsapp() {
     0;
 
 
+  const local =
+    maceioParts();
+
+
   for (
     const connection
     of connections
@@ -2497,13 +2501,11 @@ export async function deliverSecretaryAlertsToWhatsapp() {
       members,
     ] =
       await Promise.all([
-        prisma
-          .secretaryAlert
+        prisma.secretaryAlert
           .findMany({
             where: {
               agencyId:
-                connection
-                  .agencyId,
+                connection.agencyId,
 
               status:
                 'OPEN',
@@ -2515,7 +2517,7 @@ export async function deliverSecretaryAlertsToWhatsapp() {
             },
 
             take:
-              50,
+              200,
           }),
 
         prisma
@@ -2523,45 +2525,453 @@ export async function deliverSecretaryAlertsToWhatsapp() {
           .findMany({
             where: {
               agencyId:
-                connection
-                  .agencyId,
+                connection.agencyId,
 
               isActive:
                 true,
 
               receiveAlerts:
                 true,
+
+              userId: {
+                not:
+                  null,
+              },
             },
           }),
       ]);
 
 
-    const memberUserIds = members.map((member) => member.userId).filter((value): value is string => Boolean(value));
-    const alertUsers = memberUserIds.length
-      ? await prisma.user.findMany({
-          where: { agencyId: connection.agencyId, id: { in: memberUserIds }, status: 'APROVADO' },
-          select: { id: true, role: true },
-        })
-      : [];
-    const roleByUserId = new Map(alertUsers.map((item) => [item.id, item.role] as const));
+    if (
+      !alerts.length ||
+      !members.length
+    ) {
+      continue;
+    }
+
+
+    const userIds =
+      members
+        .map(
+          (
+            member
+          ) =>
+            member.userId
+        )
+        .filter(
+          (
+            value
+          ): value is string =>
+            Boolean(
+              value
+            )
+        );
+
+
+    const users =
+      userIds.length
+        ? await prisma.user
+            .findMany({
+              where: {
+                agencyId:
+                  connection.agencyId,
+
+                id: {
+                  in:
+                    userIds,
+                },
+
+                status:
+                  'APROVADO',
+              },
+
+              select: {
+                id:
+                  true,
+
+                name:
+                  true,
+
+                email:
+                  true,
+
+                role:
+                  true,
+
+                agencyId:
+                  true,
+              },
+            })
+        : [];
+
+
+    const userById =
+      new Map(
+        users.map(
+          (
+            user
+          ) => [
+            user.id,
+            user,
+          ] as const
+        )
+      );
+
+
+    const clientIds =
+      Array.from(
+        new Set(
+          alerts
+            .map(
+              (
+                alert
+              ) =>
+                alert.clientId
+            )
+            .filter(
+              (
+                value
+              ): value is string =>
+                Boolean(
+                  value
+                )
+            )
+        )
+      );
+
+
+    const clients =
+      clientIds.length
+        ? await prisma.client
+            .findMany({
+              where: {
+                agencyId:
+                  connection.agencyId,
+
+                id: {
+                  in:
+                    clientIds,
+                },
+              },
+
+              select: {
+                id:
+                  true,
+
+                name:
+                  true,
+
+                agencyId:
+                  true,
+
+                internalResponsible:
+                  true,
+              },
+            })
+        : [];
+
+
+    const clientById =
+      new Map(
+        clients.map(
+          (
+            client
+          ) => [
+            client.id,
+            client,
+          ] as const
+        )
+      );
+
+
+    const recipients =
+      members
+        .map(
+          (
+            member
+          ) => {
+            if (
+              !member.userId
+            ) {
+              return null;
+            }
+
+
+            const user =
+              userById.get(
+                member.userId
+              );
+
+
+            if (!user) {
+              return null;
+            }
+
+
+            return {
+              member,
+              user,
+            };
+          }
+        )
+        .filter(
+          (
+            value
+          ): value is NonNullable<typeof value> =>
+            Boolean(
+              value
+            )
+        );
+
+
+    function memberCanReceiveAlert(
+      recipient:
+        typeof recipients[number],
+
+      alert:
+        typeof alerts[number]
+    ) {
+      if (
+        recipient.user.role ===
+        'DIRECTOR'
+      ) {
+        return true;
+      }
+
+
+      if (
+        recipient.user.role !==
+        'SOCIAL_MEDIA'
+      ) {
+        return false;
+      }
+
+
+      if (
+        !alert.clientId
+      ) {
+        return false;
+      }
+
+
+      const client =
+        clientById.get(
+          alert.clientId
+        );
+
+
+      if (!client) {
+        return false;
+      }
+
+
+      return canAccessClient(
+        recipient.user,
+        client
+      );
+    }
+
+
+    /*
+     * Aprovações antigas não precisam gerar
+     * vários balões individuais.
+     *
+     * Cada pessoa recebe no máximo UM resumo
+     * por dia com apenas os clientes que pode ver.
+     */
+    const approvalAlerts =
+      alerts.filter(
+        (
+          alert
+        ) =>
+          [
+            'APPROVAL_WAITING',
+            'MONTHLY_APPROVAL_WAITING',
+          ].includes(
+            alert.type
+          )
+      );
+
+
+    for (
+      const recipient
+      of recipients
+    ) {
+      if (
+        ![
+          'DIRECTOR',
+          'SOCIAL_MEDIA',
+        ].includes(
+          recipient.user.role
+        )
+      ) {
+        continue;
+      }
+
+
+      const personalApprovals =
+        approvalAlerts.filter(
+          (
+            alert
+          ) =>
+            memberCanReceiveAlert(
+              recipient,
+              alert
+            )
+        );
+
+
+      if (
+        personalApprovals.length ===
+        0
+      ) {
+        continue;
+      }
+
+
+      const lines =
+        personalApprovals
+          .slice(
+            0,
+            25
+          )
+          .map(
+            (
+              alert,
+              index
+            ) => {
+              const client =
+                alert.clientId
+                  ? clientById.get(
+                      alert.clientId
+                    )
+                  : null;
+
+
+              return (
+                String(
+                  index +
+                  1
+                ) +
+                '. ' +
+                (
+                  client?.name ||
+                  'Cliente'
+                ) +
+                ' — ' +
+                alert.message
+              );
+            }
+          );
+
+
+      if (
+        personalApprovals.length >
+        25
+      ) {
+        lines.push(
+          '+ ' +
+          String(
+            personalApprovals.length -
+            25
+          ) +
+          ' pendência(s) adicional(is).'
+        );
+      }
+
+
+      const result =
+        await sendProactive({
+          agencyId:
+            connection.agencyId,
+
+          memberId:
+            recipient.member.id,
+
+          toPhone:
+            recipient.member.phoneE164,
+
+          title:
+            'Aprovações que precisam de atenção',
+
+          message:
+            [
+              'Você tem ' +
+                String(
+                  personalApprovals.length
+                ) +
+                ' aprovação(ões) pendente(s) há mais de 48h.',
+
+              lines.join(
+                '\n'
+              ),
+
+              'Consulte o AprovUp para acompanhar.',
+            ].join(
+              '\n\n'
+            ),
+
+          dedupKey:
+            'approval-digest:' +
+            local.dateKey +
+            ':' +
+            recipient.member.id,
+        });
+
+
+      attempts +=
+        1;
+
+
+      /*
+       * O sendProactive já controla duplicidade.
+       * Não precisamos mandar cada alerta separadamente.
+       */
+      void result;
+    }
+
+
+    /*
+     * Alertas de publicação são operacionais e
+     * podem ser urgentes.
+     *
+     * Apenas alertas criados depois da última
+     * alteração da conexão são elegíveis.
+     * Assim, reativar a LIV não despeja backlog antigo.
+     */
+    const publicationAlerts =
+      alerts.filter(
+        (
+          alert
+        ) =>
+          [
+            'INSTAGRAM_PUBLICATION_ERROR',
+            'INSTAGRAM_PUBLICATION_OVERDUE',
+          ].includes(
+            alert.type
+          ) &&
+          alert.createdAt >=
+            connection.updatedAt
+      );
+
 
     for (
       const alert
-      of alerts
+      of publicationAlerts
     ) {
       for (
-        const member
-        of members
+        const recipient
+        of recipients
       ) {
-        const role = member.userId ? roleByUserId.get(member.userId) || '' : '';
-        const socialAlert = [
-          'INSTAGRAM_PUBLICATION_ERROR',
-          'INSTAGRAM_PUBLICATION_OVERDUE',
-          'APPROVAL_WAITING',
-          'MONTHLY_APPROVAL_WAITING',
-        ].includes(alert.type);
+        if (
+          !memberCanReceiveAlert(
+            recipient,
+            alert
+          )
+        ) {
+          continue;
+        }
 
-        if (socialAlert && !['DIRECTOR', 'SOCIAL_MEDIA'].includes(role)) continue;
 
         attempts +=
           1;
@@ -2569,15 +2979,13 @@ export async function deliverSecretaryAlertsToWhatsapp() {
 
         await sendProactive({
           agencyId:
-            connection
-              .agencyId,
+            connection.agencyId,
 
           memberId:
-            member.id,
+            recipient.member.id,
 
           toPhone:
-            member
-              .phoneE164,
+            recipient.member.phoneE164,
 
           title:
             alert.title,
@@ -2589,7 +2997,7 @@ export async function deliverSecretaryAlertsToWhatsapp() {
             'alert:' +
             alert.id +
             ':' +
-            member.id,
+            recipient.member.id,
         });
       }
     }
@@ -2598,7 +3006,6 @@ export async function deliverSecretaryAlertsToWhatsapp() {
 
   return attempts;
 }
-
 
 function maceioParts() {
   const parts =
