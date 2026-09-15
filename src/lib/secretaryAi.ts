@@ -1860,110 +1860,143 @@ function maceioWorkDayRange() {
 }
 
 
-function normalizeAssignment(
-  value:
-    string |
-    null |
-    undefined
+function isProductionWorkStatus(
+  status:
+    string
 ) {
-  return String(
-    value ||
-    ''
-  )
-    .normalize(
-      'NFD'
-    )
-    .replace(
-      /[\u0300-\u036f]/g,
-      ''
-    )
-    .toLowerCase()
-    .replace(
-      /[^a-z0-9@._-]+/g,
-      ' '
-    )
-    .trim();
+  return ![
+    'PRONTO_PARA_POSTAR',
+    'PUBLICADO',
+    'PUBLICADO_MANUALMENTE',
+    'ENVIADO_CLIENTE',
+  ].includes(
+    status
+  );
 }
 
 
-function assignmentMatchesUser(
-  responsible:
-    string |
-    null,
-  userContext:
-    SecretaryUserContext
+async function getDesignProductionStatusKeys(
+  agencyId:
+    string
 ) {
-  const assignment =
-    normalizeAssignment(
-      responsible
-    );
+  const columns =
+    await prisma
+      .designKanbanColumn
+      .findMany({
+        where: {
+          agencyId,
+
+          isActive:
+            true,
+        },
+
+        select: {
+          statusKey:
+            true,
+        },
+
+        orderBy: {
+          order:
+            'asc',
+        },
+      });
 
 
-  /*
-   * Sem responsável explícito = demanda
-   * compartilhada pelo cargo.
-   */
-  if (!assignment) {
-    return true;
-  }
+  const stored =
+    columns
+      .map(
+        (
+          column
+        ) =>
+          column.statusKey
+      )
+      .filter(
+        isProductionWorkStatus
+      );
 
 
   if (
-    [
-      'design',
-      'filmmaker',
-      'audiovisual',
-      'equipe',
-      'time',
-    ].includes(
-      assignment
-    )
+    stored.length
   ) {
-    return true;
+    return stored;
   }
 
 
-  const name =
-    normalizeAssignment(
-      userContext.name
-    );
-
-
-  const email =
-    normalizeAssignment(
-      userContext.email
-    );
-
-
-  const firstName =
-    name
-      .split(
-        /\s+/
-      )[0] ||
-    '';
-
-
+  /*
+   * Fallback apenas para uma agência que ainda
+   * nunca abriu/inicializou o Kanban de Design.
+   */
   return [
-    name,
-    email,
-    firstName,
-  ]
-    .filter(
-      Boolean
-    )
-    .some(
-      (
-        identity
-      ) =>
-        assignment ===
-          identity ||
-        assignment.includes(
-          identity
-        ) ||
-        identity.includes(
-          assignment
-        )
-    );
+    'APROVADO',
+    'DESIGN_GRAFICO',
+    'DESIGN_FAZENDO',
+    'DESIGN_ANALISE',
+    'DESIGN_DUVIDA',
+  ];
+}
+
+
+async function getFilmmakerProductionStatusKeys(
+  agencyId:
+    string
+) {
+  const columns =
+    await prisma
+      .filmmakerKanbanColumn
+      .findMany({
+        where: {
+          agencyId,
+
+          isActive:
+            true,
+        },
+
+        select: {
+          statusKey:
+            true,
+        },
+
+        orderBy: {
+          order:
+            'asc',
+        },
+      });
+
+
+  const stored =
+    columns
+      .map(
+        (
+          column
+        ) =>
+          column.statusKey
+      )
+      .filter(
+        isProductionWorkStatus
+      );
+
+
+  if (
+    stored.length
+  ) {
+    return stored;
+  }
+
+
+  /*
+   * Fallback apenas para uma agência que ainda
+   * nunca inicializou o Kanban audiovisual.
+   */
+  return [
+    'APROVADO',
+    'FILMMAKER_PRE_PRODUCAO',
+    'FILMMAKER_AGENDAMENTO',
+    'FILMMAKER_GRAVANDO',
+    'FILMMAKER_EDICAO',
+    'FILMMAKER_ANALISE',
+    'FILMMAKER_DUVIDA_SOCIAL',
+    'ALTERACAO_SOLICITADA',
+  ];
 }
 
 
@@ -2554,86 +2587,76 @@ async function getRoleWork(
     userContext.role ===
     'DESIGN'
   ) {
-    const rawDemands =
-      await prisma.content
-        .findMany({
-          where: {
-            client: {
-              agencyId,
-            },
-
-            area:
-              'DESIGN',
-
-            status: {
-              notIn: [
-                'PRONTO_PARA_POSTAR',
-                'PUBLICADO',
-                'PUBLICADO_MANUALMENTE',
-              ],
-            },
-          },
-
-          select: {
-            id:
-              true,
-
-            title:
-              true,
-
-            status:
-              true,
-
-            priority:
-              true,
-
-            productionDeadline:
-              true,
-
-            plannedDate:
-              true,
-
-            format:
-              true,
-
-            responsible:
-              true,
-
-            client: {
-              select: {
-                name:
-                  true,
-              },
-            },
-          },
-
-          orderBy: [
-            {
-              productionDeadline:
-                'asc',
-            },
-
-            {
-              plannedDate:
-                'asc',
-            },
-          ],
-
-          take:
-            150,
-        });
+    const designStatusKeys =
+      await getDesignProductionStatusKeys(
+        agencyId
+      );
 
 
     const demands =
-      rawDemands.filter(
-        (
-          content
-        ) =>
-          assignmentMatchesUser(
-            content.responsible,
-            userContext
-          )
-      );
+      designStatusKeys.length
+        ? await prisma.content
+            .findMany({
+              where: {
+                client: {
+                  agencyId,
+                },
+
+                area:
+                  'DESIGN',
+
+                status: {
+                  in:
+                    designStatusKeys,
+                },
+              },
+
+              select: {
+                id:
+                  true,
+
+                title:
+                  true,
+
+                status:
+                  true,
+
+                priority:
+                  true,
+
+                productionDeadline:
+                  true,
+
+                plannedDate:
+                  true,
+
+                format:
+                  true,
+
+                client: {
+                  select: {
+                    name:
+                      true,
+                  },
+                },
+              },
+
+              orderBy: [
+                {
+                  productionDeadline:
+                    'asc',
+                },
+
+                {
+                  plannedDate:
+                    'asc',
+                },
+              ],
+
+              take:
+                150,
+            })
+        : [];
 
 
     return {
@@ -2645,6 +2668,9 @@ async function getRoleWork(
 
       scope:
         'ROLE_WORK',
+
+      source:
+        'ACTIVE_DESIGN_KANBAN',
 
       responsibility:
         'Produção de peças gráficas, ajustes, dúvidas de criação e entrega dos materiais dentro do prazo.',
@@ -2668,9 +2694,6 @@ async function getRoleWork(
 
             format:
               content.format,
-
-            responsible:
-              content.responsible,
 
             waiting_social_response:
               content.status ===
@@ -2697,18 +2720,27 @@ async function getRoleWork(
     userContext.role ===
     'FILMMAKER'
   ) {
-    const clients =
-      await prisma.client
-        .findMany({
-          where: {
-            agencyId,
-          },
+    const [
+      clients,
+      filmmakerStatusKeys,
+    ] =
+      await Promise.all([
+        prisma.client
+          .findMany({
+            where: {
+              agencyId,
+            },
 
-          select: {
-            id:
-              true,
-          },
-        });
+            select: {
+              id:
+                true,
+            },
+          }),
+
+        getFilmmakerProductionStatusKeys(
+          agencyId
+        ),
+      ]);
 
 
     const clientIds =
@@ -2721,77 +2753,73 @@ async function getRoleWork(
 
 
     const [
-      rawDemands,
+      demands,
       captures,
     ] =
       await Promise.all([
-        prisma.content
-          .findMany({
-            where: {
-              client: {
-                agencyId,
-              },
+        filmmakerStatusKeys.length
+          ? prisma.content
+              .findMany({
+                where: {
+                  client: {
+                    agencyId,
+                  },
 
-              area:
-                'FILMMAKER',
+                  area:
+                    'FILMMAKER',
 
-              status: {
-                notIn: [
-                  'PRONTO_PARA_POSTAR',
-                  'PUBLICADO',
-                  'PUBLICADO_MANUALMENTE',
-                ],
-              },
-            },
-
-            select: {
-              id:
-                true,
-
-              title:
-                true,
-
-              status:
-                true,
-
-              priority:
-                true,
-
-              productionDeadline:
-                true,
-
-              plannedDate:
-                true,
-
-              format:
-                true,
-
-              responsible:
-                true,
-
-              client: {
-                select: {
-                  name:
-                    true,
+                  status: {
+                    in:
+                      filmmakerStatusKeys,
+                  },
                 },
-              },
-            },
 
-            orderBy: [
-              {
-                productionDeadline:
-                  'asc',
-              },
+                select: {
+                  id:
+                    true,
 
-              {
-                plannedDate:
-                  'asc',
-              },
-            ],
+                  title:
+                    true,
 
-            take:
-              150,
-          }),
+                  status:
+                    true,
+
+                  priority:
+                    true,
+
+                  productionDeadline:
+                    true,
+
+                  plannedDate:
+                    true,
+
+                  format:
+                    true,
+
+                  client: {
+                    select: {
+                      name:
+                        true,
+                    },
+                  },
+                },
+
+                orderBy: [
+                  {
+                    productionDeadline:
+                      'asc',
+                  },
+
+                  {
+                    plannedDate:
+                      'asc',
+                  },
+                ],
+
+                take:
+                  150,
+              })
+          : Promise.resolve([]),
 
         clientIds.length
           ? prisma.captureSchedule
@@ -2828,18 +2856,6 @@ async function getRoleWork(
       ]);
 
 
-    const demands =
-      rawDemands.filter(
-        (
-          content
-        ) =>
-          assignmentMatchesUser(
-            content.responsible,
-            userContext
-          )
-      );
-
-
     return {
       user:
         userContext.name,
@@ -2849,6 +2865,9 @@ async function getRoleWork(
 
       scope:
         'ROLE_WORK',
+
+      source:
+        'ACTIVE_FILMMAKER_KANBAN',
 
       responsibility:
         'Produção audiovisual: pré-produção, captação, gravação, edição, ajustes e entrega.',
@@ -2877,9 +2896,6 @@ async function getRoleWork(
 
             priority:
               content.priority,
-
-            responsible:
-              content.responsible,
 
             waiting_social_response:
               content.status ===
@@ -3719,7 +3735,8 @@ RESPONSABILIDADE E CARGO:
 - SOCIAL_MEDIA: trate somente a própria carteira. Em ROLE_WORK, priorize nesta ordem: alterações ou dúvidas aguardando resposta da Social Media; erros de publicação; demandas atrasadas ou com prazo hoje; aprovações pendentes; publicações do dia; demais demandas.
 - DESIGN: foque em produção gráfica, ajustes e entrega. Em ROLE_WORK, destaque primeiro demandas atrasadas, demandas com prazo hoje, próximas entregas e itens em DESIGN_DUVIDA como aguardando resposta da Social Media.
 - DIRETOR pode receber visão ampla da agência.
-- Nunca atribua ao usuário uma demanda explicitamente marcada para outra pessoa.
+- Para DESIGN e FILMMAKER, a fonte de responsabilidade operacional é a ÁREA e a ETAPA ativa do Kanban.
+- O campo textual de responsável do conteúdo pode identificar quem originou ou acompanha a demanda e NÃO deve ser interpretado como o executor da produção.
 
 Você recebeu fatos consultados diretamente da operação.
 

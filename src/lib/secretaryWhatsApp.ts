@@ -3713,6 +3713,109 @@ export async function deliverSecretaryProductionDeadlineReminders() {
     }
 
 
+    const [
+      activeDesignColumns,
+      activeFilmmakerColumns,
+    ] =
+      await Promise.all([
+        prisma.designKanbanColumn
+          .findMany({
+            where: {
+              agencyId:
+                connection.agencyId,
+
+              isActive:
+                true,
+            },
+
+            select: {
+              statusKey:
+                true,
+            },
+          }),
+
+        prisma.filmmakerKanbanColumn
+          .findMany({
+            where: {
+              agencyId:
+                connection.agencyId,
+
+              isActive:
+                true,
+            },
+
+            select: {
+              statusKey:
+                true,
+            },
+          }),
+      ]);
+
+
+    const completedProductionStatuses =
+      new Set([
+        'PRONTO_PARA_POSTAR',
+        'PUBLICADO',
+        'PUBLICADO_MANUALMENTE',
+        'ENVIADO_CLIENTE',
+      ]);
+
+
+    const designStatusKeys =
+      (
+        activeDesignColumns.length
+          ? activeDesignColumns.map(
+              (
+                column
+              ) =>
+                column.statusKey
+            )
+          : [
+              'APROVADO',
+              'DESIGN_GRAFICO',
+              'DESIGN_FAZENDO',
+              'DESIGN_ANALISE',
+              'DESIGN_DUVIDA',
+            ]
+      ).filter(
+        (
+          status
+        ) =>
+          !completedProductionStatuses.has(
+            status
+          )
+      );
+
+
+    const filmmakerStatusKeys =
+      (
+        activeFilmmakerColumns.length
+          ? activeFilmmakerColumns.map(
+              (
+                column
+              ) =>
+                column.statusKey
+            )
+          : [
+              'APROVADO',
+              'FILMMAKER_PRE_PRODUCAO',
+              'FILMMAKER_AGENDAMENTO',
+              'FILMMAKER_GRAVANDO',
+              'FILMMAKER_EDICAO',
+              'FILMMAKER_ANALISE',
+              'FILMMAKER_DUVIDA_SOCIAL',
+              'ALTERACAO_SOLICITADA',
+            ]
+      ).filter(
+        (
+          status
+        ) =>
+          !completedProductionStatuses.has(
+            status
+          )
+      );
+
+
     const contents =
       await prisma.content
         .findMany({
@@ -3722,20 +3825,27 @@ export async function deliverSecretaryProductionDeadlineReminders() {
                 connection.agencyId,
             },
 
-            area: {
-              in: [
-                'DESIGN',
-                'FILMMAKER',
-              ],
-            },
+            OR: [
+              {
+                area:
+                  'DESIGN',
 
-            status: {
-              notIn: [
-                'PRONTO_PARA_POSTAR',
-                'PUBLICADO',
-                'PUBLICADO_MANUALMENTE',
-              ],
-            },
+                status: {
+                  in:
+                    designStatusKeys,
+                },
+              },
+
+              {
+                area:
+                  'FILMMAKER',
+
+                status: {
+                  in:
+                    filmmakerStatusKeys,
+                },
+              },
+            ],
           },
 
           select: {
