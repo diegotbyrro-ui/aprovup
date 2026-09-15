@@ -6,6 +6,10 @@ import {
   aprovUpFileExists,
   getAprovUpPublicUrl,
 } from '@/lib/aprovupStorage';
+
+import {
+  notifyResponsibleSocialMediaAboutQuestion,
+} from '@/lib/secretaryWhatsApp';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -405,6 +409,29 @@ export async function requestFinalChangesAction(
       },
     });
   });
+
+  await notifyResponsibleSocialMediaAboutQuestion({
+    agencyId:
+      client.agencyId,
+
+    contentId,
+
+    source:
+      'CLIENTE',
+
+    message:
+      visibleMessage,
+  }).catch(
+    (
+      error
+    ) => {
+      console.error(
+        'LIV final client adjustment:',
+        error
+      );
+    }
+  );
+
 
   revalidatePath(
     `/aprovacao-final/${token}`

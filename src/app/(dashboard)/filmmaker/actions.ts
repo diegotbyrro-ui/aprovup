@@ -3,6 +3,10 @@
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/userAccess';
 import { requireAgencyContext } from '@/lib/tenant';
+
+import {
+  notifyResponsibleSocialMediaAboutQuestion,
+} from '@/lib/secretaryWhatsApp';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -500,6 +504,29 @@ export async function sendFilmmakerQuestionAction(contentId: string, formData: F
         'Filmaker',
     },
   });
+
+
+  await notifyResponsibleSocialMediaAboutQuestion({
+    agencyId:
+      currentUser.agencyId,
+
+    contentId,
+
+    source:
+      'FILMMAKER',
+
+    message:
+      question,
+  }).catch(
+    (
+      error
+    ) => {
+      console.error(
+        'LIV Filmmaker question:',
+        error
+      );
+    }
+  );
 
 
   revalidatePath('/filmmaker');

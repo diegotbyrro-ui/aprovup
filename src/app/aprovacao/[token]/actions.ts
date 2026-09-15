@@ -4,6 +4,10 @@ import { prisma } from '@/lib/prisma';
 import {
   getApprovedContentDestination,
 } from '@/lib/contentRouting';
+
+import {
+  notifyResponsibleSocialMediaAboutQuestion,
+} from '@/lib/secretaryWhatsApp';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -162,6 +166,28 @@ export async function requestClientAdjustmentAction(
       authorName: client.name,
     },
   });
+
+  await notifyResponsibleSocialMediaAboutQuestion({
+    agencyId:
+      client.agencyId,
+
+    contentId,
+
+    source:
+      'CLIENTE',
+
+    message,
+  }).catch(
+    (
+      error
+    ) => {
+      console.error(
+        'LIV client adjustment:',
+        error
+      );
+    }
+  );
+
 
   revalidatePath(`/aprovacao/${token}`);
   revalidatePath(`/clientes/${client.id}`);

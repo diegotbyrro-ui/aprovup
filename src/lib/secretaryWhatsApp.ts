@@ -4580,3 +4580,395 @@ export async function sendSecretaryIntroductionToTeam({
     results,
   };
 }
+
+
+
+type ContentQuestionSource =
+  | 'CLIENTE'
+  | 'DESIGN'
+  | 'FILMMAKER';
+
+
+/*
+ * LIV avisa somente a Social Media responsável
+ * pelo cliente relacionado ao conteúdo.
+ *
+ * Usa a mesma regra de carteira do restante do AprovUp.
+ */
+export async function notifyResponsibleSocialMediaAboutQuestion({
+  agencyId,
+  contentId,
+  source,
+  message,
+}: {
+  agencyId:
+    string;
+
+  contentId:
+    string;
+
+  source:
+    ContentQuestionSource;
+
+  message:
+    string;
+}) {
+  const connection =
+    await getWhatsappConnection(
+      agencyId
+    );
+
+
+  if (!connection) {
+    return {
+      attempted:
+        0,
+
+      sent:
+        0,
+    };
+  }
+
+
+  const content =
+    await prisma.content
+      .findFirst({
+        where: {
+          id:
+            contentId,
+
+          client: {
+            agencyId,
+          },
+        },
+
+        include: {
+          client:
+            true,
+        },
+      });
+
+
+  if (
+    !content ||
+    !content.client
+  ) {
+    return {
+      attempted:
+        0,
+
+      sent:
+        0,
+    };
+  }
+
+
+  const members =
+    await prisma
+      .secretaryWhatsappMember
+      .findMany({
+        where: {
+          agencyId,
+
+          isActive:
+            true,
+
+          receiveAlerts:
+            true,
+
+          userId: {
+            not:
+              null,
+          },
+        },
+      });
+
+
+  if (
+    members.length ===
+    0
+  ) {
+    return {
+      attempted:
+        0,
+
+      sent:
+        0,
+    };
+  }
+
+
+  const memberByUserId =
+    new Map<
+      string,
+      (typeof members)[number]
+    >();
+
+
+  for (
+    const member
+    of members
+  ) {
+    if (
+      member.userId
+    ) {
+      memberByUserId.set(
+        member.userId,
+        member
+      );
+    }
+  }
+
+
+  const userIds =
+    Array.from(
+      memberByUserId.keys()
+    );
+
+
+  if (
+    userIds.length ===
+    0
+  ) {
+    return {
+      attempted:
+        0,
+
+      sent:
+        0,
+    };
+  }
+
+
+  const socialUsers =
+    await prisma.user
+      .findMany({
+        where: {
+          agencyId,
+
+          status:
+            'APROVADO',
+
+          role:
+            'SOCIAL_MEDIA',
+
+          id: {
+            in:
+              userIds,
+          },
+        },
+      });
+
+
+  const recipients =
+    socialUsers
+      .filter(
+        (
+          user
+        ) =>
+          hasPermission(
+            user,
+            'social.manage'
+          ) &&
+          canAccessClient(
+            user,
+            content.client
+          )
+      )
+      .map(
+        (
+          user
+        ) =>
+          memberByUserId.get(
+            user.id
+          )
+      )
+      .filter(
+        (
+          member
+        ): member is
+          (typeof members)[number] =>
+            Boolean(
+              member
+            )
+      );
+
+
+  if (
+    recipients.length ===
+    0
+  ) {
+    return {
+      attempted:
+        0,
+
+      sent:
+        0,
+    };
+  }
+
+
+  const sourceTitle =
+    source ===
+      'CLIENTE'
+      ? '💬 Retorno do cliente'
+      : source ===
+          'DESIGN'
+        ? '🎨 Dúvida do Design'
+        : '🎥 Dúvida do Filmmaker';
+
+
+  const sourceText =
+    source ===
+      'CLIENTE'
+      ? 'O cliente deixou um novo ajuste ou dúvida.'
+      : source ===
+          'DESIGN'
+        ? 'O Design enviou uma dúvida que precisa da sua resposta.'
+        : 'O Filmmaker enviou uma dúvida que precisa da sua resposta.';
+
+
+  const cleanMessage =
+    String(
+      message ||
+      ''
+    )
+      .trim()
+      .slice(
+        0,
+        1600
+      );
+
+
+  const whatsappMessage =
+    [
+      sourceText,
+
+      '',
+
+      'Cliente: ' +
+        (
+          content.client.name ||
+          'Cliente'
+        ),
+
+      'Conteúdo: ' +
+        (
+          content.title ||
+          'Sem título'
+        ),
+
+      '',
+
+      cleanMessage
+        ? 'Mensagem: ' +
+          cleanMessage
+        : 'Existe um novo retorno aguardando sua atenção.',
+
+      '',
+
+      'Abra o AprovUp > Social Media para responder.',
+    ].join(
+      '
+'
+    );
+
+
+  /*
+   * O comentário recém-criado vira a chave de deduplicação.
+   * Assim a mesma dúvida não gera dois avisos.
+   */
+  const latestComment =
+    await prisma.comment
+      .findFirst({
+        where: {
+          contentId,
+        },
+
+        orderBy: {
+          createdAt:
+            'desc',
+        },
+
+        select: {
+          id:
+            true,
+        },
+      });
+
+
+  const eventKey =
+    latestComment?.id ||
+    (
+      source +
+      ':' +
+      contentId +
+      ':' +
+      Date.now()
+    );
+
+
+  let attempted =
+    0;
+
+  let sent =
+    0;
+
+
+  for (
+    const member
+    of recipients
+  ) {
+    attempted +=
+      1;
+
+
+    try {
+      const result =
+        await sendProactive({
+          agencyId,
+
+          memberId:
+            member.id,
+
+          toPhone:
+            member.phoneE164,
+
+          title:
+            sourceTitle,
+
+          message:
+            whatsappMessage,
+
+          dedupKey:
+            'content-question:' +
+            eventKey +
+            ':' +
+            member.id,
+        });
+
+
+      if (
+        result.status ===
+        'SENT'
+      ) {
+        sent +=
+          1;
+      }
+    }
+    catch (
+      error
+    ) {
+      console.error(
+        'LIV question alert:',
+        error
+      );
+    }
+  }
+
+
+  return {
+    attempted,
+    sent,
+  };
+}

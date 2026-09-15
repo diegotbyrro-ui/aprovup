@@ -2,6 +2,10 @@
 
 import { prisma } from '@/lib/prisma';
 import { getApprovedContentDestination } from '@/lib/contentRouting';
+
+import {
+  notifyResponsibleSocialMediaAboutQuestion,
+} from '@/lib/secretaryWhatsApp';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -197,6 +201,28 @@ async function requestAdjustmentBase(
       },
     });
   });
+
+  await notifyResponsibleSocialMediaAboutQuestion({
+    agencyId:
+      monthlyApproval.client.agencyId,
+
+    contentId,
+
+    source:
+      'CLIENTE',
+
+    message,
+  }).catch(
+    (
+      error
+    ) => {
+      console.error(
+        'LIV monthly client adjustment:',
+        error
+      );
+    }
+  );
+
 
   revalidatePath(
     `/aprovacao-mensal/${token}`

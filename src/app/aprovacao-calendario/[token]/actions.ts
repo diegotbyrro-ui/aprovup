@@ -8,6 +8,10 @@ import {
   getAprovUpPublicUrl,
 } from '@/lib/aprovupStorage';
 
+import {
+  notifyResponsibleSocialMediaAboutQuestion,
+} from '@/lib/secretaryWhatsApp';
+
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -395,6 +399,29 @@ export async function requestPlanningChanges(
         });
     }
   );
+
+  await notifyResponsibleSocialMediaAboutQuestion({
+    agencyId:
+      monthlyApproval.client.agencyId,
+
+    contentId,
+
+    source:
+      'CLIENTE',
+
+    message:
+      visibleMessage,
+  }).catch(
+    (
+      error
+    ) => {
+      console.error(
+        'LIV planning client adjustment:',
+        error
+      );
+    }
+  );
+
 
   revalidatePath(
     '/aprovacao-calendario/' +

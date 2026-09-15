@@ -2,6 +2,10 @@
 
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/userAccess';
+
+import {
+  notifyResponsibleSocialMediaAboutQuestion,
+} from '@/lib/secretaryWhatsApp';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -482,6 +486,28 @@ export async function sendDesignQuestionAction(contentId: string, formData: Form
       authorName: currentUser.name || currentUser.email || 'Design',
     },
   });
+
+  await notifyResponsibleSocialMediaAboutQuestion({
+    agencyId:
+      currentUser.agencyId,
+
+    contentId,
+
+    source:
+      'DESIGN',
+
+    message,
+  }).catch(
+    (
+      error
+    ) => {
+      console.error(
+        'LIV Design question:',
+        error
+      );
+    }
+  );
+
 
   revalidatePath('/design');
   revalidatePath('/social-media');
