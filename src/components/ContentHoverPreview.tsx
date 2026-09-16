@@ -4,7 +4,7 @@ import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 
 
 import { formatLabel } from '@/lib/formatLabel';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import {
 CalendarDays,
@@ -133,6 +133,22 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+
+function subscribeToHydration() {
+  return () => {};
+}
+
+
+function getClientHydrationSnapshot() {
+  return true;
+}
+
+
+function getServerHydrationSnapshot() {
+  return false;
+}
+
+
 export default function ContentHoverPreview({
   content,
   children,
@@ -140,13 +156,15 @@ export default function ContentHoverPreview({
   content: any;
   children: ReactNode;
 }) {
-  const [mounted, setMounted] = useState(false);
+  const mounted =
+    useSyncExternalStore(
+      subscribeToHydration,
+      getClientHydrationSnapshot,
+      getServerHydrationSnapshot
+    );
+
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const realImageUrl = getImageUrl(content);
   const imageUrl = realImageUrl || getFallbackImage(content);

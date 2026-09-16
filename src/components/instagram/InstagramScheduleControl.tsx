@@ -1,8 +1,6 @@
 ﻿'use client';
 
 import {
-  useEffect,
-  useMemo,
   useState,
 } from 'react';
 
@@ -81,13 +79,35 @@ function formatScheduledDate(
 }
 
 
-export function InstagramScheduleControl({
-  contentId,
-  enabled,
-  disabledReason,
-  scheduledFor,
-  publicationStatus,
-}: {
+function minimumLocalInputValue() {
+
+  const date =
+    new Date(
+      Date.now() +
+        60 * 1000
+    );
+
+
+  const offset =
+    date.getTimezoneOffset();
+
+
+  return new Date(
+    date.getTime() -
+      offset *
+        60 *
+        1000
+  )
+    .toISOString()
+    .slice(
+      0,
+      16
+    );
+
+}
+
+
+type InstagramScheduleControlProps = {
   contentId:
     string;
 
@@ -102,7 +122,33 @@ export function InstagramScheduleControl({
 
   publicationStatus:
     string;
-}) {
+};
+
+
+export function InstagramScheduleControl(
+  props:
+    InstagramScheduleControlProps
+) {
+
+  return (
+    <InstagramScheduleControlInner
+      key={
+        `${props.scheduledFor || 'none'}:${props.publicationStatus}`
+      }
+      {...props}
+    />
+  );
+
+}
+
+
+function InstagramScheduleControlInner({
+  contentId,
+  enabled,
+  disabledReason,
+  scheduledFor,
+  publicationStatus,
+}: InstagramScheduleControlProps) {
 
   const router =
     useRouter();
@@ -140,22 +186,6 @@ export function InstagramScheduleControl({
     );
 
 
-  useEffect(
-    () => {
-
-      setValue(
-        toLocalInputValue(
-          scheduledFor
-        )
-      );
-
-    },
-    [
-      scheduledFor,
-    ]
-  );
-
-
   const scheduled =
     publicationStatus ===
       'AGENDADO' &&
@@ -164,36 +194,22 @@ export function InstagramScheduleControl({
     );
 
 
-  const minimum =
-    useMemo(
-      () => {
-
-        const date =
-          new Date(
-            Date.now() +
-              60 * 1000
-          );
-
-
-        const offset =
-          date.getTimezoneOffset();
-
-
-        return new Date(
-          date.getTime() -
-          offset *
-            60 *
-            1000
-        )
-          .toISOString()
-          .slice(
-            0,
-            16
-          );
-
-      },
-      []
+  const [
+    minimum,
+    setMinimum,
+  ] =
+    useState(
+      ''
     );
+
+
+  function refreshMinimum() {
+
+    setMinimum(
+      minimumLocalInputValue()
+    );
+
+  }
 
 
   async function schedule() {
@@ -442,6 +458,9 @@ export function InstagramScheduleControl({
             min={
               minimum
             }
+            onFocus={
+              refreshMinimum
+            }
             disabled={
               loading
             }
@@ -522,6 +541,9 @@ export function InstagramScheduleControl({
           }
           min={
             minimum
+          }
+          onFocus={
+            refreshMinimum
           }
           disabled={
             !enabled ||

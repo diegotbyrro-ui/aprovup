@@ -1,8 +1,6 @@
 'use client';
 
 import {
-  useEffect,
-  useMemo,
   useState,
 } from 'react';
 
@@ -46,19 +44,76 @@ function pretty(value: string) {
 }
 
 
-export function InstagramStoryScheduleControl({
+function minimumLocalInputValue() {
+
+  const date =
+    new Date(
+      Date.now() +
+        60 * 1000
+    );
+
+
+  const offset =
+    date.getTimezoneOffset();
+
+
+  return new Date(
+    date.getTime() -
+      offset *
+        60 *
+        1000
+  )
+    .toISOString()
+    .slice(
+      0,
+      16
+    );
+
+}
+
+
+type InstagramStoryScheduleControlProps = {
+  contentId:
+    string;
+
+  enabled:
+    boolean;
+
+  disabledReason?:
+    string;
+
+  scheduledFor:
+    string | null;
+
+  publicationStatus:
+    string;
+};
+
+
+export function InstagramStoryScheduleControl(
+  props:
+    InstagramStoryScheduleControlProps
+) {
+
+  return (
+    <InstagramStoryScheduleControlInner
+      key={
+        `${props.scheduledFor || 'none'}:${props.publicationStatus}`
+      }
+      {...props}
+    />
+  );
+
+}
+
+
+function InstagramStoryScheduleControlInner({
   contentId,
   enabled,
   disabledReason,
   scheduledFor,
   publicationStatus,
-}: {
-  contentId: string;
-  enabled: boolean;
-  disabledReason?: string;
-  scheduledFor: string | null;
-  publicationStatus: string;
-}) {
+}: InstagramStoryScheduleControlProps) {
   const router =
     useRouter();
 
@@ -74,41 +129,27 @@ export function InstagramStoryScheduleControl({
   const [message, setMessage] =
     useState<string | null>(null);
 
-  useEffect(
-    () => {
-      setValue(
-        toLocal(scheduledFor)
-      );
-    },
-    [scheduledFor]
-  );
-
   const scheduled =
     publicationStatus ===
       'AGENDADO' &&
     Boolean(scheduledFor);
 
-  const minimum =
-    useMemo(
-      () => {
-        const date =
-          new Date(
-            Date.now() +
-              60000
-          );
-
-        const offset =
-          date.getTimezoneOffset();
-
-        return new Date(
-          date.getTime() -
-            offset * 60 * 1000
-        )
-          .toISOString()
-          .slice(0, 16);
-      },
-      []
+  const [
+    minimum,
+    setMinimum,
+  ] =
+    useState(
+      ''
     );
+
+
+  function refreshMinimum() {
+
+    setMinimum(
+      minimumLocalInputValue()
+    );
+
+  }
 
   async function schedule() {
     if (
@@ -260,6 +301,7 @@ export function InstagramStoryScheduleControl({
             type="datetime-local"
             value={value}
             min={minimum}
+            onFocus={refreshMinimum}
             disabled={loading}
             onChange={
               (event) =>
@@ -309,6 +351,7 @@ export function InstagramStoryScheduleControl({
           type="datetime-local"
           value={value}
           min={minimum}
+          onFocus={refreshMinimum}
           disabled={!enabled || loading}
           onChange={
             (event) =>

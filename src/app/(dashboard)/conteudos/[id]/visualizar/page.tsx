@@ -512,6 +512,25 @@ export default async function ViewContentPage({
             {isDesignCarousel ? (
               <div className="mt-5">
                 <CarouselFinalUpload
+                  key={
+                    item.instagramMediaAssets
+                      .map(
+                        (
+                          asset:
+                            {
+                              id:
+                                string;
+
+                              position:
+                                number;
+                            }
+                        ) =>
+                          `${asset.id}:${asset.position}`
+                      )
+                      .join(
+                        '|'
+                      )
+                  }
                   contentId={
                     item.id
                   }

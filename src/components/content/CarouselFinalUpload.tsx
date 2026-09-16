@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  useEffect,
   useState,
 } from 'react';
 
@@ -101,22 +100,7 @@ export function CarouselFinalUpload({
       null
     );
 
-
-  useEffect(
-    () => {
-
-      setItems(
-        assets
-      );
-
-    },
-    [
-      assets,
-    ]
-  );
-
-
-  const editable =
+const editable =
     editableStatuses.has(
       status
     );
