@@ -27,6 +27,16 @@ export const dynamic =
   'force-dynamic';
 
 
+type CarouselUser =
+  NonNullable<
+    Awaited<
+      ReturnType<
+        typeof getCurrentUser
+      >
+    >
+  >;
+
+
 function isCarouselFormat(
   value:
     string | null
@@ -146,7 +156,7 @@ async function loadContent(
 
 function userCanManage(
   user:
-    any
+    CarouselUser
 ) {
 
   return (

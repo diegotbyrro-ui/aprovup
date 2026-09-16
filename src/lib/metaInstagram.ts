@@ -2340,9 +2340,85 @@ export type InstagramTopMediaItem = {
 };
 
 
+type MetaInsightMetricPayload = {
+  name?:
+    string;
+
+  values?:
+    Array<{
+      value?:
+        number | null;
+    }>;
+
+  total_value?: {
+    value?:
+      number | null;
+  };
+};
+
+
+type MetaDailyReachPayload = {
+  value?:
+    number;
+
+  end_time?:
+    string;
+};
+
+
+type MetaInstagramMediaPayload = {
+  id:
+    string;
+
+  caption?:
+    string | null;
+
+  media_type?:
+    string | null;
+
+  media_product_type?:
+    string | null;
+
+  permalink?:
+    string | null;
+
+  timestamp?:
+    string | null;
+
+  thumbnail_url?:
+    string | null;
+
+  media_url?:
+    string | null;
+
+  like_count?:
+    number | null;
+
+  comments_count?:
+    number | null;
+};
+
+
+type MetaDailyReachPointPayload =
+  MetaDailyReachPayload & {
+    value:
+      number;
+
+    end_time:
+      string;
+  };
+
+
+type MetaInstagramMediaWithTimestamp =
+  MetaInstagramMediaPayload & {
+    timestamp:
+      string;
+  };
+
+
 function getInsightMetricValue(
   item:
-    any
+    MetaInsightMetricPayload
 ): number | null {
 
   const lifetimeValue =
@@ -2661,8 +2737,8 @@ export async function getInstagramDailyReach({
     .filter(
       (
         item:
-          any
-      ) =>
+          MetaDailyReachPayload
+      ): item is MetaDailyReachPointPayload =>
         typeof item?.value ===
           'number' &&
         typeof item?.end_time ===
@@ -2671,7 +2747,7 @@ export async function getInstagramDailyReach({
     .map(
       (
         item:
-          any
+          MetaDailyReachPointPayload
       ) => ({
         date:
           item.end_time,
@@ -2778,8 +2854,8 @@ export async function getInstagramTopMedia({
       .filter(
         (
           media:
-            any
-        ) => {
+            MetaInstagramMediaPayload
+        ): media is MetaInstagramMediaWithTimestamp => {
 
           if (
             !media.timestamp
@@ -2813,7 +2889,7 @@ export async function getInstagramTopMedia({
       mediaInPeriod.map(
         async (
           media:
-            any
+            MetaInstagramMediaWithTimestamp
         ): Promise<
           InstagramTopMediaItem
         > => {
@@ -3041,8 +3117,8 @@ export async function getInstagramStaticMediaPerformance({
       .filter(
         (
           item:
-            any
-        ) => {
+            MetaInstagramMediaPayload
+        ): item is MetaInstagramMediaWithTimestamp => {
           if (
             !item.timestamp
           ) {
@@ -3085,7 +3161,7 @@ export async function getInstagramStaticMediaPerformance({
       media.map(
         async (
           item:
-            any
+            MetaInstagramMediaWithTimestamp
         ): Promise<
           InstagramTopMediaItem
         > => {
@@ -3515,8 +3591,8 @@ export async function getInstagramReelRetention({
       .filter(
         (
           media:
-            any
-        ) => {
+            MetaInstagramMediaPayload
+        ): media is MetaInstagramMediaWithTimestamp => {
           if (
             !media.timestamp
           ) {
@@ -3559,7 +3635,7 @@ export async function getInstagramReelRetention({
       reels.map(
         async (
           media:
-            any
+            MetaInstagramMediaWithTimestamp
         ): Promise<
           InstagramReelRetentionItem
         > => {

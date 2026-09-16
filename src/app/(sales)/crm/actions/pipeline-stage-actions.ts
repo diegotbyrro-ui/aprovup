@@ -72,7 +72,12 @@ async function applyStageOrderSafely({
   orderedStageIds,
   currentPositions,
 }: {
-  supabase: any;
+  supabase:
+    Awaited<
+      ReturnType<
+        typeof createClient
+      >
+    >;
   organizationId: string;
   orderedStageIds: string[];
   currentPositions: number[];

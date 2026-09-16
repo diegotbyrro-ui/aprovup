@@ -1338,7 +1338,7 @@ export async function completeTask(taskId: string) {
   revalidatePath("/clientes");
 }
 
-export async function generateDraftLog(...args: any[]) {
+export async function generateDraftLog(...args: unknown[]) {
   const currentUser =
     await requirePermission(
       'social.manage'
@@ -1395,7 +1395,7 @@ export async function generateDraftLog(...args: any[]) {
   };
 }
 
-export async function applyDraftToContent(...args: any[]) {
+export async function applyDraftToContent(...args: unknown[]) {
   const currentUser =
     await requirePermission(
       'social.manage'
@@ -1441,9 +1441,28 @@ export async function applyDraftToContent(...args: any[]) {
     value = thirdArg;
   }
 
-  if (secondArg && typeof secondArg === "object" && !(secondArg instanceof FormData)) {
-    field = String(secondArg.field || secondArg.targetField || secondArg.type || "").trim();
-    value = String(secondArg.value || secondArg.text || secondArg.content || "").trim();
+  if (
+    secondArg &&
+    typeof secondArg === "object" &&
+    !(secondArg instanceof FormData)
+  ) {
+    const draft =
+      secondArg as
+        Record<string, unknown>;
+
+    field = String(
+      draft.field ||
+      draft.targetField ||
+      draft.type ||
+      ""
+    ).trim();
+
+    value = String(
+      draft.value ||
+      draft.text ||
+      draft.content ||
+      ""
+    ).trim();
   }
 
   if (secondArg instanceof FormData) {
@@ -1546,37 +1565,23 @@ export async function createPrompt(formData: FormData) {
     'GERAL'
   ).trim();
 
-  const runtimeModel = (prisma as any)._runtimeDataModel?.models?.Prompt;
-  const fieldNames = new Set(
-    (runtimeModel?.fields || []).map((field: any) => field.name)
-  );
+  const segment = String(
+    formData.get('segment') ||
+    ''
+  ).trim();
 
-  const data: any = {};
-
-  function setField(name: string, value: string) {
-    if (fieldNames.has(name) && value !== '') {
-      data[name] = value;
-    }
-  }
-
-  setField('title', title);
-  setField('name', title);
-  setField('content', content);
-  setField('prompt', content);
-  setField('text', content);
-  setField('description', content);
-  setField('type', type);
-  setField('category', type);
-  setField('status', 'ATIVO');
-
-  if (Object.keys(data).length === 0) {
-    data.title = title;
-    data.content = content;
-    data.type = type;
-  }
-
-  await (prisma as any).prompt.create({
-    data,
+  await prisma.promptTemplate.create({
+    data: {
+      title,
+      prompt:
+        content,
+      category:
+        type ||
+        null,
+      segment:
+        segment ||
+        null,
+    },
   });
 
   revalidatePath('/prompts');
