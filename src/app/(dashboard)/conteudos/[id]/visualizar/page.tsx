@@ -18,6 +18,48 @@ import {
   User,
 } from 'lucide-react';
 
+type LegacyContentViewFields = {
+  description?:
+    string | null;
+
+  textArt?:
+    string | null;
+
+  designText?:
+    string | null;
+
+  scriptText?:
+    string | null;
+
+  videoScript?:
+    string | null;
+
+  roteiro?:
+    string | null;
+
+  legend?:
+    string | null;
+
+  instagramCaption?:
+    string | null;
+
+  finalCaption?:
+    string | null;
+
+  captionText?:
+    string | null;
+
+  notes?:
+    string | null;
+
+  observations?:
+    string | null;
+
+  reference?:
+    string | null;
+};
+
+
 function formatDate(date?: Date | string | null) {
   if (!date) return 'Sem data';
 
@@ -156,7 +198,10 @@ export default async function ViewContentPage({
     requiredPermission
   );
 
-  const item: any = content;
+  const item =
+    content as
+      typeof content &
+      LegacyContentViewFields;
 
   const referenceImages =
     await listAprovUpReferenceFiles(
@@ -539,7 +584,7 @@ export default async function ViewContentPage({
                   }
                   assets={
                     item.instagramMediaAssets.map(
-                      (asset: any) => ({
+                      (asset) => ({
                         id:
                           asset.id,
 
@@ -664,7 +709,7 @@ export default async function ViewContentPage({
 
             {item.comments?.length ? (
               <div className="space-y-3">
-                {item.comments.map((comment: any) => (
+                {item.comments.map((comment) => (
                   <div
                     key={comment.id}
                     className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5"

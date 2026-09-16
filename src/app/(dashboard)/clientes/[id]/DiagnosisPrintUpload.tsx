@@ -1,5 +1,6 @@
 ﻿import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { uploadAprovUpFile } from '@/lib/aprovupStorage';
 import { requirePermission } from '@/lib/userAccess';
 
@@ -7,6 +8,24 @@ type DiagnosisPrintUploadProps = {
   clientId: string;
   currentUrl?: string | null;
   diagnosisPrintUrl?: string | null;
+};
+
+
+type ClientRuntimeField = {
+  name:
+    string;
+};
+
+
+type ClientRuntimePrisma = {
+  _runtimeDataModel?: {
+    models?: {
+      Client?: {
+        fields?:
+          ClientRuntimeField[];
+      };
+    };
+  };
 };
 
 async function uploadDiagnosisPrintLocal(clientId: string, formData: FormData) {
@@ -49,12 +68,26 @@ async function uploadDiagnosisPrintLocal(clientId: string, formData: FormData) {
       `diagnostico-${clientId}`
     );
 
-  const runtimeModel = (prisma as any)._runtimeDataModel?.models?.Client;
+  const runtimeModel =
+    (
+      prisma as unknown as
+        ClientRuntimePrisma
+    )
+      ._runtimeDataModel
+      ?.models
+      ?.Client;
   const fieldNames = new Set(
-    (runtimeModel?.fields || []).map((field: any) => field.name)
+    (runtimeModel?.fields || []).map(
+      (
+        field:
+          ClientRuntimeField
+      ) =>
+        field.name
+    )
   );
 
-  const data: any = {};
+  const data:
+    Record<string, string> = {};
 
   const possibleFields = [
     'diagnosisPrintUrl',
@@ -75,9 +108,15 @@ async function uploadDiagnosisPrintLocal(clientId: string, formData: FormData) {
   }
 
   if (Object.keys(data).length > 0) {
-    await (prisma as any).client.update({
-      where: { id: clientId },
-      data,
+    await prisma.client.update({
+      where: {
+        id:
+          clientId,
+      },
+
+      data:
+        data as unknown as
+          Prisma.ClientUpdateInput,
     });
   }
 

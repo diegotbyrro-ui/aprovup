@@ -1,5 +1,9 @@
 'use server';
 
+import type {
+  Prisma,
+} from '@prisma/client';
+
 import {
   prisma,
 } from '@/lib/prisma';
@@ -108,7 +112,8 @@ export async function uploadFinalContentFilesAction(
     '';
 
 
-  const updateData: any = {
+  const updateData:
+    Prisma.ContentUpdateInput = {
     status:
       'ENVIADO_AO_CLIENTE',
 

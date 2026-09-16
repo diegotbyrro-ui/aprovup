@@ -21,6 +21,20 @@ type ContentData = {
   } | null;
 };
 
+
+type ContentAssistantProps =
+  ContentData & {
+    content?:
+      ContentData;
+
+    initialContent?:
+      ContentData;
+
+    contentId?:
+      string;
+  };
+
+
 function clean(value?: string | null) {
   return String(value || '').trim();
 }
@@ -136,7 +150,10 @@ Observação:
 Evitar texto genérico. A comunicação precisa ser clara, objetiva e conectada com a necessidade do público.`;
 }
 
-export function ContentAssistant(props: any) {
+export function ContentAssistant(
+  props:
+    ContentAssistantProps
+) {
   const content: ContentData = props?.content || props?.initialContent || props || {};
   const contentId = content?.id || props?.contentId;
 

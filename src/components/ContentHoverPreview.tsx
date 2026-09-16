@@ -13,6 +13,135 @@ CalendarDays,
   MessageSquare,
 } from 'lucide-react';
 
+
+type PreviewMediaItem = {
+  url?:
+    string | null;
+
+  fileUrl?:
+    string | null;
+
+  publicUrl?:
+    string | null;
+
+  path?:
+    string | null;
+
+  src?:
+    string | null;
+};
+
+
+type ContentPreviewData = {
+  id?:
+    string;
+
+  title?:
+    string | null;
+
+  status?:
+    string | null;
+
+  format?:
+    string | null;
+
+  plannedDate?:
+    string | Date | null;
+
+  objective?:
+    string | null;
+
+  briefing?:
+    string | null;
+
+  description?:
+    string | null;
+
+  caption?:
+    string | null;
+
+  legend?:
+    string | null;
+
+  instagramCaption?:
+    string | null;
+
+  finalCaption?:
+    string | null;
+
+  captionText?:
+    string | null;
+
+  artText?:
+    string | null;
+
+  textArt?:
+    string | null;
+
+  designText?:
+    string | null;
+
+  script?:
+    string | null;
+
+  scriptText?:
+    string | null;
+
+  finalCoverUrl?:
+    string | null;
+
+  finalMediaUrl?:
+    string | null;
+
+  coverUrl?:
+    string | null;
+
+  thumbnailUrl?:
+    string | null;
+
+  imageUrl?:
+    string | null;
+
+  mediaUrl?:
+    string | null;
+
+  firstMediaUrl?:
+    string | null;
+
+  artUrl?:
+    string | null;
+
+  finalImageUrl?:
+    string | null;
+
+  media?:
+    PreviewMediaItem[] | null;
+
+  medias?:
+    PreviewMediaItem[] | null;
+
+  mediaFiles?:
+    PreviewMediaItem[] | null;
+
+  files?:
+    PreviewMediaItem[] | null;
+
+  attachments?:
+    PreviewMediaItem[] | null;
+
+  assets?:
+    PreviewMediaItem[] | null;
+
+  comments?:
+    unknown[] | null;
+
+  _count?: {
+    comments?:
+      number | null;
+  } | null;
+};
+
+
 function formatDate(date?: string | Date | null) {
   if (!date) return 'Sem data';
 
@@ -55,7 +184,10 @@ function getStatusDot(status?: string | null) {
   return 'bg-slate-400';
 }
 
-function getImageUrl(content: any) {
+function getImageUrl(
+  content:
+    ContentPreviewData
+) {
   const direct =
     content.finalCoverUrl || content.finalMediaUrl || content.finalCoverUrl || content.finalMediaUrl || content.coverUrl ||
     content.finalCoverUrl || content.finalMediaUrl || content.finalCoverUrl || content.finalMediaUrl || content.thumbnailUrl ||
@@ -79,7 +211,7 @@ function getImageUrl(content: any) {
     [];
 
   if (Array.isArray(possibleMedia)) {
-    const found = possibleMedia.find((item: any) =>
+    const found = possibleMedia.find((item: PreviewMediaItem) =>
       item?.url ||
       item?.fileUrl ||
       item?.publicUrl ||
@@ -100,12 +232,18 @@ function getImageUrl(content: any) {
   return '';
 }
 
-function getFallbackImage(content: any) {
+function getFallbackImage(
+  content:
+    ContentPreviewData
+) {
   const title = encodeURIComponent(String(content.title || 'Conteúdo Level UP'));
   return `https://placehold.co/900x900/0f172a/ffffff?text=${title}`;
 }
 
-function getCaption(content: any) {
+function getCaption(
+  content:
+    ContentPreviewData
+) {
   return (
     content.caption ||
     content.legend ||
@@ -116,7 +254,10 @@ function getCaption(content: any) {
   );
 }
 
-function getDesignText(content: any) {
+function getDesignText(
+  content:
+    ContentPreviewData
+) {
   return (
     content.artText ||
     content.textArt ||
@@ -153,8 +294,11 @@ export default function ContentHoverPreview({
   content,
   children,
 }: {
-  content: any;
-  children: ReactNode;
+  content:
+    ContentPreviewData;
+
+  children:
+    ReactNode;
 }) {
   const mounted =
     useSyncExternalStore(

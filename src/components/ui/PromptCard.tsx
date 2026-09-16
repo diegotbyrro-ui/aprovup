@@ -1,6 +1,16 @@
 ﻿import Link from 'next/link';
 
-export function PromptCard({ prompt }: { prompt: any }) {
+import type {
+  PromptTemplate,
+} from '@prisma/client';
+
+
+export function PromptCard({
+  prompt,
+}: {
+  prompt:
+    PromptTemplate;
+}) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
       <div className="p-5 flex-1">
