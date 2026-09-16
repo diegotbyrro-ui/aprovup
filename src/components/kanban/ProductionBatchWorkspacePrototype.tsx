@@ -646,18 +646,18 @@ export function ProductionBatchWorkspacePrototype({
 
                       {/* REFERENCIAS DA SOCIAL */}
 
-                      <div className="mt-4">
+                      <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
 
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center justify-between gap-3 px-3 py-3">
 
                           <div>
 
-                            <p className="text-[9px] font-black uppercase tracking-[0.07em] text-slate-400">
+                            <p className="text-[9px] font-black uppercase tracking-[0.07em] text-slate-500">
                               Referências da Social Media
                             </p>
 
-                            <p className="mt-1 text-[9px] text-slate-400">
-                              Fotos e materiais anexados pela Social para serem usados na criação.
+                            <p className="mt-0.5 text-[9px] text-slate-400">
+                              Arquivos anexados pela Social para auxiliar na criação.
                             </p>
 
                           </div>
@@ -665,7 +665,7 @@ export function ProductionBatchWorkspacePrototype({
 
                           {item.referenceFiles.length >
                           0 ? (
-                            <span className="rounded-md bg-blue-50 px-2 py-1 text-[8px] font-black text-blue-600">
+                            <span className="shrink-0 rounded-md bg-blue-50 px-2 py-1 text-[8px] font-black text-blue-600">
                               {item.referenceFiles.length} anexo(s)
                             </span>
                           ) : null}
@@ -676,23 +676,24 @@ export function ProductionBatchWorkspacePrototype({
                         {item.referenceFiles.length >
                         0 ? (
 
-                          <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                          <div className="border-t border-slate-100">
 
-                            {item.referenceFiles.map(
-                              (
-                                reference
-                              ) => (
+                            {item.referenceFiles
+                              .slice(
+                                0,
+                                4
+                              )
+                              .map(
+                                (
+                                  reference
+                                ) => (
 
-                                <div
-                                  key={
-                                    reference.url
-                                  }
-                                  className="overflow-hidden rounded-lg border border-blue-100 bg-blue-50/30"
-                                >
-
-                                  {reference.mimeType.startsWith(
-                                    "image/"
-                                  ) ? (
+                                  <div
+                                    key={
+                                      reference.url
+                                    }
+                                    className="flex items-center gap-3 border-b border-slate-100 px-3 py-2.5 last:border-b-0"
+                                  >
 
                                     <a
                                       href={
@@ -700,71 +701,233 @@ export function ProductionBatchWorkspacePrototype({
                                       }
                                       target="_blank"
                                       rel="noreferrer"
-                                      className="block aspect-[4/3] overflow-hidden bg-slate-100"
+                                      className="flex h-12 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-100"
                                     >
 
-                                      <img
-                                        src={
-                                          reference.url
-                                        }
-                                        alt={
+                                      {reference.mimeType.startsWith(
+                                        "image/"
+                                      ) ? (
+
+                                        <img
+                                          src={
+                                            reference.url
+                                          }
+                                          alt={
+                                            reference.originalName
+                                          }
+                                          className="h-full w-full object-cover"
+                                        />
+
+                                      ) : (
+
+                                        <span className="text-[8px] font-black text-slate-400">
+                                          ARQ
+                                        </span>
+
+                                      )}
+
+                                    </a>
+
+
+                                    <div className="min-w-0 flex-1">
+
+                                      <p
+                                        className="truncate text-[10px] font-black text-slate-700"
+                                        title={
                                           reference.originalName
                                         }
-                                        className="h-full w-full object-cover transition hover:scale-[1.02]"
-                                      />
+                                      >
+                                        {reference.originalName ||
+                                          reference.name}
+                                      </p>
 
-                                    </a>
 
-                                  ) : (
+                                      <p className="mt-0.5 text-[8px] font-medium text-slate-400">
+                                        {reference.size >
+                                        0
+                                          ? sizeLabel(
+                                              reference.size
+                                            )
+                                          : "Arquivo de referência"}
+                                      </p>
 
-                                    <div className="flex aspect-[4/3] items-center justify-center bg-slate-100 px-3 text-center text-[9px] font-bold text-slate-400">
-                                      Arquivo de referência
                                     </div>
 
-                                  )}
+
+                                    <div className="flex shrink-0 items-center gap-1.5">
+
+                                      <a
+                                        href={
+                                          reference.url
+                                        }
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        title="Abrir referência"
+                                        className="flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 text-[8px] font-black text-slate-600 transition hover:bg-slate-50"
+                                      >
+                                        Abrir
+                                      </a>
 
 
-                                  <div className="p-2">
+                                      <a
+                                        href={`/api/conteudos/${item.id}/reference-download?url=${encodeURIComponent(
+                                          reference.url
+                                        )}`}
+                                        title="Baixar referência"
+                                        className="flex h-8 items-center justify-center rounded-md bg-blue-600 px-2.5 text-[8px] font-black text-white transition hover:bg-blue-700"
+                                      >
+                                        Baixar
+                                      </a>
 
-                                    <p className="truncate text-[9px] font-bold text-slate-700">
-                                      {reference.originalName}
-                                    </p>
-
-
-                                    {reference.size >
-                                    0 ? (
-                                      <p className="mt-0.5 text-[8px] text-slate-400">
-                                        {sizeLabel(
-                                          reference.size
-                                        )}
-                                      </p>
-                                    ) : null}
-
-
-                                    <a
-                                      href={`/api/conteudos/${item.id}/reference-download?url=${encodeURIComponent(
-                                        reference.url
-                                      )}`}
-                                      className="mt-2 flex h-7 items-center justify-center rounded-md bg-blue-600 text-[8px] font-black text-white hover:bg-blue-700"
-                                    >
-                                      Baixar referência
-                                    </a>
+                                    </div>
 
                                   </div>
 
+                                )
+                              )}
+
+
+                            {item.referenceFiles.length >
+                            4 ? (
+
+                              <details className="group">
+
+                                <summary className="flex cursor-pointer list-none items-center justify-between border-t border-slate-100 bg-slate-50 px-3 py-2.5 text-[9px] font-black text-slate-600 hover:bg-slate-100 [&::-webkit-details-marker]:hidden">
+
+                                  <span>
+                                    Exibir todos os anexos ({item.referenceFiles.length - 4} ocultos)
+                                  </span>
+
+                                  <span className="text-[11px] text-slate-400 transition group-open:rotate-180">
+                                    ▾
+                                  </span>
+
+                                </summary>
+
+
+                                <div>
+
+                                  {item.referenceFiles
+                                    .slice(
+                                      4
+                                    )
+                                    .map(
+                                      (
+                                        reference
+                                      ) => (
+
+                                        <div
+                                          key={
+                                            reference.url
+                                          }
+                                          className="flex items-center gap-3 border-t border-slate-100 px-3 py-2.5"
+                                        >
+
+                                          <a
+                                            href={
+                                              reference.url
+                                            }
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="flex h-12 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-100"
+                                          >
+
+                                            {reference.mimeType.startsWith(
+                                              "image/"
+                                            ) ? (
+
+                                              <img
+                                                src={
+                                                  reference.url
+                                                }
+                                                alt={
+                                                  reference.originalName
+                                                }
+                                                className="h-full w-full object-cover"
+                                              />
+
+                                            ) : (
+
+                                              <span className="text-[8px] font-black text-slate-400">
+                                                ARQ
+                                              </span>
+
+                                            )}
+
+                                          </a>
+
+
+                                          <div className="min-w-0 flex-1">
+
+                                            <p
+                                              className="truncate text-[10px] font-black text-slate-700"
+                                              title={
+                                                reference.originalName
+                                              }
+                                            >
+                                              {reference.originalName ||
+                                                reference.name}
+                                            </p>
+
+                                            <p className="mt-0.5 text-[8px] font-medium text-slate-400">
+                                              {reference.size >
+                                              0
+                                                ? sizeLabel(
+                                                    reference.size
+                                                  )
+                                                : "Arquivo de referência"}
+                                            </p>
+
+                                          </div>
+
+
+                                          <div className="flex shrink-0 items-center gap-1.5">
+
+                                            <a
+                                              href={
+                                                reference.url
+                                              }
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              title="Abrir referência"
+                                              className="flex h-8 items-center justify-center rounded-md border border-slate-200 bg-white px-2.5 text-[8px] font-black text-slate-600 transition hover:bg-slate-50"
+                                            >
+                                              Abrir
+                                            </a>
+
+                                            <a
+                                              href={`/api/conteudos/${item.id}/reference-download?url=${encodeURIComponent(
+                                                reference.url
+                                              )}`}
+                                              title="Baixar referência"
+                                              className="flex h-8 items-center justify-center rounded-md bg-blue-600 px-2.5 text-[8px] font-black text-white transition hover:bg-blue-700"
+                                            >
+                                              Baixar
+                                            </a>
+
+                                          </div>
+
+                                        </div>
+
+                                      )
+                                    )}
+
                                 </div>
 
-                              )
-                            )}
+                              </details>
+
+                            ) : null}
 
                           </div>
 
                         ) : (
 
-                          <div className="mt-2 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center">
+                          <div className="border-t border-slate-100 bg-slate-50 px-3 py-4 text-center">
+
                             <p className="text-[9px] font-semibold text-slate-400">
                               A Social Media não anexou referências neste conteúdo.
                             </p>
+
                           </div>
 
                         )}
