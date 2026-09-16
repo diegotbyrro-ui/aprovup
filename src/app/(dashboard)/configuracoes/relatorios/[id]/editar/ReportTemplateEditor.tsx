@@ -585,12 +585,7 @@ export function ReportTemplateEditor({
   ) {
 
     const id =
-      typeof crypto !==
-        'undefined' &&
-      'randomUUID' in
-        crypto
-        ? crypto.randomUUID()
-        : `field-${Date.now()}-${Math.random()}`;
+      crypto.randomUUID();
 
 
     const newElement:

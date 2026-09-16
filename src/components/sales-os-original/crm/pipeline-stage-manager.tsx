@@ -136,21 +136,6 @@ export function PipelineStageManager({
     );
   }, [stages]);
 
-  useEffect(() => {
-    if (!deleteTargetId) {
-      setDestinationStageId("");
-      return;
-    }
-
-    const fallbackStage = orderedStages.find(
-      (stage) => stage.id !== deleteTargetId
-    );
-
-    setDestinationStageId(
-      fallbackStage?.id ?? ""
-    );
-  }, [deleteTargetId, orderedStages]);
-
   const deleteTarget =
     orderedStages.find(
       (stage) => stage.id === deleteTargetId
@@ -174,6 +159,7 @@ export function PipelineStageManager({
 
     setIsOpen(false);
     setDeleteTargetId(null);
+    setDestinationStageId("");
     setFeedback(null);
   }
 
@@ -345,6 +331,7 @@ export function PipelineStageManager({
       }
 
       setDeleteTargetId(null);
+      setDestinationStageId("");
       router.refresh();
     });
   }
@@ -691,11 +678,26 @@ export function PipelineStageManager({
                             orderedStages.length <=
                               1
                           }
-                          onClick={() =>
+                          onClick={() => {
+                            const fallbackStage =
+                              orderedStages.find(
+                                (
+                                  candidate
+                                ) =>
+                                  candidate.id !==
+                                  stage.id
+                              );
+
+
+                            setDestinationStageId(
+                              fallbackStage?.id ??
+                              ""
+                            );
+
                             setDeleteTargetId(
                               stage.id
-                            )
-                          }
+                            );
+                          }}
                           title={
                             orderedStages.length <=
                             1

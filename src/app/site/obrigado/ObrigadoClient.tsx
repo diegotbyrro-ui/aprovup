@@ -1,6 +1,9 @@
 ﻿'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import {
+  useMemo,
+  useSyncExternalStore,
+} from 'react';
 
 type LeadData = {
   name?: string;
@@ -10,20 +13,89 @@ type LeadData = {
   biggestPain?: string;
 };
 
-export function ObrigadoClient() {
-  const [lead, setLead] = useState<LeadData>({});
 
-  useEffect(() => {
-    const saved = window.localStorage.getItem('aprovup_last_lead');
+const LEAD_STORAGE_KEY =
+  'aprovup_last_lead';
 
-    if (saved) {
-      try {
-        setLead(JSON.parse(saved));
-      } catch {
-        setLead({});
-      }
+
+function subscribeLeadStorage(
+  callback:
+    () => void
+) {
+  function handleStorage(
+    event:
+      StorageEvent
+  ) {
+    if (
+      event.key ===
+        LEAD_STORAGE_KEY ||
+      event.key ===
+        null
+    ) {
+      callback();
     }
-  }, []);
+  }
+
+
+  window.addEventListener(
+    'storage',
+    handleStorage
+  );
+
+
+  return () => {
+    window.removeEventListener(
+      'storage',
+      handleStorage
+    );
+  };
+}
+
+
+function getLeadStorageSnapshot() {
+  return window.localStorage.getItem(
+    LEAD_STORAGE_KEY
+  ) || '';
+}
+
+
+function getLeadServerSnapshot() {
+  return '';
+}
+
+export function ObrigadoClient() {
+  const storedLead =
+    useSyncExternalStore(
+      subscribeLeadStorage,
+      getLeadStorageSnapshot,
+      getLeadServerSnapshot
+    );
+
+
+  const lead =
+    useMemo<LeadData>(
+      () => {
+        if (
+          !storedLead
+        ) {
+          return {};
+        }
+
+
+        try {
+          return JSON.parse(
+            storedLead
+          ) as LeadData;
+        }
+        catch {
+          return {};
+        }
+      },
+      [
+        storedLead,
+      ]
+    );
+
 
   const whatsappLink = useMemo(() => {
     const message = [

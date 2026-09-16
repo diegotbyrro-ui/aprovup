@@ -275,34 +275,6 @@ export function SecretaryConversationsClient({
 
   useEffect(
     () => {
-      if (
-        selectedId &&
-        conversations.some(
-          (
-            item
-          ) =>
-            item.id ===
-            selectedId
-        )
-      ) {
-        return;
-      }
-
-      setSelectedId(
-        conversations[0]
-          ?.id ||
-          null
-      );
-    },
-    [
-      conversations,
-      selectedId,
-    ]
-  );
-
-
-  useEffect(
-    () => {
       const interval =
         window.setInterval(
           () => {
@@ -320,6 +292,21 @@ export function SecretaryConversationsClient({
       router,
     ]
   );
+
+
+  const effectiveSelectedId =
+    selectedId &&
+    conversations.some(
+      (
+        conversation
+      ) =>
+        conversation.id ===
+        selectedId
+    )
+      ? selectedId
+      : conversations[0]
+          ?.id ||
+        null;
 
 
   const filtered =
@@ -370,12 +357,12 @@ export function SecretaryConversationsClient({
             conversation
           ) =>
             conversation.id ===
-            selectedId
+            effectiveSelectedId
         ) ||
         null,
       [
         conversations,
-        selectedId,
+        effectiveSelectedId,
       ]
     );
 
@@ -496,7 +483,7 @@ export function SecretaryConversationsClient({
                     ) => {
                       const active =
                         conversation.id ===
-                        selectedId;
+                        effectiveSelectedId;
 
                       const lastPreview =
                         previewText(

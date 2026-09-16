@@ -225,28 +225,20 @@ export function AppHeaderClient({
 
 
   const [
-    mobileMenuOpen,
-    setMobileMenuOpen,
+    mobileMenuPath,
+    setMobileMenuPath,
   ] =
-    useState(false);
+    useState<
+      string |
+      null
+    >(
+      null
+    );
 
 
-  /*
-   * Ao navegar para outra pagina,
-   * fecha automaticamente a gaveta mobile.
-   */
-  useEffect(
-    () => {
-
-      setMobileMenuOpen(
-        false
-      );
-
-    },
-    [
-      pathname,
-    ]
-  );
+  const mobileMenuOpen =
+    mobileMenuPath ===
+    pathname;
 
 
   /*
@@ -277,9 +269,7 @@ export function AppHeaderClient({
           "Escape"
         ) {
 
-          setMobileMenuOpen(
-            false
-          );
+          setMobileMenuPath(null);
         }
       }
 
@@ -341,9 +331,14 @@ export function AppHeaderClient({
             className="ap-mobile-menu-button"
             onClick={
               () =>
-                setMobileMenuOpen(
-                  (current) =>
-                    !current
+                setMobileMenuPath(
+                  (
+                    current
+                  ) =>
+                    current ===
+                    pathname
+                      ? null
+                      : pathname
                 )
             }
             aria-label={
@@ -511,9 +506,7 @@ export function AppHeaderClient({
         ].join(" ")}
         onClick={
           () =>
-            setMobileMenuOpen(
-              false
-            )
+            setMobileMenuPath(null)
         }
         aria-label="Fechar menu"
         tabIndex={

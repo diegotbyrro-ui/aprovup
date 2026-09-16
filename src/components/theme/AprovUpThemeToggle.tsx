@@ -7,7 +7,7 @@ import {
 
 import {
   useEffect,
-  useState,
+  useSyncExternalStore,
 } from "react";
 
 
@@ -25,18 +25,113 @@ const STORAGE_KEY =
   "aprovup-theme";
 
 
-function applyTheme(
-  theme: Theme
+const THEME_EVENT =
+  "aprovup-theme-change";
+
+
+function getThemeSnapshot():
+  Theme {
+
+  const saved =
+    localStorage.getItem(
+      STORAGE_KEY
+    );
+
+
+  if (
+    saved ===
+      "light" ||
+    saved ===
+      "dark"
+  ) {
+    return saved;
+  }
+
+
+  return window.matchMedia(
+    "(prefers-color-scheme: dark)"
+  ).matches
+    ? "dark"
+    : "light";
+}
+
+
+function getThemeServerSnapshot():
+  Theme {
+  return "light";
+}
+
+
+function subscribeTheme(
+  callback:
+    () => void
+) {
+
+  function handleStorage(
+    event:
+      StorageEvent
+  ) {
+    if (
+      event.key ===
+        STORAGE_KEY ||
+      event.key ===
+        null
+    ) {
+      callback();
+    }
+  }
+
+
+  window.addEventListener(
+    "storage",
+    handleStorage
+  );
+
+  window.addEventListener(
+    THEME_EVENT,
+    callback
+  );
+
+
+  return () => {
+    window.removeEventListener(
+      "storage",
+      handleStorage
+    );
+
+    window.removeEventListener(
+      THEME_EVENT,
+      callback
+    );
+  };
+}
+
+
+function applyThemeToDocument(
+  theme:
+    Theme
 ) {
   document.documentElement.dataset.aprovupTheme =
     theme;
 
   document.documentElement.style.colorScheme =
     theme;
+}
 
+
+function persistTheme(
+  theme:
+    Theme
+) {
   localStorage.setItem(
     STORAGE_KEY,
     theme
+  );
+
+  window.dispatchEvent(
+    new Event(
+      THEME_EVENT
+    )
   );
 }
 
@@ -44,59 +139,34 @@ function applyTheme(
 export function AprovUpThemeToggle({
   compact = false,
 }: AprovUpThemeToggleProps) {
-  const [theme, setTheme] =
-    useState<Theme>("light");
+  const theme =
+    useSyncExternalStore(
+      subscribeTheme,
+      getThemeSnapshot,
+      getThemeServerSnapshot
+    );
 
-  const [mounted, setMounted] =
-    useState(false);
 
-
-  useEffect(() => {
-    const saved =
-      localStorage.getItem(
-        STORAGE_KEY
+  useEffect(
+    () => {
+      applyThemeToDocument(
+        theme
       );
-
-    let initialTheme: Theme;
-
-    if (
-      saved === "light" ||
-      saved === "dark"
-    ) {
-      initialTheme =
-        saved;
-    }
-    else {
-      initialTheme =
-        window.matchMedia(
-          "(prefers-color-scheme: dark)"
-        ).matches
-          ? "dark"
-          : "light";
-    }
-
-    setTheme(
-      initialTheme
-    );
-
-    applyTheme(
-      initialTheme
-    );
-
-    setMounted(
-      true
-    );
-  }, []);
+    },
+    [
+      theme,
+    ]
+  );
 
 
   function changeTheme(
     nextTheme: Theme
   ) {
-    setTheme(
+    persistTheme(
       nextTheme
     );
 
-    applyTheme(
+    applyThemeToDocument(
       nextTheme
     );
   }
@@ -112,15 +182,6 @@ export function AprovUpThemeToggle({
 
 
   if (compact) {
-    if (!mounted) {
-      return (
-        <div
-          aria-hidden="true"
-          className="ap-theme-compact ap-theme-compact-loading"
-        />
-      );
-    }
-
     const nextLabel =
       theme === "dark"
         ? "Ativar tema claro"
@@ -140,16 +201,6 @@ export function AprovUpThemeToggle({
           <Moon size={17} />
         )}
       </button>
-    );
-  }
-
-
-  if (!mounted) {
-    return (
-      <div
-        aria-hidden="true"
-        className="ap-theme-switch ap-theme-switch-loading"
-      />
     );
   }
 
