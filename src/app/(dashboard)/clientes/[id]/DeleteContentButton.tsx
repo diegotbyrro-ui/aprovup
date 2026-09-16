@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/userAccess";
+import { canAccessClient } from "@/lib/clientAccess";
 import { revalidatePath } from "next/cache";
 
 import {
@@ -40,10 +41,28 @@ async function deleteContent(
         id: true,
         clientId: true,
         title: true,
+
+        client: {
+          select: {
+            agencyId: true,
+            internalResponsible: true,
+          },
+        },
       },
     });
 
   if (!content) {
+    throw new Error(
+      "Conteúdo não encontrado ou acesso não autorizado."
+    );
+  }
+
+  if (
+    !canAccessClient(
+      currentUser,
+      content.client
+    )
+  ) {
     throw new Error(
       "Conteúdo não encontrado ou acesso não autorizado."
     );

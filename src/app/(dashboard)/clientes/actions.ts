@@ -16,6 +16,10 @@ import {
   requirePermission,
 } from "@/lib/userAccess";
 
+import {
+  canAccessClient,
+} from "@/lib/clientAccess";
+
 
 export async function deleteClientAction(
   clientId: string
@@ -36,6 +40,8 @@ export async function deleteClientAction(
       select: {
         id: true,
         name: true,
+        agencyId: true,
+        internalResponsible: true,
       },
     });
 
@@ -46,6 +52,18 @@ export async function deleteClientAction(
     );
 
     return;
+  }
+
+
+  if (
+    !canAccessClient(
+      currentUser,
+      client
+    )
+  ) {
+    redirect(
+      "/clientes"
+    );
   }
 
 

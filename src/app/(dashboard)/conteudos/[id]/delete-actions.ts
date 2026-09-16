@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { requireCurrentUser } from '@/lib/auth';
 import { requirePermission } from '@/lib/userAccess';
+import { canAccessClient } from '@/lib/clientAccess';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
@@ -273,10 +274,26 @@ export async function deleteContentAction(
         title: true,
         clientId: true,
         plannedDate: true,
+
+        client: {
+          select: {
+            agencyId: true,
+            internalResponsible: true,
+          },
+        },
       },
     });
 
   if (!content) {
+    redirect('/clientes');
+  }
+
+  if (
+    !canAccessClient(
+      currentUser,
+      content.client
+    )
+  ) {
     redirect('/clientes');
   }
 
