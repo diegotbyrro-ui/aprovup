@@ -16,6 +16,7 @@ import {
 import { hasPermission } from '@/lib/userAccess';
 import { SocialMediaProductionPanel } from './SocialMediaProductionPanel';
 import { DownloadContentButton } from '@/components/content/DownloadContentButton';
+import { PermanentDeleteButton } from '@/components/content/PermanentDeleteButton';
 import { listAprovUpReferenceFiles } from '@/lib/aprovupStorage';
 
 import {
@@ -2181,6 +2182,7 @@ export default async function ConteudoDetailPage({
           </section>
         </aside>
       </div>
+      {canManageSocial ? (
       <section className="rounded-3xl border border-red-100 bg-red-50 p-6 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -2227,18 +2229,21 @@ export default async function ConteudoDetailPage({
                   )}
                   className="flex-1"
                 >
-                  <button
-                    type="submit"
+                  <PermanentDeleteButton
+                    confirmationMessage={
+                      'Tem certeza que deseja excluir permanentemente o conteúdo "' +
+                      (contentSafe.title || 'Sem título') +
+                      '"? Esta ação não pode ser desfeita. Aprovações, comentários e tarefas vinculadas também serão excluídos.'
+                    }
                     className="w-full rounded-xl bg-red-600 px-3 py-2 text-sm font-bold text-white transition hover:bg-red-700"
-                  >
-                    Excluir permanentemente
-                  </button>
+                  />
                 </form>
               </div>
             </div>
           </details>
         </div>
       </section>
+      ) : null}
 
     </div>
   );

@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { requireCurrentUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/userAccess";
 import { revalidatePath } from "next/cache";
+
+import {
+  PermanentDeleteButton,
+} from "@/components/content/PermanentDeleteButton";
 
 type DeleteContentButtonProps = {
   contentId: string;
@@ -16,7 +20,9 @@ async function deleteContent(
   "use server";
 
   const currentUser =
-    await requireCurrentUser();
+    await requirePermission(
+      "social.manage"
+    );
 
   const content =
     await prisma.content.findFirst({
@@ -181,12 +187,14 @@ export default function DeleteContentButton({
             action={action}
             className="flex-1"
           >
-            <button
-              type="submit"
+            <PermanentDeleteButton
+              confirmationMessage={
+                'Tem certeza que deseja excluir permanentemente o conteúdo "' +
+                contentTitle +
+                '"? Esta ação não pode ser desfeita. Aprovações, comentários e tarefas vinculadas também serão excluídos.'
+              }
               className="w-full rounded-md bg-red-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-red-700"
-            >
-              Excluir permanentemente
-            </button>
+            />
           </form>
         </div>
       </div>

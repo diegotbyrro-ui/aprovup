@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { requireCurrentUser } from '@/lib/auth';
+import { requirePermission } from '@/lib/userAccess';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
@@ -248,11 +249,13 @@ export async function deleteContentAction(
   contentId: string
 ) {
   const currentUser =
-    await requireCurrentUser();
+    await requirePermission(
+      'social.manage'
+    );
 
   /*
-   * Qualquer funcionário autenticado pode excluir,
-   * mas SOMENTE conteúdo da própria agência.
+   * Exclusao permanente permitida somente para
+   * Social Media e Diretoria da propria agencia.
    */
   const content =
     await prisma.content.findFirst({

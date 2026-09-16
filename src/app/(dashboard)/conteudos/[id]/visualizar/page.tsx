@@ -2,11 +2,12 @@ import { formatLabel } from '@/lib/formatLabel';
 import { prisma } from '@/lib/prisma';
 import { listAprovUpReferenceFiles } from '@/lib/aprovupStorage';
 import { requireAgencyContext } from '@/lib/tenant';
-import { requirePermission } from '@/lib/userAccess';
+import { hasPermission, requirePermission } from '@/lib/userAccess';
 import Link from 'next/link';
 import { deleteContentAction } from '../delete-actions';
 import FinalUploadForm from './FinalUploadForm';
 import { CarouselFinalUpload } from '@/components/content/CarouselFinalUpload';
+import { PermanentDeleteButton } from '@/components/content/PermanentDeleteButton';
 import {
   ArrowLeft,
   CalendarDays,
@@ -194,9 +195,16 @@ export default async function ViewContentPage({
         ? 'design.manage'
         : 'social.manage';
 
-  await requirePermission(
-    requiredPermission
-  );
+  const currentUser =
+    await requirePermission(
+      requiredPermission
+    );
+
+  const canDeleteContent =
+    hasPermission(
+      currentUser,
+      'social.manage'
+    );
 
   const item =
     content as
@@ -748,14 +756,19 @@ export default async function ViewContentPage({
               Voltar ao conteúdo
             </Link>
 
-            <form action={deleteContentAction.bind(null, item.id)}>
-              <button
-                type="submit"
-                className="flex h-11 w-full items-center justify-center rounded-xl border border-red-100 bg-white px-4 text-[11px] font-black text-red-600 transition hover:bg-red-50"
-              >
-                Excluir conteúdo
-              </button>
-            </form>
+            {canDeleteContent ? (
+              <form action={deleteContentAction.bind(null, item.id)}>
+                <PermanentDeleteButton
+                  label="Excluir conteúdo"
+                  confirmationMessage={
+                    'Tem certeza que deseja excluir permanentemente o conteúdo "' +
+                    title +
+                    '"? Esta ação não pode ser desfeita. Aprovações, comentários e tarefas vinculadas também serão excluídos.'
+                  }
+                  className="flex h-11 w-full items-center justify-center rounded-xl border border-red-100 bg-white px-4 text-[11px] font-black text-red-600 transition hover:bg-red-50"
+                />
+              </form>
+            ) : null}
           </div>
         </aside>
       </section>
