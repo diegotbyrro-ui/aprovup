@@ -1,5 +1,11 @@
 import Link from "next/link";
 
+import type {
+  Client,
+  DesignKanbanColumn,
+  Prisma,
+} from "@prisma/client";
+
 import {
   AlertTriangle,
   ArrowLeft,
@@ -54,6 +60,26 @@ import {
   DraggableDesignCard,
   DroppableDesignColumn,
 } from "./DraggableDesignCard";
+
+
+type DesignContentItem =
+  Prisma.ContentGetPayload<{
+    include: {
+      client:
+        true;
+
+      comments:
+        true;
+    };
+  }>;
+
+
+type DesignClientItem =
+  Client;
+
+
+type DesignColumnItem =
+  DesignKanbanColumn;
 
 
 function formatDate(
@@ -197,7 +223,7 @@ function isGraphicDesignColumn(
 
 function getReturnNotice(
   content:
-    any
+    DesignContentItem
 ) {
   const comments =
     Array.isArray(
@@ -323,7 +349,7 @@ function getReturnNotice(
 
 function shouldEmphasizeReturn(
   content:
-    any
+    DesignContentItem
 ) {
   const notice =
     getReturnNotice(
@@ -394,7 +420,7 @@ function getInitials(
 
 function isLate(
   content:
-    any
+    DesignContentItem
 ) {
   const deadline =
     content.productionDeadline ||
@@ -493,7 +519,7 @@ function ColumnMenu({
   column,
 }: {
   column:
-    any;
+    DesignColumnItem;
 }) {
   return (
     <details className="relative">
@@ -613,7 +639,7 @@ function ClientResource({
   client,
 }: {
   client:
-    any;
+    DesignClientItem;
 }) {
   const databaseLink =
     client.databaseLink ||
@@ -880,7 +906,7 @@ function EmergencyDesignCard({
   content,
 }: {
   content:
-    any;
+    DesignContentItem;
 }) {
   const clientName =
     cleanDemoName(
@@ -1069,7 +1095,7 @@ function DesignCard({
   content,
 }: {
   content:
-    any;
+    DesignContentItem;
 }) {
   const clientName =
     cleanDemoName(

@@ -1,5 +1,11 @@
 import Link from "next/link";
 
+import type {
+  Client,
+  FilmmakerKanbanColumn,
+  Prisma,
+} from "@prisma/client";
+
 import {
   redirect,
 } from "next/navigation";
@@ -76,6 +82,26 @@ import {
 } from "./DraggableContentCard";
 
 
+type FilmmakerContentItem =
+  Prisma.ContentGetPayload<{
+    include: {
+      client:
+        true;
+
+      comments:
+        true;
+    };
+  }>;
+
+
+type FilmmakerClientItem =
+  Client;
+
+
+type FilmmakerColumnItem =
+  FilmmakerKanbanColumn;
+
+
 function normalizeRole(
   role?:
     | string
@@ -150,7 +176,7 @@ function isDemoName(
 
 function getReturnNotice(
   content:
-    any
+    FilmmakerContentItem
 ) {
   const comments =
     Array.isArray(
@@ -276,7 +302,7 @@ function getReturnNotice(
 
 function shouldEmphasizeReturn(
   content:
-    any
+    FilmmakerContentItem
 ) {
   const notice =
     getReturnNotice(
@@ -405,7 +431,7 @@ function formatDeliveryDate(
 
 function isLate(
   content:
-    any
+    FilmmakerContentItem
 ) {
   const deadline =
     content.productionDeadline ||
@@ -567,7 +593,7 @@ function getColumnAccent(
 
 function getClientLinks(
   client:
-    any
+    FilmmakerClientItem
 ) {
   const usefulLinks =
     String(
@@ -610,7 +636,7 @@ function ColumnMenu({
   column,
 }: {
   column:
-    any;
+    FilmmakerColumnItem;
 }) {
   return (
     <details className="relative">
@@ -735,7 +761,7 @@ function ClientResource({
   client,
 }: {
   client:
-    any;
+    FilmmakerClientItem;
 }) {
   const links =
     getClientLinks(
@@ -898,7 +924,7 @@ function FilmmakerCard({
   content,
 }: {
   content:
-    any;
+    FilmmakerContentItem;
 }) {
   const clientName =
     cleanDemoName(
