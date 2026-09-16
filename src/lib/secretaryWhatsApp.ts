@@ -545,11 +545,24 @@ async function sendWhatsappTemplate({
                     'text',
 
                   text:
-                    title
+                    String(
+                      title ??
+                      ''
+                    )
+                      .replace(
+                        /[\r\n\t]+/g,
+                        ' '
+                      )
+                      .replace(
+                        /\s{2,}/g,
+                        ' '
+                      )
+                      .trim()
                       .slice(
                         0,
-                        250
-                      ),
+                        900
+                      ) ||
+                    '-',
                 },
 
                 {
@@ -557,11 +570,24 @@ async function sendWhatsappTemplate({
                     'text',
 
                   text:
-                    message
+                    String(
+                      message ??
+                      ''
+                    )
+                      .replace(
+                        /[\r\n\t]+/g,
+                        ' '
+                      )
+                      .replace(
+                        /\s{2,}/g,
+                        ' '
+                      )
+                      .trim()
                       .slice(
                         0,
                         900
-                      ),
+                      ) ||
+                    '-',
                 },
               ],
             },
