@@ -1967,8 +1967,14 @@ async function sendProactive({
 
 
   if (
-    existing?.status ===
-    'SENT'
+    [
+      'SENT',
+      'DELIVERED',
+      'READ',
+    ].includes(
+      existing?.status ||
+      ''
+    )
   ) {
     return {
       status:
