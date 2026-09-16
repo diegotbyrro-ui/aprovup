@@ -43,6 +43,10 @@ import {
 } from "@/components/kanban/KanbanClientFilter";
 
 import {
+  ProductionBatchKanbanPrototype,
+} from "@/components/kanban/ProductionBatchKanbanPrototype";
+
+import {
   isDirector,
   requireCurrentUser,
 } from "@/lib/auth";
@@ -1854,7 +1858,13 @@ export default async function FilmmakerPage({
 
         <SyncedHorizontalScroll className="pb-2 [scrollbar-width:thin]">
           <div className="flex min-h-[640px] gap-3">
-            {columns.map(
+            <ProductionBatchKanbanPrototype
+              contents={
+                contents
+              }
+              area="FILMMAKER"
+            />
+            {columns.filter((column) => column.statusKey !== "APROVADO").map(
               (
                 column
               ) => {

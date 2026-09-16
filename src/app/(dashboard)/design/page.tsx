@@ -35,6 +35,10 @@ import {
 } from "@/components/kanban/KanbanClientFilter";
 
 import {
+  ProductionBatchKanbanPrototype,
+} from "@/components/kanban/ProductionBatchKanbanPrototype";
+
+import {
   requireAgencyContext,
 } from "@/lib/tenant";
 
@@ -2248,7 +2252,13 @@ export default async function DesignPage({
           className="pb-2 [scrollbar-width:thin]"
         >
           <div className="flex min-h-[620px] gap-3">
-            {columns.map(
+            <ProductionBatchKanbanPrototype
+              contents={
+                contents
+              }
+              area="DESIGN"
+            />
+            {columns.filter((column) => column.statusKey !== "APROVADO").map(
               (
                 column
               ) => {
