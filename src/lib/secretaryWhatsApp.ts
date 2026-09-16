@@ -546,7 +546,7 @@ async function sendWhatsappTemplate({
 
                   text:
                     String(
-                      title ??
+                      String ??
                       ''
                     )
                       .replace(
@@ -571,7 +571,7 @@ async function sendWhatsappTemplate({
 
                   text:
                     String(
-                      message ??
+                      String ??
                       ''
                     )
                       .replace(
