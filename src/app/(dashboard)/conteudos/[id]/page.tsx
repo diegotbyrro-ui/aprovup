@@ -735,10 +735,37 @@ import {
 } from '@/components/aprovup/CommentAudioPlayer';
 export default async function ConteudoDetailPage({
   params,
+  searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  params:
+    Promise<{
+      id:
+        string;
+    }>;
+
+  searchParams?:
+    Promise<{
+      error?:
+        string;
+    }>;
 }) {
-  const { id } = await params;
+  const {
+    id,
+  } =
+    await params;
+
+
+  const query =
+    searchParams
+      ? await searchParams
+      : {};
+
+
+  const pageError =
+    String(
+      query?.error ||
+      ''
+    );
 
   const currentUser = await requireCurrentUser();
 
@@ -967,7 +994,7 @@ export default async function ConteudoDetailPage({
       contentSafe.status
     );
 
-  function HiddenContentFields({ nextStatus }: { nextStatus: string }) {
+  function renderHiddenContentFields(nextStatus: string) {
     return (
       <>
         <input type="hidden" name="status" value={nextStatus} />
@@ -1009,6 +1036,20 @@ export default async function ConteudoDetailPage({
 
   return (
     <div className="space-y-6">
+
+      {pageError ===
+      'reference-update' ? (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
+          <p className="text-sm font-black text-amber-800">
+            O conteúdo foi salvo, mas houve um problema ao atualizar um ou mais anexos.
+          </p>
+
+          <p className="mt-1 text-xs leading-relaxed text-amber-700">
+            Nenhuma tela foi perdida. Confira os anexos abaixo e tente novamente apenas naqueles que ainda precisam ser alterados.
+          </p>
+        </section>
+      ) : null}
+
       <section className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-sm">
         <div className="absolute -right-10 -top-10 h-52 w-52 rounded-full bg-blue-500/20 blur-3xl"></div>
         <div className="absolute bottom-0 left-1/3 h-52 w-52 rounded-full bg-indigo-500/20 blur-3xl"></div>
@@ -1125,7 +1166,7 @@ export default async function ConteudoDetailPage({
           <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
             {nextStep.nextStatus && nextStep.actionLabel && (
               <form action={updateContentAction}>
-                <HiddenContentFields nextStatus={nextStep.nextStatus} />
+                {renderHiddenContentFields(nextStep.nextStatus)}
                 <button
                   type="submit"
                   className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800 sm:w-auto"

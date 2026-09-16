@@ -866,16 +866,6 @@ export async function renameAprovUpReferenceFile(
     );
 
 
-  if (
-    delimiterIndex ===
-    -1
-  ) {
-    throw new Error(
-      'Formato do anexo de referência inválido.'
-    );
-  }
-
-
   const encodedName =
     Buffer.from(
       cleanRequested,
@@ -885,13 +875,51 @@ export async function renameAprovUpReferenceFile(
     );
 
 
-  const newObjectPath =
-    objectPath.slice(
-      0,
-      delimiterIndex
-    ) +
-    '--' +
-    encodedName;
+  /*
+   * Arquivos de referência antigos foram criados
+   * antes de o nome original passar a ser salvo
+   * depois do delimitador "--".
+   *
+   * Esses arquivos continuam válidos e precisam
+   * poder ser renomeados normalmente.
+   */
+  let newObjectPath:
+    string;
+
+
+  if (
+    delimiterIndex ===
+    -1
+  ) {
+    const legacyExtension =
+      extensionFromName(
+        storedName
+      );
+
+
+    const legacyBasePath =
+      legacyExtension
+        ? objectPath.slice(
+            0,
+            -legacyExtension.length
+          )
+        : objectPath;
+
+
+    newObjectPath =
+      legacyBasePath +
+      '--' +
+      encodedName;
+  }
+  else {
+    newObjectPath =
+      objectPath.slice(
+        0,
+        delimiterIndex
+      ) +
+      '--' +
+      encodedName;
+  }
 
 
   const supabase =

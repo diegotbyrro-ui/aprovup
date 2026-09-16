@@ -1049,33 +1049,104 @@ export async function updateContent(contentId: string, formData: FormData) {
     },
   });
 
-  await renameContentReferenceImages(
-    contentId,
-    formData
-  );
+  let referenceUpdateError =
+    false;
 
 
-  await removeContentReferenceImages(
-    contentId,
-    formData
-  );
+  try {
+    await renameContentReferenceImages(
+      contentId,
+      formData
+    );
+  }
+  catch (
+    error
+  ) {
+    referenceUpdateError =
+      true;
+
+    console.error(
+      'AprovUp reference rename on update:',
+      error
+    );
+  }
 
 
-  await uploadContentReferenceImages(
-    contentId,
-    formData
-  );
+  try {
+    await removeContentReferenceImages(
+      contentId,
+      formData
+    );
+  }
+  catch (
+    error
+  ) {
+    referenceUpdateError =
+      true;
+
+    console.error(
+      'AprovUp reference remove on update:',
+      error
+    );
+  }
 
 
-  await prisma.historyLog.create({
-    data: {
-      entityType: 'CONTENT',
-      entityId: contentId,
-      action: 'UPDATED',
-      description: `Conteúdo atualizado. Área: ${updatedContent.area}. Status: ${updatedContent.status}.`,
-      authorName: currentUser.name || currentUser.email || 'Equipe Level UP',
-    },
-  });
+  try {
+    await uploadContentReferenceImages(
+      contentId,
+      formData
+    );
+  }
+  catch (
+    error
+  ) {
+    referenceUpdateError =
+      true;
+
+    console.error(
+      'AprovUp reference upload on update:',
+      error
+    );
+  }
+
+
+  /*
+   * Histórico é importante, mas uma indisponibilidade
+   * nele não pode invalidar um conteúdo que já foi salvo.
+   */
+  await prisma.historyLog
+    .create({
+      data: {
+        entityType:
+          'CONTENT',
+
+        entityId:
+          contentId,
+
+        action:
+          'UPDATED',
+
+        description:
+          referenceUpdateError
+            ? `Conteúdo atualizado. Área: ${updatedContent.area}. Status: ${updatedContent.status}. Houve falha em uma operação de anexo.`
+            : `Conteúdo atualizado. Área: ${updatedContent.area}. Status: ${updatedContent.status}.`,
+
+        authorName:
+          currentUser.name ||
+          currentUser.email ||
+          'Equipe Level UP',
+      },
+    })
+    .catch(
+      (
+        error
+      ) => {
+        console.error(
+          'AprovUp history log on content update:',
+          error
+        );
+      }
+    );
 
   revalidatePath(`/conteudos/${contentId}`);
   revalidatePath(`/clientes/${updatedContent.clientId}`);
@@ -1083,6 +1154,15 @@ export async function updateContent(contentId: string, formData: FormData) {
   revalidatePath('/design');
   revalidatePath('/social-media');
   revalidatePath('/clientes');
+
+  if (
+    referenceUpdateError
+  ) {
+    redirect(
+      `/conteudos/${contentId}?error=reference-update`
+    );
+  }
+
 
   redirect(`/conteudos/${contentId}`);
 }
