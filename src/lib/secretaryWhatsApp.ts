@@ -795,6 +795,129 @@ export async function ingestWhatsappWebhook(
         });
 
 
+      /*
+       * SECRETARY WHATSAPP STATUS TRACKING
+       * Atualiza a entrega com o retorno real da Meta:
+       * sent, delivered, read ou failed.
+       */
+      for (
+        const statusRaw
+        of getArray(
+          value?.statuses
+        )
+      ) {
+        const messageStatus =
+          getObject(
+            statusRaw
+          );
+
+        if (!messageStatus) {
+          continue;
+        }
+
+        const providerMessageId =
+          typeof messageStatus.id ===
+            'string'
+            ? messageStatus.id
+            : '';
+
+        const providerStatus =
+          typeof messageStatus.status ===
+            'string'
+            ? messageStatus.status.toLowerCase()
+            : '';
+
+        if (
+          !providerMessageId ||
+          !providerStatus
+        ) {
+          continue;
+        }
+
+        const mappedStatus =
+          providerStatus ===
+            'delivered'
+            ? 'DELIVERED'
+            : providerStatus ===
+                'read'
+              ? 'READ'
+              : providerStatus ===
+                  'failed'
+                ? 'FAILED'
+                : providerStatus ===
+                    'sent'
+                  ? 'SENT'
+                  : providerStatus.toUpperCase();
+
+        const providerErrors =
+          getArray(
+            messageStatus.errors
+          )
+            .map(
+              (item) =>
+                getObject(
+                  item
+                )
+            )
+            .filter(
+              (item): item is JsonRecord =>
+                Boolean(
+                  item
+                )
+            );
+
+        const providerError =
+          providerErrors
+            .map(
+              (item) =>
+                typeof item.message ===
+                  'string'
+                  ? item.message
+                  : typeof item.title ===
+                      'string'
+                    ? item.title
+                    : typeof item.code ===
+                        'number'
+                      ? 'Meta error ' +
+                        String(
+                          item.code
+                        )
+                      : ''
+            )
+            .filter(
+              Boolean
+            )
+            .join(
+              ' | '
+            );
+
+        await prisma
+          .secretaryWhatsappDelivery
+          .updateMany({
+            where: {
+              agencyId:
+                connection.agencyId,
+
+              providerMessageId,
+            },
+
+            data: {
+              status:
+                mappedStatus,
+
+              error:
+                mappedStatus ===
+                  'FAILED'
+                  ? (
+                      providerError ||
+                      'Meta marcou a mensagem como failed.'
+                    )
+                  : null,
+            },
+          });
+      }
+
+
       for (
         const messageRaw
         of getArray(
