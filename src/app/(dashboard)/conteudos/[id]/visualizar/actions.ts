@@ -115,7 +115,7 @@ export async function uploadFinalContentFilesAction(
   const updateData:
     Prisma.ContentUpdateInput = {
     status:
-      'ENVIADO_AO_CLIENTE',
+      'ENVIADO_CLIENTE',
 
     finalUploadedAt:
       new Date(),

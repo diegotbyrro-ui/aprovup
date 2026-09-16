@@ -1318,7 +1318,7 @@ export async function completeTask(taskId: string) {
           ownedTask.id,
       },
     data: {
-      status: "FINALIZADA",
+      status: "FINALIZADO",
     },
     include: {
       content: true,
