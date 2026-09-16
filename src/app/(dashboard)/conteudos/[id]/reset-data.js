@@ -1,32 +1,31 @@
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
-
 async function main() {
-    console.log('Limpando banco de dados...');
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
 
-    await prisma.historyLog.deleteMany();
-    await prisma.approval.deleteMany();
-    await prisma.monthlyApproval.deleteMany();
-    await prisma.comment.deleteMany();
-    await prisma.task.deleteMany();
-    await prisma.content.deleteMany();
+    try {
+        console.log('Limpando banco de dados...');
 
-    await prisma.clientProfileDiagnosis.deleteMany();
-    await prisma.clientPersona.deleteMany();
-    await prisma.client.deleteMany();
+        await prisma.historyLog.deleteMany();
+        await prisma.approval.deleteMany();
+        await prisma.monthlyApproval.deleteMany();
+        await prisma.comment.deleteMany();
+        await prisma.task.deleteMany();
+        await prisma.content.deleteMany();
 
-    await prisma.promptTemplate.deleteMany();
-    await prisma.user.deleteMany();
+        await prisma.clientProfileDiagnosis.deleteMany();
+        await prisma.clientPersona.deleteMany();
+        await prisma.client.deleteMany();
 
-    console.log('Banco zerado com sucesso.');
+        await prisma.promptTemplate.deleteMany();
+        await prisma.user.deleteMany();
+
+        console.log('Banco zerado com sucesso.');
+    } finally {
+        await prisma.$disconnect();
+    }
 }
 
-main()
-    .catch((error) => {
-        console.error('Erro ao limpar banco:', error);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+main().catch((error) => {
+    console.error('Erro ao limpar banco:', error);
+    process.exit(1);
+});

@@ -399,7 +399,7 @@ export default async function InstagramContentsPage({
     ).length;
 
 
-  let filtered =
+  const filtered =
     allMedia.filter(
       (
         item
