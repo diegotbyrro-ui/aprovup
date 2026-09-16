@@ -1,31 +1,23 @@
-async function main() {
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
+/**
+ * RESET DE BANCO DESATIVADO
+ *
+ * Este arquivo existia durante o desenvolvimento inicial do AprovUp
+ * e continha uma rotina capaz de apagar dados de producao.
+ *
+ * A rotina foi permanentemente bloqueada para evitar exclusoes
+ * acidentais de dados reais.
+ *
+ * Este arquivo nao deve:
+ * - conectar ao Prisma;
+ * - executar operacoes de exclusao;
+ * - limpar tabelas;
+ * - apagar clientes ou conteudos;
+ * - apagar usuarios;
+ * - remover arquivos do Storage.
+ */
 
-    try {
-        console.log('Limpando banco de dados...');
+console.error(
+  'RESET DE BANCO BLOQUEADO: esta rotina foi desativada para proteger os dados do AprovUp.'
+);
 
-        await prisma.historyLog.deleteMany();
-        await prisma.approval.deleteMany();
-        await prisma.monthlyApproval.deleteMany();
-        await prisma.comment.deleteMany();
-        await prisma.task.deleteMany();
-        await prisma.content.deleteMany();
-
-        await prisma.clientProfileDiagnosis.deleteMany();
-        await prisma.clientPersona.deleteMany();
-        await prisma.client.deleteMany();
-
-        await prisma.promptTemplate.deleteMany();
-        await prisma.user.deleteMany();
-
-        console.log('Banco zerado com sucesso.');
-    } finally {
-        await prisma.$disconnect();
-    }
-}
-
-main().catch((error) => {
-    console.error('Erro ao limpar banco:', error);
-    process.exit(1);
-});
+process.exitCode = 1;
