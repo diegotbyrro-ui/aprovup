@@ -3002,19 +3002,56 @@ export async function deliverSecretaryAlertsToWhatsapp() {
                     )
                   : null;
 
+              const clientName =
+                client?.name ||
+                'Cliente';
+
+              let detail =
+                String(
+                  alert.message ||
+                  ''
+                ).trim();
+
+              for (
+                const prefix
+                of [
+                  clientName + ':',
+                  clientName + ' —',
+                  clientName + ' -',
+                ]
+              ) {
+                if (
+                  detail
+                    .toLowerCase()
+                    .startsWith(
+                      prefix
+                        .toLowerCase()
+                    )
+                ) {
+                  detail =
+                    detail
+                      .slice(
+                        prefix.length
+                      )
+                      .trim();
+
+                  break;
+                }
+              }
 
               return (
                 String(
                   index +
                   1
                 ) +
-                '. ' +
+                ') ' +
+                clientName +
                 (
-                  client?.name ||
-                  'Cliente'
-                ) +
-                ' — ' +
-                alert.message
+                  detail
+                    ? ' — ' +
+                      detail
+                    : ''
+                )
               );
             }
           );
@@ -3025,12 +3062,12 @@ export async function deliverSecretaryAlertsToWhatsapp() {
         25
       ) {
         lines.push(
-          '+ ' +
+          '➕ Mais ' +
           String(
             personalApprovals.length -
             25
           ) +
-          ' pendência(s) adicional(is).'
+          ' pendência(s).'
         );
       }
 
@@ -3047,23 +3084,24 @@ export async function deliverSecretaryAlertsToWhatsapp() {
             recipient.member.phoneE164,
 
           title:
-            'Aprovações que precisam de atenção',
+            '⚠️ Aprovações que precisam de atenção',
 
           message:
             [
-              'Você tem ' +
+              '📋 ' +
                 String(
                   personalApprovals.length
                 ) +
                 ' aprovação(ões) pendente(s) há mais de 48h.',
 
-              lines.join(
-                '\n'
-              ),
+              '👥 ' +
+                lines.join(
+                  ' • '
+                ),
 
-              'Consulte o AprovUp para acompanhar.',
+              '👉 Consulte o AprovUp para acompanhar.',
             ].join(
-              '\n\n'
+              '  '
             ),
 
           dedupKey:

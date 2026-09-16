@@ -3747,6 +3747,7 @@ REGRAS:
 - Nunca misture totais gerais da agência em uma resposta sobre um único cliente.
 - Se fatos de escopo AGENCY aparecerem junto de um escopo de cliente por algum motivo, ignore os dados gerais que não foram pedidos.
 - Use Markdown leve para organizar respostas: títulos curtos, negrito e listas quando ajudarem. Não exagere na formatação.
+- Pode usar emojis de forma moderada e funcional para melhorar a leitura. Prefira emojis relacionados ao contexto, como ⚠️ atenção, 📅 agenda, ✅ concluído, ⏰ prazo, 🎥 audiovisual, 🎨 design, 📲 publicação, 💬 retorno e 🚨 urgência. Evite excesso, repetição ou emoji em todas as linhas.
 - PUBLICADO significa publicado.
 - AGENDADO não significa publicado.
 - ERRO significa falha.
