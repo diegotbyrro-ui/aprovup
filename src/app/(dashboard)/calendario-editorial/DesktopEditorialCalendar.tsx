@@ -3,7 +3,6 @@
 import Link from "next/link";
 
 import {
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -305,6 +304,33 @@ export function DesktopEditorialCalendar({
 
 
   const [
+    previousContents,
+    setPreviousContents,
+  ] =
+    useState(
+      contents
+    );
+
+
+  /*
+   * Mantém o estado otimista durante o drag-and-drop,
+   * mas absorve uma nova versão enviada pelo servidor.
+   */
+  if (
+    previousContents !==
+    contents
+  ) {
+    setPreviousContents(
+      contents
+    );
+
+    setLocalContents(
+      contents
+    );
+  }
+
+
+  const [
     draggingId,
     setDraggingId,
   ] =
@@ -355,18 +381,6 @@ export function DesktopEditorialCalendar({
     } | null>(
       null
     );
-
-
-  useEffect(
-    () => {
-      setLocalContents(
-        contents
-      );
-    },
-    [
-      contents,
-    ]
-  );
 
 
   const numberOfDays =

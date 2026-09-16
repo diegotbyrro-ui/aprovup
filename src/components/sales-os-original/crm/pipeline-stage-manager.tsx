@@ -15,7 +15,6 @@ import { useRouter } from "next/navigation";
 
 import {
   type FormEvent,
-  useEffect,
   useMemo,
   useState,
   useTransition,
@@ -78,10 +77,84 @@ export function PipelineStageManager({
     useState<Stage[]>(() => sortStages(stages));
 
   const [draftNames, setDraftNames] =
-    useState<Record<string, string>>({});
+    useState<Record<string, string>>(
+      () =>
+        Object.fromEntries(
+          sortStages(stages).map(
+            (stage) => [
+              stage.id,
+              stage.name,
+            ]
+          )
+        )
+    );
 
   const [draftColors, setDraftColors] =
-    useState<Record<string, string>>({});
+    useState<Record<string, string>>(
+      () =>
+        Object.fromEntries(
+          sortStages(stages).map(
+            (stage) => [
+              stage.id,
+              stage.color ??
+                "#2f6df6",
+            ]
+          )
+        )
+    );
+
+  const [
+    previousStages,
+    setPreviousStages,
+  ] =
+    useState(stages);
+
+
+  /*
+   * Mantém reordenação e edição locais enquanto
+   * o usuário trabalha, mas atualiza o estado
+   * quando uma nova versão chega do servidor.
+   */
+  if (
+    previousStages !==
+    stages
+  ) {
+    const sorted =
+      sortStages(
+        stages
+      );
+
+    setPreviousStages(
+      stages
+    );
+
+    setOrderedStages(
+      sorted
+    );
+
+    setDraftNames(
+      Object.fromEntries(
+        sorted.map(
+          (stage) => [
+            stage.id,
+            stage.name,
+          ]
+        )
+      )
+    );
+
+    setDraftColors(
+      Object.fromEntries(
+        sorted.map(
+          (stage) => [
+            stage.id,
+            stage.color ??
+              "#2f6df6",
+          ]
+        )
+      )
+    );
+  }
 
   const [deleteTargetId, setDeleteTargetId] =
     useState<string | null>(null);
@@ -111,30 +184,6 @@ export function PipelineStageManager({
 
     return counts;
   }, [leads]);
-
-  useEffect(() => {
-    const sorted = sortStages(stages);
-
-    setOrderedStages(sorted);
-
-    setDraftNames(
-      Object.fromEntries(
-        sorted.map((stage) => [
-          stage.id,
-          stage.name,
-        ])
-      )
-    );
-
-    setDraftColors(
-      Object.fromEntries(
-        sorted.map((stage) => [
-          stage.id,
-          stage.color ?? "#2f6df6",
-        ])
-      )
-    );
-  }, [stages]);
 
   const deleteTarget =
     orderedStages.find(

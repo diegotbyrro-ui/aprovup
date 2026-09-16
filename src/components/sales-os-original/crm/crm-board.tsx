@@ -299,22 +299,37 @@ export function CrmBoard({
     );
 
 
+  const [
+    previousLeads,
+    setPreviousLeads,
+  ] =
+    useState(
+      leads
+    );
+
+
+  /*
+   * Mantém o estado otimista do Kanban e
+   * absorve uma nova versão vinda do servidor.
+   */
+  if (
+    previousLeads !==
+    leads
+  ) {
+    setPreviousLeads(
+      leads
+    );
+
+    setLocalLeads(
+      leads
+    );
+  }
+
+
   const searchInputRef =
     useRef<HTMLInputElement | null>(
       null
     );
-
-
-  useEffect(
-    () => {
-      setLocalLeads(
-        leads
-      );
-    },
-    [
-      leads,
-    ]
-  );
 
 
   useEffect(

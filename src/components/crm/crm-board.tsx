@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import {
-  useEffect,
   useMemo,
   useState,
   useTransition,
@@ -104,19 +103,34 @@ export function CrmBoard({
   stages,
   leads,
 }: CrmBoardProps) {
-  const [localLeads, setLocalLeads] = useState(leads);
+  const [localLeads, setLocalLeads] =
+    useState(leads);
+
+  const [
+    previousLeads,
+    setPreviousLeads,
+  ] =
+    useState(leads);
 
   /*
-   * APROVUP_CRM_SYNC_SERVER_LEADS
-   *
-   * O Kanban usa estado local para movimento
-   * otimista. Quando UPDATE ou DELETE altera
-   * os dados no servidor, precisamos copiar
-   * os novos props para esse estado local.
+   * O Kanban continua usando estado local para
+   * movimentação otimista. Quando o servidor
+   * entregar uma nova coleção, ela substitui
+   * a versão otimista sem precisar de effect.
    */
-  useEffect(() => {
-    setLocalLeads(leads);
-  }, [leads]);
+  if (
+    previousLeads !==
+    leads
+  ) {
+    setPreviousLeads(
+      leads
+    );
+
+    setLocalLeads(
+      leads
+    );
+  }
+
   const [searchTerm, setSearchTerm] = useState("");
   const [editingLead, setEditingLead] =
     useState<Lead | null>(null);
