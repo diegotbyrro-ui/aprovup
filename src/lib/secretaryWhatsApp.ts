@@ -1983,6 +1983,22 @@ async function sendProactive({
   }
 
 
+  if (
+    [
+      'FAILED',
+      'ERROR',
+    ].includes(
+      existing?.status ||
+      ''
+    )
+  ) {
+    return {
+      status:
+        'SKIPPED',
+    };
+  }
+
+
   const insideWindow =
     Boolean(
       member
