@@ -1,4 +1,4 @@
-import {
+﻿import {
   prisma,
 } from '@/lib/prisma';
 
@@ -231,7 +231,7 @@ async function graphRequest({
       typeof error?.message ===
         'string'
         ? error.message
-        : 'WhatsApp Cloud API recusou a requisição.'
+        : 'WhatsApp Cloud API recusou a requisiÃ§Ã£o.'
     );
   }
 
@@ -370,7 +370,7 @@ export async function sendWhatsappText({
 
   if (!connection) {
     throw new Error(
-      'WhatsApp da agência não está ativo.'
+      'WhatsApp da agÃªncia nÃ£o estÃ¡ ativo.'
     );
   }
 
@@ -479,7 +479,7 @@ async function sendWhatsappTemplate({
 
   if (!connection) {
     throw new Error(
-      'WhatsApp da agência não está ativo.'
+      'WhatsApp da agÃªncia nÃ£o estÃ¡ ativo.'
     );
   }
 
@@ -639,7 +639,7 @@ async function downloadWhatsappMedia({
 
   if (!connection) {
     throw new Error(
-      'WhatsApp da agência não está ativo.'
+      'WhatsApp da agÃªncia nÃ£o estÃ¡ ativo.'
     );
   }
 
@@ -662,7 +662,7 @@ async function downloadWhatsappMedia({
 
   if (!url) {
     throw new Error(
-      'A Meta não retornou a URL do áudio.'
+      'A Meta nÃ£o retornou a URL do Ã¡udio.'
     );
   }
 
@@ -683,7 +683,7 @@ async function downloadWhatsappMedia({
 
   if (!response.ok) {
     throw new Error(
-      'Não foi possível baixar o áudio recebido no WhatsApp.'
+      'NÃ£o foi possÃ­vel baixar o Ã¡udio recebido no WhatsApp.'
     );
   }
 
@@ -1262,7 +1262,7 @@ export async function processWhatsappEvent(
 
     if (!message) {
       throw new Error(
-        'Payload de mensagem inválido.'
+        'Payload de mensagem invÃ¡lido.'
       );
     }
 
@@ -1297,7 +1297,7 @@ export async function processWhatsappEvent(
           event.fromPhone,
 
         text:
-          'Este número ainda não está autorizado a usar a Secretária IA. Peça à administração para vinculá-lo a um usuário do AprovUp.',
+          'Este nÃºmero ainda nÃ£o estÃ¡ autorizado a usar a SecretÃ¡ria IA. PeÃ§a Ã  administraÃ§Ã£o para vinculÃ¡-lo a um usuÃ¡rio do AprovUp.',
       })
         .catch(
           () =>
@@ -1344,22 +1344,22 @@ export async function processWhatsappEvent(
 
 
     /*
-     * No WhatsApp, a autorização é controlada
+     * No WhatsApp, a autorizaÃ§Ã£o Ã© controlada
      * pelo cadastro SecretaryWhatsappMember.
      *
-     * O usuário já passou acima pelas validações:
+     * O usuÃ¡rio jÃ¡ passou acima pelas validaÃ§Ãµes:
      * - membro ativo
      * - canUseSecretary = true
-     * - usuário vinculado
+     * - usuÃ¡rio vinculado
      *
-     * A permissão secretary.use continua sendo
+     * A permissÃ£o secretary.use continua sendo
      * utilizada para controlar o acesso pela WEB,
-     * mas não deve bloquear um membro explicitamente
+     * mas nÃ£o deve bloquear um membro explicitamente
      * autorizado no canal WhatsApp.
      */
     if (!user) {
       throw new Error(
-        'Usuário vinculado não está aprovado ou não pertence à agência.'
+        'UsuÃ¡rio vinculado nÃ£o estÃ¡ aprovado ou nÃ£o pertence Ã  agÃªncia.'
       );
     }
 
@@ -1406,7 +1406,7 @@ export async function processWhatsappEvent(
 
       if (!mediaId) {
         throw new Error(
-          'Áudio recebido sem media ID.'
+          'Ãudio recebido sem media ID.'
         );
       }
 
@@ -1446,7 +1446,7 @@ export async function processWhatsappEvent(
           event.fromPhone,
 
         text:
-          'No momento eu entendo mensagens de texto e áudio. Envie sua solicitação em um desses formatos.',
+          'No momento eu entendo mensagens de texto e Ã¡udio. Envie sua solicitaÃ§Ã£o em um desses formatos.',
       });
 
 
@@ -1520,7 +1520,7 @@ export async function processWhatsappEvent(
             event.fromPhone,
 
           text:
-            'Você não tem permissão para confirmar ações pelo WhatsApp.',
+            'VocÃª nÃ£o tem permissÃ£o para confirmar aÃ§Ãµes pelo WhatsApp.',
         });
       }
       else {
@@ -1546,7 +1546,7 @@ export async function processWhatsappEvent(
               event.fromPhone,
 
             text:
-              'Não encontrei nenhuma ação aguardando confirmação.',
+              'NÃ£o encontrei nenhuma aÃ§Ã£o aguardando confirmaÃ§Ã£o.',
           });
         }
         else {
@@ -1742,7 +1742,7 @@ export async function processWhatsappEvent(
       result.pendingAction
     ) {
       answer +=
-        '\n\n*Confirmação necessária:* responda *CONFIRMAR* para executar ou *CANCELAR* para desistir.';
+        '\n\n*ConfirmaÃ§Ã£o necessÃ¡ria:* responda *CONFIRMAR* para executar ou *CANCELAR* para desistir.';
     }
 
 
@@ -1983,6 +1983,30 @@ async function sendProactive({
   }
 
 
+  /*
+   * Uma entrega que a Meta já recusou não deve ser
+   * reenviada a cada execução do cron.
+   *
+   * A dedupKey representa aquele aviso específico.
+   * Um novo aviso futuro terá outra dedupKey e poderá
+   * ser enviado normalmente.
+   */
+  if (
+    [
+      'FAILED',
+      'ERROR',
+    ].includes(
+      existing?.status ||
+      ''
+    )
+  ) {
+    return {
+      status:
+        'SKIPPED',
+    };
+  }
+
+
   const insideWindow =
     Boolean(
       member
@@ -2016,7 +2040,7 @@ async function sendProactive({
             toPhone,
 
           text:
-            '*Secretária IA*\n\n*' +
+            '*SecretÃ¡ria IA*\n\n*' +
             title +
             '*\n' +
             message,
@@ -2155,7 +2179,7 @@ async function sendProactive({
                 'ASSISTANT',
 
               content:
-                '*Secretária IA*\n\n*' +
+                '*SecretÃ¡ria IA*\n\n*' +
                 title +
                 '*\n' +
                 message,
@@ -2327,7 +2351,7 @@ export async function notifyEmergencyDemandReadyToSocialMedia({
   /*
    * Usa exatamente a mesma regra de acesso
    * dos clientes para descobrir qual Social Media
-   * é responsável por este cliente.
+   * Ã© responsÃ¡vel por este cliente.
    */
   const socialUsers =
     await prisma.user
@@ -2378,7 +2402,7 @@ export async function notifyEmergencyDemandReadyToSocialMedia({
     0
   ) {
     console.warn(
-      'LIV EMERGENCY READY: nenhum Social Media responsável encontrado.',
+      'LIV EMERGENCY READY: nenhum Social Media responsÃ¡vel encontrado.',
       content.id,
       content.client.name
     );
@@ -2431,7 +2455,7 @@ export async function notifyEmergencyDemandReadyToSocialMedia({
     0
   ) {
     console.warn(
-      'LIV EMERGENCY READY: Social Media responsável não possui WhatsApp ativo para alertas.',
+      'LIV EMERGENCY READY: Social Media responsÃ¡vel nÃ£o possui WhatsApp ativo para alertas.',
       content.id
     );
 
@@ -2457,8 +2481,8 @@ export async function notifyEmergencyDemandReadyToSocialMedia({
 
   const title =
     isGraphicDesign
-      ? '🎨 Design gráfico pronto'
-      : '🚨 Demanda emergencial pronta';
+      ? 'ðŸŽ¨ Design grÃ¡fico pronto'
+      : 'ðŸš¨ Demanda emergencial pronta';
 
 
   const message =
@@ -2470,7 +2494,7 @@ export async function notifyEmergencyDemandReadyToSocialMedia({
             content.client.name +
             '*, acabou de ser finalizado pelo Design.',
 
-          'Já está disponível no AprovUp para você conferir e baixar pelo calendário.',
+          'JÃ¡ estÃ¡ disponÃ­vel no AprovUp para vocÃª conferir e baixar pelo calendÃ¡rio.',
         ].join(
           '\n\n'
         )
@@ -2483,7 +2507,7 @@ export async function notifyEmergencyDemandReadyToSocialMedia({
             areaLabel +
             '.',
 
-          'Já está disponível no AprovUp para você revisar e encaminhar ao cliente para aprovação.',
+          'JÃ¡ estÃ¡ disponÃ­vel no AprovUp para vocÃª revisar e encaminhar ao cliente para aprovaÃ§Ã£o.',
         ].join(
           '\n\n'
         );
@@ -2518,9 +2542,9 @@ export async function notifyEmergencyDemandReadyToSocialMedia({
         message,
 
         /*
-         * uploadKey identifica a versão enviada.
+         * uploadKey identifica a versÃ£o enviada.
          * O mesmo upload nunca dispara duas vezes,
-         * mas uma nova versão poderá avisar novamente.
+         * mas uma nova versÃ£o poderÃ¡ avisar novamente.
          */
         dedupKey:
           (
@@ -2577,8 +2601,8 @@ export async function notifyEmergencyDemandReadyToSocialMedia({
         description:
           (
             isGraphicDesign
-              ? 'LIV processou o aviso do Design Gráfico pronto para a Social Media responsável. '
-              : 'LIV processou o aviso da demanda emergencial pronta para a Social Media responsável. '
+              ? 'LIV processou o aviso do Design GrÃ¡fico pronto para a Social Media responsÃ¡vel. '
+              : 'LIV processou o aviso da demanda emergencial pronta para a Social Media responsÃ¡vel. '
           ) +
           'Enviados: ' +
           sent +
@@ -2928,10 +2952,10 @@ export async function deliverSecretaryAlertsToWhatsapp() {
 
 
     /*
-     * Aprovações antigas não precisam gerar
-     * vários balões individuais.
+     * AprovaÃ§Ãµes antigas nÃ£o precisam gerar
+     * vÃ¡rios balÃµes individuais.
      *
-     * Cada pessoa recebe no máximo UM resumo
+     * Cada pessoa recebe no mÃ¡ximo UM resumo
      * por dia com apenas os clientes que pode ver.
      */
     const approvalAlerts =
@@ -3016,7 +3040,7 @@ export async function deliverSecretaryAlertsToWhatsapp() {
                 const prefix
                 of [
                   clientName + ':',
-                  clientName + ' —',
+                  clientName + ' â€”',
                   clientName + ' -',
                 ]
               ) {
@@ -3048,7 +3072,7 @@ export async function deliverSecretaryAlertsToWhatsapp() {
                 clientName +
                 (
                   detail
-                    ? ' — ' +
+                    ? ' â€” ' +
                       detail
                     : ''
                 )
@@ -3062,12 +3086,12 @@ export async function deliverSecretaryAlertsToWhatsapp() {
         25
       ) {
         lines.push(
-          '➕ Mais ' +
+          'âž• Mais ' +
           String(
             personalApprovals.length -
             25
           ) +
-          ' pendência(s).'
+          ' pendÃªncia(s).'
         );
       }
 
@@ -3084,22 +3108,22 @@ export async function deliverSecretaryAlertsToWhatsapp() {
             recipient.member.phoneE164,
 
           title:
-            '⚠️ Aprovações que precisam de atenção',
+            'âš ï¸ AprovaÃ§Ãµes que precisam de atenÃ§Ã£o',
 
           message:
             [
-              '📋 ' +
+              'ðŸ“‹ ' +
                 String(
                   personalApprovals.length
                 ) +
-                ' aprovação(ões) pendente(s) há mais de 48h.',
+                ' aprovaÃ§Ã£o(Ãµes) pendente(s) hÃ¡ mais de 48h.',
 
-              '👥 ' +
+              'ðŸ‘¥ ' +
                 lines.join(
-                  ' • '
+                  ' â€¢ '
                 ),
 
-              '👉 Consulte o AprovUp para acompanhar.',
+              'ðŸ‘‰ Consulte o AprovUp para acompanhar.',
             ].join(
               '  '
             ),
@@ -3117,20 +3141,20 @@ export async function deliverSecretaryAlertsToWhatsapp() {
 
 
       /*
-       * O sendProactive já controla duplicidade.
-       * Não precisamos mandar cada alerta separadamente.
+       * O sendProactive jÃ¡ controla duplicidade.
+       * NÃ£o precisamos mandar cada alerta separadamente.
        */
       void result;
     }
 
 
     /*
-     * Alertas de publicação são operacionais e
+     * Alertas de publicaÃ§Ã£o sÃ£o operacionais e
      * podem ser urgentes.
      *
-     * Apenas alertas criados depois da última
-     * alteração da conexão são elegíveis.
-     * Assim, reativar a LIV não despeja backlog antigo.
+     * Apenas alertas criados depois da Ãºltima
+     * alteraÃ§Ã£o da conexÃ£o sÃ£o elegÃ­veis.
+     * Assim, reativar a LIV nÃ£o despeja backlog antigo.
      */
     const publicationAlerts =
       alerts.filter(
@@ -3292,7 +3316,7 @@ export async function deliverSecretaryDailyBriefs() {
 
 
   /*
-   * O resumo é enviado somente na janela das 08h.
+   * O resumo Ã© enviado somente na janela das 08h.
    * O dedup individual impede mais de uma mensagem
    * para a mesma pessoa no mesmo dia.
    */
@@ -3744,7 +3768,7 @@ export async function deliverSecretaryDailyBriefs() {
 
       const intro =
         isDirector
-          ? 'Visão geral da agência.'
+          ? 'VisÃ£o geral da agÃªncia.'
           : (
               'Sua carteira possui ' +
               String(
@@ -3756,8 +3780,8 @@ export async function deliverSecretaryDailyBriefs() {
 
       const attentionLabel =
         isDirector
-          ? 'Itens aguardando ação da Social Media: '
-          : 'Itens que precisam da sua atenção: ';
+          ? 'Itens aguardando aÃ§Ã£o da Social Media: '
+          : 'Itens que precisam da sua atenÃ§Ã£o: ';
 
 
       const message =
@@ -3768,21 +3792,21 @@ export async function deliverSecretaryDailyBriefs() {
 
           intro,
 
-          'Conteúdos planejados hoje: ' +
+          'ConteÃºdos planejados hoje: ' +
             String(
               planned
             ),
 
-          'Aprovações pendentes — conteúdos: ' +
+          'AprovaÃ§Ãµes pendentes â€” conteÃºdos: ' +
             String(
               pendingApprovals
             ) +
-            ', calendários mensais: ' +
+            ', calendÃ¡rios mensais: ' +
             String(
               pendingMonthlyApprovals
             ),
 
-          'Instagram hoje — publicados: ' +
+          'Instagram hoje â€” publicados: ' +
             String(
               published
             ) +
@@ -3823,11 +3847,11 @@ export async function deliverSecretaryDailyBriefs() {
           title:
             isDirector
               ? (
-                  'Resumo da operação — ' +
+                  'Resumo da operaÃ§Ã£o â€” ' +
                   local.dateKey
                 )
               : (
-                  'Resumo da sua carteira — ' +
+                  'Resumo da sua carteira â€” ' +
                   local.dateKey
                 ),
 
@@ -3870,9 +3894,9 @@ function captureMessage(schedule: {
 }) {
   return [
     '*Cliente:* ' + schedule.clientName,
-    '*Horário:* ' + formatCaptureWhatsappTime(schedule.scheduledAt),
+    '*HorÃ¡rio:* ' + formatCaptureWhatsappTime(schedule.scheduledAt),
     schedule.location ? '*Local:* ' + schedule.location : '',
-    schedule.notes ? '*Observações:* ' + schedule.notes : '',
+    schedule.notes ? '*ObservaÃ§Ãµes:* ' + schedule.notes : '',
   ].filter(Boolean).join('\n');
 }
 
@@ -3933,7 +3957,7 @@ export async function deliverSecretaryCaptureReminders() {
       for (const member of filmmakers) {
         const result = await sendProactive({
           agencyId: connection.agencyId, memberId: member.id, toPhone: member.phoneE164,
-          title: 'Sua agenda de captações de hoje', message,
+          title: 'Sua agenda de captaÃ§Ãµes de hoje', message,
           dedupKey: 'capture-daily:' + local.dateKey + ':' + member.id,
         });
         if (result.status === 'SENT') sent += 1;
@@ -3952,7 +3976,7 @@ export async function deliverSecretaryCaptureReminders() {
       for (const member of filmmakers) {
         const result = await sendProactive({
           agencyId: connection.agencyId, memberId: member.id, toPhone: member.phoneE164,
-          title: 'Captação em cerca de 1 hora', message: captureMessage(schedule),
+          title: 'CaptaÃ§Ã£o em cerca de 1 hora', message: captureMessage(schedule),
           dedupKey: 'capture-upcoming:' + schedule.id + ':' + member.id,
         });
         if (result.status === 'SENT') sent += 1;
@@ -4319,7 +4343,7 @@ export async function deliverSecretaryProductionDeadlineReminders() {
           'OVERDUE';
 
         title =
-          '⚠️ Demanda atrasada';
+          'âš ï¸ Demanda atrasada';
       }
       else if (
         remaining >
@@ -4648,7 +4672,7 @@ function formatCalendarReminderTime(
     null
 ) {
   if (!value) {
-    return 'Sem horário';
+    return 'Sem horÃ¡rio';
   }
 
   if (
@@ -4697,7 +4721,7 @@ function calendarReminderMessage(
     '*Compromisso:* ' +
       event.summary,
 
-    '*Horário:* ' +
+    '*HorÃ¡rio:* ' +
       formatCalendarReminderTime(
         event.start
       ),
@@ -4795,7 +4819,7 @@ export async function deliverSecretaryCalendarReminders() {
   ) {
 
     /*
-     * A reunião semanal precisa existir
+     * A reuniÃ£o semanal precisa existir
      * antes de buscarmos os compromissos
      * de segunda-feira.
      */
@@ -5309,7 +5333,7 @@ export async function deliverSecretaryCalendarReminders() {
               recipient.member.phoneE164,
 
             title:
-              'Seus compromissos de amanhã',
+              'Seus compromissos de amanhÃ£',
 
             message,
 
@@ -5332,7 +5356,7 @@ export async function deliverSecretaryCalendarReminders() {
 
 
     /* ================================================
-       ALTERAÇÃO / NOVO EVENTO DEPOIS DAS 18H
+       ALTERAÃ‡ÃƒO / NOVO EVENTO DEPOIS DAS 18H
        ================================================ */
 
     if (
@@ -5419,8 +5443,8 @@ export async function deliverSecretaryCalendarReminders() {
 
               title:
                 isNew
-                  ? 'Novo compromisso para amanhã'
-                  : 'Compromisso de amanhã atualizado',
+                  ? 'Novo compromisso para amanhÃ£'
+                  : 'Compromisso de amanhÃ£ atualizado',
 
               message:
                 calendarReminderMessage(event),
@@ -5550,7 +5574,7 @@ export async function sendSecretaryIntroductionToTeam({
 
   if (!requestedAgency) {
     throw new Error(
-      'Informe a agência.'
+      'Informe a agÃªncia.'
     );
   }
 
@@ -5577,7 +5601,7 @@ export async function sendSecretaryIntroductionToTeam({
 
   if (!agency) {
     throw new Error(
-      'Agência não encontrada: ' +
+      'AgÃªncia nÃ£o encontrada: ' +
         requestedAgency
     );
   }
@@ -5602,7 +5626,7 @@ export async function sendSecretaryIntroductionToTeam({
       .phoneNumberId
   ) {
     throw new Error(
-      'O WhatsApp da LIV não está ativo para ' +
+      'O WhatsApp da LIV nÃ£o estÃ¡ ativo para ' +
         agency.name +
         '.'
     );
@@ -5731,8 +5755,8 @@ export async function sendSecretaryIntroductionToTeam({
       ', assistente virtual da ' +
       companyName +
       '.\n\n' +
-      'A partir de agora, vou estar por aqui ajudando nossa equipe com lembretes, organização, compromissos, avisos e informações importantes do dia a dia.\n\n' +
-      'É um prazer falar com você pela primeira vez! 💙';
+      'A partir de agora, vou estar por aqui ajudando nossa equipe com lembretes, organizaÃ§Ã£o, compromissos, avisos e informaÃ§Ãµes importantes do dia a dia.\n\n' +
+      'Ã‰ um prazer falar com vocÃª pela primeira vez! ðŸ’™';
 
     const result =
       await sendProactive({
@@ -5750,7 +5774,7 @@ export async function sendSecretaryIntroductionToTeam({
           firstName +
           '! Eu sou a ' +
           secretaryName +
-          ' 👋',
+          ' ðŸ‘‹',
 
         message,
 
@@ -5812,8 +5836,8 @@ type ContentQuestionSource =
 
 
 /*
- * LIV avisa somente a Social Media responsável
- * pelo cliente relacionado ao conteúdo.
+ * LIV avisa somente a Social Media responsÃ¡vel
+ * pelo cliente relacionado ao conteÃºdo.
  *
  * Usa a mesma regra de carteira do restante do AprovUp.
  */
@@ -5839,8 +5863,8 @@ export async function notifyResponsibleSocialMediaAboutQuestion({
 }) {
 
   /*
-   * Alguns clientes antigos podem não possuir agencyId.
-   * Sem agência não existe conexão WhatsApp para notificar.
+   * Alguns clientes antigos podem nÃ£o possuir agencyId.
+   * Sem agÃªncia nÃ£o existe conexÃ£o WhatsApp para notificar.
    */
   if (
     !agencyId
@@ -6052,21 +6076,21 @@ export async function notifyResponsibleSocialMediaAboutQuestion({
   const sourceTitle =
     source ===
       'CLIENTE'
-      ? '💬 Retorno do cliente'
+      ? 'ðŸ’¬ Retorno do cliente'
       : source ===
           'DESIGN'
-        ? '🎨 Dúvida do Design'
-        : '🎥 Dúvida do Filmmaker';
+        ? 'ðŸŽ¨ DÃºvida do Design'
+        : 'ðŸŽ¥ DÃºvida do Filmmaker';
 
 
   const sourceText =
     source ===
       'CLIENTE'
-      ? 'O cliente deixou um novo ajuste ou dúvida.'
+      ? 'O cliente deixou um novo ajuste ou dÃºvida.'
       : source ===
           'DESIGN'
-        ? 'O Design enviou uma dúvida que precisa da sua resposta.'
-        : 'O Filmmaker enviou uma dúvida que precisa da sua resposta.';
+        ? 'O Design enviou uma dÃºvida que precisa da sua resposta.'
+        : 'O Filmmaker enviou uma dÃºvida que precisa da sua resposta.';
 
 
   const cleanMessage =
@@ -6093,10 +6117,10 @@ export async function notifyResponsibleSocialMediaAboutQuestion({
           'Cliente'
         ),
 
-      'Conteúdo: ' +
+      'ConteÃºdo: ' +
         (
           content.title ||
-          'Sem título'
+          'Sem tÃ­tulo'
         ),
 
       '',
@@ -6104,7 +6128,7 @@ export async function notifyResponsibleSocialMediaAboutQuestion({
       cleanMessage
         ? 'Mensagem: ' +
           cleanMessage
-        : 'Existe um novo retorno aguardando sua atenção.',
+        : 'Existe um novo retorno aguardando sua atenÃ§Ã£o.',
 
       '',
 
@@ -6113,8 +6137,8 @@ export async function notifyResponsibleSocialMediaAboutQuestion({
 
 
   /*
-   * O comentário recém-criado vira a chave de deduplicação.
-   * Assim a mesma dúvida não gera dois avisos.
+   * O comentÃ¡rio recÃ©m-criado vira a chave de deduplicaÃ§Ã£o.
+   * Assim a mesma dÃºvida nÃ£o gera dois avisos.
    */
   const latestComment =
     await prisma.comment
@@ -6210,3 +6234,4 @@ export async function notifyResponsibleSocialMediaAboutQuestion({
     sent,
   };
 }
+
