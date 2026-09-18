@@ -855,6 +855,424 @@ function ClientResource({
 }
 
 
+type AnalysisBatch = {
+  key:
+    string;
+
+  clientId:
+    string;
+
+  clientName:
+    string;
+
+  clientLogo:
+    string;
+
+  period:
+    string;
+
+  items:
+    DesignContentItem[];
+};
+
+
+function analysisPeriod(
+  value?:
+    | Date
+    | string
+    | null
+) {
+  if (!value) {
+    return {
+      key:
+        "SEM_DATA",
+
+      label:
+        "Sem periodo",
+    };
+  }
+
+
+  const date =
+    new Date(
+      value
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return {
+      key:
+        "SEM_DATA",
+
+      label:
+        "Sem periodo",
+    };
+  }
+
+
+  const parts =
+    new Intl.DateTimeFormat(
+      "en-CA",
+      {
+        timeZone:
+          "America/Maceio",
+
+        year:
+          "numeric",
+
+        month:
+          "2-digit",
+      }
+    )
+      .formatToParts(
+        date
+      );
+
+
+  const year =
+    parts.find(
+      (
+        part
+      ) =>
+        part.type ===
+        "year"
+    )?.value ||
+    "0";
+
+
+  const month =
+    parts.find(
+      (
+        part
+      ) =>
+        part.type ===
+        "month"
+    )?.value ||
+    "0";
+
+
+  const rawLabel =
+    new Intl.DateTimeFormat(
+      "pt-BR",
+      {
+        timeZone:
+          "America/Maceio",
+
+        month:
+          "long",
+
+        year:
+          "numeric",
+      }
+    ).format(
+      date
+    );
+
+
+  const label =
+    rawLabel
+      ? rawLabel
+          .charAt(
+            0
+          )
+          .toUpperCase() +
+        rawLabel.slice(
+          1
+        )
+      : "Periodo";
+
+
+  return {
+    key:
+      year +
+      "-" +
+      month,
+
+    label,
+  };
+}
+
+
+function buildAnalysisBatches(
+  items:
+    DesignContentItem[]
+) {
+  const groups =
+    new Map<
+      string,
+      AnalysisBatch
+    >();
+
+
+  for (
+    const item
+    of items
+  ) {
+    const clientId =
+      item.client?.id ||
+      "SEM_CLIENTE";
+
+
+    const clientName =
+      item.client?.name ||
+      "Cliente";
+
+
+    const period =
+      analysisPeriod(
+        item.plannedDate
+      );
+
+
+    const key =
+      clientId +
+      ":" +
+      period.key;
+
+
+    const existing =
+      groups.get(
+        key
+      );
+
+
+    if (existing) {
+      existing.items.push(
+        item
+      );
+
+      continue;
+    }
+
+
+    groups.set(
+      key,
+      {
+        key,
+
+        clientId,
+
+        clientName,
+
+        clientLogo:
+          item.client?.logoUrl ||
+          "",
+
+        period:
+          period.label,
+
+        items: [
+          item,
+        ],
+      }
+    );
+  }
+
+
+  return Array
+    .from(
+      groups.values()
+    )
+    .map(
+      (
+        batch
+      ) => ({
+        ...batch,
+
+        items:
+          [...batch.items]
+            .sort(
+              (
+                a,
+                b
+              ) => {
+                const aTime =
+                  a.plannedDate
+                    ? new Date(
+                        a.plannedDate
+                      ).getTime()
+                    : Number.MAX_SAFE_INTEGER;
+
+
+                const bTime =
+                  b.plannedDate
+                    ? new Date(
+                        b.plannedDate
+                      ).getTime()
+                    : Number.MAX_SAFE_INTEGER;
+
+
+                return (
+                  aTime -
+                  bTime
+                );
+              }
+            ),
+      })
+    )
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        a.clientName.localeCompare(
+          b.clientName,
+          "pt-BR"
+        )
+    );
+}
+
+
+function AnalysisBatchCard({
+  batch,
+}: {
+  batch:
+    AnalysisBatch;
+}) {
+  return (
+    <article className="overflow-hidden rounded-xl border border-amber-200 bg-white shadow-sm">
+
+      <div className="border-b border-amber-100 bg-amber-50/70 p-3">
+
+        <div className="flex items-start gap-2.5">
+
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-amber-100 bg-white">
+
+            {batch.clientLogo ? (
+              <img
+                src={
+                  batch.clientLogo
+                }
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-[9px] font-black text-amber-600">
+                {getInitials(
+                  batch.clientName
+                )}
+              </span>
+            )}
+
+          </div>
+
+
+          <div className="min-w-0 flex-1">
+
+            <p className="truncate text-[10px] font-black text-slate-900">
+              {batch.clientName}
+            </p>
+
+            <p className="mt-0.5 text-[8px] font-black uppercase tracking-[0.06em] text-amber-600">
+              {batch.period}
+            </p>
+
+          </div>
+
+
+          <span className="shrink-0 rounded-md bg-white px-2 py-1 text-[7px] font-black text-amber-700 shadow-sm">
+            {batch.items.length}
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <div className="p-3">
+
+        <div className="flex items-center justify-between gap-2">
+
+          <p className="text-[8px] font-bold uppercase tracking-[0.06em] text-slate-400">
+            {"Conte\u00fados em an\u00e1lise"}
+          </p>
+
+          <span className="rounded-md bg-amber-50 px-2 py-1 text-[7px] font-black uppercase text-amber-700">
+            Pacote
+          </span>
+
+        </div>
+
+
+        <div className="mt-2 space-y-1.5">
+
+          {batch.items
+            .slice(
+              0,
+              4
+            )
+            .map(
+              (
+                item
+              ) => (
+                <div
+                  key={
+                    item.id
+                  }
+                  className="flex items-center gap-2 text-[8px]"
+                >
+
+                  <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-black text-slate-500">
+                    {formatDate(
+                      item.plannedDate
+                    )}
+                  </span>
+
+
+                  <span className="truncate font-semibold text-slate-600">
+                    {item.title}
+                  </span>
+
+                </div>
+              )
+            )}
+
+
+          {batch.items.length >
+          4 ? (
+            <p className="pt-1 text-[8px] font-bold text-amber-600">
+              + {batch.items.length - 4} conteudos
+            </p>
+          ) : null}
+
+        </div>
+
+
+        <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-2">
+
+          <p className="text-[7px] font-black uppercase tracking-[0.06em] text-amber-500">
+            {"An\u00e1lise interna"}
+          </p>
+
+          <p className="mt-0.5 text-[9px] font-bold text-amber-800">
+            {batch.items.length} material(is) aguardando conferencia
+          </p>
+
+        </div>
+
+
+        <Link
+          href={
+            "/clientes/" +
+            batch.clientId +
+            "/aprovacao-final"
+          }
+          className="mt-3 flex h-9 items-center justify-center rounded-lg bg-amber-500 text-[9px] font-black text-white transition hover:bg-amber-600"
+        >
+          {"Abrir an\u00e1lise"}
+        </Link>
+
+      </div>
+
+    </article>
+  );
+}
+
+
 function PriorityBadge({
   priority,
 }: {
@@ -2360,6 +2778,24 @@ export default async function DesignPage({
                       }
                     );
 
+                const analysisBatches =
+                  column.statusKey ===
+                    "DESIGN_ANALISE" &&
+                  !isGraphicColumn
+                    ? buildAnalysisBatches(
+                        items
+                      )
+                    : [];
+
+
+                const displayCount =
+                  column.statusKey ===
+                    "DESIGN_ANALISE" &&
+                  !isGraphicColumn
+                    ? analysisBatches.length
+                    : items.length;
+
+
                 return (
                   <div
                     key={
@@ -2390,7 +2826,7 @@ export default async function DesignPage({
                             </h3>
 
                             <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[8px] font-bold text-slate-500">
-                              {items.length}
+                              {displayCount}
                             </span>
                           </div>
 
@@ -2460,6 +2896,23 @@ export default async function DesignPage({
                               </p>
                             </div>
                           </div>
+                        ) : column.statusKey ===
+                            "DESIGN_ANALISE" &&
+                          !isGraphicColumn ? (
+                          analysisBatches.map(
+                            (
+                              batch
+                            ) => (
+                              <AnalysisBatchCard
+                                key={
+                                  batch.key
+                                }
+                                batch={
+                                  batch
+                                }
+                              />
+                            )
+                          )
                         ) : (
                           items.map(
                             (
