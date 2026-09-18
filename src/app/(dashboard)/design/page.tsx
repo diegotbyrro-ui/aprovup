@@ -1255,16 +1255,9 @@ function AnalysisBatchCard({
         </div>
 
 
-        <Link
-          href={
-            "/clientes/" +
-            batch.clientId +
-            "/aprovacao-final"
-          }
-          className="mt-3 flex h-9 items-center justify-center rounded-lg bg-amber-500 text-[9px] font-black text-white transition hover:bg-amber-600"
-        >
-          {"Abrir an\u00e1lise"}
-        </Link>
+        <div className="mt-3 flex min-h-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-center text-[8px] font-black uppercase tracking-[0.06em] text-amber-700">
+          Acompanhamento pela Social Media
+        </div>
 
       </div>
 
@@ -2304,8 +2297,17 @@ export default async function DesignPage({
           "DESIGN",
 
         status: {
-          in:
-            statusKeys,
+          in: Array.from(
+            new Set([
+              ...statusKeys,
+
+              "ENVIADO_CLIENTE",
+              "ALTERACAO_SOLICITADA",
+              "PRONTO_PARA_POSTAR",
+              "PUBLICADO",
+              "PUBLICADO_MANUALMENTE",
+            ])
+          ),
         },
       },
 
@@ -2377,13 +2379,25 @@ export default async function DesignPage({
     ).length;
 
 
+  const analysisStatuses =
+    [
+      "DESIGN_ANALISE",
+      "ENVIADO_CLIENTE",
+      "ALTERACAO_SOLICITADA",
+      "PRONTO_PARA_POSTAR",
+    ];
+
+
   const analysisCount =
-    workflowContents.filter(
-      (
-        content
-      ) =>
-        content.status ===
-        "DESIGN_ANALISE"
+    buildAnalysisBatches(
+      workflowContents.filter(
+        (
+          content
+        ) =>
+          analysisStatuses.includes(
+            content.status
+          )
+      )
     ).length;
 
 
@@ -2397,13 +2411,21 @@ export default async function DesignPage({
     ).length;
 
 
+  const publishedStatuses =
+    [
+      "PUBLICADO",
+      "PUBLICADO_MANUALMENTE",
+    ];
+
+
   const doneCount =
     workflowContents.filter(
       (
         content
       ) =>
-        content.status ===
-        "PRONTO_PARA_POSTAR"
+        publishedStatuses.includes(
+          content.status
+        )
     ).length;
 
 
@@ -2717,16 +2739,68 @@ export default async function DesignPage({
                     .filter(
                       (
                         content
-                      ) =>
-                        isGraphicColumn
-                          ? content.format ===
-                              "DESIGN_GRAFICO"
-                          : (
-                              content.format !==
-                                "DESIGN_GRAFICO" &&
-                              content.status ===
-                                column.statusKey
-                            )
+                      ) => {
+                        if (
+                          isGraphicColumn
+                        ) {
+                          return (
+                            content.format ===
+                            "DESIGN_GRAFICO"
+                          );
+                        }
+
+
+                        if (
+                          content.format ===
+                          "DESIGN_GRAFICO"
+                        ) {
+                          return false;
+                        }
+
+
+                        /*
+                         * ANALISE:
+                         * permanece aqui durante todo o processo
+                         * da Social Media e do cliente.
+                         */
+                        if (
+                          column.statusKey ===
+                          "DESIGN_ANALISE"
+                        ) {
+                          return [
+                            "DESIGN_ANALISE",
+                            "ENVIADO_CLIENTE",
+                            "ALTERACAO_SOLICITADA",
+                            "PRONTO_PARA_POSTAR",
+                          ].includes(
+                            content.status
+                          );
+                        }
+
+
+                        /*
+                         * FINALIZADO:
+                         * somente depois que o conteudo
+                         * realmente foi publicado.
+                         */
+                        if (
+                          column.statusKey ===
+                          "PRONTO_PARA_POSTAR"
+                        ) {
+                          return [
+                            "PUBLICADO",
+                            "PUBLICADO_MANUALMENTE",
+                          ].includes(
+                            content.status
+                          );
+                        }
+
+
+                        return (
+                          content.status ===
+                          column.statusKey
+                        );
+                      }
                     )
                     .sort(
                       (
@@ -2861,7 +2935,11 @@ export default async function DesignPage({
                         column.statusKey
                       }
                       disabled={
-                        isGraphicColumn
+                        isGraphicColumn ||
+                        column.statusKey ===
+                          "DESIGN_ANALISE" ||
+                        column.statusKey ===
+                          "PRONTO_PARA_POSTAR"
                       }
                     >
                       <div
