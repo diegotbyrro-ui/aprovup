@@ -3,6 +3,10 @@ import Link from 'next/link';
 import { InstagramIcon } from '@/components/icons/InstagramIcon';
 
 import {
+  DisconnectInstagramButton,
+} from "./DisconnectInstagramButton";
+
+import {
   notFound,
 } from 'next/navigation';
 
@@ -857,6 +861,19 @@ export default async function ClientInstagramPage({
                     </button>
                   )
               }
+
+              {
+                connection
+                  ? (
+                    <DisconnectInstagramButton
+                      clientId={
+                        client.id
+                      }
+                    />
+                  )
+                  : null
+              }
+
 
             </div>
 

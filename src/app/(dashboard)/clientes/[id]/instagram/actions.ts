@@ -332,3 +332,88 @@ export async function saveInstagramConnectionAction(
     `/clientes/${clientId}/instagram?connected=1`
   );
 }
+
+
+export async function disconnectInstagramConnectionAction(
+  formData:
+    FormData
+) {
+  const user =
+    await requirePermission(
+      'social.manage'
+    );
+
+
+  const clientId =
+    String(
+      formData.get(
+        'clientId'
+      ) ||
+      ''
+    ).trim();
+
+
+  if (
+    !clientId
+  ) {
+    redirect(
+      '/clientes'
+    );
+  }
+
+
+  const client =
+    await prisma.client
+      .findFirst({
+        where: {
+          id:
+            clientId,
+
+          agencyId:
+            user.agencyId,
+        },
+
+        select: {
+          id:
+            true,
+        },
+      });
+
+
+  if (
+    !client
+  ) {
+    redirect(
+      '/clientes'
+    );
+  }
+
+
+  await prisma.$transaction([
+    prisma
+      .instagramConnection
+      .deleteMany({
+        where: {
+          clientId,
+        },
+      }),
+
+    prisma
+      .metaOAuthSession
+      .deleteMany({
+        where: {
+          clientId,
+        },
+      }),
+  ]);
+
+
+  revalidatePath(
+    `/clientes/${clientId}/instagram`
+  );
+
+
+  redirect(
+    `/clientes/${clientId}/instagram?disconnected=1`
+  );
+}
