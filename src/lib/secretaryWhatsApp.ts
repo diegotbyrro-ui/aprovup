@@ -1937,11 +1937,11 @@ async function sendProactive({
   /*
    * LIV_PROACTIVE_HOURS_MACEIO
    *
-   * Avisos autom?ticos s? podem sair entre
-   * 08:00 e 18:59 no hor?rio de Macei?.
+   * Avisos automáticos só podem sair entre
+   * 08:00 e 17:59 no horário de Maceió.
    *
-   * Fora desse per?odo a LIV continua respondendo
-   * normalmente ?s mensagens recebidas.
+   * Fora desse período a LIV continua respondendo
+   * normalmente às mensagens recebidas.
    */
   const proactiveHourPart =
     new Intl.DateTimeFormat(
@@ -1977,11 +1977,27 @@ async function sendProactive({
     );
 
 
+  const isEveningAgenda =
+    proactiveHour ===
+      18 &&
+    (
+      dedupKey.startsWith(
+        'calendar-tomorrow:'
+      ) ||
+      dedupKey.startsWith(
+        'capture-tomorrow:'
+      )
+    );
+
+
   if (
     proactiveHour <
       8 ||
-    proactiveHour >
-      18
+    (
+      proactiveHour >=
+        18 &&
+      !isEveningAgenda
+    )
   ) {
     return {
       status:
@@ -4161,9 +4177,9 @@ export async function deliverSecretaryCaptureReminders() {
     /*
      * 18H DO DIA ANTERIOR
      *
-     * Esta ? a mensagem principal da agenda.
-     * Depois vamos anexar aqui tamb?m o PDF
-     * com os roteiros da capta??o.
+     * Esta é a mensagem principal da agenda.
+     * Depois vamos anexar aqui também o PDF
+     * com os roteiros da captação.
      */
     const tomorrowSchedules =
       local.hour ===
@@ -4239,7 +4255,7 @@ export async function deliverSecretaryCaptureReminders() {
               member.phoneE164,
 
             title:
-              'Suas capta??es de amanh?',
+              'Suas captações de amanhã',
 
             message,
 
@@ -4316,7 +4332,7 @@ export async function deliverSecretaryCaptureReminders() {
               member.phoneE164,
 
             title:
-              'Capta??o em cerca de 1 hora',
+              'Captação em cerca de 1 hora',
 
             message:
               captureMessage(
