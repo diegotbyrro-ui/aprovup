@@ -530,7 +530,13 @@ export default async function ProntoParaPostarPage({
                                             ) ||
                                             normalizedFormat.includes(
                                                 'ALBUM'
-                                            );
+                                            ) ||
+                                            content.finalMediaType ===
+                                                'carousel/image' ||
+                                            content
+                                                .instagramMediaAssets
+                                                .length >
+                                                1;
 
                                         const isImageMedia =
                                             String(

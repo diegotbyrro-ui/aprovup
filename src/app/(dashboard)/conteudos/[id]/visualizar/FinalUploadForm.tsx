@@ -665,6 +665,25 @@ export default function FinalUploadForm({
   }
 
 
+  function getFiles(
+    formData: FormData,
+    name: string
+  ) {
+    return formData
+      .getAll(
+        name
+      )
+      .filter(
+        (
+          value
+        ): value is File =>
+          value instanceof File &&
+          value.size >
+            0
+      );
+  }
+
+
   async function handleDelete(
     kind: DeleteKind
   ) {
@@ -853,11 +872,16 @@ export default function FinalUploadForm({
       );
 
 
-    const finalFile =
-      getFile(
+    const finalFiles =
+      getFiles(
         formData,
         'finalFile'
       );
+
+
+    const finalFile =
+      finalFiles[0] ||
+      null;
 
 
     const coverFile =
@@ -888,6 +912,51 @@ export default function FinalUploadForm({
         ) ||
         ''
       ).trim();
+
+
+    if (
+      finalFiles.length >
+        10
+    ) {
+      setMessage(
+        'Selecione no maximo 10 imagens para o Feed.'
+      );
+
+      return;
+    }
+
+
+    if (
+      finalFiles.length >
+        1 &&
+      !isDesign
+    ) {
+      setMessage(
+        'O envio de varios arquivos esta disponivel somente para o Design.'
+      );
+
+      return;
+    }
+
+
+    if (
+      finalFiles.length >
+        1 &&
+      finalFiles.some(
+        (
+          file
+        ) =>
+          !file.type.startsWith(
+            'image/'
+          )
+      )
+    ) {
+      setMessage(
+        'Para enviar varios arquivos juntos, todos precisam ser imagens.'
+      );
+
+      return;
+    }
 
 
     if (
@@ -929,9 +998,65 @@ export default function FinalUploadForm({
         '';
 
 
-      if (finalFile) {
+      const finalItems:
+        Array<{
+          path: string;
+          mimeType: string;
+        }> =
+        [];
+
+
+      if (
+        finalFiles.length >
+          1
+      ) {
+        for (
+          let index =
+            0;
+          index <
+            finalFiles.length;
+          index++
+        ) {
+          const file =
+            finalFiles[
+              index
+            ];
+
+
+          setMessage(
+            'Enviando imagem ' +
+            String(
+              index +
+                1
+            ) +
+            ' de ' +
+            String(
+              finalFiles.length
+            ) +
+            '...'
+          );
+
+
+          const path =
+            await uploadSignedFile(
+              file,
+              'final'
+            );
+
+
+          finalItems.push({
+            path,
+
+            mimeType:
+              file.type,
+          });
+        }
+      }
+      else if (
+        finalFile
+      ) {
         setMessage(
-          'Enviando arquivo final do Feed... Não feche esta página.'
+          'Enviando arquivo final do Feed...'
         );
 
 
@@ -941,7 +1066,6 @@ export default function FinalUploadForm({
             'final'
           );
       }
-
 
       if (coverFile) {
         setMessage(
@@ -1008,6 +1132,8 @@ export default function FinalUploadForm({
                   'complete',
 
                 finalPath,
+
+                finalItems,
 
                 coverPath,
 
@@ -1282,13 +1408,14 @@ export default function FinalUploadForm({
 
               <div>
                 <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wide text-slate-500">
-                  Arquivo final do Feed
+                  Arquivos finais do Feed
                 </label>
 
                 <input
                   type="file"
                   name="finalFile"
                   accept="image/*,video/*,.pdf"
+                  multiple
                   disabled={
               isUploading ||
               deletingKind !==

@@ -288,7 +288,13 @@ export default async function FinalApprovalPage({
                 ) ||
                 normalizedFormat.includes(
                   'ALBUM'
-                );
+                ) ||
+                content.finalMediaType ===
+                  'carousel/image' ||
+                content
+                  .instagramMediaAssets
+                  .length >
+                  1;
 
               const carouselAssets =
                 content.instagramMediaAssets;

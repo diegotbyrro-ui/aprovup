@@ -363,7 +363,13 @@ export async function GET(
       const carousel =
         isCarouselFormat(
           content.format
-        );
+        ) ||
+        content.finalMediaType ===
+          'carousel/image' ||
+        content
+          .instagramMediaAssets
+          .length >
+          1;
 
 
       const reel =

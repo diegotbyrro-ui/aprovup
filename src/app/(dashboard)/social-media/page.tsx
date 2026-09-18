@@ -1099,6 +1099,13 @@ const query =
             take:
               3,
           },
+
+          instagramMediaAssets: {
+            orderBy: {
+              position:
+                "asc",
+            },
+          },
         },
 
         orderBy: {
@@ -1624,6 +1631,10 @@ const query =
                   "";
 
 
+                const multiAssets =
+                  content.instagramMediaAssets;
+
+
                 const externalUrl =
                   content.finalExternalUrl ||
                   "";
@@ -1745,7 +1756,41 @@ const query =
                               : "aspect-[4/5]",
                           ].join(" ")}
                         >
-                        {mediaUrl ? (
+                        {multiAssets.length > 1 ? (
+                          <div className="flex h-full w-full snap-x snap-mandatory overflow-x-auto bg-black">
+                            {multiAssets.map(
+                              (
+                                asset,
+                                index
+                              ) => (
+                                <div
+                                  key={
+                                    asset.id
+                                  }
+                                  className="relative min-w-full snap-center"
+                                >
+                                  <img
+                                    src={
+                                      asset.url
+                                    }
+                                    alt={
+                                      "Arte " +
+                                      String(
+                                        index +
+                                          1
+                                      )
+                                    }
+                                    className="h-full w-full object-contain"
+                                  />
+
+                                  <span className="absolute right-2 top-2 rounded-full bg-black/75 px-2 py-1 text-[7px] font-black text-white">
+                                    {index + 1}/{multiAssets.length}
+                                  </span>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        ) : mediaUrl ? (
                           isPdfPreview ? (
                             <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-slate-100 p-4 text-center">
                               <FileText

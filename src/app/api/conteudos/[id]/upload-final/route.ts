@@ -1135,6 +1135,133 @@ export async function POST(
           : '';
 
 
+      const finalItems:
+        Array<{
+          path: string;
+          mimeType: string;
+        }> =
+        Array.isArray(
+          body.finalItems
+        )
+          ? (
+              body.finalItems as unknown[]
+            )
+              .map(
+                (
+                  item:
+                    unknown
+                ) => {
+                  const value =
+                    item as {
+                      path?:
+                        unknown;
+
+                      mimeType?:
+                        unknown;
+                    };
+
+
+                  return {
+                    path:
+                      typeof value.path ===
+                        'string'
+                        ? value.path
+                        : '',
+
+                    mimeType:
+                      typeof value.mimeType ===
+                        'string'
+                        ? value.mimeType
+                        : '',
+                  };
+                }
+              )
+              .filter(
+                (
+                  item
+                ) =>
+                  Boolean(
+                    item.path
+                  )
+              )
+          : [];
+
+
+      if (
+        finalItems.length >
+          10
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'O Feed aceita no maximo 10 imagens por entrega.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+
+      if (
+        finalItems.length >
+          0 &&
+        ![
+          'DESIGN',
+          'SOCIAL_DESIGN',
+          'SOCIAL_MEDIA',
+        ].includes(
+          content.area
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Varias imagens sao permitidas somente em entregas de Design.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+
+      if (
+        finalItems.length >
+          1 &&
+        finalItems.some(
+          (
+            item
+          ) =>
+            !item.mimeType.startsWith(
+              'image/'
+            )
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Uma entrega com varios arquivos precisa conter somente imagens.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+
       const externalResult =
         parseExternalUrl(
           body.externalUrl
@@ -1163,6 +1290,8 @@ export async function POST(
 
       if (
         !finalPath &&
+        finalItems.length ===
+          0 &&
         !coverPath &&
         !storyPath &&
         !storyCoverPath &&
@@ -1221,6 +1350,30 @@ export async function POST(
       ];
 
 
+      finalItems.forEach(
+        (
+          item,
+          index
+        ) => {
+          pathsToValidate.push({
+            path:
+              item.path,
+
+            kind:
+              'final',
+
+            label:
+              'imagem ' +
+              String(
+                index +
+                  1
+              ) +
+              ' do Feed',
+          });
+        }
+      );
+
+
       for (
         const item
         of pathsToValidate
@@ -1271,12 +1424,37 @@ export async function POST(
       }
 
 
+      const finalItemUploads =
+        finalItems.map(
+          (
+            item
+          ) => ({
+            url:
+              getAprovUpPublicUrl(
+                item.path
+              ),
+
+            mimeType:
+              item.mimeType,
+          })
+        );
+
+
+      const multiImageUpload =
+        finalItemUploads.length >
+          1;
+
+
       const finalMediaUrl =
-        finalPath
-          ? getAprovUpPublicUrl(
-              finalPath
-            )
-          : '';
+        finalItemUploads[0]
+          ?.url ||
+        (
+          finalPath
+            ? getAprovUpPublicUrl(
+                finalPath
+              )
+            : ''
+        );
 
 
       const coverUrl =
@@ -1329,12 +1507,31 @@ export async function POST(
         };
 
 
-      if (finalMediaUrl) {
+      if (
+        multiImageUpload
+      ) {
+        updateData.finalMediaUrl =
+          finalMediaUrl;
+
+        updateData.finalCoverUrl =
+          coverUrl ||
+          finalMediaUrl;
+
+        updateData.finalMediaType =
+          'carousel/image';
+      }
+      else if (
+        finalMediaUrl
+      ) {
         const finalMediaType =
-          typeof body.finalMediaType ===
-          'string'
-            ? body.finalMediaType
-            : '';
+          finalItemUploads[0]
+            ?.mimeType ||
+          (
+            typeof body.finalMediaType ===
+              'string'
+              ? body.finalMediaType
+              : ''
+          );
 
 
         updateData.finalMediaUrl =
@@ -1401,14 +1598,73 @@ export async function POST(
       }
 
 
-      await prisma.content.update({
-        where: {
-          id,
-        },
+      await prisma.$transaction(
+        async (
+          transaction
+        ) => {
+          await transaction.content.update({
+            where: {
+              id,
+            },
 
-        data:
-          updateData,
-      });
+            data:
+              updateData,
+          });
+
+
+          if (
+            multiImageUpload
+          ) {
+            await transaction
+              .instagramMediaAsset
+              .deleteMany({
+                where: {
+                  contentId:
+                    id,
+                },
+              });
+
+
+            await transaction
+              .instagramMediaAsset
+              .createMany({
+                data:
+                  finalItemUploads.map(
+                    (
+                      item,
+                      index
+                    ) => ({
+                      contentId:
+                        id,
+
+                      url:
+                        item.url,
+
+                      mimeType:
+                        item.mimeType,
+
+                      position:
+                        index,
+                    })
+                  ),
+              });
+          }
+          else if (
+            finalPath ||
+            finalItemUploads.length ===
+              1
+          ) {
+            await transaction
+              .instagramMediaAsset
+              .deleteMany({
+                where: {
+                  contentId:
+                    id,
+                },
+              });
+          }
+        }
+      );
 
 
       /*
@@ -1437,6 +1693,12 @@ export async function POST(
       ) {
         const uploadedMaterialKey =
           [
+            ...finalItems.map(
+              (
+                item
+              ) =>
+                item.path
+            ),
             finalPath,
             coverPath,
             storyPath,

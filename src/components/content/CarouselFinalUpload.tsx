@@ -40,10 +40,13 @@ export function CarouselFinalUpload({
   contentId,
   status,
   assets,
+  minimumItems =
+    2,
 }: {
   contentId: string;
   status: string;
   assets: CarouselAsset[];
+  minimumItems?: number;
 }) {
 
   const router =
@@ -649,11 +652,15 @@ const editable =
 
     if (
       items.length <
-        2
+        minimumItems
     ) {
 
       setMessage(
-        'Adicione pelo menos 2 páginas.'
+        'Adicione pelo menos ' +
+        String(
+          minimumItems
+        ) +
+        ' imagem(ns).'
       );
 
       return;
@@ -746,11 +753,11 @@ const editable =
         <div>
 
           <p className="text-xs font-black uppercase tracking-wider text-violet-500">
-            Material final · Carrossel
+            Material final · Feed
           </p>
 
           <h3 className="mt-1 text-lg font-black text-slate-900">
-            Páginas do carrossel
+            Artes do Feed
           </h3>
 
           <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-500">
@@ -928,7 +935,7 @@ const editable =
                   </p>
 
                   <p className="mt-1 text-xs text-slate-400">
-                    O carrossel precisa possuir de 2 a 10 páginas.
+                    Envie de 1 a 10 imagens para o Feed.
                   </p>
 
                 </div>
@@ -958,7 +965,7 @@ const editable =
                   {
                     loading
                       ? 'Processando...'
-                      : 'Adicionar mais páginas'
+                      : 'Adicionar mais artes'
                   }
 
 
@@ -998,7 +1005,7 @@ const editable =
                   disabled={
                     loading ||
                     items.length <
-                      2
+                      minimumItems
                   }
                   onClick={
                     sendToReview
@@ -1006,7 +1013,7 @@ const editable =
                   className={
                     loading ||
                     items.length <
-                      2
+                      minimumItems
                       ? 'rounded-xl bg-slate-200 px-5 py-3 text-sm font-black text-slate-400'
                       : 'rounded-xl bg-violet-600 px-5 py-3 text-sm font-black text-white hover:bg-violet-700'
                   }
@@ -1054,7 +1061,7 @@ const editable =
 
       {
         items.length >=
-          2
+          minimumItems
           ? (
 
               <p className="mt-3 text-xs font-bold text-emerald-700">

@@ -272,6 +272,18 @@ export default async function ViewContentPage({
       .trim()
       .toUpperCase();
 
+  const formatIsCarousel =
+    normalizedFormat.includes(
+      'CARROSSEL'
+    ) ||
+    normalizedFormat.includes(
+      'CAROUSEL'
+    ) ||
+    normalizedFormat.includes(
+      'ALBUM'
+    );
+
+
   const isDesignCarousel =
     (
       item.area ===
@@ -282,15 +294,12 @@ export default async function ViewContentPage({
         'SOCIAL_MEDIA'
     ) &&
     (
-      normalizedFormat.includes(
-        'CARROSSEL'
-      ) ||
-      normalizedFormat.includes(
-        'CAROUSEL'
-      ) ||
-      normalizedFormat.includes(
-        'ALBUM'
-      )
+      formatIsCarousel ||
+      finalMediaType ===
+        'carousel/image' ||
+      item.instagramMediaAssets
+        .length >
+        1
     );
 
   const finalIsVideo =
@@ -589,6 +598,11 @@ export default async function ViewContentPage({
                   }
                   status={
                     item.status
+                  }
+                  minimumItems={
+                    formatIsCarousel
+                      ? 2
+                      : 1
                   }
                   assets={
                     item.instagramMediaAssets.map(

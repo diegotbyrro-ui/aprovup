@@ -276,7 +276,13 @@ export async function POST(
   if (
     !isCarouselFormat(
       content.format
-    )
+    ) &&
+    content.finalMediaType !==
+      'carousel/image' &&
+    content
+      .instagramMediaAssets
+      .length ===
+      0
   ) {
 
     return NextResponse.json(
@@ -285,7 +291,7 @@ export async function POST(
           false,
 
         message:
-          'Este conteúdo não está configurado como carrossel.',
+          'Este conteudo ainda nao possui uma entrega com varias imagens.',
       },
       {
         status:
@@ -972,7 +978,13 @@ export async function PATCH(
   if (
     !isCarouselFormat(
       content.format
-    )
+    ) &&
+    content.finalMediaType !==
+      'carousel/image' &&
+    content
+      .instagramMediaAssets
+      .length ===
+      0
   ) {
 
     return NextResponse.json(
@@ -981,7 +993,7 @@ export async function PATCH(
           false,
 
         message:
-          'Este conteúdo não é um carrossel.',
+          'Este conteudo ainda nao possui uma entrega com varias imagens.',
       },
       {
         status:
@@ -990,7 +1002,6 @@ export async function PATCH(
     );
 
   }
-
 
   if (
     !canEditCarousel(
@@ -1021,9 +1032,17 @@ export async function PATCH(
       .instagramMediaAssets;
 
 
+  const minimumItems =
+    isCarouselFormat(
+      content.format
+    )
+      ? 2
+      : 1;
+
+
   if (
     assets.length <
-    2
+      minimumItems
   ) {
 
     return NextResponse.json(
@@ -1032,7 +1051,11 @@ export async function PATCH(
           false,
 
         message:
-          'O carrossel precisa possuir pelo menos 2 páginas.',
+          'Adicione pelo menos ' +
+          String(
+            minimumItems
+          ) +
+          ' imagem(ns) ao Feed.',
       },
       {
         status:
@@ -1045,6 +1068,13 @@ export async function PATCH(
 
   const firstPage =
     assets[0].url;
+
+
+  const finalMediaType =
+    assets.length >
+      1
+      ? 'carousel/image'
+      : assets[0].mimeType;
 
 
   const author =
@@ -1075,8 +1105,7 @@ export async function PATCH(
         finalCoverUrl:
           firstPage,
 
-        finalMediaType:
-          'carousel/image',
+        finalMediaType,
 
         finalUploadedAt:
           new Date(),
