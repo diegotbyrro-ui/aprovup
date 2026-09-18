@@ -239,6 +239,23 @@ export default async function FinalApprovalPage({
                 content.finalExternalUrl ||
                 '';
 
+
+              const finalIsPdf =
+                String(
+                  content.finalMediaType ||
+                  ''
+                )
+                  .toLowerCase() ===
+                  'application/pdf' ||
+                mediaUrl
+                  .toLowerCase()
+                  .split(
+                    '?'
+                  )[0]
+                  .endsWith(
+                    '.pdf'
+                  );
+
               const storyApprovalUrl =
                 content.storyMediaUrl ||
                 content.storyCoverUrl ||
@@ -383,33 +400,56 @@ export default async function FinalApprovalPage({
                                   )
                                 : mediaUrl
                                   ? (
-                                      isVideo(
-                                        content
-                                      )
+                                      finalIsPdf
                                         ? (
 
-                                            <video
-                                              src={
-                                                mediaUrl
-                                              }
-                                              controls
-                                              className="aspect-[4/5] w-full object-contain"
-                                            />
+                                            <div className="flex aspect-[4/5] w-full flex-col items-center justify-center gap-4 bg-slate-100 p-8 text-center">
+
+                                              <p className="text-sm font-black text-slate-700">
+                                                Arquivo PDF
+                                              </p>
+
+                                              <a
+                                                href={
+                                                  mediaUrl
+                                                }
+                                                target="_blank"
+                                                rel="noreferrer noopener"
+                                                className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-black text-white"
+                                              >
+                                                Abrir PDF
+                                              </a>
+
+                                            </div>
 
                                           )
-                                        : (
-
-                                            <img
-                                              src={
-                                                mediaUrl
-                                              }
-                                              alt={
-                                                content.title
-                                              }
-                                              className="aspect-[4/5] w-full object-cover"
-                                            />
-
+                                        : isVideo(
+                                            content
                                           )
+                                          ? (
+
+                                              <video
+                                                src={
+                                                  mediaUrl
+                                                }
+                                                controls
+                                                className="aspect-[4/5] w-full object-contain"
+                                              />
+
+                                            )
+                                          : (
+
+                                              <img
+                                                src={
+                                                  mediaUrl
+                                                }
+                                                alt={
+                                                  content.title
+                                                }
+                                                className="aspect-[4/5] w-full object-cover"
+                                              />
+
+                                            )
                                     )
                                   : (
 

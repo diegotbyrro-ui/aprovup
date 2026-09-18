@@ -54,6 +54,84 @@ function carouselFormat(
 }
 
 
+function parseExternalUrl(
+  value:
+    FormDataEntryValue |
+    null
+) {
+  const raw =
+    typeof value ===
+      "string"
+      ? value.trim()
+      : "";
+
+
+  if (!raw) {
+    return {
+      ok:
+        true,
+
+      url:
+        "",
+    };
+  }
+
+
+  if (
+    raw.length >
+    2048
+  ) {
+    return {
+      ok:
+        false,
+
+      url:
+        "",
+    };
+  }
+
+
+  try {
+    const parsed =
+      new URL(
+        raw
+      );
+
+
+    if (
+      parsed.protocol !==
+      "https:"
+    ) {
+      return {
+        ok:
+          false,
+
+        url:
+          "",
+      };
+    }
+
+
+    return {
+      ok:
+        true,
+
+      url:
+        parsed.toString(),
+    };
+  }
+  catch {
+    return {
+      ok:
+        false,
+
+      url:
+        "",
+    };
+  }
+}
+
+
 export async function POST(
   request:
     NextRequest
@@ -350,9 +428,17 @@ export async function POST(
           );
 
 
+      const externalResult =
+        parseExternalUrl(
+          formData.get(
+            "link:" +
+              content.id
+          )
+        );
+
+
       if (
-        selected.length ===
-        0
+        !externalResult.ok
       ) {
         return NextResponse.json(
           {
@@ -360,7 +446,34 @@ export async function POST(
               false,
 
             message:
-              "Nenhum arquivo selecionado para " +
+              "Informe um link HTTPS valido para " +
+              content.title +
+              ".",
+          },
+          {
+            status:
+              422,
+          }
+        );
+      }
+
+
+      const externalUrl =
+        externalResult.url;
+
+
+      if (
+        selected.length ===
+          0 &&
+        !externalUrl
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              "Envie um arquivo ou informe um link do Google Drive para " +
               content.title +
               ".",
           },
@@ -378,10 +491,14 @@ export async function POST(
         )
       ) {
         if (
-          selected.length <
-            2 ||
           selected.length >
-            10
+            0 &&
+          (
+            selected.length <
+              2 ||
+            selected.length >
+              10
+          )
         ) {
           return NextResponse.json(
             {
@@ -514,6 +631,21 @@ export async function POST(
           );
 
 
+      const externalResult =
+        parseExternalUrl(
+          formData.get(
+            "link:" +
+              content.id
+          )
+        );
+
+
+      const externalUrl =
+        externalResult.ok
+          ? externalResult.url
+          : "";
+
+
       const carousel =
         carouselFormat(
           content.format
@@ -544,7 +676,11 @@ export async function POST(
           [];
 
 
-      if (carousel) {
+      if (
+        carousel &&
+        selected.length >
+          0
+      ) {
         if (
           content
             .instagramMediaAssets
@@ -618,7 +754,11 @@ export async function POST(
         finalMediaType =
           "carousel/image";
       }
-      else {
+      else if (
+        !carousel &&
+        selected.length >
+          0
+      ) {
         const mainFile =
           content.area ===
             "FILMMAKER"
@@ -661,10 +801,20 @@ export async function POST(
 
         finalMediaType =
           mainFile.type ||
-          "application/octet-stream";
+          (
+            mainFile.name
+              .toLowerCase()
+              .endsWith(
+                ".pdf"
+              )
+              ? "application/pdf"
+              : "application/octet-stream"
+          );
 
 
-        if (coverFile) {
+        if (
+          coverFile
+        ) {
           finalCoverUrl =
             await uploadAprovUpFile(
               coverFile,
@@ -739,13 +889,25 @@ export async function POST(
                       ? "FILMMAKER_ANALISE"
                       : "DESIGN_ANALISE",
 
-                  finalMediaUrl,
+                  finalMediaUrl:
+                    finalMediaUrl ||
+                    content.finalMediaUrl ||
+                    null,
 
                   finalCoverUrl:
                     finalCoverUrl ||
+                    content.finalCoverUrl ||
                     null,
 
-                  finalMediaType,
+                  finalMediaType:
+                    finalMediaType ||
+                    content.finalMediaType ||
+                    null,
+
+                  finalExternalUrl:
+                    externalUrl ||
+                    content.finalExternalUrl ||
+                    null,
 
                   finalUploadedAt:
                     new Date(),

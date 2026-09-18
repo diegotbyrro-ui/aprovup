@@ -613,7 +613,8 @@ const content =
 
   if (
     !content.finalMediaUrl &&
-    !content.finalCoverUrl
+    !content.finalCoverUrl &&
+    !content.finalExternalUrl
   ) {
     throw new Error(
       'O material final ainda não foi anexado.'

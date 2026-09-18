@@ -224,6 +224,18 @@ export function ProductionBatchWorkspacePrototype({
 
 
   const [
+    links,
+    setLinks,
+  ] =
+    useState<
+      Record<
+        string,
+        string
+      >
+    >({});
+
+
+  const [
     sent,
     setSent,
   ] =
@@ -258,15 +270,26 @@ export function ProductionBatchWorkspacePrototype({
             item
           ) =>
             (
-              files[
-                item.id
-              ] ||
-              []
-            ).length >
-            0
+              (
+                files[
+                  item.id
+                ] ||
+                []
+              ).length >
+                0 ||
+              Boolean(
+                (
+                  links[
+                    item.id
+                  ] ||
+                  ""
+                ).trim()
+              )
+            )
         ).length,
       [
         files,
+        links,
         items,
       ]
     );
@@ -291,6 +314,19 @@ export function ProductionBatchWorkspacePrototype({
         list.length,
       0
     );
+
+
+  const totalLinks =
+    Object.values(
+      links
+    ).filter(
+      (
+        value
+      ) =>
+        Boolean(
+          value.trim()
+        )
+    ).length;
 
 
   function addFiles(
@@ -400,6 +436,30 @@ export function ProductionBatchWorkspacePrototype({
   }
 
 
+  function updateLink(
+    contentId:
+      string,
+    value:
+      string
+  ) {
+    setLinks(
+      (
+        current
+      ) => ({
+        ...current,
+
+        [contentId]:
+          value,
+      })
+    );
+
+
+    setSent(
+      false
+    );
+  }
+
+
   async function sendPackage() {
     if (
       !allReady ||
@@ -460,6 +520,26 @@ export function ProductionBatchWorkspacePrototype({
             file
           );
         }
+
+
+        const externalLink =
+          (
+            links[
+              item.id
+            ] ||
+            ""
+          ).trim();
+
+
+        if (
+          externalLink
+        ) {
+          body.append(
+            "link:" +
+              item.id,
+            externalLink
+          );
+        }
       }
 
 
@@ -501,7 +581,7 @@ export function ProductionBatchWorkspacePrototype({
 
 
       setSendMessage(
-        "Pacote enviado ao Supabase e encaminhado para an?lise."
+        "Pacote enviado ao Supabase e encaminhado para an\u00e1lise."
       );
     }
     catch (
@@ -630,7 +710,7 @@ export function ProductionBatchWorkspacePrototype({
           </p>
 
           <p className="mt-1 text-xs text-emerald-600">
-            Materiais enviados ao Supabase e encaminhados para an?lise interna.
+            Materiais enviados ao Supabase e encaminhados para an\u00e1lise interna.
           </p>
 
         </div>
@@ -1151,10 +1231,12 @@ export function ProductionBatchWorkspacePrototype({
                           type="file"
                           multiple
                           accept={
-                            area ===
-                            "FILMMAKER"
-                              ? "video/*,image/*"
-                              : "image/*"
+                            carousel
+                              ? "image/*"
+                              : area ===
+                                  "FILMMAKER"
+                                ? "video/*,image/*,application/pdf,.pdf"
+                                : "image/*,application/pdf,.pdf"
                           }
                           className="hidden"
                           onChange={
@@ -1254,8 +1336,42 @@ export function ProductionBatchWorkspacePrototype({
                       )}
 
 
+                      <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/70 p-3">
+
+                        <label className="block text-[8px] font-black uppercase tracking-[0.07em] text-blue-700">
+                          Google Drive / arquivo externo
+                        </label>
+
+                        <p className="mt-1 text-[8px] leading-relaxed text-blue-600">
+                          Se o arquivo estiver muito pesado, cole aqui o link compartilhado.
+                        </p>
+
+                        <input
+                          type="url"
+                          value={
+                            links[
+                              item.id
+                            ] ||
+                            ""
+                          }
+                          onChange={
+                            (
+                              event
+                            ) =>
+                              updateLink(
+                                item.id,
+                                event.target.value
+                              )
+                          }
+                          placeholder="https://drive.google.com/..."
+                          className="mt-2 h-9 w-full rounded-lg border border-blue-200 bg-white px-3 text-[9px] font-semibold text-slate-700 outline-none focus:border-blue-500"
+                        />
+
+                      </div>
+
+
                       <p className="mt-3 text-[8px] leading-relaxed text-indigo-500">
-                        Os arquivos ser?o enviados ao Storage do AprovUp ao finalizar o pacote.
+                        Os arquivos ser\u00e3o enviados ao Storage do AprovUp ao finalizar o pacote.
                       </p>
 
                     </div>
@@ -1319,6 +1435,19 @@ export function ProductionBatchWorkspacePrototype({
 
               </div>
 
+
+              <div className="mt-2 flex items-center justify-between text-[10px]">
+
+                <span className="font-semibold text-slate-500">
+                  Links
+                </span>
+
+                <span className="font-black text-slate-900">
+                  {totalLinks}
+                </span>
+
+              </div>
+
             </div>
 
 
@@ -1354,8 +1483,8 @@ export function ProductionBatchWorkspacePrototype({
               {sending
                 ? "Enviando pacote..."
                 : sent
-                  ? "Enviado para an?lise"
-                  : "Enviar todos para an?lise"}
+                  ? "Enviado para an\u00e1lise"
+                  : "Enviar todos para an\u00e1lise"}
             </button>
 
 

@@ -1,7 +1,23 @@
 import Link from "next/link";
 
 import { prisma } from "@/lib/prisma";
-import { requirePermission } from "@/lib/userAccess";
+import {
+  hasAnyPermission,
+} from "@/lib/userAccess";
+
+import {
+  isDirector,
+  isSocialMedia,
+  requireCurrentUser,
+} from "@/lib/auth";
+
+import {
+  canAccessClient,
+} from "@/lib/clientAccess";
+
+import {
+  redirect,
+} from "next/navigation";
 
 import { createEmergencyDemandAction } from "./actions";
 
@@ -20,12 +36,37 @@ export default async function NovaDemandaEmergencialPage({
   }>;
 }) {
   const currentUser =
-    await requirePermission("social.manage");
+    await requireCurrentUser();
+
+
+  const canCreateEmergency =
+    isDirector(
+      currentUser.role
+    ) ||
+    isSocialMedia(
+      currentUser.role
+    ) ||
+    hasAnyPermission(
+      currentUser,
+      [
+        "social.view",
+        "social.manage",
+      ]
+    );
+
+
+  if (
+    !canCreateEmergency
+  ) {
+    redirect(
+      "/acesso-bloqueado"
+    );
+  }
 
   const query =
     await searchParams;
 
-  const clients =
+  const allClients =
     await prisma.client.findMany({
       where: {
         agencyId:
@@ -36,6 +77,19 @@ export default async function NovaDemandaEmergencialPage({
         name: "asc",
       },
     });
+
+  const clients =
+    allClients.filter(
+      (
+        client
+      ) =>
+        canAccessClient(
+          currentUser,
+          client
+        )
+    );
+
+
 
   const requestedClient =
     String(

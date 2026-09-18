@@ -1,7 +1,19 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requirePermission } from "@/lib/userAccess";
+import {
+  hasAnyPermission,
+} from "@/lib/userAccess";
+
+import {
+  isDirector,
+  isSocialMedia,
+  requireCurrentUser,
+} from "@/lib/auth";
+
+import {
+  canAccessClient,
+} from "@/lib/clientAccess";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -18,9 +30,32 @@ export async function createEmergencyDemandAction(
   formData: FormData
 ) {
   const currentUser =
-    await requirePermission(
-      "social.manage"
+    await requireCurrentUser();
+
+
+  const canCreateEmergency =
+    isDirector(
+      currentUser.role
+    ) ||
+    isSocialMedia(
+      currentUser.role
+    ) ||
+    hasAnyPermission(
+      currentUser,
+      [
+        "social.view",
+        "social.manage",
+      ]
     );
+
+
+  if (
+    !canCreateEmergency
+  ) {
+    redirect(
+      "/acesso-bloqueado"
+    );
+  }
 
   const clientId =
     text(
@@ -95,9 +130,15 @@ export async function createEmergencyDemandAction(
       },
     });
 
-  if (!client) {
+  if (
+    !client ||
+    !canAccessClient(
+      currentUser,
+      client
+    )
+  ) {
     redirect(
-      "/demandas-emergenciais/nova?error=required"
+      "/acesso-bloqueado"
     );
   }
 

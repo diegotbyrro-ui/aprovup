@@ -1126,7 +1126,8 @@ const query =
         const hasFinal =
           Boolean(
             content.finalMediaUrl ||
-            content.finalCoverUrl
+            content.finalCoverUrl ||
+            content.finalExternalUrl
           );
 
         const alreadyInFlow =
@@ -1622,6 +1623,28 @@ const query =
                   content.finalCoverUrl ||
                   "";
 
+
+                const externalUrl =
+                  content.finalExternalUrl ||
+                  "";
+
+
+                const isPdfPreview =
+                  String(
+                    content.finalMediaType ||
+                    ""
+                  )
+                    .toLowerCase() ===
+                    "application/pdf" ||
+                  mediaUrl
+                    .toLowerCase()
+                    .split(
+                      "?"
+                    )[0]
+                    .endsWith(
+                      ".pdf"
+                    );
+
                 const isVideoPreview =
                   String(
                     content.finalMediaType ||
@@ -1650,7 +1673,8 @@ const query =
                 const canSend =
                   productionReady &&
                   Boolean(
-                    mediaUrl
+                    mediaUrl ||
+                    externalUrl
                   ) &&
                   hasCaption;
 
@@ -1722,7 +1746,29 @@ const query =
                           ].join(" ")}
                         >
                         {mediaUrl ? (
-                          isVideoPreview ? (
+                          isPdfPreview ? (
+                            <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-slate-100 p-4 text-center">
+                              <FileText
+                                size={28}
+                                className="text-red-500"
+                              />
+
+                              <span className="text-[9px] font-black text-slate-700">
+                                Arquivo PDF
+                              </span>
+
+                              <a
+                                href={
+                                  mediaUrl
+                                }
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                className="rounded-lg bg-slate-900 px-3 py-2 text-[8px] font-black text-white"
+                              >
+                                Abrir PDF
+                              </a>
+                            </div>
+                          ) : isVideoPreview ? (
                             <video
                               src={
                                 mediaUrl
@@ -1739,6 +1785,28 @@ const query =
                               className="h-full w-full object-contain"
                             />
                           )
+                        ) : externalUrl ? (
+                          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-blue-50 p-4 text-center">
+                            <ExternalLink
+                              size={26}
+                              className="text-blue-600"
+                            />
+
+                            <span className="text-[9px] font-black text-blue-800">
+                              Material no Google Drive
+                            </span>
+
+                            <a
+                              href={
+                                externalUrl
+                              }
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              className="rounded-lg bg-blue-600 px-3 py-2 text-[8px] font-black text-white"
+                            >
+                              Abrir arquivo
+                            </a>
+                          </div>
                         ) : (
                           <div className="flex flex-col items-center gap-2 text-slate-500">
                             {content.area ===
