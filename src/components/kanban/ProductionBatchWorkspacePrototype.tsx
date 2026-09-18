@@ -501,7 +501,7 @@ export function ProductionBatchWorkspacePrototype({
 
 
       setSendMessage(
-        "Pacote enviado ao Supabase e encaminhado para a Aprova??o 2."
+        "Pacote enviado ao Supabase e encaminhado para an?lise."
       );
     }
     catch (
@@ -626,11 +626,11 @@ export function ProductionBatchWorkspacePrototype({
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
 
           <p className="text-sm font-black text-emerald-700">
-            {"Envio conclu\\u00eddo."}
+            Envio conclu?do.
           </p>
 
           <p className="mt-1 text-xs text-emerald-600">
-            {"Materiais enviados ao Supabase e encaminhados para a Aprova\\u00e7\\u00e3o 2."}
+            Materiais enviados ao Supabase e encaminhados para an?lise interna.
           </p>
 
         </div>
@@ -1255,7 +1255,7 @@ export function ProductionBatchWorkspacePrototype({
 
 
                       <p className="mt-3 text-[8px] leading-relaxed text-indigo-500">
-                        {"Os arquivos ser\\u00e3o enviados ao Storage do AprovUp ao finalizar o pacote."}
+                        Os arquivos ser?o enviados ao Storage do AprovUp ao finalizar o pacote.
                       </p>
 
                     </div>
@@ -1354,8 +1354,8 @@ export function ProductionBatchWorkspacePrototype({
               {sending
                 ? "Enviando pacote..."
                 : sent
-                  ? "Enviado para Aprova\\u00e7\\u00e3o 2"
-                  : "Enviar todos para Aprova\\u00e7\\u00e3o 2"}
+                  ? "Enviado para an?lise"
+                  : "Enviar todos para an?lise"}
             </button>
 
 

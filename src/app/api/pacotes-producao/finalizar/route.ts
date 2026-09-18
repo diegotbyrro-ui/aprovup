@@ -1,8 +1,4 @@
 import {
-  randomUUID,
-} from "node:crypto";
-
-import {
   NextRequest,
   NextResponse,
 } from "next/server";
@@ -728,38 +724,6 @@ export async function POST(
             }
 
 
-            const pending =
-              await transaction
-                .approval
-                .findFirst({
-                  where: {
-                    contentId:
-                      content.id,
-
-                    status:
-                      "PENDENTE",
-                  },
-                });
-
-
-            if (!pending) {
-              await transaction
-                .approval
-                .create({
-                  data: {
-                    contentId:
-                      content.id,
-
-                    token:
-                      randomUUID(),
-
-                    status:
-                      "PENDENTE",
-                  },
-                });
-            }
-
-
             await transaction
               .content
               .update({
@@ -770,7 +734,10 @@ export async function POST(
 
                 data: {
                   status:
-                    "ENVIADO_CLIENTE",
+                    content.area ===
+                      "FILMMAKER"
+                      ? "FILMMAKER_ANALISE"
+                      : "DESIGN_ANALISE",
 
                   finalMediaUrl,
 
@@ -797,10 +764,10 @@ export async function POST(
                     content.id,
 
                   action:
-                    "FINAL_APPROVAL_SENT",
+                    "PACKAGE_SENT_TO_INTERNAL_REVIEW",
 
                   description:
-                    "Material final enviado pelo pacote de producao para a 2a Etapa de Aprovacao: " +
+                    "Material final enviado pelo pacote de producao para analise interna: " +
                     content.title +
                     ".",
 
