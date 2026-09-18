@@ -1934,6 +1934,62 @@ async function sendProactive({
   dedupKey:
     string;
 }) {
+  /*
+   * LIV_PROACTIVE_HOURS_MACEIO
+   *
+   * Avisos autom?ticos s? podem sair entre
+   * 08:00 e 17:59 no hor?rio de Macei?.
+   *
+   * Fora desse per?odo a LIV continua respondendo
+   * normalmente ?s mensagens recebidas.
+   */
+  const proactiveHourPart =
+    new Intl.DateTimeFormat(
+      'en-US',
+      {
+        timeZone:
+          'America/Maceio',
+
+        hour:
+          '2-digit',
+
+        hourCycle:
+          'h23',
+      }
+    )
+      .formatToParts(
+        new Date()
+      )
+      .find(
+        (
+          part
+        ) =>
+          part.type ===
+          'hour'
+      );
+
+
+  const proactiveHour =
+    Number(
+      proactiveHourPart
+        ?.value ??
+      '-1'
+    );
+
+
+  if (
+    proactiveHour <
+      8 ||
+    proactiveHour >=
+      18
+  ) {
+    return {
+      status:
+        'SKIPPED',
+    };
+  }
+
+
   const member =
     await prisma
       .secretaryWhatsappMember
