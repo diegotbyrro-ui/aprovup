@@ -264,6 +264,7 @@ model Content {
   storyMediaUrl    String?
   storyCoverUrl    String?
   storyMediaType   String?
+  storyMediaItems  Json?
 }
 
 model Task {

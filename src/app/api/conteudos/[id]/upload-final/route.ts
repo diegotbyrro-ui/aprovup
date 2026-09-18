@@ -1262,6 +1262,133 @@ export async function POST(
       }
 
 
+      const storyItems:
+        Array<{
+          path: string;
+          mimeType: string;
+        }> =
+        Array.isArray(
+          body.storyItems
+        )
+          ? (
+              body.storyItems as unknown[]
+            )
+              .map(
+                (
+                  item:
+                    unknown
+                ) => {
+                  const value =
+                    item as {
+                      path?:
+                        unknown;
+
+                      mimeType?:
+                        unknown;
+                    };
+
+
+                  return {
+                    path:
+                      typeof value.path ===
+                        'string'
+                        ? value.path
+                        : '',
+
+                    mimeType:
+                      typeof value.mimeType ===
+                        'string'
+                        ? value.mimeType
+                        : '',
+                  };
+                }
+              )
+              .filter(
+                (
+                  item
+                ) =>
+                  Boolean(
+                    item.path
+                  )
+              )
+          : [];
+
+
+      if (
+        storyItems.length >
+          10
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Os Stories aceitam no maximo 10 imagens por entrega.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+
+      if (
+        storyItems.length >
+          0 &&
+        ![
+          'DESIGN',
+          'SOCIAL_DESIGN',
+          'SOCIAL_MEDIA',
+        ].includes(
+          content.area
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Varias imagens de Stories sao permitidas somente em entregas de Design.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+
+      if (
+        storyItems.length >
+          1 &&
+        storyItems.some(
+          (
+            item
+          ) =>
+            !item.mimeType.startsWith(
+              'image/'
+            )
+        )
+      ) {
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Uma entrega com varios Stories precisa conter somente imagens.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+
       const externalResult =
         parseExternalUrl(
           body.externalUrl
@@ -1294,6 +1421,8 @@ export async function POST(
           0 &&
         !coverPath &&
         !storyPath &&
+        storyItems.length ===
+          0 &&
         !storyCoverPath &&
         !finalExternalUrl
       ) {
@@ -1369,6 +1498,29 @@ export async function POST(
                   1
               ) +
               ' do Feed',
+          });
+        }
+      );
+
+
+      storyItems.forEach(
+        (
+          item,
+          index
+        ) => {
+          pathsToValidate.push({
+            path:
+              item.path,
+
+            kind:
+              'story',
+
+            label:
+              'Story ' +
+              String(
+                index +
+                  1
+              ),
           });
         }
       );
@@ -1465,12 +1617,36 @@ export async function POST(
           : '';
 
 
+      const storyItemUploads =
+        storyItems.map(
+          (
+            item,
+            index
+          ) => ({
+            url:
+              getAprovUpPublicUrl(
+                item.path
+              ),
+
+            mimeType:
+              item.mimeType,
+
+            position:
+              index,
+          })
+        );
+
+
       const storyMediaUrl =
-        storyPath
-          ? getAprovUpPublicUrl(
-              storyPath
-            )
-          : '';
+        storyItemUploads[0]
+          ?.url ||
+        (
+          storyPath
+            ? getAprovUpPublicUrl(
+                storyPath
+              )
+            : ''
+        );
 
 
       const storyCoverUrl =
@@ -1561,10 +1737,14 @@ export async function POST(
 
       if (storyMediaUrl) {
         const storyMediaType =
-          typeof body.storyMediaType ===
-          'string'
-            ? body.storyMediaType
-            : '';
+          storyItemUploads[0]
+            ?.mimeType ||
+          (
+            typeof body.storyMediaType ===
+              'string'
+              ? body.storyMediaType
+              : ''
+          );
 
 
         updateData.storyMediaUrl =
@@ -1572,6 +1752,21 @@ export async function POST(
 
         updateData.storyMediaType =
           storyMediaType;
+
+
+        if (
+          storyItemUploads.length >
+            1
+        ) {
+          updateData.storyMediaItems =
+            storyItemUploads;
+        }
+        else if (
+          storyPath
+        ) {
+          updateData.storyMediaItems =
+            [];
+        }
 
 
         if (
@@ -1701,6 +1896,12 @@ export async function POST(
             ),
             finalPath,
             coverPath,
+            ...storyItems.map(
+              (
+                item
+              ) =>
+                item.path
+            ),
             storyPath,
             storyCoverPath,
           ]
@@ -2145,6 +2346,9 @@ export async function DELETE(
 
       updateData.storyMediaType =
         null;
+
+      updateData.storyMediaItems =
+        [];
 
 
       if (

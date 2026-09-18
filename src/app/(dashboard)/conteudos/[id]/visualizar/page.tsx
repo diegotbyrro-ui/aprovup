@@ -129,6 +129,98 @@ function InfoCard({
 import {
   CommentAudioPlayer,
 } from '@/components/aprovup/CommentAudioPlayer';
+function parseStoryMediaItems(
+  value:
+    unknown
+) {
+  if (
+    !Array.isArray(
+      value
+    )
+  ) {
+    return [];
+  }
+
+
+  return value
+    .map(
+      (
+        item,
+        index
+      ) => {
+        if (
+          !item ||
+          typeof item !==
+            'object'
+        ) {
+          return null;
+        }
+
+
+        const record =
+          item as
+            Record<
+              string,
+              unknown
+            >;
+
+
+        const url =
+          typeof record.url ===
+            'string'
+            ? record.url
+            : '';
+
+
+        const mimeType =
+          typeof record.mimeType ===
+            'string'
+            ? record.mimeType
+            : '';
+
+
+        const position =
+          typeof record.position ===
+            'number'
+            ? record.position
+            : index;
+
+
+        if (!url) {
+          return null;
+        }
+
+
+        return {
+          url,
+          mimeType,
+          position,
+        };
+      }
+    )
+    .filter(
+      (
+        item
+      ): item is {
+        url: string;
+        mimeType: string;
+        position: number;
+      } =>
+        Boolean(
+          item
+        )
+    )
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        a.position -
+        b.position
+    );
+}
+
+
 export default async function ViewContentPage({
   params,
 }: {
@@ -251,6 +343,12 @@ export default async function ViewContentPage({
   const storyMediaType =
     item.storyMediaType ||
     '';
+
+
+  const storyMediaItems =
+    parseStoryMediaItems(
+      item.storyMediaItems
+    );
 
   const isDesignContent =
     [
@@ -716,6 +814,9 @@ export default async function ViewContentPage({
               }
               currentStoryMediaType={
                 storyMediaType
+              }
+              currentStoryMediaItems={
+                storyMediaItems
               }
             />
             </div>

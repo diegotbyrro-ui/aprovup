@@ -69,6 +69,12 @@ type FinalUploadFormProps = {
   currentStoryCoverUrl?: string | null;
 
   currentStoryMediaType?: string | null;
+
+  currentStoryMediaItems?: Array<{
+    url: string;
+    mimeType: string;
+    position: number;
+  }>;
 };
 
 
@@ -484,6 +490,8 @@ export default function FinalUploadForm({
   currentStoryMediaUrl,
   currentStoryCoverUrl,
   currentStoryMediaType,
+  currentStoryMediaItems =
+    [],
 }: FinalUploadFormProps) {
   const router =
     useRouter();
@@ -891,11 +899,16 @@ export default function FinalUploadForm({
       );
 
 
-    const storyFile =
-      getFile(
+    const storyFiles =
+      getFiles(
         formData,
         'storyFile'
       );
+
+
+    const storyFile =
+      storyFiles[0] ||
+      null;
 
 
     const storyCoverFile =
@@ -960,6 +973,51 @@ export default function FinalUploadForm({
 
 
     if (
+      storyFiles.length >
+        10
+    ) {
+      setMessage(
+        'Selecione no maximo 10 imagens para os Stories.'
+      );
+
+      return;
+    }
+
+
+    if (
+      storyFiles.length >
+        1 &&
+      !isDesign
+    ) {
+      setMessage(
+        'O envio de varios Stories esta disponivel somente para o Design.'
+      );
+
+      return;
+    }
+
+
+    if (
+      storyFiles.length >
+        1 &&
+      storyFiles.some(
+        (
+          file
+        ) =>
+          !file.type.startsWith(
+            'image/'
+          )
+      )
+    ) {
+      setMessage(
+        'Para enviar varios Stories juntos, todos precisam ser imagens.'
+      );
+
+      return;
+    }
+
+
+    if (
       !finalFile &&
       !coverFile &&
       !storyFile &&
@@ -999,6 +1057,14 @@ export default function FinalUploadForm({
 
 
       const finalItems:
+        Array<{
+          path: string;
+          mimeType: string;
+        }> =
+        [];
+
+
+      const storyItems:
         Array<{
           path: string;
           mimeType: string;
@@ -1081,9 +1147,58 @@ export default function FinalUploadForm({
       }
 
 
-      if (storyFile) {
+      if (
+        storyFiles.length >
+          1
+      ) {
+        for (
+          let index =
+            0;
+          index <
+            storyFiles.length;
+          index++
+        ) {
+          const file =
+            storyFiles[
+              index
+            ];
+
+
+          setMessage(
+            'Enviando Story ' +
+            String(
+              index +
+                1
+            ) +
+            ' de ' +
+            String(
+              storyFiles.length
+            ) +
+            '...'
+          );
+
+
+          const uploadedPath =
+            await uploadSignedFile(
+              file,
+              'story'
+            );
+
+
+          storyItems.push({
+            path:
+              uploadedPath,
+
+            mimeType:
+              file.type,
+          });
+        }
+      }
+      else if (
+        storyFile
+      ) {
         setMessage(
-          'Enviando arquivo final dos Stories... Não feche esta página.'
+          'Enviando arquivo final dos Stories...'
         );
 
 
@@ -1138,6 +1253,8 @@ export default function FinalUploadForm({
                 coverPath,
 
                 storyPath,
+
+                storyItems,
 
                 storyCoverPath,
 
@@ -1473,27 +1590,116 @@ export default function FinalUploadForm({
 
 
           <div className="mt-4">
-            <CurrentAsset
-              title="Stories"
-              mediaUrl={
-                currentStoryMediaUrl
-              }
-              coverUrl={
-                currentStoryCoverUrl
-              }
-              mediaType={
-                currentStoryMediaType
-              }
-              story
-              mediaKind="story"
-              coverKind="storyCover"
-              deletingKind={
-                deletingKind
-              }
-              onDelete={
-                handleDelete
-              }
-            />
+
+            {
+              currentStoryMediaItems.length >
+                1
+                ? (
+                  <div className="rounded-xl border border-violet-200 bg-white p-3">
+
+                    <div className="flex items-center justify-between gap-3">
+
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-wide text-violet-500">
+                          Stories enviados
+                        </p>
+
+                        <p className="mt-1 text-[11px] font-black text-slate-900">
+                          {currentStoryMediaItems.length} artes
+                        </p>
+                      </div>
+
+
+                      <button
+                        type="button"
+                        disabled={
+                          deletingKind !==
+                            null
+                        }
+                        onClick={
+                          () =>
+                            handleDelete(
+                              'story'
+                            )
+                        }
+                        className="rounded-lg border border-red-100 bg-red-50 px-2.5 py-1.5 text-[9px] font-black text-red-600 hover:bg-red-100 disabled:opacity-50"
+                      >
+                        Remover Stories
+                      </button>
+
+                    </div>
+
+
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+
+                      {
+                        currentStoryMediaItems.map(
+                          (
+                            item,
+                            index
+                          ) => (
+                            <a
+                              key={
+                                item.url
+                              }
+                              href={
+                                item.url
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                              className="relative overflow-hidden rounded-lg border border-violet-100 bg-black"
+                            >
+                              <img
+                                src={
+                                  item.url
+                                }
+                                alt={
+                                  'Story ' +
+                                  String(
+                                    index +
+                                      1
+                                  )
+                                }
+                                className="aspect-[9/16] w-full object-cover"
+                              />
+
+                              <span className="absolute right-1 top-1 rounded-full bg-black/70 px-1.5 py-0.5 text-[7px] font-black text-white">
+                                {index + 1}/{currentStoryMediaItems.length}
+                              </span>
+                            </a>
+                          )
+                        )
+                      }
+
+                    </div>
+
+                  </div>
+                )
+                : (
+                  <CurrentAsset
+                    title="Stories"
+                    mediaUrl={
+                      currentStoryMediaUrl
+                    }
+                    coverUrl={
+                      currentStoryCoverUrl
+                    }
+                    mediaType={
+                      currentStoryMediaType
+                    }
+                    story
+                    mediaKind="story"
+                    coverKind="storyCover"
+                    deletingKind={
+                      deletingKind
+                    }
+                    onDelete={
+                      handleDelete
+                    }
+                  />
+                )
+            }
+
           </div>
 
 
@@ -1501,13 +1707,14 @@ export default function FinalUploadForm({
 
             <div>
               <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wide text-slate-500">
-                Arquivo final dos Stories
+                Arquivos finais dos Stories
               </label>
 
               <input
                 type="file"
                 name="storyFile"
                 accept="image/*,video/*"
+                multiple
                 disabled={
               isUploading ||
               deletingKind !==

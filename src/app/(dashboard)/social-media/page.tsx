@@ -741,6 +741,87 @@ function DesignQuestionCard({
 }
 
 
+function parseStoryMediaItems(
+  value:
+    unknown
+) {
+  if (
+    !Array.isArray(
+      value
+    )
+  ) {
+    return [];
+  }
+
+
+  return value
+    .map(
+      (
+        item,
+        index
+      ) => {
+        if (
+          !item ||
+          typeof item !==
+            'object'
+        ) {
+          return null;
+        }
+
+
+        const record =
+          item as
+            Record<
+              string,
+              unknown
+            >;
+
+
+        const url =
+          typeof record.url ===
+            'string'
+            ? record.url
+            : '';
+
+
+        if (!url) {
+          return null;
+        }
+
+
+        return {
+          url,
+
+          position:
+            typeof record.position ===
+              'number'
+              ? record.position
+              : index,
+        };
+      }
+    )
+    .filter(
+      (
+        item
+      ): item is {
+        url: string;
+        position: number;
+      } =>
+        Boolean(
+          item
+        )
+    )
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        a.position -
+        b.position
+    );
+}
+
+
 export default async function SocialMediaPage({
   searchParams,
 }: {
@@ -1635,6 +1716,12 @@ const query =
                   content.instagramMediaAssets;
 
 
+                const storyAssets =
+                  parseStoryMediaItems(
+                    content.storyMediaItems
+                  );
+
+
                 const externalUrl =
                   content.finalExternalUrl ||
                   "";
@@ -1871,6 +1958,70 @@ const query =
                           </div>
                         )}
                       </div>
+
+
+                        {
+                          storyAssets.length >
+                            1
+                            ? (
+                              <div className="border-t border-violet-100 bg-violet-50 p-2">
+
+                                <div className="mb-2 flex items-center justify-between">
+
+                                  <span className="text-[7px] font-black uppercase tracking-wide text-violet-600">
+                                    Stories
+                                  </span>
+
+                                  <span className="text-[7px] font-black text-violet-700">
+                                    {storyAssets.length} artes
+                                  </span>
+
+                                </div>
+
+
+                                <div className="grid grid-cols-4 gap-1">
+
+                                  {
+                                    storyAssets
+                                      .slice(
+                                        0,
+                                        4
+                                      )
+                                      .map(
+                                        (
+                                          item,
+                                          index
+                                        ) => (
+                                          <div
+                                            key={
+                                              item.url
+                                            }
+                                            className="relative overflow-hidden rounded bg-black"
+                                          >
+                                            <img
+                                              src={
+                                                item.url
+                                              }
+                                              alt={
+                                                'Story ' +
+                                                String(
+                                                  index +
+                                                    1
+                                                )
+                                              }
+                                              className="aspect-[9/16] w-full object-cover"
+                                            />
+                                          </div>
+                                        )
+                                      )
+                                  }
+
+                                </div>
+
+                              </div>
+                            )
+                            : null
+                        }
 
 
                                             <div className="border-t border-slate-100 bg-white px-3 py-2.5">

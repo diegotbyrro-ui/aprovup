@@ -45,6 +45,98 @@ function isVideo(content: {
   );
 }
 
+function parseStoryMediaItems(
+  value:
+    unknown
+) {
+  if (
+    !Array.isArray(
+      value
+    )
+  ) {
+    return [];
+  }
+
+
+  return value
+    .map(
+      (
+        item,
+        index
+      ) => {
+        if (
+          !item ||
+          typeof item !==
+            'object'
+        ) {
+          return null;
+        }
+
+
+        const record =
+          item as
+            Record<
+              string,
+              unknown
+            >;
+
+
+        const url =
+          typeof record.url ===
+            'string'
+            ? record.url
+            : '';
+
+
+        const mimeType =
+          typeof record.mimeType ===
+            'string'
+            ? record.mimeType
+            : '';
+
+
+        const position =
+          typeof record.position ===
+            'number'
+            ? record.position
+            : index;
+
+
+        if (!url) {
+          return null;
+        }
+
+
+        return {
+          url,
+          mimeType,
+          position,
+        };
+      }
+    )
+    .filter(
+      (
+        item
+      ): item is {
+        url: string;
+        mimeType: string;
+        position: number;
+      } =>
+        Boolean(
+          item
+        )
+    )
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        a.position -
+        b.position
+    );
+}
+
+
 export default async function FinalApprovalPage({
   params,
   searchParams,
@@ -256,13 +348,23 @@ export default async function FinalApprovalPage({
                     '.pdf'
                   );
 
+              const storyApprovalItems =
+                parseStoryMediaItems(
+                  content.storyMediaItems
+                );
+
+
               const storyApprovalUrl =
+                storyApprovalItems[0]
+                  ?.url ||
                 content.storyMediaUrl ||
                 content.storyCoverUrl ||
                 '';
 
               const storyApprovalIsVideo =
                 String(
+                  storyApprovalItems[0]
+                    ?.mimeType ||
                   content.storyMediaType ||
                   ''
                 )
@@ -542,24 +644,73 @@ export default async function FinalApprovalPage({
 
                           <div className="mx-auto mt-4 max-w-[260px] overflow-hidden rounded-2xl border border-violet-200 bg-black shadow-sm">
 
-                            {storyApprovalIsVideo ? (
-                              <video
-                                src={
-                                  storyApprovalUrl
-                                }
-                                controls
-                                preload="metadata"
-                                className="aspect-[9/16] w-full bg-black object-contain"
-                              />
-                            ) : (
-                              <img
-                                src={
-                                  storyApprovalUrl
-                                }
-                                alt={`${content.title} - Stories`}
-                                className="aspect-[9/16] w-full object-cover"
-                              />
-                            )}
+                            {
+                              storyApprovalItems.length >
+                                1
+                                ? (
+                                  <div className="flex snap-x snap-mandatory overflow-x-auto">
+
+                                    {
+                                      storyApprovalItems.map(
+                                        (
+                                          item,
+                                          index
+                                        ) => (
+                                          <div
+                                            key={
+                                              item.url
+                                            }
+                                            className="relative min-w-full snap-center"
+                                          >
+                                            <img
+                                              src={
+                                                item.url
+                                              }
+                                              alt={
+                                                content.title +
+                                                ' - Story ' +
+                                                String(
+                                                  index +
+                                                    1
+                                                )
+                                              }
+                                              className="aspect-[9/16] w-full object-cover"
+                                            />
+
+                                            <span className="absolute right-3 top-3 rounded-full bg-black/75 px-3 py-1 text-xs font-black text-white">
+                                              {index + 1}/{storyApprovalItems.length}
+                                            </span>
+                                          </div>
+                                        )
+                                      )
+                                    }
+
+                                  </div>
+                                )
+                                : storyApprovalIsVideo
+                                  ? (
+                                    <video
+                                      src={
+                                        storyApprovalUrl
+                                      }
+                                      controls
+                                      preload="metadata"
+                                      className="aspect-[9/16] w-full bg-black object-contain"
+                                    />
+                                  )
+                                  : (
+                                    <img
+                                      src={
+                                        storyApprovalUrl
+                                      }
+                                      alt={
+                                        content.title +
+                                        ' - Stories'
+                                      }
+                                      className="aspect-[9/16] w-full object-cover"
+                                    />
+                                  )
+                            }
 
                           </div>
 
