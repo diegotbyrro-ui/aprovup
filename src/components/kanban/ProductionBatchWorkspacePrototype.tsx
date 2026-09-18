@@ -232,6 +232,24 @@ export function ProductionBatchWorkspacePrototype({
     );
 
 
+  const [
+    sending,
+    setSending,
+  ] =
+    useState(
+      false
+    );
+
+
+  const [
+    sendMessage,
+    setSendMessage,
+  ] =
+    useState(
+      ""
+    );
+
+
   const readyCount =
     useMemo(
       () =>
@@ -382,6 +400,135 @@ export function ProductionBatchWorkspacePrototype({
   }
 
 
+  async function sendPackage() {
+    if (
+      !allReady ||
+      sending ||
+      sent
+    ) {
+      return;
+    }
+
+
+    setSending(
+      true
+    );
+
+    setSendMessage(
+      "Preparando o pacote..."
+    );
+
+
+    try {
+      const body =
+        new FormData();
+
+
+      body.append(
+        "manifest",
+        JSON.stringify(
+          items.map(
+            (
+              item
+            ) => ({
+              id:
+                item.id,
+            })
+          )
+        )
+      );
+
+
+      for (
+        const item
+        of items
+      ) {
+        const selected =
+          files[
+            item.id
+          ] ||
+          [];
+
+
+        for (
+          const file
+          of selected
+        ) {
+          body.append(
+            "files:" +
+              item.id,
+            file
+          );
+        }
+      }
+
+
+      setSendMessage(
+        "Enviando materiais para o Supabase..."
+      );
+
+
+      const response =
+        await fetch(
+          "/api/pacotes-producao/finalizar",
+          {
+            method:
+              "POST",
+
+            body,
+          }
+        );
+
+
+      const result =
+        await response.json();
+
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        throw new Error(
+          result?.message ||
+          "Nao foi possivel concluir o pacote."
+        );
+      }
+
+
+      setSent(
+        true
+      );
+
+
+      setSendMessage(
+        "Pacote enviado ao Supabase e encaminhado para a Aprova??o 2."
+      );
+    }
+    catch (
+      error
+    ) {
+      console.error(
+        error
+      );
+
+
+      setSendMessage(
+        "ERRO: " +
+        (
+          error instanceof Error
+            ? error.message
+            : "Falha ao enviar o pacote."
+        )
+      );
+    }
+    finally {
+      setSending(
+        false
+      );
+    }
+  }
+
+
   return (
     <div className="space-y-4">
 
@@ -479,11 +626,11 @@ export function ProductionBatchWorkspacePrototype({
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
 
           <p className="text-sm font-black text-emerald-700">
-            Simulação concluída.
+            {"Envio conclu\\u00eddo."}
           </p>
 
           <p className="mt-1 text-xs text-emerald-600">
-            Modo Beta: o envio conjunto para a Aprovação 2 ainda está em validação.
+            {"Materiais enviados ao Supabase e encaminhados para a Aprova\\u00e7\\u00e3o 2."}
           </p>
 
         </div>
@@ -1108,7 +1255,7 @@ export function ProductionBatchWorkspacePrototype({
 
 
                       <p className="mt-3 text-[8px] leading-relaxed text-indigo-500">
-                        Modo Beta: os arquivos selecionados nesta tela ainda não são enviados ao Supabase.
+                        {"Os arquivos ser\\u00e3o enviados ao Storage do AprovUp ao finalizar o pacote."}
                       </p>
 
                     </div>
@@ -1178,13 +1325,12 @@ export function ProductionBatchWorkspacePrototype({
             <button
               type="button"
               disabled={
-                !allReady
+                !allReady ||
+                sending ||
+                sent
               }
               onClick={
-                () =>
-                  setSent(
-                    true
-                  )
+                sendPackage
               }
               className={[
                 "mt-4",
@@ -1205,8 +1351,38 @@ export function ProductionBatchWorkspacePrototype({
                 " "
               )}
             >
-              Enviar todos para Aprovação 2
+              {sending
+                ? "Enviando pacote..."
+                : sent
+                  ? "Enviado para Aprova\\u00e7\\u00e3o 2"
+                  : "Enviar todos para Aprova\\u00e7\\u00e3o 2"}
             </button>
+
+
+            {sendMessage ? (
+              <div
+                className={[
+                  "mt-3",
+                  "rounded-lg",
+                  "px-3",
+                  "py-2",
+                  "text-[9px]",
+                  "font-bold",
+
+                  sendMessage.startsWith(
+                    "ERRO:"
+                  )
+                    ? "bg-red-50 text-red-700"
+                    : sent
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-blue-50 text-blue-700",
+                ].join(
+                  " "
+                )}
+              >
+                {sendMessage}
+              </div>
+            ) : null}
 
 
             {!allReady ? (
