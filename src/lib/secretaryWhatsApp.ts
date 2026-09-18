@@ -1938,7 +1938,7 @@ async function sendProactive({
    * LIV_PROACTIVE_HOURS_MACEIO
    *
    * Avisos autom?ticos s? podem sair entre
-   * 08:00 e 17:59 no hor?rio de Macei?.
+   * 08:00 e 18:59 no hor?rio de Macei?.
    *
    * Fora desse per?odo a LIV continua respondendo
    * normalmente ?s mensagens recebidas.
@@ -1980,7 +1980,7 @@ async function sendProactive({
   if (
     proactiveHour <
       8 ||
-    proactiveHour >=
+    proactiveHour >
       18
   ) {
     return {
@@ -3949,92 +3949,402 @@ function captureMessage(schedule: {
 }
 
 export async function deliverSecretaryCaptureReminders() {
-  const now = new Date();
-  const local = maceioParts();
-  const dayStart = new Date(local.dateKey + 'T03:00:00.000Z');
-  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-  const upcomingStart = new Date(now.getTime() + 45 * 60 * 1000);
-  const upcomingEnd = new Date(now.getTime() + 75 * 60 * 1000);
+  const now =
+    new Date();
 
-  const connections = await prisma.secretaryWhatsappConnection.findMany({
-    where: { status: 'ATIVO', proactiveEnabled: true },
-  });
-  let sent = 0;
+  const local =
+    maceioParts();
 
-  for (const connection of connections) {
-    const clients = await prisma.client.findMany({
-      where: { agencyId: connection.agencyId }, select: { id: true },
-    });
-    const clientIds = clients.map((client) => client.id);
-    if (!clientIds.length) continue;
+  const dayStart =
+    new Date(
+      local.dateKey +
+      'T03:00:00.000Z'
+    );
 
-    const members = await prisma.secretaryWhatsappMember.findMany({
-      where: {
-        agencyId: connection.agencyId, isActive: true, receiveAlerts: true,
-        userId: { not: null },
-      },
-    });
-    if (!members.length) continue;
+  const tomorrowStart =
+    new Date(
+      dayStart.getTime() +
+      24 *
+        60 *
+        60 *
+        1000
+    );
 
-    const users = await prisma.user.findMany({
-      where: {
-        agencyId: connection.agencyId, status: 'APROVADO', role: 'FILMMAKER',
-        id: { in: members.map((member) => member.userId).filter((value): value is string => Boolean(value)) },
-      },
-      select: { id: true },
-    });
-    const filmmakerIds = new Set(users.map((user) => user.id));
-    const filmmakers = members.filter((member) => Boolean(member.userId && filmmakerIds.has(member.userId)));
-    if (!filmmakers.length) continue;
+  const dayAfterTomorrow =
+    new Date(
+      tomorrowStart.getTime() +
+      24 *
+        60 *
+        60 *
+        1000
+    );
 
-    const todaySchedules = local.hour === 8
-      ? await prisma.captureSchedule.findMany({
+  const tomorrowKey =
+    tomorrowStart
+      .toISOString()
+      .slice(
+        0,
+        10
+      );
+
+  const upcomingStart =
+    new Date(
+      now.getTime() +
+      45 *
+        60 *
+        1000
+    );
+
+  const upcomingEnd =
+    new Date(
+      now.getTime() +
+      75 *
+        60 *
+        1000
+    );
+
+
+  const connections =
+    await prisma
+      .secretaryWhatsappConnection
+      .findMany({
+        where: {
+          status:
+            'ATIVO',
+
+          proactiveEnabled:
+            true,
+        },
+      });
+
+
+  let sent =
+    0;
+
+
+  for (
+    const connection
+    of connections
+  ) {
+    const clients =
+      await prisma.client
+        .findMany({
           where: {
-            clientId: { in: clientIds }, status: { not: 'CANCELADO' },
-            scheduledAt: { gte: dayStart, lt: dayEnd },
+            agencyId:
+              connection.agencyId,
           },
-          orderBy: { scheduledAt: 'asc' },
-        })
-      : [];
 
-    if (todaySchedules.length) {
-      const message = todaySchedules.map((schedule, index) =>
-        String(index + 1) + '. ' + captureMessage(schedule)
-      ).join('\n\n');
-
-      for (const member of filmmakers) {
-        const result = await sendProactive({
-          agencyId: connection.agencyId, memberId: member.id, toPhone: member.phoneE164,
-          title: 'Sua agenda de captações de hoje', message,
-          dedupKey: 'capture-daily:' + local.dateKey + ':' + member.id,
+          select: {
+            id:
+              true,
+          },
         });
-        if (result.status === 'SENT') sent += 1;
+
+
+    const clientIds =
+      clients.map(
+        (
+          client
+        ) =>
+          client.id
+      );
+
+
+    if (
+      !clientIds.length
+    ) {
+      continue;
+    }
+
+
+    const members =
+      await prisma
+        .secretaryWhatsappMember
+        .findMany({
+          where: {
+            agencyId:
+              connection.agencyId,
+
+            isActive:
+              true,
+
+            receiveAlerts:
+              true,
+
+            userId: {
+              not:
+                null,
+            },
+          },
+        });
+
+
+    if (
+      !members.length
+    ) {
+      continue;
+    }
+
+
+    const users =
+      await prisma.user
+        .findMany({
+          where: {
+            agencyId:
+              connection.agencyId,
+
+            status:
+              'APROVADO',
+
+            role:
+              'FILMMAKER',
+
+            id: {
+              in:
+                members
+                  .map(
+                    (
+                      member
+                    ) =>
+                      member.userId
+                  )
+                  .filter(
+                    (
+                      value
+                    ): value is string =>
+                      Boolean(
+                        value
+                      )
+                  ),
+            },
+          },
+
+          select: {
+            id:
+              true,
+          },
+        });
+
+
+    const filmmakerIds =
+      new Set(
+        users.map(
+          (
+            user
+          ) =>
+            user.id
+        )
+      );
+
+
+    const filmmakers =
+      members.filter(
+        (
+          member
+        ) =>
+          Boolean(
+            member.userId &&
+            filmmakerIds.has(
+              member.userId
+            )
+          )
+      );
+
+
+    if (
+      !filmmakers.length
+    ) {
+      continue;
+    }
+
+
+    /*
+     * 18H DO DIA ANTERIOR
+     *
+     * Esta ? a mensagem principal da agenda.
+     * Depois vamos anexar aqui tamb?m o PDF
+     * com os roteiros da capta??o.
+     */
+    const tomorrowSchedules =
+      local.hour ===
+        18
+        ? await prisma
+            .captureSchedule
+            .findMany({
+              where: {
+                clientId: {
+                  in:
+                    clientIds,
+                },
+
+                status: {
+                  not:
+                    'CANCELADO',
+                },
+
+                scheduledAt: {
+                  gte:
+                    tomorrowStart,
+
+                  lt:
+                    dayAfterTomorrow,
+                },
+              },
+
+              orderBy: {
+                scheduledAt:
+                  'asc',
+              },
+            })
+        : [];
+
+
+    if (
+      tomorrowSchedules.length
+    ) {
+      const message =
+        tomorrowSchedules
+          .map(
+            (
+              schedule,
+              index
+            ) =>
+              String(
+                index +
+                1
+              ) +
+              '. ' +
+              captureMessage(
+                schedule
+              )
+          )
+          .join(
+            '\n\n'
+          );
+
+
+      for (
+        const member
+        of filmmakers
+      ) {
+        const result =
+          await sendProactive({
+            agencyId:
+              connection.agencyId,
+
+            memberId:
+              member.id,
+
+            toPhone:
+              member.phoneE164,
+
+            title:
+              'Suas capta??es de amanh?',
+
+            message,
+
+            dedupKey:
+              'capture-tomorrow:' +
+              tomorrowKey +
+              ':' +
+              member.id,
+          });
+
+
+        if (
+          result.status ===
+            'SENT'
+        ) {
+          sent +=
+            1;
+        }
       }
     }
 
-    const upcoming = await prisma.captureSchedule.findMany({
-      where: {
-        clientId: { in: clientIds }, status: { not: 'CANCELADO' },
-        scheduledAt: { gte: upcomingStart, lte: upcomingEnd },
-      },
-      orderBy: { scheduledAt: 'asc' },
-    });
 
-    for (const schedule of upcoming) {
-      for (const member of filmmakers) {
-        const result = await sendProactive({
-          agencyId: connection.agencyId, memberId: member.id, toPhone: member.phoneE164,
-          title: 'Captação em cerca de 1 hora', message: captureMessage(schedule),
-          dedupKey: 'capture-upcoming:' + schedule.id + ':' + member.id,
+    /*
+     * LEMBRETE CERCA DE 1 HORA ANTES
+     */
+    const upcoming =
+      await prisma
+        .captureSchedule
+        .findMany({
+          where: {
+            clientId: {
+              in:
+                clientIds,
+            },
+
+            status: {
+              not:
+                'CANCELADO',
+            },
+
+            scheduledAt: {
+              gte:
+                upcomingStart,
+
+              lte:
+                upcomingEnd,
+            },
+          },
+
+          orderBy: {
+            scheduledAt:
+              'asc',
+          },
         });
-        if (result.status === 'SENT') sent += 1;
+
+
+    for (
+      const schedule
+      of upcoming
+    ) {
+      for (
+        const member
+        of filmmakers
+      ) {
+        const result =
+          await sendProactive({
+            agencyId:
+              connection.agencyId,
+
+            memberId:
+              member.id,
+
+            toPhone:
+              member.phoneE164,
+
+            title:
+              'Capta??o em cerca de 1 hora',
+
+            message:
+              captureMessage(
+                schedule
+              ),
+
+            dedupKey:
+              'capture-upcoming:' +
+              schedule.id +
+              ':' +
+              member.id,
+          });
+
+
+        if (
+          result.status ===
+            'SENT'
+        ) {
+          sent +=
+            1;
+        }
       }
     }
   }
 
+
   return sent;
 }
-
 
 function formatProductionDeadline(
   value:
@@ -5083,103 +5393,12 @@ export async function deliverSecretaryCalendarReminders() {
       );
 
 
-    /* ================================================
-       08H A 12H - COMPROMISSOS DE HOJE
-       ================================================ */
-
-    if (
-      local.hour >=
-        8 &&
-      local.hour <
-        12 &&
-      todayEvents.length
-    ) {
-      for (
-        const recipient
-        of recipients
-      ) {
-        const personalEvents =
-          todayEvents.filter(
-            (
-              event
-            ) =>
-              calendarEventMatchesMember({
-                summary:
-                  event.summary,
-
-                description:
-                  event.description,
-
-                displayName:
-                  recipient.member.displayName,
-
-                userName:
-                  recipient.user.name,
-              })
-          );
-
-
-        if (
-          !personalEvents.length
-        ) {
-          continue;
-        }
-
-
-        const message =
-          personalEvents
-            .map(
-              (
-                event,
-                index
-              ) =>
-                String(
-                  index +
-                  1
-                ) +
-                '. ' +
-                calendarReminderMessage(
-                  event
-                )
-            )
-            .join(
-              '\n\n'
-            );
-
-
-        const result =
-          await sendProactive({
-            agencyId:
-              connection.agencyId,
-
-            memberId:
-              recipient.member.id,
-
-            toPhone:
-              recipient.member.phoneE164,
-
-            title:
-              'Seus compromissos de hoje',
-
-            message,
-
-            dedupKey:
-              'calendar-today:' +
-              local.dateKey +
-              ':' +
-              recipient.member.id,
-          });
-
-
-        if (
-          result.status ===
-            'SENT'
-        ) {
-          sent +=
-            1;
-        }
-      }
-    }
+    /*
+     * O resumo di?rio de compromissos n?o ? mais
+     * enviado pela manh?.
+     *
+     * A agenda principal chega ?s 18h do dia anterior.
+     */
 
 
     /* ================================================
