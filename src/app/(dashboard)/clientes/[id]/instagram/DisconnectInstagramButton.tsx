@@ -33,7 +33,7 @@ export function DisconnectInstagramButton({
           }
         }
       }
-      className="basis-full flex justify-end pr-1"
+      className="col-start-2 flex justify-center"
     >
       <input
         type="hidden"
@@ -45,7 +45,7 @@ export function DisconnectInstagramButton({
 
       <button
         type="submit"
-        className="text-[11px] font-semibold text-slate-400 transition hover:text-red-400"
+        className="px-2 text-[11px] font-semibold text-slate-400 transition hover:text-red-400"
       >
         Desconectar conta
       </button>

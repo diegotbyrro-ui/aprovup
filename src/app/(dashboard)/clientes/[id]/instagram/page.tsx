@@ -822,7 +822,7 @@ export default async function ClientInstagramPage({
 
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-[auto_auto] items-center gap-x-2 gap-y-1">
 
               {connection ? (
                 <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-300">
