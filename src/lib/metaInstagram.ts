@@ -3209,6 +3209,8 @@ export async function getInstagramStaticMediaPerformance({
   instagramUserId,
   accessToken,
   days = 30,
+  startDate,
+  endDate,
   limit = 50,
 }: {
   instagramUserId:
@@ -3220,15 +3222,26 @@ export async function getInstagramStaticMediaPerformance({
   days?:
     number;
 
+  startDate?:
+    string;
+
+  endDate?:
+    string;
+
   limit?:
     number;
 }): Promise<
   InstagramTopMediaItem[]
 > {
   const period =
-    getRollingPeriodRanges(
-      days
-    );
+    getSelectedPeriodRanges({
+      requestedDays:
+        days,
+
+      startDate,
+
+      endDate,
+    });
 
   const url =
     new URL(
@@ -3685,6 +3698,8 @@ export async function getInstagramReelRetention({
   instagramUserId,
   accessToken,
   days = 30,
+  startDate,
+  endDate,
   limit = 24,
 }: {
   instagramUserId:
@@ -3696,15 +3711,26 @@ export async function getInstagramReelRetention({
   days?:
     number;
 
+  startDate?:
+    string;
+
+  endDate?:
+    string;
+
   limit?:
     number;
 }): Promise<
   InstagramReelRetentionItem[]
 > {
   const period =
-    getRollingPeriodRanges(
-      days
-    );
+    getSelectedPeriodRanges({
+      requestedDays:
+        days,
+
+      startDate,
+
+      endDate,
+    });
 
   const url =
     new URL(

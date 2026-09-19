@@ -250,6 +250,108 @@ function MetricBox({
 }
 
 
+function normalizeReportDate(
+  value:
+    string |
+    undefined
+) {
+  const clean =
+    String(
+      value ||
+      ''
+    ).trim();
+
+
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      clean
+    )
+  ) {
+    return undefined;
+  }
+
+
+  const date =
+    new Date(
+      clean +
+      'T12:00:00.000Z'
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    ) ||
+    date
+      .toISOString()
+      .slice(
+        0,
+        10
+      ) !==
+      clean
+  ) {
+    return undefined;
+  }
+
+
+  return clean;
+}
+
+
+function reportRangeDays(
+  startDate:
+    string,
+  endDate:
+    string
+) {
+  return (
+    Math.floor(
+      (
+        new Date(
+          endDate +
+          'T12:00:00.000Z'
+        ).getTime() -
+        new Date(
+          startDate +
+          'T12:00:00.000Z'
+        ).getTime()
+      ) /
+      (
+        24 *
+        60 *
+        60 *
+        1000
+      )
+    ) +
+    1
+  );
+}
+
+
+function formatReportDate(
+  value:
+    string
+) {
+  const [
+    year,
+    month,
+    day,
+  ] =
+    value.split(
+      '-'
+    );
+
+
+  return [
+    day,
+    month,
+    year,
+  ].join(
+    '/'
+  );
+}
+
+
 export default async function StaticMediaMetricsPage({
   params,
   searchParams,
@@ -263,6 +365,12 @@ export default async function StaticMediaMetricsPage({
   searchParams:
     Promise<{
       periodo?:
+        string;
+
+      inicio?:
+        string;
+
+      fim?:
         string;
 
       formato?:
@@ -288,16 +396,124 @@ export default async function StaticMediaMetricsPage({
       30
     );
 
-  const period =
-    [
-      7,
-      30,
-      90,
-    ].includes(
+
+  const fallbackPeriod =
+    Number.isFinite(
       requestedPeriod
     )
-      ? requestedPeriod
+      ? Math.min(
+          90,
+          Math.max(
+            1,
+            Math.round(
+              requestedPeriod
+            )
+          )
+        )
       : 30;
+
+
+  const requestedStartDate =
+    normalizeReportDate(
+      query.inicio
+    );
+
+
+  const requestedEndDate =
+    normalizeReportDate(
+      query.fim
+    );
+
+
+  let startDate:
+    string |
+    undefined;
+
+
+  let endDate:
+    string |
+    undefined;
+
+
+  let period =
+    fallbackPeriod;
+
+
+  if (
+    requestedStartDate &&
+    requestedEndDate &&
+    requestedStartDate <=
+      requestedEndDate
+  ) {
+    const customDays =
+      reportRangeDays(
+        requestedStartDate,
+        requestedEndDate
+      );
+
+
+    if (
+      customDays >=
+        1 &&
+      customDays <=
+        90
+    ) {
+      startDate =
+        requestedStartDate;
+
+      endDate =
+        requestedEndDate;
+
+      period =
+        customDays;
+    }
+  }
+
+
+  const periodLabel =
+    startDate &&
+    endDate
+      ? (
+          formatReportDate(
+            startDate
+          ) +
+          ' até ' +
+          formatReportDate(
+            endDate
+          )
+        )
+      : (
+          'Últimos ' +
+          String(
+            period
+          ) +
+          ' dias'
+        );
+
+
+  const periodQueryString =
+    [
+      'periodo=' +
+        String(
+          period
+        ),
+
+      startDate
+        ? 'inicio=' +
+          startDate
+        : '',
+
+      endDate
+        ? 'fim=' +
+          endDate
+        : '',
+    ]
+      .filter(
+        Boolean
+      )
+      .join(
+        '&'
+      );
 
   const requestedFormat =
     String(
@@ -390,6 +606,10 @@ export default async function StaticMediaMetricsPage({
 
           days:
             period,
+
+          startDate,
+
+          endDate,
 
           limit:
             50,
@@ -488,7 +708,7 @@ export default async function StaticMediaMetricsPage({
       <section className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-sm">
         <div className="p-7 md:p-8">
           <Link
-            href={`/clientes/${client.id}/instagram/relatorios?periodo=${period}`}
+            href={`/clientes/${client.id}/instagram/relatorios?${periodQueryString}`}
             className="text-sm font-bold text-blue-300 hover:text-blue-200"
           >
             &larr; Voltar ao relatório
@@ -534,7 +754,7 @@ export default async function StaticMediaMetricsPage({
               </p>
 
               <p className="mt-1 text-lg font-black text-white">
-                Últimos {period} dias
+                {periodLabel}
               </p>
             </div>
           </div>
@@ -544,14 +764,14 @@ export default async function StaticMediaMetricsPage({
       <section className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
         <div className="flex gap-2 overflow-x-auto">
           <Link
-            href={`/clientes/${client.id}/instagram/relatorios?periodo=${period}`}
+            href={`/clientes/${client.id}/instagram/relatorios?${periodQueryString}`}
             className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 transition hover:bg-slate-100"
           >
             Resumo
           </Link>
 
           <Link
-            href={`/clientes/${client.id}/instagram/relatorios/retencao?periodo=${period}`}
+            href={`/clientes/${client.id}/instagram/relatorios/retencao?${periodQueryString}`}
             className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 transition hover:bg-slate-100"
           >
             Retenção de Reels
@@ -562,7 +782,7 @@ export default async function StaticMediaMetricsPage({
           </span>
 
           <Link
-            href={`/clientes/${client.id}/instagram/relatorios/analise-ia?periodo=${period}`}
+            href={`/clientes/${client.id}/instagram/relatorios/analise-ia?${periodQueryString}`}
             className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 transition hover:bg-slate-100"
           >
             Análise IA
@@ -585,25 +805,19 @@ export default async function StaticMediaMetricsPage({
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {[7, 30, 90].map(
-            (
-              option
-            ) => (
-              <Link
-                key={option}
-                href={`/clientes/${client.id}/instagram/relatorios/estaticos?periodo=${option}&formato=${format}`}
-                className={
-                  option ===
-                  period
-                    ? 'rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white'
-                    : 'rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-200'
-                }
-              >
-                {option} dias
-              </Link>
-            )
-          )}
+        <div className="flex flex-col items-start gap-2 lg:items-end">
+
+          <span className="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white">
+            {periodLabel}
+          </span>
+
+          <Link
+            href={`/clientes/${client.id}/instagram/relatorios?${periodQueryString}`}
+            className="text-xs font-bold text-blue-600 transition hover:text-blue-700"
+          >
+            Alterar período
+          </Link>
+
         </div>
       </section>
 
@@ -706,7 +920,7 @@ export default async function StaticMediaMetricsPage({
             ) => (
               <Link
                 key={option.key}
-                href={`/clientes/${client.id}/instagram/relatorios/estaticos?periodo=${period}&formato=${option.key}`}
+                href={`/clientes/${client.id}/instagram/relatorios/estaticos?${periodQueryString}&formato=${option.key}`}
                 className={
                   option.key ===
                   format
