@@ -1651,6 +1651,155 @@ function getRollingPeriodRanges(
   };
 }
 
+function parseMaceioDateStart(
+  value:
+    string |
+    undefined
+) {
+  if (
+    !value ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      value
+    )
+  ) {
+    return null;
+  }
+
+
+  const date =
+    new Date(
+      value +
+      'T03:00:00.000Z'
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    ) ||
+    date
+      .toISOString()
+      .slice(
+        0,
+        10
+      ) !==
+      value
+  ) {
+    return null;
+  }
+
+
+  return date;
+}
+
+
+function getSelectedPeriodRanges({
+  requestedDays =
+    30,
+
+  startDate,
+
+  endDate,
+}: {
+  requestedDays?:
+    number;
+
+  startDate?:
+    string;
+
+  endDate?:
+    string;
+}) {
+  const start =
+    parseMaceioDateStart(
+      startDate
+    );
+
+
+  const endStart =
+    parseMaceioDateStart(
+      endDate
+    );
+
+
+  if (
+    start &&
+    endStart &&
+    start <=
+      endStart
+  ) {
+    const dayMs =
+      24 *
+      60 *
+      60 *
+      1000;
+
+
+    const days =
+      Math.floor(
+        (
+          endStart.getTime() -
+          start.getTime()
+        ) /
+        dayMs
+      ) +
+      1;
+
+
+    if (
+      days >=
+        1 &&
+      days <=
+        90
+    ) {
+      const currentStart =
+        start;
+
+
+      const currentEnd =
+        new Date(
+          endStart.getTime() +
+          dayMs -
+          1
+        );
+
+
+      const windowMs =
+        days *
+        dayMs;
+
+
+      const previousEnd =
+        new Date(
+          currentStart.getTime() -
+          1
+        );
+
+
+      const previousStart =
+        new Date(
+          currentStart.getTime() -
+          windowMs
+        );
+
+
+      return {
+        currentStart,
+        currentEnd,
+        previousStart,
+        previousEnd,
+        days,
+      };
+    }
+  }
+
+
+  return getRollingPeriodRanges(
+    requestedDays
+  );
+}
+
+
 function calculateChange(
   current:
     number | null,
@@ -2103,6 +2252,8 @@ export async function getInstagramDashboardMetrics({
   instagramUserId,
   accessToken,
   days = 30,
+  startDate,
+  endDate,
 }: {
   instagramUserId:
     string;
@@ -2112,12 +2263,23 @@ export async function getInstagramDashboardMetrics({
 
   days?:
     number;
+
+  startDate?:
+    string;
+
+  endDate?:
+    string;
 }): Promise<InstagramDashboardMetrics> {
 
   const period =
-    getRollingPeriodRanges(
-      days
-    );
+    getSelectedPeriodRanges({
+      requestedDays:
+        days,
+
+      startDate,
+
+      endDate,
+    });
 
 
   const profile =
@@ -2764,6 +2926,8 @@ export async function getInstagramTopMedia({
   accessToken,
   limit = 3,
   days = 30,
+  startDate,
+  endDate,
 }: {
   instagramUserId:
     string;
@@ -2776,14 +2940,25 @@ export async function getInstagramTopMedia({
 
   days?:
     number;
+
+  startDate?:
+    string;
+
+  endDate?:
+    string;
 }): Promise<
   InstagramTopMediaItem[]
 > {
 
   const period =
-    getRollingPeriodRanges(
-      days
-    );
+    getSelectedPeriodRanges({
+      requestedDays:
+        days,
+
+      startDate,
+
+      endDate,
+    });
 
 
   const url =

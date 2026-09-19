@@ -135,15 +135,55 @@ function startDateKey(
 export async function getInstagramHistorySummary({
   clientId,
   days = 30,
+  startDate,
+  endDate,
 }: {
   clientId:
     string;
 
   days?:
     number;
+
+  startDate?:
+    string;
+
+  endDate?:
+    string;
 }): Promise<
   InstagramHistorySummary
 > {
+
+  const validDateKey =
+    (
+      value:
+        string |
+        undefined
+    ) =>
+      Boolean(
+        value &&
+        /^\d{4}-\d{2}-\d{2}$/.test(
+          value
+        )
+      );
+
+
+  const selectedStart =
+    validDateKey(
+      startDate
+    )
+      ? startDate
+      : startDateKey(
+          days
+        );
+
+
+  const selectedEnd =
+    validDateKey(
+      endDate
+    )
+      ? endDate
+      : undefined;
+
 
   const snapshots =
     await prisma
@@ -156,9 +196,16 @@ export async function getInstagramHistorySummary({
 
           dateKey: {
             gte:
-              startDateKey(
-                days
-              ),
+              selectedStart,
+
+            ...(
+              selectedEnd
+                ? {
+                    lte:
+                      selectedEnd,
+                  }
+                : {}
+            ),
           },
 
         },

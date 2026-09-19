@@ -3165,6 +3165,182 @@ function drawNextSteps({
 }
 
 
+function validReportDateKey(
+  value:
+    string
+) {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      value
+    )
+  ) {
+    return false;
+  }
+
+
+  const date =
+    new Date(
+      value +
+      'T12:00:00.000Z'
+    );
+
+
+  return (
+    !Number.isNaN(
+      date.getTime()
+    ) &&
+    date
+      .toISOString()
+      .slice(
+        0,
+        10
+      ) ===
+      value
+  );
+}
+
+
+function shiftReportDateKey(
+  value:
+    string,
+  amount:
+    number
+) {
+  const date =
+    new Date(
+      value +
+      'T12:00:00.000Z'
+    );
+
+
+  date.setUTCDate(
+    date.getUTCDate() +
+    amount
+  );
+
+
+  return date
+    .toISOString()
+    .slice(
+      0,
+      10
+    );
+}
+
+
+function reportDateRangeDays(
+  start:
+    string,
+  end:
+    string
+) {
+  return (
+    Math.floor(
+      (
+        new Date(
+          end +
+          'T12:00:00.000Z'
+        ).getTime() -
+        new Date(
+          start +
+          'T12:00:00.000Z'
+        ).getTime()
+      ) /
+      (
+        24 *
+        60 *
+        60 *
+        1000
+      )
+    ) +
+    1
+  );
+}
+
+
+function maceioTodayKey() {
+  const formatter =
+    new Intl.DateTimeFormat(
+      'en-CA',
+      {
+        timeZone:
+          'America/Maceio',
+
+        year:
+          'numeric',
+
+        month:
+          '2-digit',
+
+        day:
+          '2-digit',
+      }
+    );
+
+
+  const parts =
+    formatter.formatToParts(
+      new Date()
+    );
+
+
+  return [
+    parts.find(
+      (
+        part
+      ) =>
+        part.type ===
+        'year'
+    )?.value ||
+    '',
+
+    parts.find(
+      (
+        part
+      ) =>
+        part.type ===
+        'month'
+    )?.value ||
+    '',
+
+    parts.find(
+      (
+        part
+      ) =>
+        part.type ===
+        'day'
+    )?.value ||
+    '',
+  ].join(
+    '-'
+  );
+}
+
+
+function reportDateLabel(
+  value:
+    string
+) {
+  const [
+    year,
+    month,
+    day,
+  ] =
+    value.split(
+      '-'
+    );
+
+
+  return [
+    day,
+    month,
+    year,
+  ].join(
+    '/'
+  );
+}
+
+
 export async function GET(
   request:
     NextRequest
@@ -3250,7 +3426,7 @@ export async function GET(
       );
 
 
-    const period =
+    const fallbackPeriod =
       [
         7,
         30,
@@ -3260,6 +3436,128 @@ export async function GET(
       )
         ? requestedPeriod
         : 30;
+
+
+    const requestedStartDate =
+      String(
+        request.nextUrl
+          .searchParams
+          .get(
+            "inicio"
+          ) ||
+        ""
+      ).trim();
+
+
+    const requestedEndDate =
+      String(
+        request.nextUrl
+          .searchParams
+          .get(
+            "fim"
+          ) ||
+        ""
+      ).trim();
+
+
+    const customRangeSelected =
+      Boolean(
+        requestedStartDate ||
+        requestedEndDate
+      );
+
+
+    const todayDateKey =
+      maceioTodayKey();
+
+
+    let startDate =
+      shiftReportDateKey(
+        todayDateKey,
+        -(
+          fallbackPeriod -
+          1
+        )
+      );
+
+
+    let endDate =
+      todayDateKey;
+
+
+    let period =
+      fallbackPeriod;
+
+
+    if (
+      customRangeSelected
+    ) {
+      const customDays =
+        validReportDateKey(
+          requestedStartDate
+        ) &&
+        validReportDateKey(
+          requestedEndDate
+        )
+          ? reportDateRangeDays(
+              requestedStartDate,
+              requestedEndDate
+            )
+          : 0;
+
+
+      const validCustomRange =
+        validReportDateKey(
+          requestedStartDate
+        ) &&
+        validReportDateKey(
+          requestedEndDate
+        ) &&
+        requestedStartDate <=
+          requestedEndDate &&
+        requestedEndDate <=
+          todayDateKey &&
+        customDays >=
+          1 &&
+        customDays <=
+          90;
+
+
+      if (
+        !validCustomRange
+      ) {
+        return NextResponse.json(
+          {
+            message:
+              "O periodo precisa ter entre 1 e 90 dias e nao pode terminar no futuro.",
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+
+      startDate =
+        requestedStartDate;
+
+      endDate =
+        requestedEndDate;
+
+      period =
+        customDays;
+    }
+
+
+    const periodLabel =
+      reportDateLabel(
+        startDate
+      ) +
+      " a " +
+      reportDateLabel(
+        endDate
+      );
 
 
     if (
@@ -3445,6 +3743,10 @@ export async function GET(
 
             days:
               period,
+
+            startDate,
+
+            endDate,
           }),
 
           getInstagramTopMedia({
@@ -3459,6 +3761,10 @@ export async function GET(
 
             days:
               period,
+
+            startDate,
+
+            endDate,
           }),
         ]);
 
@@ -3471,8 +3777,13 @@ export async function GET(
           metricsResult.value;
 
 
-        try {
-          await saveInstagramSnapshot({
+        if (
+          !customRangeSelected &&
+          period ===
+            30
+        ) {
+          try {
+            await saveInstagramSnapshot({
             clientId:
               client.id,
 
@@ -3484,13 +3795,14 @@ export async function GET(
               dashboardMetrics,
           });
         }
-        catch (
-          snapshotError
-        ) {
-          console.error(
-            "REPORT SNAPSHOT ERROR",
+          catch (
             snapshotError
-          );
+          ) {
+            console.error(
+              "REPORT SNAPSHOT ERROR",
+              snapshotError
+            );
+          }
         }
       }
 
@@ -3512,6 +3824,10 @@ export async function GET(
 
         days:
           period,
+
+        startDate,
+
+        endDate,
       });
 
 
@@ -3687,7 +4003,7 @@ export async function GET(
     textAt({
       page,
       text:
-        `Ultimos ${period} dias`,
+        periodLabel,
       x:
         721,
       y:
@@ -3722,7 +4038,7 @@ export async function GET(
           null
         ),
       helper:
-        `Ultimos ${period} dias`,
+        periodLabel,
       bold,
       regular,
     });
@@ -3961,15 +4277,15 @@ export async function GET(
 
 
     const filename =
-      `relatorio-${fileSlug(
+      'relatorio-' +
+      fileSlug(
         client.name
-      )}-${now.getUTCFullYear()}-${String(
-        now.getUTCMonth() +
-        1
-      ).padStart(
-        2,
-        "0"
-      )}.pdf`;
+      ) +
+      '-' +
+      startDate +
+      '-a-' +
+      endDate +
+      '.pdf';
 
 
     return new NextResponse(
@@ -3995,6 +4311,12 @@ export async function GET(
             String(
               period
             ),
+
+          "X-AprovUp-Report-Start":
+            startDate,
+
+          "X-AprovUp-Report-End":
+            endDate,
         },
       }
     );

@@ -625,6 +625,182 @@ function FollowersHistoryChart({
 }
 
 
+function getMaceioDateKey(
+  date:
+    Date =
+      new Date()
+) {
+  const formatter =
+    new Intl.DateTimeFormat(
+      'en-CA',
+      {
+        timeZone:
+          'America/Maceio',
+
+        year:
+          'numeric',
+
+        month:
+          '2-digit',
+
+        day:
+          '2-digit',
+      }
+    );
+
+
+  const parts =
+    formatter.formatToParts(
+      date
+    );
+
+
+  const year =
+    parts.find(
+      (
+        part
+      ) =>
+        part.type ===
+        'year'
+    )?.value ||
+    '';
+
+
+  const month =
+    parts.find(
+      (
+        part
+      ) =>
+        part.type ===
+        'month'
+    )?.value ||
+    '';
+
+
+  const day =
+    parts.find(
+      (
+        part
+      ) =>
+        part.type ===
+        'day'
+    )?.value ||
+    '';
+
+
+  return [
+    year,
+    month,
+    day,
+  ].join(
+    '-'
+  );
+}
+
+
+function validDateKey(
+  value:
+    string |
+    undefined
+) {
+  if (
+    !value ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      value
+    )
+  ) {
+    return false;
+  }
+
+
+  const date =
+    new Date(
+      value +
+      'T12:00:00.000Z'
+    );
+
+
+  return (
+    !Number.isNaN(
+      date.getTime()
+    ) &&
+    date
+      .toISOString()
+      .slice(
+        0,
+        10
+      ) ===
+      value
+  );
+}
+
+
+function shiftDateKey(
+  value:
+    string,
+  amount:
+    number
+) {
+  const date =
+    new Date(
+      value +
+      'T12:00:00.000Z'
+    );
+
+
+  date.setUTCDate(
+    date.getUTCDate() +
+    amount
+  );
+
+
+  return date
+    .toISOString()
+    .slice(
+      0,
+      10
+    );
+}
+
+
+function dateRangeDays(
+  start:
+    string,
+  end:
+    string
+) {
+  const startDate =
+    new Date(
+      start +
+      'T12:00:00.000Z'
+    );
+
+
+  const endDate =
+    new Date(
+      end +
+      'T12:00:00.000Z'
+    );
+
+
+  return (
+    Math.floor(
+      (
+        endDate.getTime() -
+        startDate.getTime()
+      ) /
+      (
+        24 *
+        60 *
+        60 *
+        1000
+      )
+    ) +
+    1
+  );
+}
+
+
 export default async function InstagramReportsPage({
   params,
   searchParams,
@@ -638,6 +814,12 @@ export default async function InstagramReportsPage({
   searchParams:
     Promise<{
       periodo?:
+        string;
+
+      inicio?:
+        string;
+
+      fim?:
         string;
     }>;
 }) {
@@ -658,23 +840,101 @@ export default async function InstagramReportsPage({
     await searchParams;
 
 
-  const requestedPeriod =
-    Number(
-      query.periodo ||
-      30
+  const todayDateKey =
+    getMaceioDateKey();
+
+
+  const defaultEndDate =
+    todayDateKey;
+
+
+  const defaultStartDate =
+    shiftDateKey(
+      defaultEndDate,
+      -29
     );
 
 
-  const period =
-    [
-      7,
-      30,
-      90,
-    ].includes(
-      requestedPeriod
+  const requestedStartDate =
+    String(
+      query.inicio ||
+      ''
+    ).trim();
+
+
+  const requestedEndDate =
+    String(
+      query.fim ||
+      ''
+    ).trim();
+
+
+  const candidateStartDate =
+    requestedStartDate ||
+    defaultStartDate;
+
+
+  const candidateEndDate =
+    requestedEndDate ||
+    defaultEndDate;
+
+
+  const candidateDays =
+    validDateKey(
+      candidateStartDate
+    ) &&
+    validDateKey(
+      candidateEndDate
     )
-      ? requestedPeriod
-      : 30;
+      ? dateRangeDays(
+          candidateStartDate,
+          candidateEndDate
+        )
+      : 0;
+
+
+  const validRange =
+    validDateKey(
+      candidateStartDate
+    ) &&
+    validDateKey(
+      candidateEndDate
+    ) &&
+    candidateStartDate <=
+      candidateEndDate &&
+    candidateEndDate <=
+      todayDateKey &&
+    candidateDays >=
+      1 &&
+    candidateDays <=
+      90;
+
+
+  const startDate =
+    validRange
+      ? candidateStartDate
+      : defaultStartDate;
+
+
+  const endDate =
+    validRange
+      ? candidateEndDate
+      : defaultEndDate;
+
+
+  const period =
+    dateRangeDays(
+      startDate,
+      endDate
+    );
+
+
+  const invalidRequestedRange =
+    Boolean(
+      requestedStartDate ||
+      requestedEndDate
+    ) &&
+    !validRange;
 
 
   const client =
@@ -784,6 +1044,10 @@ export default async function InstagramReportsPage({
       days:
         period,
 
+      startDate,
+
+      endDate,
+
     });
 
 
@@ -827,6 +1091,10 @@ export default async function InstagramReportsPage({
           days:
             period,
 
+          startDate,
+
+          endDate,
+
         }),
 
 
@@ -842,6 +1110,10 @@ export default async function InstagramReportsPage({
 
           days:
             period,
+
+          startDate,
+
+          endDate,
 
         }),
 
@@ -873,9 +1145,9 @@ export default async function InstagramReportsPage({
 
 
   const currentFollowers =
-    dashboardMetrics
-      ?.followersCount ??
     history.latest
+      ?.followersCount ??
+    dashboardMetrics
       ?.followersCount ??
     null;
 
@@ -964,7 +1236,7 @@ export default async function InstagramReportsPage({
 
               <a
                 href={
-                  `/api/relatorios/gerar?cliente=${client.id}&modelo=${reportTemplate.id}&periodo=${period}`
+                  `/api/relatorios/gerar?cliente=${client.id}&modelo=${reportTemplate.id}&inicio=${startDate}&fim=${endDate}`
                 }
                 title={
                   `Gerar PDF usando o modelo ${reportTemplate.name}`
@@ -1125,21 +1397,21 @@ export default async function InstagramReportsPage({
           </span>
 
           <Link
-            href={`/clientes/${client.id}/instagram/relatorios/retencao?periodo=${period}`}
+            href={`/clientes/${client.id}/instagram/relatorios/retencao?inicio=${startDate}&fim=${endDate}&periodo=${period}`}
             className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 transition hover:bg-slate-100"
           >
             Retenção de Reels
           </Link>
 
           <Link
-            href={`/clientes/${client.id}/instagram/relatorios/estaticos?periodo=${period}`}
+            href={`/clientes/${client.id}/instagram/relatorios/estaticos?inicio=${startDate}&fim=${endDate}&periodo=${period}`}
             className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 transition hover:bg-slate-100"
           >
             Imagens e Carrosséis
           </Link>
 
           <Link
-            href={`/clientes/${client.id}/instagram/relatorios/analise-ia?periodo=${period}`}
+            href={`/clientes/${client.id}/instagram/relatorios/analise-ia?inicio=${startDate}&fim=${endDate}&periodo=${period}`}
             className="rounded-xl px-4 py-2.5 text-sm font-bold text-slate-500 transition hover:bg-slate-100"
           >
             Análise IA
@@ -1149,49 +1421,118 @@ export default async function InstagramReportsPage({
 
       </section>
 
-      {/* FILTRO */}
+      {/* FILTRO PERSONALIZADO */}
 
-      <section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
 
-        <div>
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
 
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Período analisado
-          </p>
+          <div>
 
-          <h2 className="mt-1 text-xl font-black text-slate-900">
-            Últimos {period} dias
-          </h2>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Período analisado
+            </p>
+
+            <h2 className="mt-1 text-xl font-black text-slate-900">
+              {
+                formatDateKey(
+                  startDate
+                )
+              }
+              {' até '}
+              {
+                formatDateKey(
+                  endDate
+                )
+              }
+            </h2>
+
+            <p className="mt-1 text-xs font-medium text-slate-400">
+              {period} dia{period === 1 ? '' : 's'} selecionado{period === 1 ? '' : 's'}
+            </p>
+
+          </div>
+
+
+          <form
+            method="GET"
+            action={
+              '/clientes/' +
+              client.id +
+              '/instagram/relatorios'
+            }
+            className="flex flex-col gap-3 sm:flex-row sm:items-end"
+          >
+
+            <label className="block">
+
+              <span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-400">
+                De
+              </span>
+
+              <input
+                type="date"
+                name="inicio"
+                defaultValue={
+                  startDate
+                }
+                max={
+                  todayDateKey
+                }
+                required
+                className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+              />
+
+            </label>
+
+
+            <label className="block">
+
+              <span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-400">
+                Até
+              </span>
+
+              <input
+                type="date"
+                name="fim"
+                defaultValue={
+                  endDate
+                }
+                max={
+                  todayDateKey
+                }
+                required
+                className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+              />
+
+            </label>
+
+
+            <button
+              type="submit"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-bold text-white transition hover:bg-slate-800"
+            >
+              <CalendarDays
+                size={16}
+              />
+
+              Aplicar período
+            </button>
+
+          </form>
 
         </div>
 
 
-        <div className="flex flex-wrap gap-2">
-
-          {[7, 30, 90].map(
-            (
-              option
-            ) => (
-
-              <Link
-                key={
-                  option
-                }
-                href={`/clientes/${client.id}/instagram/relatorios?periodo=${option}`}
-                className={
-                  option ===
-                  period
-                    ? 'rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white'
-                    : 'rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-200'
-                }
-              >
-                {option} dias
-              </Link>
-
+        {
+          invalidRequestedRange
+            ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-700">
+                O intervalo precisa ter entre 1 e 90 dias e não pode terminar no futuro. Exibindo os últimos 30 dias.
+              </div>
             )
-          )}
-
-        </div>
+            : null
+        }
 
       </section>
 
