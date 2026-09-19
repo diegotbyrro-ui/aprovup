@@ -1679,30 +1679,233 @@ export default async function InstagramReportsPage({
       </section>
 
 
-      {/* GRAFICO + RESUMO */}
+      {/* COMPARATIVO DO PERIODO */}
 
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.5fr_0.8fr]">
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
 
-          <div>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
 
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Histórico próprio AprovUp
-            </p>
+            <div>
 
-            <h2 className="mt-1 text-xl font-black text-slate-900">
-              Evolução de seguidores
-            </h2>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Comparativo Meta
+              </p>
+
+              <h2 className="mt-1 text-xl font-black text-slate-900">
+                Período selecionado x período anterior
+              </h2>
+
+            </div>
+
+
+            <div className="rounded-xl bg-slate-50 px-3 py-2 text-right">
+
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                Período atual
+              </p>
+
+              <p className="mt-1 text-xs font-black text-slate-700">
+                {
+                  formatDateKey(
+                    startDate
+                  )
+                }
+                {' até '}
+                {
+                  formatDateKey(
+                    endDate
+                  )
+                }
+              </p>
+
+            </div>
 
           </div>
 
 
-          <FollowersHistoryChart
-            points={
-              history.points
+          <div className="mt-6 space-y-3">
+
+            {
+              [
+                {
+                  label:
+                    period >
+                      30
+                      ? 'Alcance acumulado'
+                      : 'Alcance',
+
+                  current:
+                    dashboardMetrics
+                      ?.current
+                      .reach ??
+                    null,
+
+                  previous:
+                    dashboardMetrics
+                      ?.previous
+                      .reach ??
+                    null,
+
+                  change:
+                    dashboardMetrics
+                      ?.change
+                      .reach ??
+                    null,
+                },
+
+                {
+                  label:
+                    'Visualizações',
+
+                  current:
+                    dashboardMetrics
+                      ?.current
+                      .views ??
+                    null,
+
+                  previous:
+                    dashboardMetrics
+                      ?.previous
+                      .views ??
+                    null,
+
+                  change:
+                    dashboardMetrics
+                      ?.change
+                      .views ??
+                    null,
+                },
+
+                {
+                  label:
+                    'Interações',
+
+                  current:
+                    dashboardMetrics
+                      ?.current
+                      .interactions ??
+                    null,
+
+                  previous:
+                    dashboardMetrics
+                      ?.previous
+                      .interactions ??
+                    null,
+
+                  change:
+                    dashboardMetrics
+                      ?.change
+                      .interactions ??
+                    null,
+                },
+              ].map(
+                (
+                  item
+                ) => (
+
+                  <div
+                    key={
+                      item.label
+                    }
+                    className="grid grid-cols-[1fr_auto_auto] items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                  >
+
+                    <div>
+
+                      <p className="text-sm font-black text-slate-900">
+                        {
+                          item.label
+                        }
+                      </p>
+
+                      <p className="mt-1 text-[10px] font-medium text-slate-400">
+                        Comparação com o mesmo intervalo imediatamente anterior
+                      </p>
+
+                    </div>
+
+
+                    <div className="text-right">
+
+                      <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                        Atual
+                      </p>
+
+                      <p className="mt-1 text-lg font-black text-slate-900">
+                        {
+                          formatNumber(
+                            item.current
+                          )
+                        }
+                      </p>
+
+                    </div>
+
+
+                    <div className="min-w-[92px] text-right">
+
+                      <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                        Variação
+                      </p>
+
+                      <p
+                        className={
+                          item.change ===
+                            null
+                            ? 'mt-1 text-lg font-black text-slate-400'
+                            : item.change >=
+                                0
+                              ? 'mt-1 text-lg font-black text-emerald-600'
+                              : 'mt-1 text-lg font-black text-rose-600'
+                        }
+                      >
+                        {
+                          formatPercent(
+                            item.change
+                          )
+                        }
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                )
+              )
             }
-          />
+
+          </div>
+
+
+          <div className="mt-4 rounded-2xl border border-slate-100 bg-white p-4">
+
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+              Período anterior usado na comparação
+            </p>
+
+            <p className="mt-1 text-sm font-black text-slate-700">
+              {
+                formatDateKey(
+                  shiftDateKey(
+                    startDate,
+                    -period
+                  )
+                )
+              }
+              {' até '}
+              {
+                formatDateKey(
+                  shiftDateKey(
+                    startDate,
+                    -1
+                  )
+                )
+              }
+            </p>
+
+          </div>
 
         </div>
 
@@ -1710,85 +1913,102 @@ export default async function InstagramReportsPage({
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
 
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Resumo
+            Seguidores
           </p>
 
           <h2 className="mt-1 text-xl font-black text-slate-900">
-            Base histórica
+            Crescimento do período
           </h2>
 
 
           <div className="mt-6 space-y-3">
 
-            <div className="rounded-2xl bg-slate-50 p-4">
-
-              <p className="text-xs font-bold text-slate-400">
-                Primeira coleta
-              </p>
-
-              <p className="mt-1 font-black text-slate-900">
-                {
-                  formatDateKey(
-                    history.first
-                      ?.dateKey
-                  )
-                }
-              </p>
-
-            </div>
-
-
-            <div className="rounded-2xl bg-slate-50 p-4">
-
-              <p className="text-xs font-bold text-slate-400">
-                Última coleta
-              </p>
-
-              <p className="mt-1 font-black text-slate-900">
-                {
-                  formatDateKey(
-                    history.latest
-                      ?.dateKey
-                  )
-                }
-              </p>
-
-            </div>
-
-
-            <div className="rounded-2xl bg-slate-50 p-4">
-
-              <p className="text-xs font-bold text-slate-400">
-                Dias com dados
-              </p>
-
-              <p className="mt-1 font-black text-slate-900">
-                {
-                  history.daysWithData
-                }
-              </p>
-
-            </div>
-
-
             <div className="rounded-2xl bg-blue-50 p-4">
 
               <p className="text-xs font-bold text-blue-500">
-                Crescimento acumulado
+                Período selecionado
               </p>
 
-              <p className="mt-1 text-2xl font-black text-blue-900">
+              <p className="mt-1 text-3xl font-black text-blue-900">
                 {
                   formatSignedNumber(
-                    history.followersDelta
+                    dashboardMetrics
+                      ?.current
+                      .netFollowers ??
+                    null
                   )
                 }
               </p>
 
-              <p className="mt-1 text-xs font-bold text-blue-600">
+              <p className="mt-1 text-xs font-medium text-blue-600">
+                Saldo de seguidores no intervalo escolhido
+              </p>
+
+            </div>
+
+
+            <div className="rounded-2xl bg-slate-50 p-4">
+
+              <p className="text-xs font-bold text-slate-400">
+                Período anterior
+              </p>
+
+              <p className="mt-1 text-2xl font-black text-slate-900">
+                {
+                  formatSignedNumber(
+                    dashboardMetrics
+                      ?.previous
+                      .netFollowers ??
+                    null
+                  )
+                }
+              </p>
+
+            </div>
+
+
+            <div className="rounded-2xl bg-slate-50 p-4">
+
+              <p className="text-xs font-bold text-slate-400">
+                Variação
+              </p>
+
+              <p
+                className={
+                  (
+                    dashboardMetrics
+                      ?.change
+                      .netFollowers ??
+                    0
+                  ) >=
+                    0
+                    ? 'mt-1 text-2xl font-black text-emerald-600'
+                    : 'mt-1 text-2xl font-black text-rose-600'
+                }
+              >
                 {
                   formatPercent(
-                    history.followersPercent
+                    dashboardMetrics
+                      ?.change
+                      .netFollowers ??
+                    null
+                  )
+                }
+              </p>
+
+            </div>
+
+
+            <div className="rounded-2xl border border-slate-100 bg-white p-4">
+
+              <p className="text-xs font-bold text-slate-400">
+                Seguidores atuais
+              </p>
+
+              <p className="mt-1 text-2xl font-black text-slate-900">
+                {
+                  formatNumber(
+                    currentFollowers
                   )
                 }
               </p>
@@ -1945,6 +2165,12 @@ export default async function InstagramReportsPage({
       </section>
 
 
+      {
+        history.points.length >
+          0
+          ? (
+            <>
+
       {/* HISTORICO DE COLETAS */}
 
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -2081,6 +2307,11 @@ export default async function InstagramReportsPage({
         </div>
 
       </section>
+
+            </>
+          )
+          : null
+      }
 
     </div>
   );
