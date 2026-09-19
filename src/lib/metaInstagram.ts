@@ -1651,7 +1651,7 @@ function getRollingPeriodRanges(
   };
 }
 
-function parseMaceioDateStart(
+function parseReportDateStart(
   value:
     string |
     undefined
@@ -1669,7 +1669,7 @@ function parseMaceioDateStart(
   const date =
     new Date(
       value +
-      'T03:00:00.000Z'
+      'T00:00:00.000Z'
     );
 
 
@@ -1711,22 +1711,22 @@ function getSelectedPeriodRanges({
     string;
 }) {
   const start =
-    parseMaceioDateStart(
+    parseReportDateStart(
       startDate
     );
 
 
-  const endStart =
-    parseMaceioDateStart(
+  const end =
+    parseReportDateStart(
       endDate
     );
 
 
   if (
     start &&
-    endStart &&
+    end &&
     start <=
-      endStart
+      end
   ) {
     const dayMs =
       24 *
@@ -1738,7 +1738,7 @@ function getSelectedPeriodRanges({
     const days =
       Math.floor(
         (
-          endStart.getTime() -
+          end.getTime() -
           start.getTime()
         ) /
         dayMs
@@ -1752,15 +1752,22 @@ function getSelectedPeriodRanges({
       days <=
         90
     ) {
+      /*
+       * Meta trabalha melhor com limites
+       * de dia UTC.
+       *
+       * until aponta para o inicio do
+       * dia seguinte, cobrindo o ultimo
+       * dia selecionado por completo.
+       */
       const currentStart =
         start;
 
 
       const currentEnd =
         new Date(
-          endStart.getTime() +
-          dayMs -
-          1
+          end.getTime() +
+          dayMs
         );
 
 
@@ -1771,8 +1778,7 @@ function getSelectedPeriodRanges({
 
       const previousEnd =
         new Date(
-          currentStart.getTime() -
-          1
+          currentStart.getTime()
         );
 
 
@@ -1873,30 +1879,37 @@ async function readMetricTotal({
   ];
 
 
+  let lastError =
+    '';
+
+
   for (
     const attempt
     of attempts
   ) {
-
     const url =
       new URL(
         `https://graph.facebook.com/${graphVersion()}/${instagramUserId}/insights`
       );
+
 
     url.searchParams.set(
       'metric',
       metric
     );
 
+
     url.searchParams.set(
       'period',
       attempt.period
     );
 
+
     url.searchParams.set(
       'metric_type',
       attempt.metricType
     );
+
 
     url.searchParams.set(
       'since',
@@ -1907,6 +1920,7 @@ async function readMetricTotal({
       )
     );
 
+
     url.searchParams.set(
       'until',
       String(
@@ -1915,6 +1929,7 @@ async function readMetricTotal({
         )
       )
     );
+
 
     url.searchParams.set(
       'access_token',
@@ -1939,48 +1954,213 @@ async function readMetricTotal({
     if (
       !response.ok
     ) {
+      lastError =
+        String(
+          payload
+            ?.error
+            ?.message ||
+          JSON.stringify(
+            payload
+          )
+        );
+
+
+      console.error(
+        'INSTAGRAM ACCOUNT INSIGHT ERROR',
+        {
+          metric,
+          period:
+            attempt.period,
+
+          since:
+            since.toISOString(),
+
+          until:
+            until.toISOString(),
+
+          error:
+            lastError,
+        }
+      );
+
+
       continue;
     }
 
 
     const item =
-      payload?.data?.[0];
+      payload
+        ?.data
+        ?.[0];
 
 
-    const totalValue =
+    if (!item) {
+      continue;
+    }
+
+
+    const rawTotal =
       item
         ?.total_value
         ?.value;
 
 
+    const numericTotal =
+      typeof rawTotal ===
+        'number'
+        ? rawTotal
+        : (
+            rawTotal !==
+              null &&
+            rawTotal !==
+              undefined &&
+            rawTotal !==
+              ''
+              ? Number(
+                  rawTotal
+                )
+              : null
+          );
+
+
     if (
-      typeof totalValue ===
-      'number'
+      numericTotal !==
+        null &&
+      Number.isFinite(
+        numericTotal
+      )
     ) {
-      return totalValue;
+      return numericTotal;
     }
 
 
     const values =
-      item?.values;
+      Array.isArray(
+        item.values
+      )
+        ? item.values
+            .map(
+              (
+                entry:
+                  unknown
+              ) => {
+                const record =
+                  entry as {
+                    value?:
+                      unknown;
+                  };
+
+
+                const value =
+                  record.value;
+
+
+                if (
+                  typeof value ===
+                    'number' &&
+                  Number.isFinite(
+                    value
+                  )
+                ) {
+                  return value;
+                }
+
+
+                if (
+                  value !==
+                    null &&
+                  value !==
+                    undefined &&
+                  value !==
+                    ''
+                ) {
+                  const parsed =
+                    Number(
+                      value
+                    );
+
+
+                  return Number.isFinite(
+                    parsed
+                  )
+                    ? parsed
+                    : null;
+                }
+
+
+                return null;
+              }
+            )
+            .filter(
+              (
+                value:
+                  number |
+                  null
+              ): value is number =>
+                value !==
+                null
+            )
+        : [];
 
 
     if (
-      Array.isArray(
-        values
-      ) &&
-      values.length === 1 &&
-      typeof values[0]?.value ===
-        'number'
+      values.length ===
+        1
     ) {
-      return values[0].value;
+      return values[0];
+    }
+
+
+    /*
+     * Views e interacoes sao contagens
+     * acumulaveis quando a Meta devolve
+     * varios valores diarios.
+     *
+     * Reach NAO e somado aqui porque
+     * pessoas podem aparecer em mais de
+     * um dia e isso inflaria o resultado.
+     */
+    if (
+      values.length >
+        1 &&
+      (
+        metric ===
+          'views' ||
+        metric ===
+          'total_interactions'
+      )
+    ) {
+      return values.reduce(
+        (
+          total:
+            number,
+
+          value:
+            number
+        ) =>
+          total +
+          value,
+        0
+      );
     }
   }
 
 
   console.warn(
-    `Instagram metric unavailable: ${metric}`
+    'Instagram metric unavailable',
+    {
+      metric,
+
+      since:
+        since.toISOString(),
+
+      until:
+        until.toISOString(),
+
+      lastError,
+    }
   );
+
 
   return null;
 }

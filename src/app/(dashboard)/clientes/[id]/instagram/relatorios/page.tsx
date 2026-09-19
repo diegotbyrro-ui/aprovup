@@ -1145,21 +1145,54 @@ export default async function InstagramReportsPage({
 
 
   const currentFollowers =
-    history.latest
-      ?.followersCount ??
     dashboardMetrics
+      ?.followersCount ??
+    history.latest
       ?.followersCount ??
     null;
 
 
+  const periodFollowerDelta =
+    dashboardMetrics
+      ?.current
+      .netFollowers ??
+    history.followersDelta ??
+    null;
+
+
   const followerHelper =
-    history.daysWithData >= 2
-      ? `${formatSignedNumber(
-          history.followersDelta
-        )} no período`
-      : history.daysWithData === 1
-        ? 'Histórico iniciado agora'
+    dashboardMetrics
+      ?.followersCount !==
+        null &&
+    dashboardMetrics
+      ?.followersCount !==
+        undefined
+      ? 'Total atual informado pela Meta'
+      : history.daysWithData >=
+          1
+        ? 'Ultima coleta salva pelo AprovUp'
         : 'Aguardando primeira coleta';
+
+
+  const growthHelper =
+    dashboardMetrics
+      ?.current
+      .netFollowers !==
+        null &&
+    dashboardMetrics
+      ?.current
+      .netFollowers !==
+        undefined
+      ? 'Saldo de seguidores no periodo selecionado'
+      : history.followersPercent !==
+          null
+        ? (
+            formatPercent(
+              history.followersPercent
+            ) +
+            ' no historico AprovUp'
+          )
+        : 'Meta nao retornou crescimento para este periodo';
 
 
   return (
@@ -1542,7 +1575,7 @@ export default async function InstagramReportsPage({
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
 
         <ReportMetric
-          label="Seguidores"
+          label="Seguidores atuais"
           value={
             formatNumber(
               currentFollowers
@@ -1563,16 +1596,11 @@ export default async function InstagramReportsPage({
           label="Crescimento"
           value={
             formatSignedNumber(
-              history.followersDelta
+              periodFollowerDelta
             )
           }
           helper={
-            history.followersPercent !==
-              null
-              ? `${formatPercent(
-                  history.followersPercent
-                )} no período`
-              : 'Precisamos de pelo menos 2 coletas'
+            growthHelper
           }
           icon={
             <TrendingUp
