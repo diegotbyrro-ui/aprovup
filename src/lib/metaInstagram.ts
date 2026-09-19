@@ -2361,6 +2361,250 @@ async function readNetFollowers({
   );
 }
 
+const META_INSIGHTS_MAX_WINDOW_MS =
+  30 *
+  24 *
+  60 *
+  60 *
+  1000;
+
+
+function splitMetaInsightRange({
+  since,
+  until,
+}: {
+  since:
+    Date;
+
+  until:
+    Date;
+}) {
+  const ranges:
+    Array<{
+      since: Date;
+      until: Date;
+    }> =
+    [];
+
+
+  let cursor =
+    since.getTime();
+
+
+  const end =
+    until.getTime();
+
+
+  while (
+    cursor <
+      end
+  ) {
+    const next =
+      Math.min(
+        cursor +
+          META_INSIGHTS_MAX_WINDOW_MS,
+
+        end
+      );
+
+
+    ranges.push({
+      since:
+        new Date(
+          cursor
+        ),
+
+      until:
+        new Date(
+          next
+        ),
+    });
+
+
+    cursor =
+      next;
+  }
+
+
+  return ranges;
+}
+
+
+async function readMetricRangeTotal({
+  instagramUserId,
+  accessToken,
+  metric,
+  since,
+  until,
+}: {
+  instagramUserId:
+    string;
+
+  accessToken:
+    string;
+
+  metric:
+    string;
+
+  since:
+    Date;
+
+  until:
+    Date;
+}): Promise<number | null> {
+
+  const ranges =
+    splitMetaInsightRange({
+      since,
+      until,
+    });
+
+
+  const values:
+    number[] =
+    [];
+
+
+  for (
+    const range
+    of ranges
+  ) {
+    const value =
+      await readMetricTotal({
+        instagramUserId,
+        accessToken,
+        metric,
+
+        since:
+          range.since,
+
+        until:
+          range.until,
+      });
+
+
+    if (
+      value ===
+        null
+    ) {
+      return null;
+    }
+
+
+    values.push(
+      value
+    );
+  }
+
+
+  if (
+    values.length ===
+      0
+  ) {
+    return null;
+  }
+
+
+  return values.reduce(
+    (
+      total:
+        number,
+
+      value:
+        number
+    ) =>
+      total +
+      value,
+    0
+  );
+}
+
+
+async function readNetFollowersRange({
+  instagramUserId,
+  accessToken,
+  since,
+  until,
+}: {
+  instagramUserId:
+    string;
+
+  accessToken:
+    string;
+
+  since:
+    Date;
+
+  until:
+    Date;
+}): Promise<number | null> {
+
+  const ranges =
+    splitMetaInsightRange({
+      since,
+      until,
+    });
+
+
+  const values:
+    number[] =
+    [];
+
+
+  for (
+    const range
+    of ranges
+  ) {
+    const value =
+      await readNetFollowers({
+        instagramUserId,
+        accessToken,
+
+        since:
+          range.since,
+
+        until:
+          range.until,
+      });
+
+
+    if (
+      value ===
+        null
+    ) {
+      return null;
+    }
+
+
+    values.push(
+      value
+    );
+  }
+
+
+  if (
+    values.length ===
+      0
+  ) {
+    return null;
+  }
+
+
+  return values.reduce(
+    (
+      total:
+        number,
+
+      value:
+        number
+    ) =>
+      total +
+      value,
+    0
+  );
+}
+
+
 async function getInstagramProfileMetrics({
   instagramUserId,
   accessToken,
@@ -2482,7 +2726,7 @@ export async function getInstagramDashboardMetrics({
   ] =
     await Promise.all([
 
-      readMetricTotal({
+      readMetricRangeTotal({
         instagramUserId,
         accessToken,
         metric:
@@ -2493,7 +2737,7 @@ export async function getInstagramDashboardMetrics({
           period.currentEnd,
       }),
 
-      readMetricTotal({
+      readMetricRangeTotal({
         instagramUserId,
         accessToken,
         metric:
@@ -2504,7 +2748,7 @@ export async function getInstagramDashboardMetrics({
           period.currentEnd,
       }),
 
-      readMetricTotal({
+      readMetricRangeTotal({
         instagramUserId,
         accessToken,
         metric:
@@ -2515,7 +2759,7 @@ export async function getInstagramDashboardMetrics({
           period.currentEnd,
       }),
 
-      readNetFollowers({
+      readNetFollowersRange({
         instagramUserId,
         accessToken,
         since:
@@ -2525,7 +2769,7 @@ export async function getInstagramDashboardMetrics({
       }),
 
 
-      readMetricTotal({
+      readMetricRangeTotal({
         instagramUserId,
         accessToken,
         metric:
@@ -2536,7 +2780,7 @@ export async function getInstagramDashboardMetrics({
           period.previousEnd,
       }),
 
-      readMetricTotal({
+      readMetricRangeTotal({
         instagramUserId,
         accessToken,
         metric:
@@ -2547,7 +2791,7 @@ export async function getInstagramDashboardMetrics({
           period.previousEnd,
       }),
 
-      readMetricTotal({
+      readMetricRangeTotal({
         instagramUserId,
         accessToken,
         metric:
@@ -2558,7 +2802,7 @@ export async function getInstagramDashboardMetrics({
           period.previousEnd,
       }),
 
-      readNetFollowers({
+      readNetFollowersRange({
         instagramUserId,
         accessToken,
         since:

@@ -1611,7 +1611,12 @@ export default async function InstagramReportsPage({
 
 
         <ReportMetric
-          label="Alcance"
+          label={
+            period >
+              30
+              ? 'Alcance acumulado'
+              : 'Alcance'
+          }
           value={
             formatNumber(
               dashboardMetrics
@@ -1620,7 +1625,12 @@ export default async function InstagramReportsPage({
               null
             )
           }
-          helper="Período atual disponível na Meta"
+          helper={
+            period >
+              30
+              ? 'Soma de janelas Meta de até 30 dias; uma mesma conta pode aparecer em mais de uma janela.'
+              : 'Dados do período selecionado na Meta'
+          }
           icon={
             <BarChart3
               size={19}
@@ -1639,7 +1649,7 @@ export default async function InstagramReportsPage({
               null
             )
           }
-          helper="Período atual disponível na Meta"
+          helper="Dados do período selecionado na Meta"
           icon={
             <Eye
               size={19}
@@ -1658,7 +1668,7 @@ export default async function InstagramReportsPage({
               null
             )
           }
-          helper="Período atual disponível na Meta"
+          helper="Dados do período selecionado na Meta"
           icon={
             <Heart
               size={19}
