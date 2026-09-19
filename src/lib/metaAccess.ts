@@ -45,9 +45,74 @@ export function canUseMetaIntegration(
   }
 
 
+  if (
+    user &&
+    user.status ===
+      "APROVADO" &&
+    String(
+      user.role ||
+      ""
+    )
+      .trim()
+      .toUpperCase() ===
+      "DIRECTOR"
+  ) {
+    return true;
+  }
+
+
   return isCommanderUser(
     user
   );
+}
+
+
+/*
+ * A leitura de m?tricas pode ser usada pela equipe
+ * mesmo enquanto a conex?o OAuth continua controlada.
+ *
+ * Diretor:
+ * - m?tricas
+ * - conex?o/reconex?o
+ *
+ * Social Media:
+ * - m?tricas dos clientes aos quais possui acesso
+ */
+export function canUseMetaInsights(
+  user:
+    MetaAccessUser |
+    null |
+    undefined
+) {
+  if (
+    canUseMetaIntegration(
+      user
+    )
+  ) {
+    return true;
+  }
+
+
+  if (
+    !user ||
+    user.status !==
+      "APROVADO"
+  ) {
+    return false;
+  }
+
+
+  const role =
+    String(
+      user.role ||
+      ""
+    )
+      .trim()
+      .toUpperCase();
+
+
+  return role ===
+    "SOCIAL_MEDIA";
 }
 
 

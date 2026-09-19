@@ -25,6 +25,7 @@ import {
 } from '@/lib/prisma';
 import {
   canUseMetaIntegration,
+  canUseMetaInsights,
 } from '@/lib/metaAccess';
 
 import {
@@ -609,9 +610,27 @@ export default async function ClientInstagramPage({
     );
 
 
+  const metaInsightsAllowed =
+    canUseMetaInsights(
+      currentUser
+    );
+
+
+  /*
+   * "configured" controla conex?o/reconex?o.
+   */
   const configured =
     metaConfigured &&
     metaAccessAllowed;
+
+
+  /*
+   * "metricsConfigured" controla somente
+   * leitura dos dados da conta j? conectada.
+   */
+  const metricsConfigured =
+    metaConfigured &&
+    metaInsightsAllowed;
 
 
   let dashboardMetrics:
@@ -621,7 +640,7 @@ export default async function ClientInstagramPage({
 
 
   if (
-    configured &&
+    metricsConfigured &&
     connection
       ?.userAccessTokenEncrypted
   ) {
@@ -698,7 +717,7 @@ export default async function ClientInstagramPage({
 
 
   if (
-    configured &&
+    metricsConfigured &&
     connection
       ?.userAccessTokenEncrypted
   ) {
@@ -863,7 +882,8 @@ export default async function ClientInstagramPage({
               }
 
               {
-                connection
+                connection &&
+                metaAccessAllowed
                   ? (
                     <DisconnectInstagramButton
                       clientId={
@@ -890,7 +910,8 @@ export default async function ClientInstagramPage({
       </section>
 
 
-      {!metaAccessAllowed ? (
+      {!metaAccessAllowed &&
+      !connection ? (
 
         <section className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
 
@@ -996,7 +1017,7 @@ export default async function ClientInstagramPage({
           connected={
             Boolean(
               connection &&
-              configured
+              metricsConfigured
             )
           }
         />
@@ -1021,7 +1042,7 @@ export default async function ClientInstagramPage({
           connected={
             Boolean(
               connection &&
-              configured
+              metricsConfigured
             )
           }
           signed
@@ -1047,7 +1068,7 @@ export default async function ClientInstagramPage({
           connected={
             Boolean(
               connection &&
-              configured
+              metricsConfigured
             )
           }
         />
@@ -1072,7 +1093,7 @@ export default async function ClientInstagramPage({
           connected={
             Boolean(
               connection &&
-              configured
+              metricsConfigured
             )
           }
         />
