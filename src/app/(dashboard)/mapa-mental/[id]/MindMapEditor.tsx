@@ -1786,7 +1786,7 @@ export function MindMapEditor({
       0
     ) {
       window.alert(
-        "Este bloco j? possui 6 imagens."
+        "Este bloco já possui 6 imagens."
       );
 
       return;
@@ -1914,7 +1914,7 @@ export function MindMapEditor({
       window.alert(
         error instanceof Error
           ? error.message
-          : "N?o foi poss?vel enviar a imagem."
+          : "Não foi possível enviar a imagem."
       );
     }
     finally {
@@ -2564,7 +2564,7 @@ export function MindMapEditor({
               />
 
               <p className="mt-3 text-[10px] leading-relaxed text-slate-500">
-                Clique em um bloco para editar t?tulo, texto, emoji, imagens, link, tipo e cor.
+                Clique em um bloco para editar título, texto, emoji, imagens, link, tipo e cor.
               </p>
 
             </div>
@@ -2775,7 +2775,7 @@ export function MindMapEditor({
                           ),
                       })
                   }
-                  placeholder="Ex.: ??"
+                  placeholder="Ex.: \u{1F4A1}"
                   className="mt-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-lg outline-none focus:border-blue-500"
                 />
 
@@ -2855,7 +2855,7 @@ export function MindMapEditor({
 
 
                 <p className="mt-1 text-[9px] leading-relaxed text-slate-400">
-                  At? 6 imagens por bloco. Elas aparecem dentro do bal?o.
+                  Até 6 imagens por bloco. Elas aparecem dentro do balão.
                 </p>
 
 
