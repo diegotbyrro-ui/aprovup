@@ -49,7 +49,8 @@ type MenuDefinition = {
     | "social"
     | "filmmaker"
     | "design"
-    | "crm";
+    | "crm"
+    | "mindmap";
   activePrefixes: string[];
 };
 
@@ -86,6 +87,24 @@ export async function AppSidebar() {
 
       activePrefixes: [
         "/operacao",
+      ],
+    },
+
+    {
+      name:
+        "Mapa Mental",
+
+      icon:
+        "mindmap",
+
+      path:
+        "/mapa-mental",
+
+      permission:
+        "mindmap.view",
+
+      activePrefixes: [
+        "/mapa-mental",
       ],
     },
 

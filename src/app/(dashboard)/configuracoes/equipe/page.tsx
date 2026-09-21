@@ -116,6 +116,16 @@ const PERMISSION_OPTIONS = [
     "crm.manage",
     "Gerenciar CRM",
   ],
+
+  [
+    "mindmap.view",
+    "Ver Mapa Mental",
+  ],
+
+  [
+    "mindmap.manage",
+    "Gerenciar Mapa Mental",
+  ],
 ] as const;
 
 

@@ -1,4 +1,5 @@
 import "../aprovup-theme.css";
+import "@xyflow/react/dist/style.css";
 
 export const dynamic =
   "force-dynamic";

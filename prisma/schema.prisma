@@ -24,6 +24,7 @@ model Agency {
   aiProviderConnection     AiProviderConnection?
   reportTemplates          ReportTemplate[]
   supportTickets           SupportTicket[]
+  mindMaps                 MindMap[]
 
   secretaryThreads        SecretaryThread[]
   secretaryPendingActions SecretaryPendingAction[]
@@ -151,6 +152,7 @@ model Client {
   contents                 Content[]
   personas                 ClientPersona[]
   diagnoses                ClientProfileDiagnosis[]
+  mindMaps                 MindMap[]
   monthlyApprovals         MonthlyApproval[]
   instagramConnection      InstagramConnection?
   instagramMetricSnapshots InstagramMetricSnapshot[]
@@ -994,4 +996,32 @@ model SaasCoupon {
 
   @@index([status])
   @@index([appliesToPlanSlug])
+}
+
+
+model MindMap {
+  id String @id @default(cuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  title       String
+  description String?
+
+  nodes    Json
+  edges    Json
+  viewport Json?
+
+  createdByUserId String?
+  createdByName   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+  @@index([agencyId, clientId])
+  @@index([agencyId, updatedAt])
 }

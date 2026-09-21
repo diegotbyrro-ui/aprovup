@@ -25,6 +25,9 @@ export const PERMISSIONS = [
   "crm.view",
   "crm.manage",
 
+  "mindmap.view",
+  "mindmap.manage",
+
   "users.manage",
   "settings.manage",
 ] as const;
@@ -50,6 +53,8 @@ export const ROLE_DEFAULT_PERMISSIONS:
     "secretary.use",
     "social.view",
     "social.manage",
+    "mindmap.view",
+    "mindmap.manage",
   ],
 
 
@@ -57,6 +62,7 @@ export const ROLE_DEFAULT_PERMISSIONS:
     "secretary.use",
     "design.view",
     "design.manage",
+    "mindmap.view",
   ],
 
 
@@ -64,6 +70,7 @@ export const ROLE_DEFAULT_PERMISSIONS:
     "secretary.use",
     "filmmaker.view",
     "filmmaker.manage",
+    "mindmap.view",
   ],
 };
 

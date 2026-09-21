@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import {
   Bot,
+  BrainCircuit,
   BriefcaseBusiness,
   LayoutDashboard,
   Lock,
@@ -26,7 +27,8 @@ export type AppSidebarNavItem = {
     | "social"
     | "filmmaker"
     | "design"
-    | "crm";
+    | "crm"
+    | "mindmap";
   activePrefixes: string[];
 };
 
@@ -41,6 +43,7 @@ const iconMap: Record<
   filmmaker: Video,
   design: PenTool,
   crm: BriefcaseBusiness,
+  mindmap: BrainCircuit,
 };
 
 
