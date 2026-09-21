@@ -68,6 +68,13 @@ type MindNodeData = {
 };
 
 
+type QuickAddDirection =
+  | "top"
+  | "right"
+  | "bottom"
+  | "left";
+
+
 type MindNode =
   Node<
     MindNodeData,
@@ -390,6 +397,18 @@ function normalizeEdges(
               source.target
             ),
 
+          sourceHandle:
+            typeof source.sourceHandle ===
+              "string"
+              ? source.sourceHandle
+              : undefined,
+
+          targetHandle:
+            typeof source.targetHandle ===
+              "string"
+              ? source.targetHandle
+              : undefined,
+
           type:
             "smoothstep",
 
@@ -462,15 +481,94 @@ function normalizeViewport(
 
 
 function MindNodeCard({
+  id,
   data,
   selected,
 }: NodeProps<MindNode>) {
+  const quickButtons:
+    Array<{
+      direction:
+        QuickAddDirection;
+
+      positionClass:
+        string;
+
+      title:
+        string;
+    }> = [
+      {
+        direction:
+          "top",
+
+        positionClass:
+          "left-1/2 -top-[18px] -translate-x-1/2",
+
+        title:
+          "Criar bloco acima",
+      },
+
+      {
+        direction:
+          "right",
+
+        positionClass:
+          "right-[-18px] top-1/2 -translate-y-1/2",
+
+        title:
+          "Criar bloco a direita",
+      },
+
+      {
+        direction:
+          "bottom",
+
+        positionClass:
+          "bottom-[-18px] left-1/2 -translate-x-1/2",
+
+        title:
+          "Criar bloco abaixo",
+      },
+
+      {
+        direction:
+          "left",
+
+        positionClass:
+          "left-[-18px] top-1/2 -translate-y-1/2",
+
+        title:
+          "Criar bloco a esquerda",
+      },
+    ];
+
+
+  function quickAdd(
+    direction:
+      QuickAddDirection
+  ) {
+    window.dispatchEvent(
+      new CustomEvent(
+        "mindmap:quick-add",
+        {
+          detail: {
+            sourceId:
+              id,
+
+            direction,
+          },
+        }
+      )
+    );
+  }
+
+
   return (
     <div
       className={[
+        "relative",
         "min-w-[220px]",
         "max-w-[270px]",
-        "overflow-hidden",
+        "overflow-visible",
         "rounded-2xl",
         "border-2",
         "bg-white",
@@ -488,7 +586,10 @@ function MindNodeCard({
       }}
     >
 
+      {/* Handles visiveis originais */}
+
       <Handle
+        id="target-left"
         type="target"
         position={
           Position.Left
@@ -497,8 +598,144 @@ function MindNodeCard({
       />
 
 
+      <Handle
+        id="source-right"
+        type="source"
+        position={
+          Position.Right
+        }
+        className="!h-3 !w-3 !border-2 !border-white !bg-blue-600"
+      />
+
+
+      {/* Handles invisiveis usados pelo Quick Add */}
+
+      <Handle
+        id="source-top"
+        type="source"
+        position={
+          Position.Top
+        }
+        className="!pointer-events-none !h-1 !w-1 !opacity-0"
+      />
+
+      <Handle
+        id="target-top"
+        type="target"
+        position={
+          Position.Top
+        }
+        className="!pointer-events-none !h-1 !w-1 !opacity-0"
+      />
+
+
+      <Handle
+        id="source-bottom"
+        type="source"
+        position={
+          Position.Bottom
+        }
+        className="!pointer-events-none !h-1 !w-1 !opacity-0"
+      />
+
+      <Handle
+        id="target-bottom"
+        type="target"
+        position={
+          Position.Bottom
+        }
+        className="!pointer-events-none !h-1 !w-1 !opacity-0"
+      />
+
+
+      <Handle
+        id="source-left"
+        type="source"
+        position={
+          Position.Left
+        }
+        className="!pointer-events-none !h-1 !w-1 !opacity-0"
+      />
+
+
+      <Handle
+        id="target-right"
+        type="target"
+        position={
+          Position.Right
+        }
+        className="!pointer-events-none !h-1 !w-1 !opacity-0"
+      />
+
+
+      {selected ? (
+        <>
+          {quickButtons.map(
+            (
+              button
+            ) => (
+              <button
+                key={
+                  button.direction
+                }
+                type="button"
+                title={
+                  button.title
+                }
+                className={[
+                  "nodrag",
+                  "nopan",
+                  "absolute",
+                  "z-30",
+                  "flex",
+                  "h-8",
+                  "w-8",
+                  "items-center",
+                  "justify-center",
+                  "rounded-full",
+                  "border",
+                  "border-blue-200",
+                  "bg-white",
+                  "text-blue-600",
+                  "shadow-md",
+                  "transition",
+                  "hover:scale-110",
+                  "hover:border-blue-500",
+                  "hover:bg-blue-600",
+                  "hover:text-white",
+                  button.positionClass,
+                ].join(
+                  " "
+                )}
+                onClick={
+                  (
+                    event
+                  ) => {
+                    event.stopPropagation();
+
+                    quickAdd(
+                      button.direction
+                    );
+                  }
+                }
+              >
+                <Plus
+                  size={
+                    15
+                  }
+                  strokeWidth={
+                    2.5
+                  }
+                />
+              </button>
+            )
+          )}
+        </>
+      ) : null}
+
+
       <div
-        className="px-4 py-2 text-[9px] font-extrabold uppercase tracking-[0.14em] text-white"
+        className="rounded-t-[13px] px-4 py-2 text-[9px] font-extrabold uppercase tracking-[0.14em] text-white"
         style={{
           background:
             data.color,
@@ -510,7 +747,7 @@ function MindNodeCard({
       </div>
 
 
-      <div className="p-4">
+      <div className="rounded-b-[13px] bg-white p-4">
 
         <p className="text-sm font-bold leading-snug text-slate-900">
           {data.title}
@@ -524,15 +761,6 @@ function MindNodeCard({
         ) : null}
 
       </div>
-
-
-      <Handle
-        type="source"
-        position={
-          Position.Right
-        }
-        className="!h-3 !w-3 !border-2 !border-white !bg-blue-600"
-      />
 
     </div>
   );
@@ -725,6 +953,297 @@ export function MindMapEditor({
         selectedNodeId,
       ]
     );
+
+
+  useEffect(
+    () => {
+      function handleQuickAdd(
+        event:
+          Event
+      ) {
+        if (
+          !canManage
+        ) {
+          return;
+        }
+
+
+        const customEvent =
+          event as CustomEvent<{
+            sourceId?:
+              string;
+
+            direction?:
+              QuickAddDirection;
+          }>;
+
+
+        const sourceId =
+          customEvent.detail
+            ?.sourceId;
+
+
+        const direction =
+          customEvent.detail
+            ?.direction;
+
+
+        if (
+          !sourceId ||
+          !direction
+        ) {
+          return;
+        }
+
+
+        const sourceNode =
+          nodes.find(
+            (
+              node
+            ) =>
+              node.id ===
+              sourceId
+          );
+
+
+        if (
+          !sourceNode
+        ) {
+          return;
+        }
+
+
+        const config =
+          KIND_OPTIONS.find(
+            (
+              item
+            ) =>
+              item.value ===
+              newKind
+          ) ||
+          KIND_OPTIONS[0];
+
+
+        const offsets:
+          Record<
+            QuickAddDirection,
+            {
+              x:
+                number;
+
+              y:
+                number;
+            }
+          > = {
+            top: {
+              x:
+                0,
+
+              y:
+                -190,
+            },
+
+            right: {
+              x:
+                330,
+
+              y:
+                0,
+            },
+
+            bottom: {
+              x:
+                0,
+
+              y:
+                190,
+            },
+
+            left: {
+              x:
+                -330,
+
+              y:
+                0,
+            },
+          };
+
+
+        const opposite:
+          Record<
+            QuickAddDirection,
+            QuickAddDirection
+          > = {
+            top:
+              "bottom",
+
+            right:
+              "left",
+
+            bottom:
+              "top",
+
+            left:
+              "right",
+          };
+
+
+        const nodeId =
+          crypto.randomUUID();
+
+
+        const offset =
+          offsets[
+            direction
+          ];
+
+
+        const node:
+          MindNode = {
+            id:
+              nodeId,
+
+            type:
+              "mindNode",
+
+            position: {
+              x:
+                sourceNode.position.x +
+                offset.x,
+
+              y:
+                sourceNode.position.y +
+                offset.y,
+            },
+
+            data: {
+              title:
+                newKind ===
+                  "CLIENTE" &&
+                clientName
+                  ? clientName
+                  : "Novo bloco",
+
+              content:
+                "",
+
+              kind:
+                newKind,
+
+              color:
+                config.color,
+            },
+          };
+
+
+        const edge:
+          Edge = {
+            id:
+              crypto.randomUUID(),
+
+            source:
+              sourceId,
+
+            target:
+              nodeId,
+
+            sourceHandle:
+              "source-" +
+              direction,
+
+            targetHandle:
+              "target-" +
+              opposite[
+                direction
+              ],
+
+            type:
+              "smoothstep",
+
+            markerEnd: {
+              type:
+                MarkerType.ArrowClosed,
+            },
+
+            style: {
+              stroke:
+                "#94a3b8",
+
+              strokeWidth:
+                2,
+            },
+          };
+
+
+        setNodes(
+          (
+            current
+          ) => [
+            ...current,
+            node,
+          ]
+        );
+
+
+        setEdges(
+          (
+            current
+          ) => [
+            ...current,
+            edge,
+          ]
+        );
+
+
+        setSelectedNodeId(
+          nodeId
+        );
+
+
+        window.setTimeout(
+          () => {
+            const input =
+              document.querySelector<HTMLInputElement>(
+                '[data-mindmap-title-input="' +
+                nodeId +
+                '"]'
+              );
+
+
+            if (
+              input
+            ) {
+              input.focus();
+              input.select();
+            }
+          },
+          120
+        );
+      }
+
+
+      window.addEventListener(
+        "mindmap:quick-add",
+        handleQuickAdd
+      );
+
+
+      return () => {
+        window.removeEventListener(
+          "mindmap:quick-add",
+          handleQuickAdd
+        );
+      };
+    },
+    [
+      canManage,
+      clientName,
+      newKind,
+      nodes,
+      setEdges,
+      setNodes,
+    ]
+  );
 
 
   useEffect(
@@ -1670,6 +2189,9 @@ export function MindMapEditor({
                 </label>
 
                 <input
+                  data-mindmap-title-input={
+                    selectedNode.id
+                  }
                   disabled={
                     !canManage
                   }
