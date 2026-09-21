@@ -1223,9 +1223,21 @@ function AnalysisBatchCard({
                   </span>
 
 
-                  <span className="truncate font-semibold text-slate-600">
+                  <span className="min-w-0 flex-1 truncate font-semibold text-slate-600">
                     {item.title}
                   </span>
+
+
+                  <Link
+                    href={`/conteudos/${item.id}/visualizar`}
+                    className="inline-flex h-6 shrink-0 items-center justify-center gap-1 rounded-md border border-amber-200 bg-white px-2 text-[7px] font-black uppercase text-amber-700 transition hover:bg-amber-50"
+                  >
+                    Abrir
+
+                    <ExternalLink
+                      size={9}
+                    />
+                  </Link>
 
                 </div>
               )
