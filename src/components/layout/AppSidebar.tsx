@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 import {
   CalendarDays,
@@ -93,7 +93,7 @@ export async function AppSidebar() {
 
     {
       name:
-        "SecretÃ¡ria IA",
+        "Secretária IA",
 
       icon:
         "secretary",
@@ -320,7 +320,7 @@ export async function AppSidebar() {
               />
 
               <span>
-                IntegraÃ§Ãµes
+                Integrações
               </span>
             </Link>
 
@@ -333,7 +333,7 @@ export async function AppSidebar() {
               />
 
               <span>
-                Modelos de relatÃ³rio
+                Modelos de relatório
               </span>
             </Link>
           </>
@@ -396,7 +396,7 @@ export async function AppSidebar() {
           <span className="ap-sidebar-product-dot" />
 
           <span>
-            OperaÃ§Ã£o
+            Operação
           </span>
 
         </div>
