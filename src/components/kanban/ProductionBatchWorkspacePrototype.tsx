@@ -710,7 +710,7 @@ export function ProductionBatchWorkspacePrototype({
           </p>
 
           <p className="mt-1 text-xs text-emerald-600">
-            Materiais enviados ao Supabase e encaminhados para an\u00e1lise interna.
+            {"Materiais enviados ao Supabase e encaminhados para an\u00e1lise interna."}
           </p>
 
         </div>
