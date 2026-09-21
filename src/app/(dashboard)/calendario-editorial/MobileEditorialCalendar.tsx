@@ -26,6 +26,7 @@ type MobileEditorialCalendarProps = {
   month: number;
   year: number;
   selectedClient: string;
+  returnTo: string;
   contents: MobileCalendarContent[];
 };
 
@@ -376,6 +377,7 @@ export function MobileEditorialCalendar({
   month,
   year,
   selectedClient,
+  returnTo,
   contents,
 }: MobileEditorialCalendarProps) {
 
@@ -421,6 +423,10 @@ export function MobileEditorialCalendar({
           "&data=" +
           encodeURIComponent(
             selectedDate
+          ) +
+          "&retorno=" +
+          encodeURIComponent(
+            returnTo
           )
         )
       : "/clientes";

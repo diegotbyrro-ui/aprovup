@@ -6,6 +6,10 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { CalendarBackButton } from './CalendarBackButton';
 import { MobileEditorialCalendar } from './MobileEditorialCalendar';
 import { DesktopEditorialCalendar } from './DesktopEditorialCalendar';
+
+import {
+    ClearNewContentDraft,
+} from '@/components/content/NewContentDraftGuard';
 const monthNames = [
     'Janeiro',
     'Fevereiro',
@@ -146,6 +150,8 @@ export default async function CalendarioEditorialPage({
         cliente?: string;
         area?: string;
         prioridade?: string;
+        created?: string;
+        draftClientId?: string;
     }>;
 }) {
     const {
@@ -162,6 +168,19 @@ export default async function CalendarioEditorialPage({
     const selectedClient = params.cliente || 'TODOS';
     const selectedArea = params.area || 'TODOS';
     const selectedPriority = params.prioridade || 'TODOS';
+
+    const draftClientId =
+        String(
+            params.draftClientId ||
+            ''
+        ).trim();
+
+    const shouldClearCreationDraft =
+        params.created ===
+            '1' &&
+        Boolean(
+            draftClientId
+        );
 
     const monthStart = startOfDay(new Date(currentYear, currentMonth, 1));
     const monthEnd = endOfDay(new Date(currentYear, currentMonth + 1, 0));
@@ -282,6 +301,25 @@ export default async function CalendarioEditorialPage({
         year: currentYear,
     });
 
+    const currentCalendarReturnHref =
+        buildCalendarHref({
+            month:
+                currentMonth +
+                1,
+
+            year:
+                currentYear,
+
+            clientId:
+                selectedClient,
+
+            area:
+                selectedArea,
+
+            priority:
+                selectedPriority,
+        });
+
     /*
      * Design Gráfico aparece no calendário operacional,
      * mas não interfere nas métricas de publicação.
@@ -367,6 +405,15 @@ export default async function CalendarioEditorialPage({
               : '/clientes';
     return (
         <div className="space-y-6">
+
+            {shouldClearCreationDraft ? (
+                <ClearNewContentDraft
+                    clientId={
+                        draftClientId
+                    }
+                />
+            ) : null}
+
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <CalendarBackButton
@@ -512,6 +559,7 @@ export default async function CalendarioEditorialPage({
                     month={currentMonth}
                     year={currentYear}
                     selectedClient={selectedClient}
+                    returnTo={currentCalendarReturnHref}
                     contents={contents.map((content) => ({
                         id: content.id,
                         title: content.title,
@@ -553,6 +601,7 @@ export default async function CalendarioEditorialPage({
                     month={currentMonth}
                     year={currentYear}
                     selectedClient={selectedClient}
+                    returnTo={currentCalendarReturnHref}
                     contents={contents.map((content) => ({
                         id: content.id,
                         title: content.title,

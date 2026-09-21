@@ -30,6 +30,7 @@ type DesktopEditorialCalendarProps = {
   month: number;
   year: number;
   selectedClient: string;
+  returnTo: string;
   contents: EditorialCalendarContent[];
 };
 
@@ -288,6 +289,7 @@ export function DesktopEditorialCalendar({
   month,
   year,
   selectedClient,
+  returnTo,
   contents,
 }: DesktopEditorialCalendarProps) {
   const router =
@@ -1028,7 +1030,20 @@ export function DesktopEditorialCalendar({
                     href={
                       selectedClient !==
                       "TODOS"
-                        ? `/conteudos/novo?cliente=${selectedClient}&data=${dateKey}`
+                        ? (
+                            "/conteudos/novo?cliente=" +
+                            encodeURIComponent(
+                              selectedClient
+                            ) +
+                            "&data=" +
+                            encodeURIComponent(
+                              dateKey
+                            ) +
+                            "&retorno=" +
+                            encodeURIComponent(
+                              returnTo
+                            )
+                          )
                         : "/clientes"
                     }
                     className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-bold text-slate-500 hover:bg-slate-100"

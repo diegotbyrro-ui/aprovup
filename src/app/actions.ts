@@ -731,6 +731,101 @@ export async function createContent(formData: FormData) {
 
   const plannedDateValue = String(formData.get("plannedDate") || "").trim();
 
+
+  const rawCalendarReturn =
+    String(
+      formData.get(
+        "calendarReturn"
+      ) ||
+      ""
+    ).trim();
+
+
+  function safeCalendarReturn(
+    value:
+      string
+  ) {
+    if (!value) {
+      return "";
+    }
+
+
+    try {
+      const parsed =
+        new URL(
+          value,
+          "https://aprovup.local"
+        );
+
+
+      if (
+        parsed.origin !==
+          "https://aprovup.local" ||
+        parsed.pathname !==
+          "/calendario-editorial"
+      ) {
+        return "";
+      }
+
+
+      return (
+        parsed.pathname +
+        parsed.search
+      );
+    }
+    catch {
+      return "";
+    }
+  }
+
+
+  const calendarReturn =
+    safeCalendarReturn(
+      rawCalendarReturn
+    );
+
+
+  function createErrorHref(
+    error:
+      string
+  ) {
+    const params =
+      new URLSearchParams();
+
+
+    if (
+      plannedDateValue
+    ) {
+      params.set(
+        "date",
+        plannedDateValue
+      );
+    }
+
+
+    params.set(
+      "error",
+      error
+    );
+
+
+    if (
+      calendarReturn
+    ) {
+      params.set(
+        "retorno",
+        calendarReturn
+      );
+    }
+
+
+    return (
+      `/clientes/${clientId}/conteudos/novo?` +
+      params.toString()
+    );
+  }
+
+
   const productionDeadlineValue =
     String(
       formData.get(
@@ -755,9 +850,9 @@ export async function createContent(formData: FormData) {
     !productionDeadlineValue
   ) {
     redirect(
-      `/clientes/${clientId}/conteudos/novo?date=${encodeURIComponent(
-        plannedDateValue
-      )}&error=production-deadline-required`
+      createErrorHref(
+        "production-deadline-required"
+      )
     );
   }
 
@@ -766,9 +861,9 @@ export async function createContent(formData: FormData) {
     !productionDeadlineValue
   ) {
     redirect(
-      `/clientes/${clientId}/conteudos/novo?date=${encodeURIComponent(
-        plannedDateValue
-      )}&error=production-deadline-required`
+      createErrorHref(
+        "production-deadline-required"
+      )
     );
   }
 
@@ -778,9 +873,9 @@ export async function createContent(formData: FormData) {
     !productionDeadlineTimeValue
   ) {
     redirect(
-      `/clientes/${clientId}/conteudos/novo?date=${encodeURIComponent(
-        plannedDateValue
-      )}&error=production-deadline-time-required`
+      createErrorHref(
+        "production-deadline-time-required"
+      )
     );
   }
 
@@ -791,9 +886,9 @@ export async function createContent(formData: FormData) {
     productionDeadlineValue >= plannedDateValue
   ) {
     redirect(
-      `/clientes/${clientId}/conteudos/novo?date=${encodeURIComponent(
-        plannedDateValue
-      )}&error=production-deadline-before`
+      createErrorHref(
+        "production-deadline-before"
+      )
     );
   }
 
@@ -853,7 +948,9 @@ export async function createContent(formData: FormData) {
     );
 
     redirect(
-      `/clientes/${clientId}/conteudos/novo?error=reference-upload`
+      createErrorHref(
+        "reference-upload"
+      )
     );
   }
 
@@ -872,6 +969,37 @@ export async function createContent(formData: FormData) {
   revalidatePath(`/clientes/${clientId}/visao`);
   revalidatePath("/conteudos/kanban");
   revalidatePath("/tarefas");
+  revalidatePath("/calendario-editorial");
+
+
+  if (
+    calendarReturn
+  ) {
+    const destination =
+      new URL(
+        calendarReturn,
+        "https://aprovup.local"
+      );
+
+
+    destination.searchParams.set(
+      "created",
+      "1"
+    );
+
+
+    destination.searchParams.set(
+      "draftClientId",
+      clientId
+    );
+
+
+    redirect(
+      destination.pathname +
+      destination.search
+    );
+  }
+
 
   redirect(
     `/conteudos/${content.id}?created=1&draftClientId=${encodeURIComponent(

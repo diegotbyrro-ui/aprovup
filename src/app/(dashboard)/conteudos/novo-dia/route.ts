@@ -1,4 +1,4 @@
-﻿import {
+import {
   prisma,
 } from '@/lib/prisma';
 
@@ -70,6 +70,15 @@ export async function GET(
     ).trim();
 
 
+  const retorno =
+    String(
+      searchParams.get(
+        'retorno'
+      ) ||
+      ''
+    ).trim();
+
+
   if (
     !clientId
   ) {
@@ -106,12 +115,38 @@ export async function GET(
   }
 
 
+  const params =
+    new URLSearchParams();
+
+
+  if (date) {
+    params.set(
+      'date',
+      date
+    );
+  }
+
+
+  if (retorno) {
+    params.set(
+      'retorno',
+      retorno
+    );
+  }
+
+
+  const query =
+    params.toString();
+
+
   const url =
-    date
-      ? `/clientes/${clientId}/conteudos/novo?date=${encodeURIComponent(
-          date
-        )}`
-      : `/clientes/${clientId}/conteudos/novo`;
+    `/clientes/${clientId}/conteudos/novo` +
+    (
+      query
+        ? '?' +
+          query
+        : ''
+    );
 
 
   redirect(

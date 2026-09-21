@@ -21,6 +21,7 @@ export default async function NovoConteudoClientePage({
   searchParams: Promise<{
     date?: string;
     error?: string;
+    retorno?: string;
   }>;
 }) {
   const {
@@ -32,6 +33,7 @@ export default async function NovoConteudoClientePage({
   const {
     date,
     error,
+    retorno,
   } = await searchParams;
 
   const client =
@@ -115,6 +117,15 @@ export default async function NovoConteudoClientePage({
 
         <input type="hidden" name="clientId" value={client.id} />
         <input type="hidden" name="status" value="IDEIA" />
+
+        <input
+          type="hidden"
+          name="calendarReturn"
+          value={
+            retorno ||
+            ''
+          }
+        />
 
         <div>
           <div>
