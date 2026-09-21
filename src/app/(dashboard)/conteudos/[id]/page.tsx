@@ -23,6 +23,10 @@ import {
   ReferenceAttachmentsField,
 } from '@/components/content/ReferenceAttachmentsField';
 
+import {
+  ClearNewContentDraft,
+} from '@/components/content/NewContentDraftGuard';
+
 const areaLabels: Record<string, string> = {
   DESIGN: 'Design',
   FILMMAKER: 'Filmmaker',
@@ -748,6 +752,12 @@ export default async function ConteudoDetailPage({
     Promise<{
       error?:
         string;
+
+      created?:
+        string;
+
+      draftClientId?:
+        string;
     }>;
 }) {
   const {
@@ -766,6 +776,24 @@ export default async function ConteudoDetailPage({
     String(
       query?.error ||
       ''
+    );
+
+
+  const draftClientId =
+    String(
+      query?.draftClientId ||
+      ''
+    );
+
+
+  const shouldClearCreationDraft =
+    String(
+      query?.created ||
+      ''
+    ) ===
+      '1' &&
+    Boolean(
+      draftClientId
     );
 
   const currentUser = await requireCurrentUser();
@@ -1044,6 +1072,12 @@ export default async function ConteudoDetailPage({
 
   return (
     <div className="space-y-6">
+
+      {shouldClearCreationDraft ? (
+        <ClearNewContentDraft
+          clientId={draftClientId}
+        />
+      ) : null}
 
       {pageError ===
       'reference-update' ? (

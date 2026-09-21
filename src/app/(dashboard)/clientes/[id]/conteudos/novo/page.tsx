@@ -9,6 +9,10 @@ import {
   ReferenceAttachmentsField,
 } from '@/components/content/ReferenceAttachmentsField';
 
+import {
+  NewContentDraftGuard,
+} from '@/components/content/NewContentDraftGuard';
+
 export default async function NovoConteudoClientePage({
   params,
   searchParams,
@@ -105,6 +109,10 @@ export default async function NovoConteudoClientePage({
         action={createContent}
         className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6"
       >
+        <NewContentDraftGuard
+          clientId={client.id}
+        />
+
         <input type="hidden" name="clientId" value={client.id} />
         <input type="hidden" name="status" value="IDEIA" />
 

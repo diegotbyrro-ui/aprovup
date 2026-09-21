@@ -873,7 +873,11 @@ export async function createContent(formData: FormData) {
   revalidatePath("/conteudos/kanban");
   revalidatePath("/tarefas");
 
-  redirect(`/conteudos/${content.id}`);
+  redirect(
+    `/conteudos/${content.id}?created=1&draftClientId=${encodeURIComponent(
+      clientId
+    )}`
+  );
 }
 
 
