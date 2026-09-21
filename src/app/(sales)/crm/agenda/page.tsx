@@ -424,7 +424,7 @@ export default async function AgendaPage() {
   }
 
   return (
-    <>
+    <div className="crm-agenda-page">
       <Header
         description="Todas as ações comerciais que precisam da sua atenção."
         title="Agenda Comercial"
@@ -563,6 +563,6 @@ export default async function AgendaPage() {
           )}
         </section>
       </div>
-    </>
+    </div>
   );
 }

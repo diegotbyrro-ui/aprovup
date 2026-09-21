@@ -11254,3 +11254,512 @@ button[type="submit"]:not(:disabled) {
 
 
 }
+
+/* =========================================================
+   CRM AGENDA PREMIUM OVERRIDES
+   ========================================================= */
+
+.crm-agenda-page {
+  min-height: 100%;
+  color: #0f172a;
+}
+
+
+/* HEADER DA AGENDA */
+
+.crm-agenda-page .top-header {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.02),
+    0 8px 28px rgba(15, 23, 42, 0.04);
+}
+
+.crm-agenda-page .top-header > div:first-child {
+  position: relative;
+  padding-left: 18px;
+}
+
+.crm-agenda-page .top-header > div:first-child::before {
+  background: linear-gradient(
+    180deg,
+    #2563eb,
+    #6366f1
+  );
+  border-radius: 999px;
+  content: "";
+  height: 30px;
+  left: 0;
+  position: absolute;
+  top: 2px;
+  width: 4px;
+}
+
+.crm-agenda-page .top-header h1 {
+  color: #0f172a !important;
+  font-size: 27px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.1;
+}
+
+.crm-agenda-page .top-header p {
+  color: #64748b !important;
+  font-size: 13px !important;
+  line-height: 1.55;
+  margin-top: 7px !important;
+}
+
+
+/* BUSCA E NOTIFICACAO */
+
+.crm-agenda-page .search-field {
+  background: #ffffff !important;
+  border: 1px solid #dbe3ee !important;
+  box-shadow:
+    0 3px 12px rgba(15, 23, 42, 0.035);
+  color: #64748b !important;
+}
+
+.crm-agenda-page .search-field input {
+  color: #0f172a !important;
+}
+
+.crm-agenda-page .search-field input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.crm-agenda-page .icon-button {
+  background: #0f172a !important;
+  border-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+.crm-agenda-page .icon-button:hover {
+  background: #1e293b !important;
+}
+
+
+/* CONTEUDO */
+
+.crm-agenda-page .page-content {
+  padding-top: 26px !important;
+}
+
+
+/* HERO */
+
+.crm-agenda-page .agenda-hero {
+  background:
+    radial-gradient(
+      circle at 88% 12%,
+      rgba(59, 130, 246, 0.26),
+      transparent 31%
+    ),
+    radial-gradient(
+      circle at 68% 120%,
+      rgba(99, 102, 241, 0.17),
+      transparent 36%
+    ),
+    linear-gradient(
+      135deg,
+      #0f172a 0%,
+      #111c33 58%,
+      #172554 100%
+    ) !important;
+
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 20px !important;
+  box-shadow:
+    0 18px 45px rgba(15, 23, 42, 0.12);
+
+  min-height: 160px !important;
+  overflow: hidden;
+  padding: 30px 32px !important;
+  position: relative;
+}
+
+.crm-agenda-page .agenda-hero::after {
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 999px;
+  content: "";
+  height: 190px;
+  position: absolute;
+  right: -30px;
+  top: -65px;
+  width: 190px;
+}
+
+.crm-agenda-page .agenda-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.crm-agenda-page .agenda-hero h2 {
+  color: #ffffff !important;
+  font-size: 27px;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+}
+
+.crm-agenda-page .agenda-hero p {
+  color: #cbd5e1 !important;
+  font-size: 12px;
+  line-height: 1.65;
+  max-width: 620px;
+}
+
+.crm-agenda-page .agenda-hero .eyebrow {
+  color: #60a5fa !important;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+}
+
+.crm-agenda-page .agenda-hero .primary-button {
+  background: #2563eb !important;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 11px;
+  box-shadow:
+    0 8px 24px rgba(37, 99, 235, 0.28);
+  min-height: 43px;
+  padding: 0 18px;
+}
+
+.crm-agenda-page .agenda-hero .primary-button:hover {
+  background: #1d4ed8 !important;
+}
+
+
+/* METRICAS */
+
+.crm-agenda-page .agenda-metrics {
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.crm-agenda-page .agenda-metrics article {
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #fbfdff
+    ) !important;
+
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 15px !important;
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, 0.045);
+  min-height: 90px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.crm-agenda-page .agenda-metrics article:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow:
+    0 12px 30px rgba(15, 23, 42, 0.075);
+  transform: translateY(-2px);
+}
+
+.crm-agenda-page .agenda-metrics span {
+  color: #64748b !important;
+  font-size: 9px !important;
+  font-weight: 600;
+}
+
+.crm-agenda-page .agenda-metrics strong {
+  color: #0f172a !important;
+  font-size: 18px !important;
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   PAINEIS DA AGENDA
+   Remove os quadrados azul-escuro gigantes
+   ========================================================= */
+
+.crm-agenda-page .agenda-section.panel {
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #fcfdff 100%
+    ) !important;
+
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 18px !important;
+
+  box-shadow:
+    0 10px 30px rgba(15, 23, 42, 0.045) !important;
+
+  color: #0f172a !important;
+
+  margin-top: 18px;
+  min-height: auto !important;
+  overflow: hidden;
+  padding: 24px !important;
+}
+
+
+.crm-agenda-page
+.agenda-section.agenda-overdue-section {
+  border-top:
+    3px solid #fb7185 !important;
+}
+
+
+.crm-agenda-page
+.agenda-section:not(.agenda-overdue-section) {
+  border-top:
+    3px solid #60a5fa !important;
+}
+
+
+/* TITULOS DOS PAINEIS */
+
+.crm-agenda-page .agenda-section .panel-header {
+  align-items: center;
+  border-bottom: 1px solid #edf2f7;
+  display: flex;
+  margin-bottom: 0 !important;
+  padding-bottom: 18px;
+}
+
+.crm-agenda-page .agenda-section .panel-header h3 {
+  color: #0f172a !important;
+  font-size: 21px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em;
+  margin-top: 7px !important;
+}
+
+.crm-agenda-page .agenda-section .panel-header > svg {
+  color: #94a3b8;
+}
+
+.crm-agenda-page .agenda-section .panel-kicker {
+  color: #2563eb !important;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.crm-agenda-page
+.agenda-overdue-section
+.panel-kicker {
+  color: #e11d48 !important;
+}
+
+.crm-agenda-page
+.agenda-overdue-section
+.panel-header > svg {
+  color: #fb7185;
+}
+
+
+/* =========================================================
+   ESTADO VAZIO
+   ========================================================= */
+
+.crm-agenda-page .agenda-empty {
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(37, 99, 235, 0.045),
+      transparent 48%
+    ),
+    #f8fafc !important;
+
+  border: 1px dashed #d7e0ec;
+  border-radius: 15px;
+
+  color: #94a3b8 !important;
+
+  margin-top: 18px;
+  min-height: 130px !important;
+  padding: 28px;
+}
+
+.crm-agenda-page .agenda-empty svg {
+  color: #10b981 !important;
+  height: 27px;
+  width: 27px;
+}
+
+.crm-agenda-page .agenda-empty strong {
+  color: #475569 !important;
+  font-size: 12px !important;
+  font-weight: 650;
+  margin-top: 11px;
+}
+
+
+/* =========================================================
+   LISTA DE FOLLOW-UPS
+   ========================================================= */
+
+.crm-agenda-page .agenda-task-list {
+  margin-top: 12px;
+}
+
+.crm-agenda-page .agenda-task-card {
+  border-color: #edf2f7 !important;
+  color: #0f172a !important;
+  padding-left: 10px;
+  padding-right: 10px;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.crm-agenda-page .agenda-task-card:hover {
+  background: #f8fafc;
+}
+
+.crm-agenda-page .agenda-task-card.overdue {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(244, 63, 94, 0.055),
+      transparent 72%
+    ) !important;
+}
+
+.crm-agenda-page .agenda-task-time strong {
+  color: #0f172a !important;
+}
+
+.crm-agenda-page .agenda-task-time span {
+  color: #94a3b8 !important;
+}
+
+.crm-agenda-page .agenda-task-title strong {
+  color: #0f172a !important;
+  font-size: 12px;
+}
+
+.crm-agenda-page .agenda-task-content > span {
+  color: #475569 !important;
+}
+
+.crm-agenda-page .agenda-task-content > small {
+  color: #94a3b8 !important;
+}
+
+.crm-agenda-page .agenda-task-value span {
+  color: #94a3b8 !important;
+}
+
+.crm-agenda-page .agenda-task-value strong {
+  color: #0f172a !important;
+}
+
+
+/* BOTOES DAS LINHAS */
+
+.crm-agenda-page .agenda-task-actions a {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+.crm-agenda-page .agenda-task-actions a:hover {
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #2563eb !important;
+}
+
+.crm-agenda-page .agenda-complete-button {
+  background: #ecfdf5 !important;
+  border-color: #bbf7d0 !important;
+  color: #059669 !important;
+}
+
+.crm-agenda-page .agenda-complete-button:hover {
+  background: #059669 !important;
+  border-color: #059669 !important;
+  color: #ffffff !important;
+}
+
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 761px) {
+  .crm-agenda-page .top-header {
+    min-height: 102px !important;
+    padding:
+      23px
+      40px
+      20px !important;
+  }
+
+  .crm-agenda-page .page-content {
+    padding-left: 40px !important;
+    padding-right: 40px !important;
+  }
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (
+  max-width: 1024px
+) and (
+  min-width: 761px
+) {
+  .crm-agenda-page .top-header {
+    padding-left: 22px !important;
+    padding-right: 22px !important;
+  }
+
+  .crm-agenda-page .page-content {
+    padding-left: 22px !important;
+    padding-right: 22px !important;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .crm-agenda-page .top-header {
+    background: #ffffff !important;
+  }
+
+  .crm-agenda-page .top-header > div:first-child {
+    padding-left: 15px;
+  }
+
+  .crm-agenda-page .top-header h1 {
+    font-size: 24px !important;
+  }
+
+  .crm-agenda-page .agenda-hero {
+    border-radius: 16px !important;
+    padding: 24px !important;
+  }
+
+  .crm-agenda-page .agenda-hero h2 {
+    font-size: 23px;
+  }
+
+  .crm-agenda-page .agenda-section.panel {
+    border-radius: 15px !important;
+    padding: 18px !important;
+  }
+
+  .crm-agenda-page
+  .agenda-section
+  .panel-header h3 {
+    font-size: 18px !important;
+  }
+}
