@@ -35,7 +35,7 @@ export function DownloadContentButton({
       />
 
       {isCarousel
-        ? 'Baixar carrossel'
+        ? 'Baixar arquivos'
         : 'Baixar conteúdo'}
     </a>
   );

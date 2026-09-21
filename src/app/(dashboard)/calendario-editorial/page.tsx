@@ -214,6 +214,12 @@ export default async function CalendarioEditorialPage({
         },
         include: {
             client: true,
+
+            instagramMediaAssets: {
+                select: {
+                    id: true,
+                },
+            },
         },
         orderBy: [
             {
@@ -535,7 +541,8 @@ export default async function CalendarioEditorialPage({
                             content.finalCoverUrl ||
                             content.storyMediaUrl ||
                             content.storyCoverUrl ||
-                            content.finalExternalUrl
+                            content.finalExternalUrl ||
+                            content.instagramMediaAssets.length > 0
                         ),
                         externalUrl:
                             content.finalExternalUrl,
@@ -575,7 +582,8 @@ export default async function CalendarioEditorialPage({
                             content.finalCoverUrl ||
                             content.storyMediaUrl ||
                             content.storyCoverUrl ||
-                            content.finalExternalUrl
+                            content.finalExternalUrl ||
+                            content.instagramMediaAssets.length > 0
                         ),
                         externalUrl:
                             content.finalExternalUrl,

@@ -822,7 +822,12 @@ export async function GET(
         .trim()
         .toUpperCase();
 
+    const hasMultipleMediaAssets =
+      content.instagramMediaAssets.length >
+      1;
+
     const isCarousel =
+      hasMultipleMediaAssets ||
       normalizedFormat.includes(
         'CARROSSEL'
       ) ||

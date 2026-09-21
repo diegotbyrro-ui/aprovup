@@ -936,16 +936,23 @@ export default async function ConteudoDetailPage({
     ) &&
     isCarouselContent;
 
+  const hasMultipleFinalAssets =
+    contentSafe.instagramMediaAssets.length >
+    1;
+
+  const downloadAsCollection =
+    isCarouselContent ||
+    hasMultipleFinalAssets;
+
   const hasDownloadableContent =
-    isCarouselContent
-      ? contentSafe.instagramMediaAssets.length >=
-        2
-      : Boolean(
-          contentSafe.finalMediaUrl ||
-          contentSafe.finalCoverUrl ||
-          contentSafe.storyMediaUrl ||
-          contentSafe.storyCoverUrl
-        );
+    Boolean(
+      contentSafe.finalMediaUrl ||
+      contentSafe.finalCoverUrl ||
+      contentSafe.storyMediaUrl ||
+      contentSafe.storyCoverUrl ||
+      contentSafe.instagramMediaAssets.length >
+        0
+    );
 
   const operationalDeadline =
     ['DESIGN', 'SOCIAL_DESIGN', 'FILMMAKER', 'AUDIOVISUAL'].includes(
@@ -2072,6 +2079,122 @@ export default async function ConteudoDetailPage({
             }
           />
 
+          {contentSafe.instagramMediaAssets.length > 0 ? (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-blue-500">
+                    Materiais finais
+                  </p>
+
+                  <h2 className="mt-1 text-base font-bold text-slate-900">
+                    Artes enviadas pelo Design
+                  </h2>
+
+                  <p className="mt-1 text-[10px] text-slate-500">
+                    {
+                      contentSafe.instagramMediaAssets.length
+                    } arquivo(s) enviado(s)
+                  </p>
+                </div>
+
+                {contentSafe.instagramMediaAssets.length > 1 ? (
+                  <span className="rounded-full bg-blue-50 px-3 py-1.5 text-[9px] font-bold text-blue-700">
+                    Multiplas artes
+                  </span>
+                ) : null}
+              </div>
+
+
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+
+                {contentSafe.instagramMediaAssets.map(
+                  (
+                    asset,
+                    index
+                  ) => {
+                    const isVideo =
+                      String(
+                        asset.mimeType ||
+                        ""
+                      ).startsWith(
+                        "video/"
+                      );
+
+
+                    return (
+                      <div
+                        key={
+                          asset.id
+                        }
+                        className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                      >
+
+                        <div className="aspect-square overflow-hidden bg-slate-100">
+
+                          {isVideo ? (
+                            <video
+                              src={
+                                asset.url
+                              }
+                              controls
+                              preload="metadata"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <img
+                              src={
+                                asset.url
+                              }
+                              alt={
+                                "Arte final " +
+                                String(
+                                  index +
+                                  1
+                                )
+                              }
+                              className="h-full w-full object-cover"
+                            />
+                          )}
+
+                        </div>
+
+
+                        <div className="p-3">
+
+                          <p className="text-[10px] font-bold text-slate-700">
+                            Arquivo {
+                              index +
+                              1
+                            }
+                          </p>
+
+
+                          <a
+                            href={
+                              asset.url
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-2 inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-[9px] font-bold text-blue-700 transition hover:bg-blue-50"
+                          >
+                            Abrir arquivo
+                          </a>
+
+                        </div>
+
+                      </div>
+                    );
+                  }
+                )}
+
+              </div>
+
+            </section>
+          ) : null}
+
+
           {hasDownloadableContent ? (
             <section className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4 shadow-sm">
               <div className="flex flex-col gap-3">
@@ -2090,7 +2213,7 @@ export default async function ConteudoDetailPage({
                     contentSafe.id
                   }
                   isCarousel={
-                    isCarouselContent
+                    downloadAsCollection
                   }
                   compact
                 />

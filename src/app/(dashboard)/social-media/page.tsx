@@ -2242,7 +2242,7 @@ const query =
                         href={
                           `/social-media?cliente=${encodeURIComponent(
                             clientId
-                          )}&aprovação=${pageNumber}`
+                          )}&aprovacao=${pageNumber}`
                         }
                         scroll={
                           false
