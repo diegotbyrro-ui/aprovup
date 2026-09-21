@@ -34,11 +34,15 @@ import {
   BrainCircuit,
   Check,
   Copy,
+  ExternalLink,
+  ImagePlus,
   Link2,
   Plus,
   Save,
   Search,
+  Smile,
   Trash2,
+  X,
 } from "lucide-react";
 
 
@@ -64,6 +68,15 @@ type MindNodeData = {
     MindNodeKind;
 
   color:
+    string;
+
+  emoji:
+    string;
+
+  imageUrls:
+    string[];
+
+  linkUrl:
     string;
 };
 
@@ -185,15 +198,79 @@ const KIND_OPTIONS:
 
 const COLOR_OPTIONS = [
   "#2563eb",
-  "#7c3aed",
-  "#db2777",
+  "#3b82f6",
+  "#06b6d4",
   "#0891b2",
+  "#14b8a6",
   "#059669",
+  "#16a34a",
+  "#84cc16",
+  "#eab308",
+  "#f59e0b",
   "#ea580c",
   "#dc2626",
+  "#f43f5e",
+  "#db2777",
+  "#ec4899",
+  "#9333ea",
+  "#7c3aed",
+  "#6366f1",
   "#64748b",
+  "#334155",
   "#0f172a",
 ];
+
+
+const EMOJI_OPTIONS = [
+  "\u{1F4A1}",
+  "\u{1F3AF}",
+  "\u{1F680}",
+  "\u{1F4CC}",
+  "\u{2705}",
+  "\u{1F525}",
+  "\u{2B50}",
+  "\u{1F4F8}",
+  "\u{1F3AC}",
+  "\u{1F4C5}",
+  "\u{1F4CA}",
+  "\u{1F4B0}",
+  "\u{1F91D}",
+  "\u{1F9E0}",
+  "\u{1F4E3}",
+  "\u{2764}\u{FE0F}",
+];
+
+
+function externalHref(
+  value:
+    string
+) {
+  const clean =
+    String(
+      value ||
+      ""
+    ).trim();
+
+
+  if (!clean) {
+    return "";
+  }
+
+
+  if (
+    /^https?:\/\//i.test(
+      clean
+    )
+  ) {
+    return clean;
+  }
+
+
+  return (
+    "https://" +
+    clean
+  );
+}
 
 
 function kindLabel(
@@ -337,6 +414,49 @@ function normalizeNodes(
                 data.color ||
                 "#2563eb"
               ),
+
+            emoji:
+              String(
+                data.emoji ||
+                ""
+              ),
+
+            linkUrl:
+              String(
+                data.linkUrl ||
+                data.url ||
+                ""
+              ),
+
+            imageUrls:
+              Array.isArray(
+                data.imageUrls
+              )
+                ? data.imageUrls
+                    .filter(
+                      (
+                        item
+                      ) =>
+                        typeof item ===
+                        "string" &&
+                        Boolean(
+                          item.trim()
+                        )
+                    )
+                    .slice(
+                      0,
+                      6
+                    )
+                    .map(
+                      String
+                    )
+                : data.imageUrl
+                  ? [
+                      String(
+                        data.imageUrl
+                      ),
+                    ]
+                  : [],
           },
         };
       }
@@ -749,6 +869,13 @@ function MindNodeCard({
 
       <div className="rounded-b-[13px] bg-white p-4">
 
+        {data.emoji ? (
+          <div className="mb-2 text-center text-3xl leading-none">
+            {data.emoji}
+          </div>
+        ) : null}
+
+
         <p className="text-sm font-bold leading-snug text-slate-900">
           {data.title}
         </p>
@@ -758,6 +885,89 @@ function MindNodeCard({
           <p className="mt-2 whitespace-pre-wrap text-[10px] leading-relaxed text-slate-500">
             {data.content}
           </p>
+        ) : null}
+
+
+        {data.imageUrls.length > 0 ? (
+          <div
+            className={[
+              "mt-3",
+              "grid",
+              "gap-1.5",
+              data.imageUrls.length ===
+              1
+                ? "grid-cols-1"
+                : "grid-cols-2",
+            ].join(
+              " "
+            )}
+          >
+            {data.imageUrls.map(
+              (
+                imageUrl,
+                index
+              ) => (
+                <div
+                  key={
+                    imageUrl +
+                    index
+                  }
+                  className={[
+                    "overflow-hidden",
+                    "rounded-xl",
+                    "border",
+                    "border-slate-100",
+                    "bg-slate-100",
+                    data.imageUrls.length ===
+                    1
+                      ? "h-28"
+                      : "h-20",
+                  ].join(
+                    " "
+                  )}
+                >
+                  <img
+                    src={
+                      imageUrl
+                    }
+                    alt=""
+                    draggable={
+                      false
+                    }
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              )
+            )}
+          </div>
+        ) : null}
+
+
+        {data.linkUrl ? (
+          <a
+            href={
+              externalHref(
+                data.linkUrl
+              )
+            }
+            target="_blank"
+            rel="noreferrer"
+            className="nodrag nopan mt-3 flex items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-2 text-[9px] font-bold text-slate-700 transition hover:bg-slate-200"
+            onClick={
+              (
+                event
+              ) =>
+                event.stopPropagation()
+            }
+          >
+            <ExternalLink
+              size={
+                11
+              }
+            />
+
+            Abrir link
+          </a>
         ) : null}
 
       </div>
@@ -933,6 +1143,15 @@ export function MindMapEditor({
       "error"
     >(
       "saved"
+    );
+
+
+  const [
+    uploadingImages,
+    setUploadingImages,
+  ] =
+    useState(
+      false
     );
 
 
@@ -1132,6 +1351,15 @@ export function MindMapEditor({
 
               color:
                 config.color,
+
+              emoji:
+                "",
+
+              imageUrls:
+                [],
+
+              linkUrl:
+                "",
             },
           };
 
@@ -1420,6 +1648,15 @@ export function MindMapEditor({
 
         color:
           config.color,
+
+        emoji:
+          "",
+
+        imageUrls:
+          [],
+
+        linkUrl:
+          "",
       },
     };
 
@@ -1513,6 +1750,217 @@ export function MindMapEditor({
                   data: {
                     ...node.data,
                     ...patch,
+                  },
+                }
+              : node
+        )
+    );
+  }
+
+
+  async function uploadSelectedImages(
+    files:
+      FileList |
+      null
+  ) {
+    if (
+      !files ||
+      !selectedNodeId ||
+      !canManage
+    ) {
+      return;
+    }
+
+
+    const available =
+      6 -
+      (
+        selectedNode?.data
+          .imageUrls.length ||
+        0
+      );
+
+
+    if (
+      available <=
+      0
+    ) {
+      window.alert(
+        "Este bloco j? possui 6 imagens."
+      );
+
+      return;
+    }
+
+
+    const chosen =
+      Array.from(
+        files
+      ).slice(
+        0,
+        available
+      );
+
+
+    if (
+      chosen.length ===
+      0
+    ) {
+      return;
+    }
+
+
+    setUploadingImages(
+      true
+    );
+
+
+    try {
+      const uploaded:
+        string[] =
+        [];
+
+
+      for (
+        const file
+        of chosen
+      ) {
+        const formData =
+          new FormData();
+
+
+        formData.append(
+          "file",
+          file
+        );
+
+
+        const response =
+          await fetch(
+            "/api/mindmaps/" +
+            mapId +
+            "/upload-image",
+            {
+              method:
+                "POST",
+
+              body:
+                formData,
+            }
+          );
+
+
+        const payload =
+          await response.json();
+
+
+        if (
+          !response.ok ||
+          !payload?.url
+        ) {
+          throw new Error(
+            payload?.error ||
+            "Falha ao enviar imagem."
+          );
+        }
+
+
+        uploaded.push(
+          String(
+            payload.url
+          )
+        );
+      }
+
+
+      setNodes(
+        (
+          current
+        ) =>
+          current.map(
+            (
+              node
+            ) =>
+              node.id ===
+              selectedNodeId
+                ? {
+                    ...node,
+
+                    data: {
+                      ...node.data,
+
+                      imageUrls: [
+                        ...node.data.imageUrls,
+                        ...uploaded,
+                      ].slice(
+                        0,
+                        6
+                      ),
+                    },
+                  }
+                : node
+          )
+      );
+    }
+    catch (
+      error
+    ) {
+      console.error(
+        "[MIND MAP IMAGE UPLOAD]",
+        error
+      );
+
+
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : "N?o foi poss?vel enviar a imagem."
+      );
+    }
+    finally {
+      setUploadingImages(
+        false
+      );
+    }
+  }
+
+
+  function removeSelectedImage(
+    imageUrl:
+      string
+  ) {
+    if (
+      !selectedNodeId ||
+      !canManage
+    ) {
+      return;
+    }
+
+
+    setNodes(
+      (
+        current
+      ) =>
+        current.map(
+          (
+            node
+          ) =>
+            node.id ===
+            selectedNodeId
+              ? {
+                  ...node,
+
+                  data: {
+                    ...node.data,
+
+                    imageUrls:
+                      node.data.imageUrls.filter(
+                        (
+                          currentUrl
+                        ) =>
+                          currentUrl !==
+                          imageUrl
+                      ),
                   },
                 }
               : node
@@ -2116,7 +2564,7 @@ export function MindMapEditor({
               />
 
               <p className="mt-3 text-[10px] leading-relaxed text-slate-500">
-                Clique em um bloco para editar titulo, texto, tipo e cor.
+                Clique em um bloco para editar t?tulo, texto, emoji, imagens, link, tipo e cor.
               </p>
 
             </div>
@@ -2291,6 +2739,274 @@ export function MindMapEditor({
                   )}
 
                 </div>
+
+              </div>
+
+
+              <div>
+
+                <label className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  <Smile
+                    size={
+                      12
+                    }
+                  />
+
+                  Emoji
+                </label>
+
+
+                <input
+                  disabled={
+                    !canManage
+                  }
+                  value={
+                    selectedNode.data.emoji
+                  }
+                  onChange={
+                    (
+                      event
+                    ) =>
+                      updateSelected({
+                        emoji:
+                          event.target.value.slice(
+                            0,
+                            8
+                          ),
+                      })
+                  }
+                  placeholder="Ex.: ??"
+                  className="mt-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-lg outline-none focus:border-blue-500"
+                />
+
+
+                <div className="mt-2 grid grid-cols-8 gap-1">
+                  {EMOJI_OPTIONS.map(
+                    (
+                      emoji
+                    ) => (
+                      <button
+                        key={
+                          emoji
+                        }
+                        type="button"
+                        disabled={
+                          !canManage
+                        }
+                        onClick={
+                          () =>
+                            updateSelected({
+                              emoji,
+                            })
+                        }
+                        className={[
+                          "flex",
+                          "h-8",
+                          "items-center",
+                          "justify-center",
+                          "rounded-lg",
+                          "text-base",
+                          "transition",
+                          selectedNode.data.emoji ===
+                          emoji
+                            ? "bg-blue-100 ring-2 ring-blue-300"
+                            : "bg-slate-50 hover:bg-slate-100",
+                        ].join(
+                          " "
+                        )}
+                      >
+                        {emoji}
+                      </button>
+                    )
+                  )}
+                </div>
+
+
+                {selectedNode.data.emoji ? (
+                  <button
+                    type="button"
+                    onClick={
+                      () =>
+                        updateSelected({
+                          emoji:
+                            "",
+                        })
+                    }
+                    className="mt-2 text-[9px] font-bold text-slate-400 hover:text-red-500"
+                  >
+                    Remover emoji
+                  </button>
+                ) : null}
+
+              </div>
+
+
+              <div>
+
+                <label className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  <ImagePlus
+                    size={
+                      12
+                    }
+                  />
+
+                  Imagens
+                </label>
+
+
+                <p className="mt-1 text-[9px] leading-relaxed text-slate-400">
+                  At? 6 imagens por bloco. Elas aparecem dentro do bal?o.
+                </p>
+
+
+                {selectedNode.data.imageUrls.length >
+                0 ? (
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {selectedNode.data.imageUrls.map(
+                      (
+                        imageUrl,
+                        index
+                      ) => (
+                        <div
+                          key={
+                            imageUrl +
+                            index
+                          }
+                          className="group relative h-20 overflow-hidden rounded-xl border border-slate-200 bg-slate-100"
+                        >
+                          <img
+                            src={
+                              imageUrl
+                            }
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+
+
+                          {canManage ? (
+                            <button
+                              type="button"
+                              onClick={
+                                () =>
+                                  removeSelectedImage(
+                                    imageUrl
+                                  )
+                              }
+                              className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white shadow transition hover:bg-red-600"
+                              title="Remover imagem"
+                            >
+                              <X
+                                size={
+                                  12
+                                }
+                              />
+                            </button>
+                          ) : null}
+
+                        </div>
+                      )
+                    )}
+                  </div>
+                ) : null}
+
+
+                {canManage &&
+                selectedNode.data.imageUrls.length <
+                6 ? (
+                  <label className="mt-2 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-blue-300 bg-blue-50 text-[9px] font-bold text-blue-600 transition hover:bg-blue-100">
+                    <ImagePlus
+                      size={
+                        13
+                      }
+                    />
+
+                    {uploadingImages
+                      ? "Enviando..."
+                      : "Anexar imagem"}
+
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      disabled={
+                        uploadingImages
+                      }
+                      className="hidden"
+                      onChange={
+                        async (
+                          event
+                        ) => {
+                          await uploadSelectedImages(
+                            event.target.files
+                          );
+
+
+                          event.target.value =
+                            "";
+                        }
+                      }
+                    />
+                  </label>
+                ) : null}
+
+              </div>
+
+
+              <div>
+
+                <label className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  <Link2
+                    size={
+                      12
+                    }
+                  />
+
+                  Link externo / Google
+                </label>
+
+
+                <input
+                  disabled={
+                    !canManage
+                  }
+                  value={
+                    selectedNode.data.linkUrl
+                  }
+                  onChange={
+                    (
+                      event
+                    ) =>
+                      updateSelected({
+                        linkUrl:
+                          event.target.value,
+                      })
+                  }
+                  placeholder="https://drive.google.com/... ou google.com"
+                  className="mt-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[10px] text-slate-700 outline-none focus:border-blue-500"
+                />
+
+
+                {selectedNode.data.linkUrl ? (
+                  <a
+                    href={
+                      externalHref(
+                        selectedNode.data.linkUrl
+                      )
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 flex h-9 items-center justify-center gap-2 rounded-xl bg-slate-100 text-[9px] font-bold text-slate-700 transition hover:bg-slate-200"
+                  >
+                    <ExternalLink
+                      size={
+                        12
+                      }
+                    />
+
+                    Abrir link
+                  </a>
+                ) : null}
 
               </div>
 
