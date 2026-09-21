@@ -78,7 +78,7 @@ type ScoredLead = DashboardLead & {
 function getConfiguredMonthlyGoal() {
   const rawValue =
     String(
-      process.env.CRM_monthlyGoal ??
+      process.env.CRM_MONTHLY_GOAL ??
       ""
     )
       .trim()

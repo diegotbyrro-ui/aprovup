@@ -551,7 +551,6 @@ Regras obrigatórias:
 19. Tente confirmar informacoes importantes em mais de uma fonte quando possivel.
 20. Nao pare na primeira pagina encontrada: aprofunde a busca antes de declarar que o decisor ou seu contato profissional nao foi localizado.
 
-O prospecting_score mede
 O prospecting_score mede o potencial para uma abordagem comercial da Level UP:
 
 0 a 39: baixa prioridade.
