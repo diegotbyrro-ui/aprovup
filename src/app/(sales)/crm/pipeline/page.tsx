@@ -280,7 +280,7 @@ export default async function CrmPage() {
 
 
   return (
-    <>
+    <div className="crm-pipeline-page">
 
       <Header
         description="Gerencie empresas, contatos e negociações reais."
@@ -446,6 +446,6 @@ export default async function CrmPage() {
 
       </main>
 
-    </>
+    </div>
   );
 }

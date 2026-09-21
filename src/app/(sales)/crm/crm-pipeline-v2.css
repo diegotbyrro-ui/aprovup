@@ -2193,3 +2193,774 @@
 .top-header .icon-button svg {
   color: #ffffff !important;
 }
+
+/* CRM TITLE FIX V3 START */
+.crm-legacy-shell .top-header > div:first-child > h1 {
+  color: #17325c !important;
+  -webkit-text-fill-color: #17325c !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+  background: transparent !important;
+  background-image: none !important;
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.035em !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+  clip: auto !important;
+  clip-path: none !important;
+  text-indent: 0 !important;
+  transform: none !important;
+}
+
+.crm-legacy-shell .top-header > div:first-child > p {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+  opacity: 1 !important;
+}
+/* CRM TITLE FIX V3 END */
+
+/* CRM PIPELINE - AGENDA STYLE */
+
+
+/* =========================================================
+   PAGINA
+   ========================================================= */
+
+.crm-pipeline-page {
+  background: #f8fafc;
+  color: #0f172a;
+  min-height: 100vh;
+}
+
+
+/* =========================================================
+   HEADER
+   Corrige o CRM invisivel
+   ========================================================= */
+
+.crm-pipeline-page .top-header {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.98
+    ) !important;
+
+  border-bottom:
+    1px solid
+    #e2e8f0 !important;
+
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.02),
+    0 8px 28px rgba(15, 23, 42, 0.035);
+
+  backdrop-filter:
+    blur(14px);
+}
+
+
+.crm-pipeline-page
+.top-header
+> div:first-child {
+  padding-left: 18px;
+  position: relative;
+}
+
+
+.crm-pipeline-page
+.top-header
+> div:first-child::before {
+  background:
+    linear-gradient(
+      180deg,
+      #2563eb,
+      #6366f1
+    );
+
+  border-radius: 999px;
+
+  content: "";
+
+  height: 30px;
+
+  left: 0;
+
+  position: absolute;
+
+  top: 2px;
+
+  width: 4px;
+}
+
+
+.crm-pipeline-page
+.top-header h1 {
+  color: #0f172a !important;
+
+  font-size: 27px !important;
+
+  font-weight: 800 !important;
+
+  letter-spacing:
+    -0.035em !important;
+
+  line-height: 1.1;
+}
+
+
+.crm-pipeline-page
+.top-header p {
+  color: #64748b !important;
+
+  font-size: 13px !important;
+
+  line-height: 1.55;
+
+  margin-top: 7px !important;
+}
+
+
+/* BUSCA DO TOPO */
+
+.crm-pipeline-page
+.search-field {
+  background: #ffffff !important;
+
+  border:
+    1px solid
+    #dbe3ee !important;
+
+  box-shadow:
+    0 3px 12px
+    rgba(
+      15,
+      23,
+      42,
+      0.035
+    );
+
+  color: #64748b !important;
+}
+
+
+.crm-pipeline-page
+.search-field input {
+  color: #0f172a !important;
+}
+
+
+.crm-pipeline-page
+.search-field input::placeholder {
+  color: #94a3b8 !important;
+}
+
+
+.crm-pipeline-page
+.icon-button {
+  background: #0f172a !important;
+
+  border-color:
+    #0f172a !important;
+
+  color: #ffffff !important;
+}
+
+
+.crm-pipeline-page
+.icon-button:hover {
+  background: #1e293b !important;
+}
+
+
+/* =========================================================
+   ESPACAMENTO
+   ========================================================= */
+
+.crm-pipeline-page
+.crm-pipeline-v2 {
+  padding-top: 26px !important;
+}
+
+
+/* =========================================================
+   HERO
+   Mesmo estilo Agenda / Prospector / Relatorios
+   ========================================================= */
+
+.crm-pipeline-page
+.crm-pipeline-hero-v2 {
+  background:
+    radial-gradient(
+      circle at 88% 12%,
+      rgba(
+        59,
+        130,
+        246,
+        0.24
+      ),
+      transparent 31%
+    ),
+    radial-gradient(
+      circle at 65% 125%,
+      rgba(
+        99,
+        102,
+        241,
+        0.18
+      ),
+      transparent 38%
+    ),
+    linear-gradient(
+      135deg,
+      #0f172a 0%,
+      #111c33 58%,
+      #172554 100%
+    ) !important;
+
+  border:
+    1px solid
+    rgba(
+      148,
+      163,
+      184,
+      0.15
+    ) !important;
+
+  border-radius:
+    20px !important;
+
+  box-shadow:
+    0 18px 45px
+    rgba(
+      15,
+      23,
+      42,
+      0.12
+    ) !important;
+
+  min-height:
+    160px !important;
+
+  overflow: hidden;
+
+  padding:
+    30px 32px !important;
+
+  position: relative;
+}
+
+
+.crm-pipeline-page
+.crm-pipeline-hero-v2::after {
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.055
+    );
+
+  border-radius:
+    999px;
+
+  content: "";
+
+  height: 190px;
+
+  position: absolute;
+
+  right: -30px;
+
+  top: -65px;
+
+  width: 190px;
+}
+
+
+.crm-pipeline-page
+.crm-pipeline-hero-v2
+> * {
+  position: relative;
+  z-index: 1;
+}
+
+
+.crm-pipeline-page
+.crm-eyebrow-v2 {
+  color: #60a5fa !important;
+}
+
+
+.crm-pipeline-page
+.crm-pipeline-hero-v2 h1 {
+  color: #ffffff !important;
+
+  font-size:
+    30px !important;
+
+  font-weight: 800;
+
+  letter-spacing: -0.04em;
+}
+
+
+.crm-pipeline-page
+.crm-pipeline-hero-v2 p {
+  color: #cbd5e1 !important;
+
+  font-size:
+    12px !important;
+
+  line-height: 1.65;
+}
+
+
+/* =========================================================
+   BOTOES DO HERO
+   ========================================================= */
+
+.crm-pipeline-page
+.crm-pipeline-hero-v2
+.crm-hero-actions-v2
+button,
+.crm-pipeline-page
+.crm-pipeline-hero-v2
+.crm-hero-actions-v2
+a {
+  box-shadow:
+    0 8px 22px
+    rgba(
+      15,
+      23,
+      42,
+      0.18
+    );
+}
+
+
+/* IMPORTAR */
+
+.crm-pipeline-page
+.crm-pipeline-hero-v2
+.secondary-button {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.08
+    ) !important;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.18
+    ) !important;
+
+  color:
+    #ffffff !important;
+}
+
+
+.crm-pipeline-page
+.crm-pipeline-hero-v2
+.secondary-button:hover {
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.14
+    ) !important;
+}
+
+
+/* NOVO LEAD */
+
+.crm-pipeline-page
+.crm-pipeline-hero-v2
+.primary-button {
+  background:
+    #2563eb !important;
+
+  border-color:
+    #2563eb !important;
+
+  color:
+    #ffffff !important;
+}
+
+
+.crm-pipeline-page
+.crm-pipeline-hero-v2
+.primary-button:hover {
+  background:
+    #1d4ed8 !important;
+}
+
+
+/* =========================================================
+   CARDS DE RESUMO
+   ========================================================= */
+
+.crm-pipeline-page
+.crm-summary-card-v2 {
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff,
+      #fcfdff
+    ) !important;
+
+  border:
+    1px solid
+    #e2e8f0 !important;
+
+  box-shadow:
+    0 8px 24px
+    rgba(
+      15,
+      23,
+      42,
+      0.04
+    ) !important;
+}
+
+
+.crm-pipeline-page
+.crm-summary-card-v2:hover {
+  border-color:
+    #cbd5e1 !important;
+
+  box-shadow:
+    0 12px 30px
+    rgba(
+      15,
+      23,
+      42,
+      0.07
+    ) !important;
+
+  transform:
+    translateY(-2px);
+}
+
+
+.crm-pipeline-page
+.crm-summary-card-v2 span {
+  color:
+    #64748b !important;
+}
+
+
+.crm-pipeline-page
+.crm-summary-card-v2 strong {
+  color:
+    #0f172a !important;
+}
+
+
+.crm-pipeline-page
+.crm-summary-card-v2 small {
+  color:
+    #94a3b8 !important;
+}
+
+
+/* =========================================================
+   BARRA DE FERRAMENTAS
+   ========================================================= */
+
+.crm-pipeline-page
+.crm-board-toolbar-v2 {
+  background:
+    #ffffff !important;
+
+  border:
+    1px solid
+    #e2e8f0 !important;
+
+  box-shadow:
+    0 8px 24px
+    rgba(
+      15,
+      23,
+      42,
+      0.04
+    ) !important;
+}
+
+
+.crm-pipeline-page
+.crm-board-search-v2 {
+  background:
+    #f8fafc !important;
+
+  border:
+    1px solid
+    #dbe3ee !important;
+}
+
+
+.crm-pipeline-page
+.crm-board-search-v2
+input {
+  color:
+    #0f172a !important;
+}
+
+
+.crm-pipeline-page
+.crm-board-search-v2
+input::placeholder {
+  color:
+    #94a3b8 !important;
+}
+
+
+.crm-pipeline-page
+.crm-board-filter-v2 {
+  background:
+    #ffffff !important;
+
+  border:
+    1px solid
+    #dbe3ee !important;
+
+  color:
+    #334155 !important;
+}
+
+
+/* =========================================================
+   KANBAN
+   ========================================================= */
+
+.crm-pipeline-page
+.crm-stage-v2 {
+  background:
+    #f8fafc !important;
+
+  border:
+    1px solid
+    #e2e8f0 !important;
+
+  box-shadow:
+    0 6px 18px
+    rgba(
+      15,
+      23,
+      42,
+      0.03
+    );
+}
+
+
+.crm-pipeline-page
+.crm-stage-header-v2 {
+  background:
+    #ffffff;
+
+  border-bottom:
+    1px solid
+    #e2e8f0 !important;
+}
+
+
+.crm-pipeline-page
+.crm-stage-name-v2 strong {
+  color:
+    #0f172a !important;
+}
+
+
+.crm-pipeline-page
+.crm-stage-count-v2 {
+  background:
+    #f1f5f9 !important;
+
+  border:
+    1px solid
+    #e2e8f0 !important;
+
+  color:
+    #64748b !important;
+}
+
+
+/* EMPTY STATE DAS COLUNAS */
+
+.crm-pipeline-page
+.crm-stage-empty-v2 {
+  background:
+    #ffffff !important;
+
+  border:
+    1px dashed
+    #cbd5e1 !important;
+
+  color:
+    #64748b !important;
+}
+
+
+.crm-pipeline-page
+.crm-stage-empty-v2 strong {
+  color:
+    #334155 !important;
+}
+
+
+.crm-pipeline-page
+.crm-stage-empty-v2 span {
+  color:
+    #94a3b8 !important;
+}
+
+
+/* =========================================================
+   LEADS
+   ========================================================= */
+
+.crm-pipeline-page
+.crm-lead-card-v2 {
+  background:
+    #ffffff !important;
+
+  border:
+    1px solid
+    #e2e8f0 !important;
+
+  box-shadow:
+    0 6px 18px
+    rgba(
+      15,
+      23,
+      42,
+      0.045
+    ) !important;
+}
+
+
+.crm-pipeline-page
+.crm-lead-card-v2:hover {
+  border-color:
+    #bfdbfe !important;
+
+  box-shadow:
+    0 12px 28px
+    rgba(
+      15,
+      23,
+      42,
+      0.075
+    ) !important;
+}
+
+
+/* =========================================================
+   SEM ETAPAS
+   ========================================================= */
+
+.crm-pipeline-page
+.crm-no-stages-v2 {
+  background:
+    #ffffff !important;
+
+  border:
+    1px dashed
+    #cbd5e1 !important;
+
+  box-shadow:
+    0 8px 24px
+    rgba(
+      15,
+      23,
+      42,
+      0.04
+    );
+
+  color:
+    #64748b !important;
+}
+
+
+.crm-pipeline-page
+.crm-no-stages-v2 strong {
+  color:
+    #0f172a !important;
+}
+
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 761px) {
+  .crm-pipeline-page
+  .top-header {
+    min-height:
+      102px !important;
+
+    padding:
+      23px
+      40px
+      20px !important;
+  }
+
+
+  .crm-pipeline-page
+  .crm-pipeline-v2 {
+    padding-left:
+      40px !important;
+
+    padding-right:
+      40px !important;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .crm-pipeline-page
+  .top-header {
+    background:
+      #ffffff !important;
+  }
+
+
+  .crm-pipeline-page
+  .top-header h1 {
+    font-size:
+      24px !important;
+  }
+
+
+  .crm-pipeline-page
+  .crm-pipeline-hero-v2 {
+    border-radius:
+      16px !important;
+
+    padding:
+      24px !important;
+  }
+
+
+  .crm-pipeline-page
+  .crm-pipeline-hero-v2 h1 {
+    font-size:
+      25px !important;
+  }
+}
