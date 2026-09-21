@@ -574,7 +574,7 @@ function configureDeadlineValidation(
       plannedDate.value
   ) {
     deadline.setCustomValidity(
-      'A data de entrega precisa ser anterior ? data de publica??o.'
+      'A data de entrega precisa ser anterior à data de publicação.'
     );
   }
 }
@@ -640,7 +640,7 @@ export function NewContentDraftGuard({
         )
       ) {
         setStatus(
-          'Rascunho indispon?vel'
+          'Rascunho indisponível'
         );
 
         return;
@@ -769,7 +769,7 @@ export function NewContentDraftGuard({
               storedFiles.length >
                 0
                 ? 'Rascunho recuperado automaticamente'
-                : 'Rascunho autom?tico ativo'
+                : 'Rascunho automático ativo'
             );
           }
         }
@@ -787,7 +787,7 @@ export function NewContentDraftGuard({
             active
           ) {
             setStatus(
-              'Rascunho autom?tico ativo'
+              'Rascunho automático ativo'
             );
           }
         }
@@ -855,7 +855,7 @@ export function NewContentDraftGuard({
 
 
                 setStatus(
-                  'N?o foi poss?vel salvar o rascunho'
+                  'Não foi possível salvar o rascunho'
                 );
               }
             },
@@ -907,7 +907,7 @@ export function NewContentDraftGuard({
 
 
           setStatus(
-            'Texto salvo; n?o foi poss?vel guardar as fotos localmente'
+            'Texto salvo; não foi possível guardar as fotos localmente'
           );
         }
       }
@@ -1055,12 +1055,12 @@ export function NewContentDraftGuard({
     >
 
       <p className="text-xs font-black text-blue-700">
-        Rascunho autom?tico
+        Rascunho automático
       </p>
 
 
       <p className="mt-1 text-[11px] text-blue-600">
-        {status}. Se a p?gina atualizar ou ocorrer um erro, seus textos e fotos ser?o recuperados.
+        {status}. Se a página atualizar ou ocorrer um erro, seus textos e fotos serão recuperados.
       </p>
 
     </div>
