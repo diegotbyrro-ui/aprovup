@@ -950,11 +950,7 @@ export function NewContentDraftGuard({
       }
 
 
-      function handleSubmit() {
-
-        configureDeadlineValidation(
-          form
-        );
+      function persistDraftNow() {
 
         try {
 
@@ -979,10 +975,142 @@ export function NewContentDraftGuard({
         ) {
 
           console.error(
-            'AprovUp submit draft save:',
+            'AprovUp immediate draft save:',
             error
           );
         }
+      }
+
+
+      function handleSubmit() {
+
+        configureDeadlineValidation(
+          form
+        );
+
+        persistDraftNow();
+      }
+
+
+      function handleInternalNavigation(
+        event:
+          MouseEvent
+      ) {
+
+        if (
+          event.defaultPrevented ||
+          event.button !==
+            0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        ) {
+          return;
+        }
+
+
+        const target =
+          event.target;
+
+
+        if (
+          !(
+            target instanceof
+              Element
+          )
+        ) {
+          return;
+        }
+
+
+        const link =
+          target.closest(
+            'a[href]'
+          );
+
+
+        if (
+          !(
+            link instanceof
+              HTMLAnchorElement
+          )
+        ) {
+          return;
+        }
+
+
+        if (
+          link.target ===
+            '_blank' ||
+          link.hasAttribute(
+            'download'
+          )
+        ) {
+          return;
+        }
+
+
+        const rawHref =
+          link.getAttribute(
+            'href'
+          ) ||
+          '';
+
+
+        if (
+          !rawHref ||
+          rawHref.startsWith(
+            '#'
+          ) ||
+          rawHref.startsWith(
+            'mailto:'
+          ) ||
+          rawHref.startsWith(
+            'tel:'
+          ) ||
+          rawHref.startsWith(
+            'javascript:'
+          )
+        ) {
+          return;
+        }
+
+
+        let destination:
+          URL;
+
+
+        try {
+
+          destination =
+            new URL(
+              link.href,
+              window.location.href
+            );
+        }
+        catch {
+          return;
+        }
+
+
+        if (
+          destination.origin !==
+            window.location.origin
+        ) {
+          return;
+        }
+
+
+        event.preventDefault();
+
+
+        persistDraftNow();
+
+
+        window.location.assign(
+          destination.href
+        );
       }
 
 
@@ -1001,6 +1129,13 @@ export function NewContentDraftGuard({
       form.addEventListener(
         'submit',
         handleSubmit
+      );
+
+
+      document.addEventListener(
+        'click',
+        handleInternalNavigation,
+        true
       );
 
 
@@ -1037,6 +1172,13 @@ export function NewContentDraftGuard({
         form.removeEventListener(
           'submit',
           handleSubmit
+        );
+
+
+        document.removeEventListener(
+          'click',
+          handleInternalNavigation,
+          true
         );
       };
     },
