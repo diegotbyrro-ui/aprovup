@@ -2775,7 +2775,7 @@ export function MindMapEditor({
                           ),
                       })
                   }
-                  placeholder="Ex.: \u{1F4A1}"
+                  placeholder={"Ex.: \u{1F4A1}"}
                   className="mt-2 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-lg outline-none focus:border-blue-500"
                 />
 
