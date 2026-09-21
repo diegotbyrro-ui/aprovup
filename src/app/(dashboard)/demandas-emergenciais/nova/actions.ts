@@ -262,6 +262,10 @@ export async function createEmergencyDemandAction(
     `/clientes/${clientId}/visao`
   );
 
+  revalidatePath(
+    `/clientes/${clientId}/calendario`
+  );
+
   const destination =
     area === "FILMMAKER"
       ? `/filmmaker?cliente=${clientId}`

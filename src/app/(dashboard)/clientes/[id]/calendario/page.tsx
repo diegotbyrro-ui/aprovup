@@ -122,17 +122,50 @@ export default async function ClienteCalendarioPage({
     include: {
       contents: {
         where: {
-          plannedDate: {
-            gte: monthStart,
-            lte: monthEnd,
-          },
           status: {
             not: 'ARQUIVADO',
           },
+
+          OR: [
+            {
+              plannedDate: {
+                gte: monthStart,
+                lte: monthEnd,
+              },
+            },
+
+            {
+              format: {
+                in: [
+                  'DESIGN_GRAFICO',
+                  'DEMANDA_EMERGENCIAL',
+                ],
+              },
+
+              productionDeadline: {
+                gte: monthStart,
+                lte: monthEnd,
+              },
+            },
+          ],
         },
-        orderBy: {
-          plannedDate: 'asc',
+
+        include: {
+          instagramMediaAssets: {
+            select: {
+              id: true,
+            },
+          },
         },
+
+        orderBy: [
+          {
+            plannedDate: 'asc',
+          },
+          {
+            productionDeadline: 'asc',
+          },
+        ],
       },
     },
   });
@@ -171,15 +204,44 @@ export default async function ClienteCalendarioPage({
   const contentsByDay = new Map<number, typeof client.contents>();
 
   for (const content of client.contents) {
-    if (!content.plannedDate) continue;
+    const format =
+      String(
+        content.format ||
+        ''
+      )
+        .trim()
+        .toUpperCase();
 
-    const day = new Date(content.plannedDate).getDate();
+    const isOperationalDemand =
+      format === 'DESIGN_GRAFICO' ||
+      format === 'DEMANDA_EMERGENCIAL';
 
-    if (!contentsByDay.has(day)) {
-      contentsByDay.set(day, []);
+    const calendarDate =
+      isOperationalDemand
+        ? content.productionDeadline
+        : content.plannedDate;
+
+    if (!calendarDate) {
+      continue;
     }
 
-    contentsByDay.get(day)?.push(content);
+    const day =
+      new Date(
+        calendarDate
+      ).getDate();
+
+    if (!contentsByDay.has(day)) {
+      contentsByDay.set(
+        day,
+        []
+      );
+    }
+
+    contentsByDay
+      .get(day)
+      ?.push(
+        content
+      );
   }
 
   const calendarCells = [];
@@ -386,6 +448,16 @@ export default async function ClienteCalendarioPage({
                           <p className="line-clamp-2 font-bold">
                             {content.title}
                           </p>
+
+                          {content.format === 'DEMANDA_EMERGENCIAL' ? (
+                            <p className="mt-1 text-[9px] font-black uppercase text-red-700">
+                              Demanda emergencial
+                            </p>
+                          ) : content.format === 'DESIGN_GRAFICO' ? (
+                            <p className="mt-1 text-[9px] font-black uppercase text-violet-700">
+                              Design gr?fico
+                            </p>
+                          ) : null}
 
                           <p className="mt-1 text-[10px] font-bold uppercase opacity-70">
                             {getStatusLabel(content.status)}
