@@ -21,7 +21,7 @@ export default async function ProspectorPage() {
   }
 
   return (
-    <>
+    <div className="crm-prospector-page">
       <Header
         description="Encontre, analise e cadastre novas oportunidades comerciais."
         title="Prospector IA"
@@ -67,6 +67,6 @@ export default async function ProspectorPage() {
 
         <ProspectorWorkspace />
       </div>
-    </>
+    </div>
   );
 }

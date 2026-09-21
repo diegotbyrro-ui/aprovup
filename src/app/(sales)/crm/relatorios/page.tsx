@@ -742,7 +742,7 @@ export default async function ReportsPage({
       : 0;
 
   return (
-    <>
+    <div className="crm-reports-page">
       <Header
         description="Indicadores reais de atividade, pipeline e desempenho comercial."
         title="Relatórios Comerciais"
@@ -1429,6 +1429,6 @@ export default async function ReportsPage({
           </article>
         </section>
       </div>
-    </>
+    </div>
   );
 }

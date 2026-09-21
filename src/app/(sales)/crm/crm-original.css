@@ -11763,3 +11763,374 @@ button[type="submit"]:not(:disabled) {
     font-size: 18px !important;
   }
 }
+
+
+/* CRM PROSPECTOR + REPORTS PREMIUM OVERRIDES */
+
+.crm-prospector-page,
+.crm-reports-page {
+  min-height: 100%;
+  color: #0f172a;
+}
+
+/* =========================================================
+   HEADER SUPERIOR
+   ========================================================= */
+
+.crm-prospector-page .top-header,
+.crm-reports-page .top-header {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.02),
+    0 8px 28px rgba(15, 23, 42, 0.04);
+}
+
+.crm-prospector-page .top-header > div:first-child,
+.crm-reports-page .top-header > div:first-child {
+  position: relative;
+  padding-left: 18px;
+}
+
+.crm-prospector-page .top-header > div:first-child::before,
+.crm-reports-page .top-header > div:first-child::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 4px;
+  height: 30px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2563eb, #6366f1);
+}
+
+.crm-prospector-page .top-header h1,
+.crm-reports-page .top-header h1 {
+  color: #0f172a !important;
+  font-size: 27px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.1;
+}
+
+.crm-prospector-page .top-header p,
+.crm-reports-page .top-header p {
+  color: #64748b !important;
+  font-size: 13px !important;
+  line-height: 1.55;
+  margin-top: 7px !important;
+}
+
+.crm-prospector-page .search-field,
+.crm-reports-page .search-field {
+  background: #ffffff !important;
+  border: 1px solid #dbe3ee !important;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+  color: #64748b !important;
+}
+
+.crm-prospector-page .search-field input,
+.crm-reports-page .search-field input {
+  color: #0f172a !important;
+}
+
+.crm-prospector-page .search-field input::placeholder,
+.crm-reports-page .search-field input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.crm-prospector-page .icon-button,
+.crm-reports-page .icon-button {
+  background: #0f172a !important;
+  border-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+.crm-prospector-page .icon-button:hover,
+.crm-reports-page .icon-button:hover {
+  background: #1e293b !important;
+}
+
+.crm-prospector-page .page-content,
+.crm-reports-page .page-content {
+  padding-top: 26px !important;
+}
+
+/* =========================================================
+   HERO / BANNER PRINCIPAL
+   ========================================================= */
+
+.crm-prospector-page .prospector-hero,
+.crm-prospector-page .hero-panel,
+.crm-prospector-page [class*="hero"],
+.crm-reports-page .reports-hero,
+.crm-reports-page .hero-panel,
+.crm-reports-page [class*="hero"] {
+  background:
+    radial-gradient(circle at 88% 12%, rgba(59, 130, 246, 0.22), transparent 31%),
+    radial-gradient(circle at 70% 120%, rgba(99, 102, 241, 0.16), transparent 36%),
+    linear-gradient(135deg, #071225 0%, #0a1730 58%, #1a2141 100%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.16) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14) !important;
+}
+
+.crm-prospector-page [class*="hero"] h2,
+.crm-prospector-page [class*="hero"] h3,
+.crm-reports-page [class*="hero"] h2,
+.crm-reports-page [class*="hero"] h3 {
+  color: #ffffff !important;
+}
+
+.crm-prospector-page [class*="hero"] p,
+.crm-prospector-page [class*="hero"] span,
+.crm-reports-page [class*="hero"] p,
+.crm-reports-page [class*="hero"] span {
+  color: #cbd5e1 !important;
+}
+
+/* =========================================================
+   PAINEIS ESCUROS - MELHOR LEITURA
+   ========================================================= */
+
+.crm-prospector-page .panel,
+.crm-prospector-page [class*="panel"],
+.crm-prospector-page [class*="result"],
+.crm-prospector-page [class*="results"],
+.crm-prospector-page [class*="empty"],
+.crm-reports-page .panel,
+.crm-reports-page [class*="panel"],
+.crm-reports-page [class*="funnel"],
+.crm-reports-page [class*="ranking"],
+.crm-reports-page [class*="market"],
+.crm-reports-page [class*="segment"],
+.crm-reports-page [class*="productivity"],
+.crm-reports-page [class*="intelligence"],
+.crm-reports-page [class*="analysis"] {
+  background:
+    radial-gradient(circle at 92% 8%, rgba(59, 130, 246, 0.10), transparent 24%),
+    linear-gradient(135deg, #071225 0%, #0a1730 58%, #10214a 100%) !important;
+  border: 1px solid rgba(148, 163, 184, 0.17) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.12) !important;
+  color: #e2e8f0 !important;
+}
+
+/* TITULOS */
+.crm-prospector-page .panel h2,
+.crm-prospector-page .panel h3,
+.crm-prospector-page .panel h4,
+.crm-prospector-page [class*="panel"] h2,
+.crm-prospector-page [class*="panel"] h3,
+.crm-prospector-page [class*="panel"] h4,
+.crm-prospector-page [class*="result"] h2,
+.crm-prospector-page [class*="result"] h3,
+.crm-prospector-page [class*="result"] h4,
+.crm-reports-page .panel h2,
+.crm-reports-page .panel h3,
+.crm-reports-page .panel h4,
+.crm-reports-page [class*="panel"] h2,
+.crm-reports-page [class*="panel"] h3,
+.crm-reports-page [class*="panel"] h4,
+.crm-reports-page [class*="funnel"] h2,
+.crm-reports-page [class*="ranking"] h2,
+.crm-reports-page [class*="market"] h2,
+.crm-reports-page [class*="analysis"] h2,
+.crm-reports-page [class*="funnel"] h3,
+.crm-reports-page [class*="ranking"] h3,
+.crm-reports-page [class*="market"] h3,
+.crm-reports-page [class*="analysis"] h3 {
+  color: #ffffff !important;
+  letter-spacing: -0.03em;
+}
+
+/* TEXTOS */
+.crm-prospector-page .panel p,
+.crm-prospector-page .panel span,
+.crm-prospector-page .panel small,
+.crm-prospector-page .panel label,
+.crm-prospector-page [class*="panel"] p,
+.crm-prospector-page [class*="panel"] span,
+.crm-prospector-page [class*="panel"] small,
+.crm-prospector-page [class*="panel"] label,
+.crm-prospector-page [class*="result"] p,
+.crm-prospector-page [class*="result"] span,
+.crm-prospector-page [class*="result"] small,
+.crm-prospector-page [class*="empty"] p,
+.crm-prospector-page [class*="empty"] span,
+.crm-prospector-page [class*="empty"] small,
+.crm-reports-page .panel p,
+.crm-reports-page .panel span,
+.crm-reports-page .panel small,
+.crm-reports-page .panel label,
+.crm-reports-page [class*="panel"] p,
+.crm-reports-page [class*="panel"] span,
+.crm-reports-page [class*="panel"] small,
+.crm-reports-page [class*="panel"] label,
+.crm-reports-page [class*="funnel"] p,
+.crm-reports-page [class*="funnel"] span,
+.crm-reports-page [class*="ranking"] p,
+.crm-reports-page [class*="ranking"] span,
+.crm-reports-page [class*="market"] p,
+.crm-reports-page [class*="market"] span,
+.crm-reports-page [class*="analysis"] p,
+.crm-reports-page [class*="analysis"] span {
+  color: #cbd5e1 !important;
+}
+
+/* KICKERS / EYEBROWS */
+.crm-prospector-page .panel-kicker,
+.crm-prospector-page .eyebrow,
+.crm-prospector-page [class*="kicker"],
+.crm-reports-page .panel-kicker,
+.crm-reports-page .eyebrow,
+.crm-reports-page [class*="kicker"] {
+  color: #60a5fa !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase;
+}
+
+/* NUMEROS IMPORTANTES */
+.crm-prospector-page .panel strong,
+.crm-prospector-page [class*="panel"] strong,
+.crm-prospector-page [class*="result"] strong,
+.crm-reports-page .panel strong,
+.crm-reports-page [class*="panel"] strong,
+.crm-reports-page [class*="funnel"] strong,
+.crm-reports-page [class*="ranking"] strong,
+.crm-reports-page [class*="market"] strong,
+.crm-reports-page [class*="analysis"] strong {
+  color: #ffffff !important;
+}
+
+/* ?CONES */
+.crm-prospector-page .panel svg,
+.crm-prospector-page [class*="panel"] svg,
+.crm-prospector-page [class*="result"] svg,
+.crm-reports-page .panel svg,
+.crm-reports-page [class*="panel"] svg,
+.crm-reports-page [class*="funnel"] svg,
+.crm-reports-page [class*="ranking"] svg,
+.crm-reports-page [class*="market"] svg,
+.crm-reports-page [class*="analysis"] svg {
+  color: #93c5fd !important;
+}
+
+/* ESTADO VAZIO */
+.crm-prospector-page .empty-state,
+.crm-prospector-page [class*="empty-state"],
+.crm-prospector-page [class*="empty"] > div,
+.crm-reports-page .empty-state,
+.crm-reports-page [class*="empty-state"] {
+  color: #cbd5e1 !important;
+}
+
+.crm-prospector-page .empty-state strong,
+.crm-prospector-page [class*="empty-state"] strong,
+.crm-reports-page .empty-state strong,
+.crm-reports-page [class*="empty-state"] strong {
+  color: #ffffff !important;
+}
+
+/* CHIPS / FILTROS */
+.crm-reports-page button,
+.crm-reports-page .chip,
+.crm-reports-page [class*="filter"] button,
+.crm-reports-page [class*="period"] button {
+  transition: all 0.2s ease;
+}
+
+.crm-reports-page button:hover,
+.crm-reports-page .chip:hover,
+.crm-reports-page [class*="filter"] button:hover,
+.crm-reports-page [class*="period"] button:hover {
+  transform: translateY(-1px);
+}
+
+/* BLOCO DE PESQUISA DO PROSPECTOR */
+.crm-prospector-page [class*="search-card"],
+.crm-prospector-page [class*="search-panel"],
+.crm-prospector-page [class*="search-block"] {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05) !important;
+}
+
+.crm-prospector-page [class*="search-card"] h2,
+.crm-prospector-page [class*="search-card"] h3,
+.crm-prospector-page [class*="search-panel"] h2,
+.crm-prospector-page [class*="search-panel"] h3,
+.crm-prospector-page [class*="search-block"] h2,
+.crm-prospector-page [class*="search-block"] h3 {
+  color: #0f172a !important;
+}
+
+.crm-prospector-page [class*="search-card"] p,
+.crm-prospector-page [class*="search-card"] span,
+.crm-prospector-page [class*="search-panel"] p,
+.crm-prospector-page [class*="search-panel"] span,
+.crm-prospector-page [class*="search-block"] p,
+.crm-prospector-page [class*="search-block"] span {
+  color: #64748b !important;
+}
+
+/* INPUTS ESCUROS DO PROSPECTOR */
+.crm-prospector-page input,
+.crm-prospector-page select,
+.crm-prospector-page textarea {
+  color: #ffffff;
+}
+
+.crm-prospector-page input::placeholder,
+.crm-prospector-page textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* CART?ES BRANCOS DENTRO DOS PAIN?IS */
+.crm-reports-page .panel article,
+.crm-reports-page [class*="analysis"] article,
+.crm-reports-page [class*="card"] {
+  border-radius: 14px;
+}
+
+/* RESPONSIVO */
+@media (min-width: 761px) {
+  .crm-prospector-page .top-header,
+  .crm-reports-page .top-header {
+    min-height: 102px !important;
+    padding: 23px 40px 20px !important;
+  }
+
+  .crm-prospector-page .page-content,
+  .crm-reports-page .page-content {
+    padding-left: 40px !important;
+    padding-right: 40px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .crm-prospector-page .top-header,
+  .crm-reports-page .top-header {
+    background: #ffffff !important;
+  }
+
+  .crm-prospector-page .top-header h1,
+  .crm-reports-page .top-header h1 {
+    font-size: 24px !important;
+  }
+
+  .crm-prospector-page .panel,
+  .crm-prospector-page [class*="panel"],
+  .crm-prospector-page [class*="result"],
+  .crm-reports-page .panel,
+  .crm-reports-page [class*="panel"],
+  .crm-reports-page [class*="funnel"],
+  .crm-reports-page [class*="ranking"],
+  .crm-reports-page [class*="market"],
+  .crm-reports-page [class*="analysis"] {
+    border-radius: 16px !important;
+  }
+}
