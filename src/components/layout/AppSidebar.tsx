@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 import {
   CalendarDays,
@@ -90,27 +90,10 @@ export async function AppSidebar() {
       ],
     },
 
-    {
-      name:
-        "Mapa Mental",
-
-      icon:
-        "mindmap",
-
-      path:
-        "/mapa-mental",
-
-      permission:
-        "mindmap.view",
-
-      activePrefixes: [
-        "/mapa-mental",
-      ],
-    },
 
     {
       name:
-        "Secretária IA",
+        "SecretÃ¡ria IA",
 
       icon:
         "secretary",
@@ -201,6 +184,24 @@ export async function AppSidebar() {
 
       activePrefixes: [
         "/crm",
+      ],
+    },
+
+    {
+      name:
+        "Mapa Mental",
+
+      icon:
+        "mindmap",
+
+      path:
+        "/mapa-mental",
+
+      permission:
+        "mindmap.view",
+
+      activePrefixes: [
+        "/mapa-mental",
       ],
     },
   ];
@@ -319,7 +320,7 @@ export async function AppSidebar() {
               />
 
               <span>
-                Integrações
+                IntegraÃ§Ãµes
               </span>
             </Link>
 
@@ -332,7 +333,7 @@ export async function AppSidebar() {
               />
 
               <span>
-                Modelos de relatório
+                Modelos de relatÃ³rio
               </span>
             </Link>
           </>
@@ -395,7 +396,7 @@ export async function AppSidebar() {
           <span className="ap-sidebar-product-dot" />
 
           <span>
-            Operação
+            OperaÃ§Ã£o
           </span>
 
         </div>
