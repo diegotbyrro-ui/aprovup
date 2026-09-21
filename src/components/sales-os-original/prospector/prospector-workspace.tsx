@@ -138,6 +138,14 @@ function SaveProspectButton({
           company.decision_maker_name,
         decision_maker_role:
           company.decision_maker_role,
+        decision_maker_phone:
+          company.decision_maker_phone,
+        decision_maker_whatsapp:
+          company.decision_maker_whatsapp,
+        decision_maker_email:
+          company.decision_maker_email,
+        decision_maker_contact_source:
+          company.decision_maker_contact_source,
         marketing_diagnosis:
           company.marketing_diagnosis,
         commercial_opportunity:
@@ -234,8 +242,9 @@ export function ProspectorWorkspace() {
             </h3>
 
             <p>
-              Pesquise por segmento, tipo de
-              empresa ou oportunidade comercial.
+              Investigacao comercial profunda:
+              empresa, decisor e contato
+              profissional publico.
             </p>
           </div>
         </div>
@@ -352,10 +361,10 @@ export function ProspectorWorkspace() {
           </strong>
 
           <span>
-            A IA está verificando sites,
-            perfis públicos, contatos e sinais
-            comerciais. Isso pode levar alguns
-            segundos.
+            A IA esta cruzando varias fontes
+            publicas para encontrar a empresa,
+            identificar quem decide e localizar
+            contatos profissionais verificaveis.
           </span>
         </section>
       )}
@@ -386,6 +395,10 @@ export function ProspectorWorkspace() {
                   const isExpanded =
                     expandedCompany ===
                     company.company_name;
+
+                  const preferredWhatsapp =
+                    company.decision_maker_whatsapp ||
+                    company.whatsapp;
 
                   return (
                     <article
@@ -539,10 +552,10 @@ export function ProspectorWorkspace() {
                           </a>
                         )}
 
-                        {company.whatsapp && (
+                        {preferredWhatsapp && (
                           <a
                             className="secondary-button"
-                            href={`https://wa.me/${company.whatsapp.replace(/\D/g, "")}`}
+                            href={`https://wa.me/${preferredWhatsapp.replace(/\D/g, "")}`}
                             rel="noreferrer"
                             target="_blank"
                           >
@@ -604,29 +617,83 @@ export function ProspectorWorkspace() {
 
                             <strong>
                               {company.decision_maker_name ||
-                                "Não identificado"}
+                                "Nao identificado"}
                             </strong>
 
                             <p>
                               {company.decision_maker_role ||
-                                "Cargo não encontrado"}
+                                "Cargo nao encontrado"}
                             </p>
                           </article>
 
                           <article>
                             <span>
-                              CONTATOS
+                              CONTATO PROFISSIONAL DO DECISOR
+                            </span>
+
+                            <strong>
+                              {company.decision_maker_phone ||
+                                company.decision_maker_whatsapp ||
+                                company.decision_maker_email ||
+                                "Nao encontrado publicamente"}
+                            </strong>
+
+                            <p>
+                              {[
+                                company.decision_maker_phone
+                                  ? `Telefone: ${company.decision_maker_phone}`
+                                  : "",
+                                company.decision_maker_whatsapp
+                                  ? `WhatsApp: ${company.decision_maker_whatsapp}`
+                                  : "",
+                                company.decision_maker_email
+                                  ? `E-mail: ${company.decision_maker_email}`
+                                  : "",
+                              ]
+                                .filter(Boolean)
+                                .join(" | ")}
+                            </p>
+
+                            {company.decision_maker_contact_source && (
+                              <a
+                                href={normalizeUrl(
+                                  company.decision_maker_contact_source
+                                )}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                <ExternalLink size={13} />
+                                Fonte publica do contato
+                              </a>
+                            )}
+                          </article>
+
+                          <article>
+                            <span>
+                              CONTATO GERAL DA EMPRESA
                             </span>
 
                             <strong>
                               {company.phone ||
                                 company.whatsapp ||
                                 company.email ||
-                                "Não encontrados"}
+                                "Nao encontrado"}
                             </strong>
 
                             <p>
-                              {company.email}
+                              {[
+                                company.phone
+                                  ? `Telefone: ${company.phone}`
+                                  : "",
+                                company.whatsapp
+                                  ? `WhatsApp: ${company.whatsapp}`
+                                  : "",
+                                company.email
+                                  ? `E-mail: ${company.email}`
+                                  : "",
+                              ]
+                                .filter(Boolean)
+                                .join(" | ")}
                             </p>
                           </article>
 

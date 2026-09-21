@@ -5,6 +5,10 @@ import {
   requireCrmAiManageAccess,
 } from "@/lib/crmAccess";
 
+import {
+  getOpenAiConfigForAgency,
+} from "@/lib/aiProviderCredentials";
+
 import { createClient } from "@/lib/crm-supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -20,6 +24,10 @@ export type ProspectedCompany = {
   state: string;
   decision_maker_name: string;
   decision_maker_role: string;
+  decision_maker_phone: string;
+  decision_maker_whatsapp: string;
+  decision_maker_email: string;
+  decision_maker_contact_source: string;
   marketing_diagnosis: string;
   commercial_opportunity: string;
   recommended_approach: string;
@@ -188,7 +196,7 @@ function validateCompanies(
             )
             .map((source) => source.trim())
             .filter(Boolean)
-            .slice(0, 5)
+            .slice(0, 8)
         : [];
 
       return {
@@ -232,6 +240,22 @@ function validateCompanies(
         decision_maker_role:
           normalizeOptional(
             company.decision_maker_role
+          ),
+        decision_maker_phone:
+          normalizeOptional(
+            company.decision_maker_phone
+          ),
+        decision_maker_whatsapp:
+          normalizeOptional(
+            company.decision_maker_whatsapp
+          ),
+        decision_maker_email:
+          normalizeOptional(
+            company.decision_maker_email
+          ),
+        decision_maker_contact_source:
+          normalizeOptional(
+            company.decision_maker_contact_source
           ),
         marketing_diagnosis:
           normalizeOptional(
@@ -320,7 +344,8 @@ export async function searchCompaniesAction(
   _previousState: ProspectorActionResult,
   formData: FormData
 ): Promise<ProspectorActionResult> {
-  await requireCrmAiManageAccess();
+  const accessUser =
+    await requireCrmAiManageAccess();
 
   try {
     const searchQuery = readText(
@@ -355,17 +380,31 @@ export async function searchCompaniesAction(
       };
     }
 
-    const apiKey =
-      process.env.OPENAI_API_KEY;
-
-    const model =
-      process.env.OPENAI_MODEL;
-
-    if (!apiKey || !model) {
+    if (!accessUser.agencyId) {
       return {
         success: false,
         message:
-          "As variáveis da OpenAI não foram configuradas.",
+          "A agência do usuário não foi identificada.",
+        companies: [],
+      };
+    }
+
+    const openAiConfig =
+      await getOpenAiConfigForAgency(
+        accessUser.agencyId
+      );
+
+    const apiKey =
+      openAiConfig.apiKey;
+
+    const model =
+      openAiConfig.model;
+
+    if (!apiKey) {
+      return {
+        success: false,
+        message:
+          "Configure a chave da OpenAI em Configurações > Integrações.",
         companies: [],
       };
     }
@@ -474,7 +513,7 @@ export async function searchCompaniesAction(
             },
           ],
           reasoning: {
-            effort: "low",
+            effort: "medium",
           },
           instructions: `
 Você é um pesquisador comercial da Level UP Marketing Digital, agência localizada em Maceió.
@@ -491,17 +530,28 @@ O objetivo é encontrar possíveis clientes para serviços de:
 
 Regras obrigatórias:
 
-1. Não invente telefone, WhatsApp, e-mail, site, Instagram, decisor ou cargo.
-2. Quando um dado não for encontrado, retorne uma string vazia.
-3. Não apresente pessoas sem evidência pública de vínculo com a empresa.
-4. Não confunda empresas com nomes semelhantes.
-5. Priorize empresas ativas e com presença digital verificável.
-6. Use somente dados profissionais ou empresariais publicados abertamente.
-7. Não inclua CPF, endereço residencial ou outros dados pessoais sensíveis.
-8. O diagnóstico deve separar fatos encontrados de hipóteses comerciais.
-9. Inclua de uma a cinco URLs públicas que sustentem os dados.
-10. Evite retornar empresas já mencionadas como exemplos apenas por associação semântica.
+1. Trabalhe como um investigador comercial extremamente persistente.
+2. Antes de desistir de identificar o decisor, pesquise em varias fontes publicas.
+3. Procure proprietario, socio, fundador, CEO, diretor, gerente comercial, gerente de marketing ou outro profissional com poder real de decisao.
+4. Cruze site oficial, pagina de equipe, noticias, entrevistas, perfis profissionais publicos, redes sociais da empresa, associacoes empresariais, diretorios empresariais e outras fontes publicas confiaveis.
+5. Depois de identificar o decisor, tente localizar telefone profissional, WhatsApp profissional e e-mail profissional publicamente divulgados.
+6. Priorize um contato que possa ser associado publicamente ao proprio decisor.
+7. Se nao encontrar contato profissional do decisor, mantenha decision_maker_phone, decision_maker_whatsapp e decision_maker_email vazios e use phone, whatsapp e email apenas para os contatos gerais oficiais da empresa.
+8. Nunca invente, complete, deduza ou adivinhe um telefone, WhatsApp, e-mail, site, Instagram, nome ou cargo.
+9. Nunca use numero residencial, telefone pessoal nao publicado profissionalmente, dados vazados, dados privados ou informacoes obtidas de fontes duvidosas.
+10. Um telefone pessoal so pode ser retornado quando a propria pessoa ou empresa o publicou claramente para contato profissional ou comercial.
+11. decision_maker_contact_source deve conter a URL publica que sustenta o contato profissional do decisor. Se nao houver fonte, retorne string vazia.
+12. Nao apresente uma pessoa como decisor sem evidencia publica de vinculo atual com a empresa.
+13. Nao confunda empresas ou pessoas com nomes semelhantes.
+14. Priorize empresas ativas e com presenca digital verificavel.
+15. O diagnostico deve separar fatos encontrados de hipoteses comerciais.
+16. Inclua de uma a oito URLs publicas relevantes em sources.
+17. Quando uma informacao nao puder ser confirmada, retorne string vazia.
+18. Nao inclua CPF, endereco residencial ou outros dados pessoais sensiveis.
+19. Tente confirmar informacoes importantes em mais de uma fonte quando possivel.
+20. Nao pare na primeira pagina encontrada: aprofunde a busca antes de declarar que o decisor ou seu contato profissional nao foi localizado.
 
+O prospecting_score mede
 O prospecting_score mede o potencial para uma abordagem comercial da Level UP:
 
 0 a 39: baixa prioridade.
@@ -521,17 +571,26 @@ ${city || "Brasil, sem cidade obrigatória"}
 
 Para cada empresa:
 
-- confirme que ela realmente existe;
-- identifique seu segmento;
-- encontre site, Instagram e contatos empresariais públicos quando disponíveis;
-- identifique possível decisor somente quando houver fonte pública;
-- avalie a presença de marketing;
-- explique a oportunidade comercial para a Level UP;
-- sugira uma primeira abordagem curta;
-- estime um valor mensal comercial plausível entre R$ 2.500 e R$ 6.000, sem afirmar que esse é o orçamento da empresa;
-- atribua temperatura, prioridade e score de prospecção;
-- inclua as fontes públicas usadas.
+- confirme que a empresa realmente existe e esta ativa;
+- identifique segmento, cidade, site e Instagram oficiais;
+- descubra quem realmente participa da decisao de contratacao de marketing;
+- priorize proprietario, socio, fundador, CEO, diretor, gerente de marketing ou gerente comercial;
+- pesquise explicitamente o nome do decisor junto com telefone, WhatsApp, e-mail, contato, comercial e empresa;
+- procure telefone profissional do decisor em fontes publicas;
+- procure WhatsApp profissional do decisor em fontes publicas;
+- procure e-mail profissional do decisor em fontes publicas;
+- informe em decision_maker_contact_source a melhor fonte publica que comprova esse contato;
+- mantenha phone, whatsapp e email para contatos gerais da empresa quando forem diferentes do contato do decisor;
+- se nao existir contato profissional publico do decisor, nao invente e deixe os campos correspondentes vazios;
+- avalie a presenca de marketing da empresa;
+- identifique sinais de expansao, investimento, contratacoes, novos produtos, novas unidades ou movimentacoes que possam gerar oportunidade;
+- explique objetivamente por que a empresa pode precisar da Level UP;
+- sugira uma abordagem curta e especifica para aquela empresa;
+- estime um valor mensal comercial plausivel entre R$ 2.500 e R$ 6.000, sem afirmar que esse e o orcamento real da empresa;
+- atribua temperatura, prioridade e score de prospeccao;
+- inclua as fontes publicas utilizadas.
 
+Não repita empresas dentro desta pesquisa.
 Não repita empresas dentro desta pesquisa.
 
 IMPORTANTE: as empresas abaixo já foram apresentadas, cadastradas
@@ -596,6 +655,18 @@ como repetida e não a apresente.
                         decision_maker_role: {
                           type: "string",
                         },
+                        decision_maker_phone: {
+                          type: "string",
+                        },
+                        decision_maker_whatsapp: {
+                          type: "string",
+                        },
+                        decision_maker_email: {
+                          type: "string",
+                        },
+                        decision_maker_contact_source: {
+                          type: "string",
+                        },
                         marketing_diagnosis: {
                           type: "string",
                         },
@@ -633,7 +704,7 @@ como repetida e não a apresente.
                         },
                         sources: {
                           type: "array",
-                          maxItems: 5,
+                          maxItems: 8,
                           items: {
                             type: "string",
                           },
@@ -651,6 +722,10 @@ como repetida e não a apresente.
                         "state",
                         "decision_maker_name",
                         "decision_maker_role",
+                        "decision_maker_phone",
+                        "decision_maker_whatsapp",
+                        "decision_maker_email",
+                        "decision_maker_contact_source",
                         "marketing_diagnosis",
                         "commercial_opportunity",
                         "recommended_approach",
@@ -926,9 +1001,95 @@ export async function saveProspectedCompanyAction(
       "recommended_approach"
     );
 
+    const decisionMakerPhone =
+      readText(
+        formData,
+        "decision_maker_phone"
+      );
+
+    const decisionMakerWhatsapp =
+      readText(
+        formData,
+        "decision_maker_whatsapp"
+      );
+
+    const decisionMakerEmail =
+      readText(
+        formData,
+        "decision_maker_email"
+      );
+
+    const decisionMakerContactSource =
+      readText(
+        formData,
+        "decision_maker_contact_source"
+      );
+
+    const companyPhone =
+      readText(
+        formData,
+        "phone"
+      );
+
+    const companyWhatsapp =
+      readText(
+        formData,
+        "whatsapp"
+      );
+
+    const companyEmail =
+      readText(
+        formData,
+        "email"
+      );
+
     const notes = [
       "PESQUISA DO PROSPECTOR IA",
       "",
+      (
+        decisionMakerPhone ||
+        decisionMakerWhatsapp ||
+        decisionMakerEmail
+      )
+        ? [
+            "Contato profissional publico do decisor:",
+            decisionMakerPhone
+              ? "Telefone: " + decisionMakerPhone
+              : "",
+            decisionMakerWhatsapp
+              ? "WhatsApp: " + decisionMakerWhatsapp
+              : "",
+            decisionMakerEmail
+              ? "E-mail: " + decisionMakerEmail
+              : "",
+          ]
+            .filter(Boolean)
+            .join("\n")
+        : "",
+      decisionMakerContactSource
+        ? "\nFonte publica do contato do decisor:\n" +
+          decisionMakerContactSource
+        : "",
+      (
+        companyPhone ||
+        companyWhatsapp ||
+        companyEmail
+      )
+        ? [
+            "\nContato geral da empresa:",
+            companyPhone
+              ? "Telefone: " + companyPhone
+              : "",
+            companyWhatsapp
+              ? "WhatsApp: " + companyWhatsapp
+              : "",
+            companyEmail
+              ? "E-mail: " + companyEmail
+              : "",
+          ]
+            .filter(Boolean)
+            .join("\n")
+        : "",
       diagnosis
         ? `Diagnóstico de marketing:` +
           `\n${diagnosis}`
@@ -1009,20 +1170,17 @@ export async function saveProspectedCompanyAction(
             "instagram"
           ) || null,
         phone:
-          readText(
-            formData,
-            "phone"
-          ) || null,
+          decisionMakerPhone ||
+          companyPhone ||
+          null,
         whatsapp:
-          readText(
-            formData,
-            "whatsapp"
-          ) || null,
+          decisionMakerWhatsapp ||
+          companyWhatsapp ||
+          null,
         email:
-          readText(
-            formData,
-            "email"
-          ) || null,
+          decisionMakerEmail ||
+          companyEmail ||
+          null,
         city:
           readText(
             formData,

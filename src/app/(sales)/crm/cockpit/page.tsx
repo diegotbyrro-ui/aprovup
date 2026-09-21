@@ -75,8 +75,64 @@ type ScoredLead = DashboardLead & {
   daysWithoutContact: number | null;
 };
 
-const MONTHLY_GOAL = 50000;
-const CURRENT_RECURRING_REVENUE = 31000;
+function getConfiguredMonthlyGoal() {
+  const rawValue =
+    String(
+      process.env.CRM_monthlyGoal ??
+      ""
+    )
+      .trim()
+      .replace(",", ".");
+
+  const parsedValue =
+    Number(rawValue);
+
+  if (
+    Number.isFinite(parsedValue) &&
+    parsedValue > 0
+  ) {
+    return parsedValue;
+  }
+
+  return 50000;
+}
+
+function normalizeStageName(
+  value: string
+) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function isWonStage(
+  stage: DashboardStage | null
+) {
+  if (
+    !stage ||
+    !stage.is_closed
+  ) {
+    return false;
+  }
+
+  const normalized =
+    normalizeStageName(
+      stage.name
+    );
+
+  return [
+    "fechado",
+    "ganho",
+    "cliente",
+    "contrato assinado",
+    "won",
+  ].some(
+    (term) =>
+      normalized.includes(term)
+  );
+}
 
 function formatMoney(value: number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -509,6 +565,46 @@ export default async function DashboardPage() {
     (lead) => lead.stage?.is_closed
   );
 
+  const explicitWonStageIds =
+    new Set(
+      stages
+        .filter(
+          (stage) =>
+            isWonStage(stage)
+        )
+        .map(
+          (stage) =>
+            stage.id
+        )
+    );
+
+  const revenueLeads =
+    explicitWonStageIds.size > 0
+      ? scoredLeads.filter(
+          (lead) =>
+            Boolean(
+              lead.stage_id &&
+              explicitWonStageIds.has(
+                lead.stage_id
+              )
+            )
+        )
+      : closedLeads;
+
+  const currentRecurringRevenue =
+    revenueLeads.reduce(
+      (total, lead) =>
+        total +
+        Number(
+          lead.estimated_value ??
+          0
+        ),
+      0
+    );
+
+  const monthlyGoal =
+    getConfiguredMonthlyGoal();
+
   const pipelineValue = activeLeads.reduce(
     (total, lead) =>
       total +
@@ -603,15 +699,15 @@ export default async function DashboardPage() {
   const goalPercentage = Math.min(
     100,
     Math.round(
-      (CURRENT_RECURRING_REVENUE /
-        MONTHLY_GOAL) *
+      (currentRecurringRevenue /
+        monthlyGoal) *
         100
     )
   );
 
   const goalRemaining = Math.max(
-    MONTHLY_GOAL -
-      CURRENT_RECURRING_REVENUE,
+    monthlyGoal -
+      currentRecurringRevenue,
     0
   );
 
@@ -1203,10 +1299,10 @@ export default async function DashboardPage() {
 
                 <span>
                   {formatMoney(
-                    CURRENT_RECURRING_REVENUE
+                    currentRecurringRevenue
                   )}{" "}
                   de{" "}
-                  {formatMoney(MONTHLY_GOAL)}
+                  {formatMoney(monthlyGoal)}
                 </span>
               </div>
 

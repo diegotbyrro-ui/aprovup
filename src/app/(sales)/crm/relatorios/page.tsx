@@ -798,7 +798,7 @@ export default async function ReportsPage({
                     ? "reports-period-active"
                     : ""
                 }
-                href={`/relatorios?period=${value}`}
+                href={`/crm/relatorios?period=${value}`}
                 key={value}
               >
                 {label}
