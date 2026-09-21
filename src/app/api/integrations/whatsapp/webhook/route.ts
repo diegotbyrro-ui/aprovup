@@ -30,7 +30,7 @@ export const dynamic =
   'force-dynamic';
 
 export const maxDuration =
-  120;
+  300;
 
 
 function safeEqual(

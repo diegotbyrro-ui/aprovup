@@ -1364,6 +1364,11 @@ export async function processWhatsappEvent(
     }
 
 
+    const directorOverride =
+      user.role ===
+        'DIRECTOR';
+
+
     await prisma
       .secretaryWhatsappMember
       .update({
@@ -1505,11 +1510,14 @@ export async function processWhatsappEvent(
         'CANCELAR'
     ) {
       if (
-        !member
-          .canConfirmActions ||
-        !hasPermission(
-          user,
-          'secretary.act'
+        !directorOverride &&
+        (
+          !member
+            .canConfirmActions ||
+          !hasPermission(
+            user,
+            'secretary.act'
+          )
         )
       ) {
         await sendWhatsappText({
@@ -1725,11 +1733,14 @@ export async function processWhatsappEvent(
         conversation,
 
         canExecuteActions:
-          member
-            .canConfirmActions &&
-          hasPermission(
-            user,
-            'secretary.act'
+          directorOverride ||
+          (
+            member
+              .canConfirmActions &&
+            hasPermission(
+              user,
+              'secretary.act'
+            )
           ),
       });
 
@@ -1738,11 +1749,137 @@ export async function processWhatsappEvent(
       result.answer;
 
 
+    let pendingAction =
+      result.pendingAction;
+
+
     if (
-      result.pendingAction
+      directorOverride &&
+      pendingAction
+    ) {
+      try {
+        const executed =
+          await executeSecretaryPendingAction({
+            agencyId:
+              event.agencyId,
+
+            userId:
+              user.id,
+
+            actionId:
+              pendingAction.id,
+
+            decision:
+              'confirm',
+
+            channel:
+              'WHATSAPP',
+
+            authorName:
+              member.displayName ||
+              user.name ||
+              user.email,
+          });
+
+
+        answer +=
+          '\n\n*Ordem da diretoria executada.*\n' +
+          executed.content +
+          (
+            executed.htmlLink
+              ? '\n' +
+                executed.htmlLink
+              : ''
+          );
+
+
+        pendingAction =
+          null;
+      }
+      catch (
+        actionError
+      ) {
+        answer +=
+          '\n\n*Nao consegui executar a acao:* ' +
+          (
+            actionError instanceof Error
+              ? actionError.message
+              : String(
+                  actionError
+                )
+          );
+      }
+    }
+
+
+    if (
+      directorOverride &&
+      result.teamAnnouncement
+    ) {
+      try {
+        const delivery =
+          await sendDirectorTeamAnnouncement({
+            agencyId:
+              event.agencyId,
+
+            requestedByUserId:
+              user.id,
+
+            message:
+              result.teamAnnouncement,
+          });
+
+
+        answer +=
+          '\n\n*Aviso da diretoria processado.*' +
+          '\nEnviados: ' +
+          String(
+            delivery.sent
+          ) +
+          '/' +
+          String(
+            delivery.total
+          ) +
+          (
+            delivery.waitingTemplate >
+              0
+              ? '\nAguardando template do WhatsApp: ' +
+                String(
+                  delivery.waitingTemplate
+                )
+              : ''
+          ) +
+          (
+            delivery.errors >
+              0
+              ? '\nErros: ' +
+                String(
+                  delivery.errors
+                )
+              : ''
+          );
+      }
+      catch (
+        announceError
+      ) {
+        answer +=
+          '\n\n*Nao consegui avisar a equipe:* ' +
+          (
+            announceError instanceof Error
+              ? announceError.message
+              : String(
+                  announceError
+                )
+          );
+      }
+    }
+
+
+    if (
+      pendingAction
     ) {
       answer +=
-        '\n\n*Confirmação necessária:* responda *CONFIRMAR* para executar ou *CANCELAR* para desistir.';
+        '\n\n*Confirmacao necessaria:* responda *CONFIRMAR* para executar ou *CANCELAR* para desistir.';
     }
 
 
@@ -1757,18 +1894,16 @@ export async function processWhatsappEvent(
             'ASSISTANT',
 
           content:
-            result.answer,
+            answer,
 
           inputType:
             'TEXT',
 
           metadata:
-            result.pendingAction
+            pendingAction
               ? {
                   pendingActionId:
-                    result
-                      .pendingAction
-                      .id,
+                    pendingAction.id,
                 }
               : undefined,
         },
@@ -1860,6 +1995,22 @@ export async function processWhatsappEvent(
             new Date(),
         },
       });
+
+
+    await sendWhatsappText({
+      agencyId:
+        event.agencyId,
+
+      to:
+        event.fromPhone,
+
+      text:
+        'Tive um problema ao processar esse pedido agora. O erro ficou registrado no AprovUp. Pode me enviar novamente em alguns segundos.',
+    })
+      .catch(
+        () =>
+          null
+      );
 
 
     console.error(
@@ -1977,26 +2128,43 @@ async function sendProactive({
     );
 
 
-  const isEveningAgenda =
-    proactiveHour ===
-      18 &&
-    (
-      dedupKey.startsWith(
-        'calendar-tomorrow:'
-      ) ||
-      dedupKey.startsWith(
-        'capture-tomorrow:'
-      )
+  const isDirectorCommand =
+    dedupKey.startsWith(
+      'director-command:'
+    );
+
+
+  const scheduledPrefixes = [
+    'daily:',
+    'approval-digest:',
+    'calendar-tomorrow:',
+    'calendar-late-change:',
+    'calendar-today-change:',
+    'calendar-1h:',
+    'capture-tomorrow:',
+    'capture-upcoming:',
+  ];
+
+
+  const isScheduledMessage =
+    scheduledPrefixes.some(
+      (
+        prefix
+      ) =>
+        dedupKey.startsWith(
+          prefix
+        )
     );
 
 
   if (
-    proactiveHour <
-      8 ||
+    !isDirectorCommand &&
+    !isScheduledMessage &&
     (
+      proactiveHour <
+        8 ||
       proactiveHour >=
-        18 &&
-      !isEveningAgenda
+        18
     )
   ) {
     return {
@@ -2346,6 +2514,251 @@ async function sendProactive({
   }
 }
 
+
+
+export async function sendDirectorTeamAnnouncement({
+  agencyId,
+  requestedByUserId,
+  message,
+}: {
+  agencyId: string;
+  requestedByUserId: string;
+  message: string;
+}) {
+  const director =
+    await prisma.user.findFirst({
+      where: {
+        id:
+          requestedByUserId,
+
+        agencyId,
+
+        status:
+          'APROVADO',
+
+        role:
+          'DIRECTOR',
+      },
+
+      select: {
+        id:
+          true,
+
+        name:
+          true,
+      },
+    });
+
+
+  if (!director) {
+    throw new Error(
+      'Somente a diretoria pode enviar avisos gerais pela LIV.'
+    );
+  }
+
+
+  const cleanMessage =
+    String(
+      message ||
+      ''
+    )
+      .trim()
+      .slice(
+        0,
+        3000
+      );
+
+
+  if (!cleanMessage) {
+    throw new Error(
+      'Informe a mensagem que deve ser enviada para a equipe.'
+    );
+  }
+
+
+  const members =
+    await prisma
+      .secretaryWhatsappMember
+      .findMany({
+        where: {
+          agencyId,
+
+          isActive:
+            true,
+
+          userId: {
+            not:
+              null,
+          },
+        },
+
+        orderBy: {
+          displayName:
+            'asc',
+        },
+      });
+
+
+  const userIds =
+    members
+      .map(
+        (
+          member
+        ) =>
+          member.userId
+      )
+      .filter(
+        (
+          value
+        ): value is string =>
+          Boolean(
+            value
+          )
+      );
+
+
+  const users =
+    userIds.length
+      ? await prisma.user
+          .findMany({
+            where: {
+              agencyId,
+
+              id: {
+                in:
+                  userIds,
+              },
+
+              status:
+                'APROVADO',
+            },
+
+            select: {
+              id:
+                true,
+            },
+          })
+      : [];
+
+
+  const approvedIds =
+    new Set(
+      users.map(
+        (
+          user
+        ) =>
+          user.id
+      )
+    );
+
+
+  const recipients =
+    members.filter(
+      (
+        member
+      ) =>
+        Boolean(
+          member.userId &&
+          member.userId !==
+            requestedByUserId &&
+          approvedIds.has(
+            member.userId
+          )
+        )
+    );
+
+
+  const commandKey =
+    Date.now()
+      .toString(
+        36
+      );
+
+
+  let sent =
+    0;
+
+  let waitingTemplate =
+    0;
+
+  let skipped =
+    0;
+
+  let errors =
+    0;
+
+
+  for (
+    const member
+    of recipients
+  ) {
+    const result =
+      await sendProactive({
+        agencyId,
+
+        memberId:
+          member.id,
+
+        toPhone:
+          member.phoneE164,
+
+        title:
+          'Aviso da diretoria',
+
+        message:
+          cleanMessage,
+
+        dedupKey:
+          'director-command:' +
+          requestedByUserId +
+          ':' +
+          commandKey +
+          ':' +
+          member.id,
+      });
+
+
+    if (
+      result.status ===
+        'SENT'
+    ) {
+      sent +=
+        1;
+    }
+    else if (
+      result.status ===
+        'WAITING_TEMPLATE'
+    ) {
+      waitingTemplate +=
+        1;
+    }
+    else if (
+      result.status ===
+        'SKIPPED'
+    ) {
+      skipped +=
+        1;
+    }
+    else {
+      errors +=
+        1;
+    }
+  }
+
+
+  return {
+    total:
+      recipients.length,
+
+    sent,
+
+    waitingTemplate,
+
+    skipped,
+
+    errors,
+  };
+}
 
 
 export async function notifyEmergencyDemandReadyToSocialMedia({
@@ -3036,6 +3449,15 @@ export async function deliverSecretaryAlertsToWhatsapp() {
       );
 
 
+    if (
+      local.hour !==
+        18
+    ) {
+      approvalAlerts.length =
+        0;
+    }
+
+
     for (
       const recipient
       of recipients
@@ -3380,13 +3802,13 @@ export async function deliverSecretaryDailyBriefs() {
 
 
   /*
-   * O resumo é enviado somente na janela das 08h.
+   * O resumo é enviado somente na janela das 18h.
    * O dedup individual impede mais de uma mensagem
    * para a mesma pessoa no mesmo dia.
    */
   if (
     local.hour !==
-    8
+    18
   ) {
     return 0;
   }
@@ -3850,7 +4272,7 @@ export async function deliverSecretaryDailyBriefs() {
 
       const message =
         [
-          'Bom dia, ' +
+          'Boa noite, ' +
             firstName +
             '!',
 
@@ -4182,8 +4604,10 @@ export async function deliverSecretaryCaptureReminders() {
      * com os roteiros da captação.
      */
     const tomorrowSchedules =
-      local.hour ===
-        18
+      local.hour >=
+        18 &&
+      local.hour <=
+        23
         ? await prisma
             .captureSchedule
             .findMany({
@@ -5013,6 +5437,15 @@ function calendarEventMatchesMember({
 
   if (
     normalized.includes(
+      'reuniao semanal level up'
+    )
+  ) {
+    return true;
+  }
+
+
+  if (
+    normalized.includes(
       ' equipe '
     ) ||
     normalized.includes(
@@ -5198,10 +5631,18 @@ export async function deliverSecretaryCalendarReminders() {
      * de segunda-feira.
      */
     if (
-      local.weekday ===
-        'Sun' &&
-      local.hour ===
-        18
+      (
+        local.weekday ===
+          'Sun' &&
+        local.hour >=
+          18
+      ) ||
+      (
+        local.weekday ===
+          'Mon' &&
+        local.hour <
+          9
+      )
     ) {
       await ensureWeeklyAgencyMeeting(
         connection.agencyId
@@ -5561,8 +6002,10 @@ export async function deliverSecretaryCalendarReminders() {
        ================================================ */
 
     if (
-      local.hour ===
+      local.hour >=
         18 &&
+      local.hour <=
+        23 &&
       tomorrowEvents.length
     ) {
       for (

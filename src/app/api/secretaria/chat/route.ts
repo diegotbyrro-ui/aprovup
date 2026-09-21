@@ -19,6 +19,14 @@ import {
   runSecretaryTurn,
 } from '@/lib/secretaryAi';
 
+import {
+  executeSecretaryPendingAction,
+} from '@/lib/secretaryActions';
+
+import {
+  sendDirectorTeamAnnouncement,
+} from '@/lib/secretaryWhatsApp';
+
 
 export const runtime =
   'nodejs';
@@ -27,7 +35,7 @@ export const dynamic =
   'force-dynamic';
 
 export const maxDuration =
-  120;
+  300;
 
 
 export async function POST(
@@ -259,6 +267,130 @@ export async function POST(
       });
 
 
+    const directorOverride =
+      access.user.role ===
+        'DIRECTOR';
+
+
+    let answer =
+      result.answer;
+
+
+    let pendingAction =
+      result.pendingAction;
+
+
+    if (
+      directorOverride &&
+      pendingAction
+    ) {
+      try {
+        const executed =
+          await executeSecretaryPendingAction({
+            agencyId:
+              access.user.agencyId,
+
+            userId:
+              access.user.id,
+
+            actionId:
+              pendingAction.id,
+
+            decision:
+              'confirm',
+
+            channel:
+              'WEB',
+
+            authorName:
+              access.user.name ||
+              access.user.email,
+          });
+
+
+        answer +=
+          '\n\nOrdem da diretoria executada.\n' +
+          executed.content +
+          (
+            executed.htmlLink
+              ? '\n' +
+                executed.htmlLink
+              : ''
+          );
+
+
+        pendingAction =
+          null;
+      }
+      catch (
+        actionError
+      ) {
+        answer +=
+          '\n\nNao consegui executar a acao: ' +
+          (
+            actionError instanceof Error
+              ? actionError.message
+              : String(
+                  actionError
+                )
+          );
+      }
+    }
+
+
+    if (
+      directorOverride &&
+      result.teamAnnouncement
+    ) {
+      try {
+        const delivery =
+          await sendDirectorTeamAnnouncement({
+            agencyId:
+              access.user.agencyId,
+
+            requestedByUserId:
+              access.user.id,
+
+            message:
+              result.teamAnnouncement,
+          });
+
+
+        answer +=
+          '\n\nAviso da diretoria processado. Enviados: ' +
+          String(
+            delivery.sent
+          ) +
+          '/' +
+          String(
+            delivery.total
+          ) +
+          (
+            delivery.waitingTemplate >
+              0
+              ? '. Aguardando template do WhatsApp: ' +
+                String(
+                  delivery.waitingTemplate
+                )
+              : ''
+          );
+      }
+      catch (
+        announceError
+      ) {
+        answer +=
+          '\n\nNao consegui avisar a equipe: ' +
+          (
+            announceError instanceof Error
+              ? announceError.message
+              : String(
+                  announceError
+                )
+          );
+      }
+    }
+
+
     const assistant =
       await prisma
         .secretaryMessage
@@ -271,19 +403,16 @@ export async function POST(
               'ASSISTANT',
 
             content:
-              result.answer,
+              answer,
 
             inputType:
               'TEXT',
 
             metadata:
-              result
-                .pendingAction
+              pendingAction
                 ? {
                     pendingActionId:
-                      result
-                        .pendingAction
-                        .id,
+                      pendingAction.id,
                   }
                 : undefined,
           },
@@ -331,9 +460,7 @@ export async function POST(
             .toISOString(),
       },
 
-      pendingAction:
-        result
-          .pendingAction,
+      pendingAction,
     });
   }
   catch (
