@@ -26,6 +26,41 @@ function statusLabel(status: string) {
   return status;
 }
 
+function formatPublicationDate(
+  date:
+    Date |
+    null
+) {
+  if (
+    !date
+  ) {
+    return "Sem data definida";
+  }
+
+
+  return new Intl.DateTimeFormat(
+    "pt-BR",
+    {
+      timeZone:
+        "America/Maceio",
+
+      day:
+        "2-digit",
+
+      month:
+        "2-digit",
+
+      year:
+        "numeric",
+    }
+  ).format(
+    new Date(
+      date
+    )
+  );
+}
+
+
 function isVideo(content: {
   finalMediaType?: string | null;
   format?: string | null;
@@ -428,6 +463,15 @@ export default async function FinalApprovalPage({
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
                           {statusLabel(content.status)}
                         </span>
+
+                        <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                          {
+                            "Publica\u00e7\u00e3o: " +
+                            formatPublicationDate(
+                              content.plannedDate
+                            )
+                          }
+                        </span>
                       </div>
 
                       <h2 className="mt-4 text-2xl font-black text-slate-900">
@@ -457,6 +501,15 @@ export default async function FinalApprovalPage({
 
                               <p className="text-xs text-slate-400">
                                 Publicação em aprovação
+                              </p>
+
+                              <p className="mt-0.5 text-[11px] font-bold text-amber-600">
+                                {
+                                  "Data prevista: " +
+                                  formatPublicationDate(
+                                    content.plannedDate
+                                  )
+                                }
                               </p>
                             </div>
                           </div>
