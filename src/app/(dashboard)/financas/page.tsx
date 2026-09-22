@@ -715,6 +715,9 @@ export default async function FinancePage({
 
       erro?:
         string;
+
+      clientes?:
+        string;
     }>;
 }) {
 
@@ -1131,7 +1134,7 @@ export default async function FinancePage({
   }
 
 
-  const topClients =
+  const rankedClients =
     Array.from(
       revenueByClient.values()
     )
@@ -1142,11 +1145,21 @@ export default async function FinancePage({
         ) =>
           b.value -
           a.value
-      )
-      .slice(
-        0,
-        5
       );
+
+
+  const showAllClients =
+    params.clientes ===
+    "todos";
+
+
+  const visibleClients =
+    showAllClients
+      ? rankedClients
+      : rankedClients.slice(
+          0,
+          5
+        );
 
 
   const graphData =
@@ -2157,9 +2170,47 @@ export default async function FinancePage({
 
                 <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
-                  <p className="text-[11px] font-black text-slate-950">
-                    Receita por cliente
-                  </p>
+                  <div className="flex items-start justify-between gap-4">
+
+                    <p className="text-[11px] font-black text-slate-950">
+                      Receita por cliente
+                    </p>
+
+
+                    {
+                      rankedClients.length >
+                      5
+                        ? (
+                          <Link
+                            href={
+                              "/financas?aba=dashboard&periodo=" +
+                              encodeURIComponent(
+                                period
+                              ) +
+                              (
+                                showAllClients
+                                  ? ""
+                                  : "&clientes=todos"
+                              )
+                            }
+                            className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[8px] font-black text-blue-600 transition hover:border-blue-200 hover:bg-blue-50"
+                          >
+                            {
+                              showAllClients
+                                ? "Ver menos"
+                                : "Ver mais (" +
+                                  String(
+                                    rankedClients.length -
+                                    5
+                                  ) +
+                                  ")"
+                            }
+                          </Link>
+                        )
+                        : null
+                    }
+
+                  </div>
 
                   <p className="mt-1 text-[9px] font-semibold text-slate-400">
                     Participação no faturamento do mês
@@ -2169,8 +2220,8 @@ export default async function FinancePage({
                   <div className="mt-5 space-y-4">
 
                     {
-                      topClients.length
-                        ? topClients.map(
+                      visibleClients.length
+                        ? visibleClients.map(
                             (
                               client
                             ) => {
