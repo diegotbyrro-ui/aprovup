@@ -50,6 +50,7 @@ type MenuDefinition = {
     | "filmmaker"
     | "design"
     | "crm"
+    | "finance"
     | "mindmap";
   activePrefixes: string[];
 };
@@ -186,6 +187,25 @@ export async function AppSidebar() {
         "/crm",
       ],
     },
+
+    {
+      name:
+        "Finanças",
+
+      icon:
+        "finance",
+
+      path:
+        "/financas",
+
+      permission:
+        "settings.manage",
+
+      activePrefixes: [
+        "/financas",
+      ],
+    },
+
 
     {
       name:

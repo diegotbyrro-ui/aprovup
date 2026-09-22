@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Lock,
   PenTool,
+  WalletCards,
   Users,
   Video,
   type LucideIcon,
@@ -28,6 +29,7 @@ export type AppSidebarNavItem = {
     | "filmmaker"
     | "design"
     | "crm"
+    | "finance"
     | "mindmap";
   activePrefixes: string[];
 };
@@ -43,6 +45,7 @@ const iconMap: Record<
   filmmaker: Video,
   design: PenTool,
   crm: BriefcaseBusiness,
+  finance: WalletCards,
   mindmap: BrainCircuit,
 };
 
