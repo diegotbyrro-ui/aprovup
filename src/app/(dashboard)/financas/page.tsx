@@ -1,8 +1,11 @@
+import Link from "next/link";
+
 import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
   CalendarDays,
+  CheckCircle2,
   ChevronDown,
   CircleAlert,
   CircleDollarSign,
@@ -16,8 +19,18 @@ import {
 } from "lucide-react";
 
 import {
+  prisma,
+} from "@/lib/prisma";
+
+import {
   requirePermission,
 } from "@/lib/userAccess";
+
+import {
+  createFinanceEntryAction,
+  reopenFinanceEntryAction,
+  settleFinanceEntryAction,
+} from "./actions";
 
 
 export const dynamic =
@@ -33,185 +46,322 @@ const currency =
 
       currency:
         "BRL",
-
-      maximumFractionDigits:
-        0,
     }
   );
 
 
-const revenueData = [
-  {
-    month:
-      "Abr",
+const monthFormatter =
+  new Intl.DateTimeFormat(
+    "pt-BR",
+    {
+      timeZone:
+        "America/Maceio",
 
-    income:
-      27,
+      month:
+        "long",
 
-    expenses:
-      17,
-  },
-  {
-    month:
-      "Mai",
-
-    income:
-      30,
-
-    expenses:
-      18,
-  },
-  {
-    month:
-      "Jun",
-
-    income:
-      29,
-
-    expenses:
-      19,
-  },
-  {
-    month:
-      "Jul",
-
-    income:
-      31,
-
-    expenses:
-      18,
-  },
-  {
-    month:
-      "Ago",
-
-    income:
-      33,
-
-    expenses:
-      19,
-  },
-  {
-    month:
-      "Set",
-
-    income:
-      36,
-
-    expenses:
-      20,
-  },
-];
+      year:
+        "numeric",
+    }
+  );
 
 
-const clientRevenue = [
-  {
-    name:
-      "Rocha Empreendimentos",
+const shortMonthFormatter =
+  new Intl.DateTimeFormat(
+    "pt-BR",
+    {
+      timeZone:
+        "America/Maceio",
 
-    value:
-      5200,
-
-    share:
-      15,
-  },
-  {
-    name:
-      "Autochina Veículos",
-
-    value:
-      4200,
-
-    share:
-      12,
-  },
-  {
-    name:
-      "Colégio Sacramento",
-
-    value:
-      3200,
-
-    share:
-      9,
-  },
-  {
-    name:
-      "SLAC Saúde",
-
-    value:
-      2800,
-
-    share:
-      8,
-  },
-  {
-    name:
-      "Escola O Verbo",
-
-    value:
-      2500,
-
-    share:
-      7,
-  },
-];
+      month:
+        "short",
+    }
+  );
 
 
-const upcoming = [
-  {
-    type:
-      "receive",
+const dateFormatter =
+  new Intl.DateTimeFormat(
+    "pt-BR",
+    {
+      timeZone:
+        "America/Maceio",
 
-    title:
-      "Mensalidade de cliente",
+      day:
+        "2-digit",
 
-    subtitle:
-      "Vencimento hoje",
+      month:
+        "2-digit",
 
-    value:
-      2500,
-  },
-  {
-    type:
-      "pay",
+      year:
+        "numeric",
+    }
+  );
 
-    title:
-      "Ferramentas e softwares",
 
-    subtitle:
-      "Vencimento em 2 dias",
+function formatMoney(
+  cents:
+    number
+) {
+  return currency.format(
+    cents /
+    100
+  );
+}
 
-    value:
-      1480,
-  },
-  {
-    type:
-      "receive",
 
-    title:
-      "Contrato mensal",
+function currentPeriodKey() {
+  const parts =
+    new Intl.DateTimeFormat(
+      "en-CA",
+      {
+        timeZone:
+          "America/Maceio",
 
-    subtitle:
-      "Vencimento em 3 dias",
+        year:
+          "numeric",
 
-    value:
-      4200,
-  },
-  {
-    type:
-      "pay",
+        month:
+          "2-digit",
+      }
+    ).formatToParts(
+      new Date()
+    );
 
-    title:
-      "Prestador de serviço",
 
-    subtitle:
-      "Vencimento em 4 dias",
+  const year =
+    parts.find(
+      (
+        part
+      ) =>
+        part.type ===
+        "year"
+    )?.value;
 
-    value:
-      2100,
-  },
-];
+
+  const month =
+    parts.find(
+      (
+        part
+      ) =>
+        part.type ===
+        "month"
+    )?.value;
+
+
+  return (
+    year &&
+    month
+      ? year +
+        "-" +
+        month
+      : "2026-09"
+  );
+}
+
+
+function validPeriod(
+  value?:
+    string
+) {
+  if (
+    value &&
+    /^\d{4}-\d{2}$/.test(
+      value
+    )
+  ) {
+    const month =
+      Number(
+        value.slice(
+          5,
+          7
+        )
+      );
+
+
+    if (
+      month >=
+        1 &&
+      month <=
+        12
+    ) {
+      return value;
+    }
+  }
+
+
+  return currentPeriodKey();
+}
+
+
+function monthRange(
+  period:
+    string
+) {
+  const year =
+    Number(
+      period.slice(
+        0,
+        4
+      )
+    );
+
+
+  const month =
+    Number(
+      period.slice(
+        5,
+        7
+      )
+    );
+
+
+  const start =
+    new Date(
+      Date.UTC(
+        year,
+        month -
+          1,
+        1,
+        3,
+        0,
+        0
+      )
+    );
+
+
+  const end =
+    new Date(
+      Date.UTC(
+        year,
+        month,
+        1,
+        3,
+        0,
+        0
+      )
+    );
+
+
+  return {
+    start,
+    end,
+  };
+}
+
+
+function shiftPeriod(
+  period:
+    string,
+  offset:
+    number
+) {
+  const year =
+    Number(
+      period.slice(
+        0,
+        4
+      )
+    );
+
+
+  const month =
+    Number(
+      period.slice(
+        5,
+        7
+      )
+    );
+
+
+  const date =
+    new Date(
+      Date.UTC(
+        year,
+        month -
+          1 +
+          offset,
+        15,
+        15,
+        0,
+        0
+      )
+    );
+
+
+  return (
+    String(
+      date.getUTCFullYear()
+    ) +
+    "-" +
+    String(
+      date.getUTCMonth() +
+        1
+    ).padStart(
+      2,
+      "0"
+    )
+  );
+}
+
+
+function sum(
+  values:
+    number[]
+) {
+  return values.reduce(
+    (
+      total,
+      value
+    ) =>
+      total +
+      value,
+    0
+  );
+}
+
+
+function statusInfo(
+  status:
+    string,
+  dueDate:
+    Date
+) {
+  if (
+    status ===
+    "PAGO"
+  ) {
+    return {
+      label:
+        "Pago",
+
+      className:
+        "bg-emerald-50 text-emerald-700",
+    };
+  }
+
+
+  if (
+    dueDate.getTime() <
+    Date.now()
+  ) {
+    return {
+      label:
+        "Atrasado",
+
+      className:
+        "bg-red-50 text-red-700",
+    };
+  }
+
+
+  return {
+    label:
+      "Pendente",
+
+    className:
+      "bg-amber-50 text-amber-700",
+  };
+}
 
 
 function FinanceCard({
@@ -300,11 +450,911 @@ function FinanceCard({
 }
 
 
-export default async function FinancePage() {
+type Entry = {
+  id:
+    string;
 
-  await requirePermission(
-    "settings.manage"
+  type:
+    string;
+
+  description:
+    string;
+
+  category:
+    string |
+    null;
+
+  amountCents:
+    number;
+
+  dueDate:
+    Date;
+
+  status:
+    string;
+
+  paidAt:
+    Date |
+    null;
+
+  isRecurring:
+    boolean;
+
+  installmentNumber:
+    number |
+    null;
+
+  installmentTotal:
+    number |
+    null;
+
+  client: {
+    id:
+      string;
+
+    name:
+      string;
+  } |
+    null;
+};
+
+
+function FinanceEntryRow({
+  entry,
+  returnTo,
+}: {
+  entry:
+    Entry;
+
+  returnTo:
+    string;
+}) {
+
+  const status =
+    statusInfo(
+      entry.status,
+      entry.dueDate
+    );
+
+
+  return (
+    <div className="grid gap-3 rounded-xl border border-slate-100 bg-white p-3 md:grid-cols-[minmax(0,1.5fr)_130px_130px_110px_auto] md:items-center">
+
+      <div className="min-w-0">
+
+        <div className="flex flex-wrap items-center gap-2">
+
+          <p className="truncate text-[10px] font-black text-slate-900">
+            {entry.description}
+          </p>
+
+          {
+            entry.isRecurring
+              ? (
+                <span className="rounded-md bg-violet-50 px-1.5 py-0.5 text-[7px] font-black text-violet-600">
+                  RECORRENTE
+                  {
+                    entry.installmentNumber &&
+                    entry.installmentTotal
+                      ? " " +
+                        entry.installmentNumber +
+                        "/" +
+                        entry.installmentTotal
+                      : ""
+                  }
+                </span>
+              )
+              : null
+          }
+
+        </div>
+
+        <p className="mt-1 truncate text-[8px] font-semibold text-slate-400">
+          {
+            entry.client
+              ?.name ||
+            "Sem cliente"
+          }
+          {
+            entry.category
+              ? " ? " +
+                entry.category
+              : ""
+          }
+        </p>
+
+      </div>
+
+
+      <div>
+
+        <p className="text-[7px] font-black uppercase tracking-wider text-slate-400">
+          Vencimento
+        </p>
+
+        <p className="mt-1 text-[9px] font-black text-slate-700">
+          {
+            dateFormatter.format(
+              entry.dueDate
+            )
+          }
+        </p>
+
+      </div>
+
+
+      <div>
+
+        <p className="text-[7px] font-black uppercase tracking-wider text-slate-400">
+          Valor
+        </p>
+
+        <p className={
+          "mt-1 text-[10px] font-black " +
+          (
+            entry.type ===
+            "RECEITA"
+              ? "text-emerald-600"
+              : "text-red-600"
+          )
+        }>
+          {
+            entry.type ===
+            "RECEITA"
+              ? "+"
+              : "-"
+          }
+          {
+            formatMoney(
+              entry.amountCents
+            )
+          }
+        </p>
+
+      </div>
+
+
+      <div>
+
+        <span className={
+          "inline-flex rounded-full px-2 py-1 text-[8px] font-black " +
+          status.className
+        }>
+          {status.label}
+        </span>
+
+      </div>
+
+
+      <div className="flex justify-end">
+
+        {
+          entry.status ===
+          "PAGO"
+            ? (
+              <form
+                action={
+                  reopenFinanceEntryAction.bind(
+                    null,
+                    entry.id
+                  )
+                }
+              >
+                <input
+                  type="hidden"
+                  name="returnTo"
+                  value={
+                    returnTo
+                  }
+                />
+
+                <button
+                  type="submit"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-[8px] font-black text-slate-500 hover:bg-slate-50"
+                >
+                  Reabrir
+                </button>
+              </form>
+            )
+            : (
+              <form
+                action={
+                  settleFinanceEntryAction.bind(
+                    null,
+                    entry.id
+                  )
+                }
+              >
+                <input
+                  type="hidden"
+                  name="returnTo"
+                  value={
+                    returnTo
+                  }
+                />
+
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[8px] font-black text-white hover:bg-emerald-700"
+                >
+                  <CheckCircle2
+                    size={11}
+                  />
+
+                  {
+                    entry.type ===
+                    "RECEITA"
+                      ? "Recebido"
+                      : "Pago"
+                  }
+                </button>
+              </form>
+            )
+        }
+
+      </div>
+
+    </div>
   );
+}
+
+
+export default async function FinancePage({
+  searchParams,
+}: {
+  searchParams?:
+    Promise<{
+      aba?:
+        string;
+
+      periodo?:
+        string;
+
+      ok?:
+        string;
+
+      erro?:
+        string;
+    }>;
+}) {
+
+  const user =
+    await requirePermission(
+      "settings.manage"
+    );
+
+
+  const params =
+    searchParams
+      ? await searchParams
+      : {};
+
+
+  const tab =
+    [
+      "dashboard",
+      "receber",
+      "pagar",
+      "fluxo",
+      "relatorios",
+    ].includes(
+      String(
+        params.aba ||
+        ""
+      )
+    )
+      ? String(
+          params.aba
+        )
+      : "dashboard";
+
+
+  const period =
+    validPeriod(
+      params.periodo
+    );
+
+
+  const {
+    start,
+    end,
+  } =
+    monthRange(
+      period
+    );
+
+
+  const [
+    clients,
+    entries,
+  ] =
+    await Promise.all([
+      prisma.client
+        .findMany({
+          where: {
+            agencyId:
+              user.agencyId,
+          },
+
+          select: {
+            id:
+              true,
+
+            name:
+              true,
+          },
+
+          orderBy: {
+            name:
+              "asc",
+          },
+        }),
+
+      prisma.financeEntry
+        .findMany({
+          where: {
+            agencyId:
+              user.agencyId,
+          },
+
+          include: {
+            client: {
+              select: {
+                id:
+                  true,
+
+                name:
+                  true,
+              },
+            },
+          },
+
+          orderBy: [
+            {
+              dueDate:
+                "asc",
+            },
+
+            {
+              createdAt:
+                "asc",
+            },
+          ],
+
+          take:
+            1000,
+        }),
+    ]);
+
+
+  const monthEntries =
+    entries.filter(
+      (
+        entry
+      ) =>
+        entry.dueDate >=
+          start &&
+        entry.dueDate <
+          end
+    );
+
+
+  const revenues =
+    monthEntries.filter(
+      (
+        entry
+      ) =>
+        entry.type ===
+        "RECEITA"
+    );
+
+
+  const expenses =
+    monthEntries.filter(
+      (
+        entry
+      ) =>
+        entry.type ===
+        "DESPESA"
+    );
+
+
+  const revenueTotal =
+    sum(
+      revenues.map(
+        (
+          entry
+        ) =>
+          entry.amountCents
+      )
+    );
+
+
+  const receivedTotal =
+    sum(
+      revenues
+        .filter(
+          (
+            entry
+          ) =>
+            entry.status ===
+            "PAGO"
+        )
+        .map(
+          (
+            entry
+          ) =>
+            entry.amountCents
+        )
+    );
+
+
+  const receivableTotal =
+    sum(
+      revenues
+        .filter(
+          (
+            entry
+          ) =>
+            entry.status !==
+            "PAGO"
+        )
+        .map(
+          (
+            entry
+          ) =>
+            entry.amountCents
+        )
+    );
+
+
+  const expenseTotal =
+    sum(
+      expenses.map(
+        (
+          entry
+        ) =>
+          entry.amountCents
+      )
+    );
+
+
+  const result =
+    revenueTotal -
+    expenseTotal;
+
+
+  const margin =
+    revenueTotal >
+      0
+      ? (
+          result /
+          revenueTotal
+        ) *
+        100
+      : 0;
+
+
+  const recurringRevenue =
+    sum(
+      revenues
+        .filter(
+          (
+            entry
+          ) =>
+            entry.isRecurring
+        )
+        .map(
+          (
+            entry
+          ) =>
+            entry.amountCents
+        )
+    );
+
+
+  const revenueClientIds =
+    new Set(
+      revenues
+        .map(
+          (
+            entry
+          ) =>
+            entry.clientId
+        )
+        .filter(
+          Boolean
+        )
+    );
+
+
+  const averageTicket =
+    revenueClientIds.size >
+      0
+      ? Math.round(
+          revenueTotal /
+          revenueClientIds.size
+        )
+      : 0;
+
+
+  const now =
+    new Date();
+
+
+  const sevenDays =
+    new Date(
+      now.getTime() +
+      7 *
+        24 *
+        60 *
+        60 *
+        1000
+    );
+
+
+  const upcoming =
+    entries
+      .filter(
+        (
+          entry
+        ) =>
+          entry.status !==
+            "PAGO" &&
+          entry.dueDate >=
+            now &&
+          entry.dueDate <=
+            sevenDays
+      )
+      .slice(
+        0,
+        8
+      );
+
+
+  const upcomingReceivable =
+    sum(
+      upcoming
+        .filter(
+          (
+            entry
+          ) =>
+            entry.type ===
+            "RECEITA"
+        )
+        .map(
+          (
+            entry
+          ) =>
+            entry.amountCents
+        )
+    );
+
+
+  const upcomingPayable =
+    sum(
+      upcoming
+        .filter(
+          (
+            entry
+          ) =>
+            entry.type ===
+            "DESPESA"
+        )
+        .map(
+          (
+            entry
+          ) =>
+            entry.amountCents
+        )
+    );
+
+
+  const overdue =
+    entries.filter(
+      (
+        entry
+      ) =>
+        entry.status !==
+          "PAGO" &&
+        entry.dueDate <
+          now
+    );
+
+
+  const overdueRevenue =
+    overdue.filter(
+      (
+        entry
+      ) =>
+        entry.type ===
+        "RECEITA"
+    );
+
+
+  const overdueRevenueTotal =
+    sum(
+      overdueRevenue.map(
+        (
+          entry
+        ) =>
+          entry.amountCents
+      )
+    );
+
+
+  const revenueByClient =
+    new Map<
+      string,
+      {
+        name:
+          string;
+
+        value:
+          number;
+      }
+    >();
+
+
+  for (
+    const entry
+    of revenues
+  ) {
+    if (
+      !entry.client
+    ) {
+      continue;
+    }
+
+
+    const current =
+      revenueByClient.get(
+        entry.client.id
+      );
+
+
+    revenueByClient.set(
+      entry.client.id,
+      {
+        name:
+          entry.client.name,
+
+        value:
+          (
+            current
+              ?.value ||
+            0
+          ) +
+          entry.amountCents,
+      }
+    );
+  }
+
+
+  const topClients =
+    Array.from(
+      revenueByClient.values()
+    )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.value -
+          a.value
+      )
+      .slice(
+        0,
+        5
+      );
+
+
+  const graphData =
+    Array.from(
+      {
+        length:
+          6,
+      },
+      (
+        _,
+        index
+      ) => {
+        const key =
+          shiftPeriod(
+            period,
+            index -
+              5
+          );
+
+
+        const range =
+          monthRange(
+            key
+          );
+
+
+        const monthItems =
+          entries.filter(
+            (
+              entry
+            ) =>
+              entry.dueDate >=
+                range.start &&
+              entry.dueDate <
+                range.end
+          );
+
+
+        return {
+          key,
+
+          label:
+            shortMonthFormatter
+              .format(
+                range.start
+              )
+              .replace(
+                ".",
+                ""
+              ),
+
+          income:
+            sum(
+              monthItems
+                .filter(
+                  (
+                    entry
+                  ) =>
+                    entry.type ===
+                    "RECEITA"
+                )
+                .map(
+                  (
+                    entry
+                  ) =>
+                    entry.amountCents
+                )
+            ),
+
+          expenses:
+            sum(
+              monthItems
+                .filter(
+                  (
+                    entry
+                  ) =>
+                    entry.type ===
+                    "DESPESA"
+                )
+                .map(
+                  (
+                    entry
+                  ) =>
+                    entry.amountCents
+                )
+            ),
+        };
+      }
+    );
+
+
+  const graphMax =
+    Math.max(
+      1,
+      ...graphData.map(
+        (
+          item
+        ) =>
+          Math.max(
+            item.income,
+            item.expenses
+          )
+      )
+    );
+
+
+  const returnTo =
+    "/financas?aba=" +
+    encodeURIComponent(
+      tab
+    ) +
+    "&periodo=" +
+    encodeURIComponent(
+      period
+    );
+
+
+  const categories =
+    new Map<
+      string,
+      {
+        income:
+          number;
+
+        expense:
+          number;
+      }
+    >();
+
+
+  for (
+    const entry
+    of monthEntries
+  ) {
+    const key =
+      entry.category ||
+      "Sem categoria";
+
+
+    const current =
+      categories.get(
+        key
+      ) || {
+        income:
+          0,
+
+        expense:
+          0,
+      };
+
+
+    if (
+      entry.type ===
+      "RECEITA"
+    ) {
+      current.income +=
+        entry.amountCents;
+    }
+    else {
+      current.expense +=
+        entry.amountCents;
+    }
+
+
+    categories.set(
+      key,
+      current
+    );
+  }
+
+
+  const tabItems = [
+    {
+      key:
+        "dashboard",
+
+      label:
+        "Dashboard",
+    },
+    {
+      key:
+        "receber",
+
+      label:
+        "A receber",
+    },
+    {
+      key:
+        "pagar",
+
+      label:
+        "A pagar",
+    },
+    {
+      key:
+        "fluxo",
+
+      label:
+        "Fluxo de caixa",
+    },
+    {
+      key:
+        "relatorios",
+
+      label:
+        "Relat?rios",
+    },
+  ];
 
 
   return (
@@ -328,18 +1378,14 @@ export default async function FinancePage() {
                 Financeiro gerencial
               </span>
 
-              <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-amber-200">
-                Protótipo visual
-              </span>
-
             </div>
 
             <h1 className="mt-4 text-3xl font-black tracking-tight">
-              Finanças
+              Finan?as
             </h1>
 
             <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-slate-300">
-              Uma visão clara da saúde financeira da agência, receitas, despesas, previsões e resultados.
+              Receitas, despesas, vencimentos, fluxo de caixa e resultado financeiro da ag?ncia.
             </p>
 
           </div>
@@ -347,442 +1393,670 @@ export default async function FinancePage() {
 
           <div className="flex flex-wrap items-center gap-2">
 
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-[10px] font-black text-white"
-            >
-              <CalendarDays
-                size={14}
+            <form className="flex items-center gap-2">
+
+              <input
+                type="hidden"
+                name="aba"
+                value={
+                  tab
+                }
               />
 
-              Setembro 2026
-
-              <ChevronDown
-                size={13}
-              />
-            </button>
-
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-[10px] font-black text-white shadow-lg shadow-blue-950/20"
-            >
-              <Plus
-                size={14}
+              <input
+                type="month"
+                name="periodo"
+                defaultValue={
+                  period
+                }
+                className="h-10 rounded-xl border border-white/15 bg-white/10 px-3 text-[10px] font-black text-white [color-scheme:dark]"
               />
 
-              Novo lançamento
-            </button>
+              <button
+                type="submit"
+                className="h-10 rounded-xl border border-white/15 bg-white/10 px-3 text-[9px] font-black"
+              >
+                Aplicar
+              </button>
+
+            </form>
 
           </div>
 
         </div>
 
       </section>
+
+
+      {
+        params.ok ===
+        "1"
+          ? (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[10px] font-black text-emerald-700">
+              Lan?amento criado com sucesso.
+            </div>
+          )
+          : null
+      }
+
+
+      {
+        params.erro ===
+        "1"
+          ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[10px] font-black text-red-700">
+              N?o foi poss?vel criar o lan?amento. Confira os campos obrigat?rios.
+            </div>
+          )
+          : null
+      }
 
 
       <section className="flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
 
-        {[
-          "Dashboard",
-          "A receber",
-          "A pagar",
-          "Fluxo de caixa",
-          "Relatórios",
-        ].map(
-          (
-            item,
-            index
-          ) => (
-            <button
-              type="button"
-              key={
-                item
-              }
-              className={
-                index === 0
-                  ? "shrink-0 rounded-xl bg-slate-950 px-4 py-2.5 text-[10px] font-black text-white"
-                  : "shrink-0 rounded-xl px-4 py-2.5 text-[10px] font-black text-slate-500 hover:bg-slate-50"
-              }
-            >
-              {item}
-            </button>
+        {
+          tabItems.map(
+            (
+              item
+            ) => (
+              <Link
+                key={
+                  item.key
+                }
+                href={
+                  "/financas?aba=" +
+                  item.key +
+                  "&periodo=" +
+                  period
+                }
+                className={
+                  tab ===
+                  item.key
+                    ? "shrink-0 rounded-xl bg-slate-950 px-4 py-2.5 text-[10px] font-black text-white"
+                    : "shrink-0 rounded-xl px-4 py-2.5 text-[10px] font-black text-slate-500 hover:bg-slate-50"
+                }
+              >
+                {item.label}
+              </Link>
+            )
           )
-        )}
+        }
 
       </section>
 
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <details className="group rounded-2xl border border-blue-200 bg-blue-50/30 shadow-sm">
 
-        <FinanceCard
-          label="Faturamento"
-          value="R$ 36.400"
-          helper="+10,3% vs. agosto"
-          icon={
-            <CircleDollarSign
-              size={18}
-            />
-          }
-          tone="blue"
-        />
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
 
-        <FinanceCard
-          label="Recebido"
-          value="R$ 29.800"
-          helper="81,9% do faturamento"
-          icon={
-            <ArrowDownRight
-              size={18}
-            />
-          }
-          tone="green"
-        />
+          <div className="flex items-center gap-3">
 
-        <FinanceCard
-          label="A receber"
-          value="R$ 6.600"
-          helper="5 recebimentos pendentes"
-          icon={
-            <Clock3
-              size={18}
-            />
-          }
-          tone="amber"
-        />
-
-        <FinanceCard
-          label="Despesas"
-          value="R$ 19.700"
-          helper="+3,2% vs. agosto"
-          icon={
-            <ArrowUpRight
-              size={18}
-            />
-          }
-          tone="red"
-        />
-
-        <FinanceCard
-          label="Lucro"
-          value="R$ 16.700"
-          helper="Resultado projetado"
-          icon={
-            <TrendingUp
-              size={18}
-            />
-          }
-          tone="violet"
-        />
-
-        <FinanceCard
-          label="Margem"
-          value="45,9%"
-          helper="Meta: 50%"
-          icon={
-            <BarChart3
-              size={18}
-            />
-          }
-          tone="slate"
-        />
-
-      </section>
-
-
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.7fr)]">
-
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-
-          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
+              <Plus
+                size={16}
+              />
+            </div>
 
             <div>
 
-              <p className="text-[11px] font-black text-slate-950">
-                Evolução financeira
+              <p className="text-[11px] font-black text-slate-900">
+                Novo lan?amento
               </p>
 
-              <p className="mt-1 text-[9px] font-semibold text-slate-400">
-                Entradas x despesas dos últimos 6 meses
+              <p className="mt-0.5 text-[9px] font-semibold text-slate-400">
+                Cadastre uma receita ou despesa.
               </p>
 
             </div>
 
-            <div className="flex items-center gap-4 text-[9px] font-bold text-slate-400">
+          </div>
 
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-blue-500" />
+          <ChevronDown
+            size={16}
+            className="text-slate-400 transition group-open:rotate-180"
+          />
+
+        </summary>
+
+
+        <form
+          action={
+            createFinanceEntryAction
+          }
+          className="grid gap-4 border-t border-blue-100 bg-white p-5 md:grid-cols-2 xl:grid-cols-4"
+        >
+
+          <input
+            type="hidden"
+            name="returnTo"
+            value={
+              returnTo
+            }
+          />
+
+
+          <label className="space-y-1.5">
+
+            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+              Tipo *
+            </span>
+
+            <select
+              name="type"
+              required
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-700 outline-none focus:border-blue-500"
+            >
+              <option value="RECEITA">
                 Receita
-              </span>
+              </option>
 
-              <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-slate-300" />
-                Despesas
-              </span>
+              <option value="DESPESA">
+                Despesa
+              </option>
+            </select>
 
-            </div>
-
-          </div>
+          </label>
 
 
-          <div className="mt-8 flex h-[230px] items-end gap-4 border-b border-slate-100 px-2">
+          <label className="space-y-1.5 xl:col-span-2">
 
-            {revenueData.map(
-              (
-                item
-              ) => (
-                <div
-                  key={
-                    item.month
-                  }
-                  className="flex h-full min-w-0 flex-1 flex-col justify-end"
-                >
+            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+              Descri??o *
+            </span>
 
-                  <div className="flex flex-1 items-end justify-center gap-1.5">
-
-                    <div
-                      className="w-[38%] rounded-t-lg bg-blue-600"
-                      style={{
-                        height:
-                          String(
-                            (
-                              item.income /
-                              40
-                            ) *
-                            100
-                          ) +
-                          "%",
-                      }}
-                    />
-
-                    <div
-                      className="w-[38%] rounded-t-lg bg-slate-200"
-                      style={{
-                        height:
-                          String(
-                            (
-                              item.expenses /
-                              40
-                            ) *
-                            100
-                          ) +
-                          "%",
-                      }}
-                    />
-
-                  </div>
-
-                  <p className="py-3 text-center text-[9px] font-black uppercase tracking-wider text-slate-400">
-                    {item.month}
-                  </p>
-
-                </div>
-              )
-            )}
-
-          </div>
-
-        </article>
-
-
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-
-          <div className="flex items-start justify-between gap-3">
-
-            <div>
-
-              <p className="text-[11px] font-black text-slate-950">
-                Próximos 7 dias
-              </p>
-
-              <p className="mt-1 text-[9px] font-semibold text-slate-400">
-                Entradas e saídas previstas
-              </p>
-
-            </div>
-
-            <Landmark
-              size={17}
-              className="text-slate-300"
+            <input
+              name="description"
+              required
+              placeholder="Ex.: Mensalidade Rocha Empreendimentos"
+              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-500"
             />
 
+          </label>
+
+
+          <label className="space-y-1.5">
+
+            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+              Valor *
+            </span>
+
+            <input
+              name="amount"
+              required
+              inputMode="decimal"
+              placeholder="2500,00"
+              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-500"
+            />
+
+          </label>
+
+
+          <label className="space-y-1.5">
+
+            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+              Vencimento *
+            </span>
+
+            <input
+              type="date"
+              name="dueDate"
+              required
+              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-500"
+            />
+
+          </label>
+
+
+          <label className="space-y-1.5">
+
+            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+              Cliente
+            </span>
+
+            <select
+              name="clientId"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-500"
+            >
+
+              <option value="">
+                Sem cliente
+              </option>
+
+              {
+                clients.map(
+                  (
+                    client
+                  ) => (
+                    <option
+                      key={
+                        client.id
+                      }
+                      value={
+                        client.id
+                      }
+                    >
+                      {client.name}
+                    </option>
+                  )
+                )
+              }
+
+            </select>
+
+          </label>
+
+
+          <label className="space-y-1.5">
+
+            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+              Categoria
+            </span>
+
+            <select
+              name="category"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-500"
+            >
+              <option value="">
+                Sem categoria
+              </option>
+
+              <option>Mensalidade</option>
+              <option>Projeto avulso</option>
+              <option>Servi?o extra</option>
+              <option>Equipe</option>
+              <option>Terceirizados</option>
+              <option>Ferramentas</option>
+              <option>Aluguel</option>
+              <option>Impostos</option>
+              <option>Tr?fego</option>
+              <option>Equipamentos</option>
+              <option>Transporte</option>
+              <option>Outros</option>
+            </select>
+
+          </label>
+
+
+          <label className="space-y-1.5">
+
+            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+              Forma de pagamento
+            </span>
+
+            <select
+              name="paymentMethod"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-500"
+            >
+              <option value="">
+                N?o informado
+              </option>
+
+              <option>Pix</option>
+              <option>Boleto</option>
+              <option>Transfer?ncia</option>
+              <option>Cart?o</option>
+              <option>Dinheiro</option>
+              <option>Outro</option>
+            </select>
+
+          </label>
+
+
+          <label className="space-y-1.5 md:col-span-2 xl:col-span-3">
+
+            <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+              Observa??es
+            </span>
+
+            <input
+              name="notes"
+              placeholder="Informa??es adicionais..."
+              className="h-10 w-full rounded-xl border border-slate-200 px-3 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-500"
+            />
+
+          </label>
+
+
+          <div className="rounded-xl border border-violet-100 bg-violet-50 p-3">
+
+            <label className="flex cursor-pointer items-center gap-2">
+
+              <input
+                type="checkbox"
+                name="isRecurring"
+                className="h-4 w-4 rounded"
+              />
+
+              <span className="text-[9px] font-black text-violet-700">
+                Repetir mensalmente
+              </span>
+
+            </label>
+
+            <input
+              type="number"
+              name="installments"
+              min="2"
+              max="24"
+              defaultValue="12"
+              className="mt-2 h-8 w-full rounded-lg border border-violet-100 bg-white px-2 text-[9px] font-bold text-slate-600"
+            />
+
+            <p className="mt-1 text-[7px] font-semibold text-violet-400">
+              Quantidade de meses.
+            </p>
+
           </div>
 
 
-          <div className="mt-5 grid grid-cols-2 gap-2">
+          <div className="flex items-end md:col-span-2 xl:col-span-4">
 
-            <div className="rounded-xl bg-emerald-50 p-3">
+            <button
+              type="submit"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 text-[9px] font-black text-white hover:bg-blue-700"
+            >
+              <Plus
+                size={13}
+              />
 
-              <p className="text-[8px] font-black uppercase tracking-wider text-emerald-600">
-                A receber
-              </p>
-
-              <p className="mt-1 text-lg font-black text-emerald-900">
-                R$ 8.200
-              </p>
-
-            </div>
-
-            <div className="rounded-xl bg-red-50 p-3">
-
-              <p className="text-[8px] font-black uppercase tracking-wider text-red-600">
-                A pagar
-              </p>
-
-              <p className="mt-1 text-lg font-black text-red-900">
-                R$ 3.580
-              </p>
-
-            </div>
+              Criar lan?amento
+            </button>
 
           </div>
 
+        </form>
 
-          <div className="mt-4 space-y-2">
+      </details>
 
-            {upcoming.map(
-              (
-                item,
-                index
-              ) => (
-                <div
-                  key={
-                    index
+
+      {
+        tab ===
+        "dashboard"
+          ? (
+            <>
+
+              <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+
+                <FinanceCard
+                  label="Faturamento"
+                  value={
+                    formatMoney(
+                      revenueTotal
+                    )
                   }
-                  className="flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-3"
-                >
+                  helper={
+                    revenues.length +
+                    " lan?amento(s)"
+                  }
+                  icon={
+                    <CircleDollarSign
+                      size={18}
+                    />
+                  }
+                  tone="blue"
+                />
 
-                  <div className={
-                    item.type ===
-                    "receive"
-                      ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"
-                      : "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600"
-                  }>
-                    {
-                      item.type ===
-                      "receive"
-                        ? (
-                          <ArrowDownRight
-                            size={14}
-                          />
-                        )
-                        : (
-                          <ArrowUpRight
-                            size={14}
-                          />
-                        )
-                    }
-                  </div>
+                <FinanceCard
+                  label="Recebido"
+                  value={
+                    formatMoney(
+                      receivedTotal
+                    )
+                  }
+                  helper={
+                    revenueTotal >
+                    0
+                      ? (
+                          (
+                            receivedTotal /
+                            revenueTotal
+                          ) *
+                          100
+                        ).toFixed(
+                          1
+                        ) +
+                        "% do faturamento"
+                      : "Sem receita no per?odo"
+                  }
+                  icon={
+                    <ArrowDownRight
+                      size={18}
+                    />
+                  }
+                  tone="green"
+                />
 
-                  <div className="min-w-0 flex-1">
+                <FinanceCard
+                  label="A receber"
+                  value={
+                    formatMoney(
+                      receivableTotal
+                    )
+                  }
+                  helper={
+                    revenues.filter(
+                      (
+                        item
+                      ) =>
+                        item.status !==
+                        "PAGO"
+                    ).length +
+                    " pend?ncia(s)"
+                  }
+                  icon={
+                    <Clock3
+                      size={18}
+                    />
+                  }
+                  tone="amber"
+                />
 
-                    <p className="truncate text-[10px] font-black text-slate-800">
-                      {item.title}
+                <FinanceCard
+                  label="Despesas"
+                  value={
+                    formatMoney(
+                      expenseTotal
+                    )
+                  }
+                  helper={
+                    expenses.length +
+                    " lan?amento(s)"
+                  }
+                  icon={
+                    <ArrowUpRight
+                      size={18}
+                    />
+                  }
+                  tone="red"
+                />
+
+                <FinanceCard
+                  label="Resultado"
+                  value={
+                    formatMoney(
+                      result
+                    )
+                  }
+                  helper="Receita menos despesas"
+                  icon={
+                    <TrendingUp
+                      size={18}
+                    />
+                  }
+                  tone="violet"
+                />
+
+                <FinanceCard
+                  label="Margem"
+                  value={
+                    margin.toFixed(
+                      1
+                    ) +
+                    "%"
+                  }
+                  helper="Resultado sobre faturamento"
+                  icon={
+                    <BarChart3
+                      size={18}
+                    />
+                  }
+                  tone="slate"
+                />
+
+              </section>
+
+
+              <section className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.7fr)]">
+
+                <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                  <div>
+
+                    <p className="text-[11px] font-black text-slate-950">
+                      Evolu??o financeira
                     </p>
 
-                    <p className="mt-0.5 text-[8px] font-semibold text-slate-400">
-                      {item.subtitle}
+                    <p className="mt-1 text-[9px] font-semibold text-slate-400">
+                      Receitas x despesas dos ?ltimos 6 meses
                     </p>
 
                   </div>
 
-                  <p className={
-                    item.type ===
-                    "receive"
-                      ? "text-[10px] font-black text-emerald-600"
-                      : "text-[10px] font-black text-red-600"
-                  }>
+
+                  <div className="mt-5 flex items-center gap-4 text-[8px] font-black text-slate-400">
+
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-blue-600" />
+                      Receita
+                    </span>
+
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-slate-300" />
+                      Despesas
+                    </span>
+
+                  </div>
+
+
+                  <div className="mt-7 flex h-[220px] items-end gap-4 border-b border-slate-100 px-2">
+
                     {
-                      item.type ===
-                      "receive"
-                        ? "+"
-                        : "-"
-                    }
-                    {
-                      currency.format(
-                        item.value
+                      graphData.map(
+                        (
+                          item
+                        ) => (
+                          <div
+                            key={
+                              item.key
+                            }
+                            className="flex h-full min-w-0 flex-1 flex-col justify-end"
+                          >
+
+                            <div className="flex flex-1 items-end justify-center gap-1.5">
+
+                              <div
+                                title={
+                                  formatMoney(
+                                    item.income
+                                  )
+                                }
+                                className="w-[38%] rounded-t-lg bg-blue-600"
+                                style={{
+                                  height:
+                                    Math.max(
+                                      2,
+                                      (
+                                        item.income /
+                                        graphMax
+                                      ) *
+                                      100
+                                    ) +
+                                    "%",
+                                }}
+                              />
+
+                              <div
+                                title={
+                                  formatMoney(
+                                    item.expenses
+                                  )
+                                }
+                                className="w-[38%] rounded-t-lg bg-slate-200"
+                                style={{
+                                  height:
+                                    Math.max(
+                                      2,
+                                      (
+                                        item.expenses /
+                                        graphMax
+                                      ) *
+                                      100
+                                    ) +
+                                    "%",
+                                }}
+                              />
+
+                            </div>
+
+                            <p className="py-3 text-center text-[8px] font-black uppercase text-slate-400">
+                              {item.label}
+                            </p>
+
+                          </div>
+                        )
                       )
                     }
-                  </p>
 
-                </div>
-              )
-            )}
+                  </div>
 
-          </div>
-
-        </article>
-
-      </section>
+                </article>
 
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.75fr)]">
+                <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div>
 
-          <div className="flex items-center justify-between gap-4">
+                    <p className="text-[11px] font-black text-slate-950">
+                      Pr?ximos 7 dias
+                    </p>
 
-            <div>
+                    <p className="mt-1 text-[9px] font-semibold text-slate-400">
+                      Entradas e sa?das previstas
+                    </p>
 
-              <p className="text-[11px] font-black text-slate-950">
-                Receita por cliente
-              </p>
-
-              <p className="mt-1 text-[9px] font-semibold text-slate-400">
-                Participação no faturamento do mês
-              </p>
-
-            </div>
-
-            <button
-              type="button"
-              className="text-[9px] font-black text-blue-600"
-            >
-              Ver todos
-            </button>
-
-          </div>
+                  </div>
 
 
-          <div className="mt-5 space-y-4">
+                  <div className="mt-5 grid grid-cols-2 gap-2">
 
-            {clientRevenue.map(
-              (
-                client
-              ) => (
-                <div
-                  key={
-                    client.name
-                  }
-                >
+                    <div className="rounded-xl bg-emerald-50 p-3">
 
-                  <div className="flex items-center justify-between gap-4">
-
-                    <div className="flex min-w-0 items-center gap-3">
-
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
-                        <UsersRound
-                          size={14}
-                        />
-                      </div>
-
-                      <p className="truncate text-[10px] font-black text-slate-800">
-                        {client.name}
+                      <p className="text-[8px] font-black uppercase text-emerald-600">
+                        A receber
                       </p>
 
-                    </div>
-
-                    <div className="shrink-0 text-right">
-
-                      <p className="text-[10px] font-black text-slate-950">
+                      <p className="mt-1 text-lg font-black text-emerald-900">
                         {
-                          currency.format(
-                            client.value
+                          formatMoney(
+                            upcomingReceivable
                           )
                         }
                       </p>
 
-                      <p className="text-[8px] font-bold text-slate-400">
-                        {client.share}% do total
+                    </div>
+
+                    <div className="rounded-xl bg-red-50 p-3">
+
+                      <p className="text-[8px] font-black uppercase text-red-600">
+                        A pagar
+                      </p>
+
+                      <p className="mt-1 text-lg font-black text-red-900">
+                        {
+                          formatMoney(
+                            upcomingPayable
+                          )
+                        }
                       </p>
 
                     </div>
@@ -790,250 +2064,647 @@ export default async function FinancePage() {
                   </div>
 
 
-                  <div className="ml-11 mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className="mt-4 space-y-2">
 
-                    <div
-                      className="h-full rounded-full bg-blue-600"
-                      style={{
-                        width:
-                          String(
-                            Math.min(
-                              100,
-                              client.share *
-                              4
+                    {
+                      upcoming.length
+                        ? upcoming.map(
+                            (
+                              entry
+                            ) => (
+                              <div
+                                key={
+                                  entry.id
+                                }
+                                className="flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-3"
+                              >
+
+                                <div className={
+                                  entry.type ===
+                                  "RECEITA"
+                                    ? "flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"
+                                    : "flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600"
+                                }>
+                                  {
+                                    entry.type ===
+                                    "RECEITA"
+                                      ? (
+                                        <ArrowDownRight
+                                          size={14}
+                                        />
+                                      )
+                                      : (
+                                        <ArrowUpRight
+                                          size={14}
+                                        />
+                                      )
+                                  }
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+
+                                  <p className="truncate text-[9px] font-black text-slate-800">
+                                    {entry.description}
+                                  </p>
+
+                                  <p className="mt-0.5 text-[8px] text-slate-400">
+                                    {
+                                      dateFormatter.format(
+                                        entry.dueDate
+                                      )
+                                    }
+                                  </p>
+
+                                </div>
+
+                                <p className={
+                                  entry.type ===
+                                  "RECEITA"
+                                    ? "text-[9px] font-black text-emerald-600"
+                                    : "text-[9px] font-black text-red-600"
+                                }>
+                                  {
+                                    entry.type ===
+                                    "RECEITA"
+                                      ? "+"
+                                      : "-"
+                                  }
+                                  {
+                                    formatMoney(
+                                      entry.amountCents
+                                    )
+                                  }
+                                </p>
+
+                              </div>
                             )
-                          ) +
-                          "%",
-                      }}
+                          )
+                        : (
+                          <div className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-[9px] font-semibold text-slate-400">
+                            Nenhum vencimento nos pr?ximos 7 dias.
+                          </div>
+                        )
+                    }
+
+                  </div>
+
+                </article>
+
+              </section>
+
+
+              <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.75fr)]">
+
+                <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                  <p className="text-[11px] font-black text-slate-950">
+                    Receita por cliente
+                  </p>
+
+                  <p className="mt-1 text-[9px] font-semibold text-slate-400">
+                    Participa??o no faturamento do m?s
+                  </p>
+
+
+                  <div className="mt-5 space-y-4">
+
+                    {
+                      topClients.length
+                        ? topClients.map(
+                            (
+                              client
+                            ) => {
+
+                              const share =
+                                revenueTotal >
+                                0
+                                  ? (
+                                      client.value /
+                                      revenueTotal
+                                    ) *
+                                    100
+                                  : 0;
+
+
+                              return (
+                                <div
+                                  key={
+                                    client.name
+                                  }
+                                >
+
+                                  <div className="flex items-center justify-between gap-4">
+
+                                    <div className="flex min-w-0 items-center gap-3">
+
+                                      <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                                        <UsersRound
+                                          size={14}
+                                        />
+                                      </div>
+
+                                      <p className="truncate text-[10px] font-black text-slate-800">
+                                        {client.name}
+                                      </p>
+
+                                    </div>
+
+                                    <div className="text-right">
+
+                                      <p className="text-[10px] font-black text-slate-950">
+                                        {
+                                          formatMoney(
+                                            client.value
+                                          )
+                                        }
+                                      </p>
+
+                                      <p className="text-[8px] font-bold text-slate-400">
+                                        {
+                                          share.toFixed(
+                                            1
+                                          )
+                                        }%
+                                      </p>
+
+                                    </div>
+
+                                  </div>
+
+
+                                  <div className="ml-11 mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+
+                                    <div
+                                      className="h-full rounded-full bg-blue-600"
+                                      style={{
+                                        width:
+                                          Math.min(
+                                            100,
+                                            share
+                                          ) +
+                                          "%",
+                                      }}
+                                    />
+
+                                  </div>
+
+                                </div>
+                              );
+                            }
+                          )
+                        : (
+                          <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-[9px] font-semibold text-slate-400">
+                            Cadastre receitas vinculadas aos clientes para visualizar este ranking.
+                          </p>
+                        )
+                    }
+
+                  </div>
+
+                </article>
+
+
+                <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                  <div className="flex items-start justify-between gap-3">
+
+                    <div>
+
+                      <p className="text-[11px] font-black text-slate-950">
+                        Aten??o financeira
+                      </p>
+
+                      <p className="mt-1 text-[9px] font-semibold text-slate-400">
+                        Pontos que precisam de acompanhamento
+                      </p>
+
+                    </div>
+
+                    <CircleAlert
+                      size={17}
+                      className="text-amber-500"
                     />
 
                   </div>
 
-                </div>
-              )
-            )}
 
-          </div>
+                  <div className="mt-5 space-y-2">
 
-        </article>
+                    <div className="rounded-xl border border-red-100 bg-red-50 p-4">
 
+                      <p className="text-[10px] font-black text-red-800">
+                        {
+                          overdueRevenue.length
+                        } recebimento(s) em atraso
+                      </p>
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                      <p className="mt-1 text-[9px] text-red-600">
+                        {
+                          formatMoney(
+                            overdueRevenueTotal
+                          )
+                        } vencidos.
+                      </p>
 
-          <div className="flex items-start justify-between gap-4">
-
-            <div>
-
-              <p className="text-[11px] font-black text-slate-950">
-                Atenção financeira
-              </p>
-
-              <p className="mt-1 text-[9px] font-semibold text-slate-400">
-                Pontos que precisam de acompanhamento
-              </p>
-
-            </div>
-
-            <CircleAlert
-              size={17}
-              className="text-amber-500"
-            />
-
-          </div>
+                    </div>
 
 
-          <div className="mt-5 space-y-2">
+                    <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
 
-            <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+                      <p className="text-[10px] font-black text-amber-900">
+                        {
+                          upcoming.length
+                        } vencimento(s) nos pr?ximos 7 dias
+                      </p>
 
-              <div className="flex items-start gap-3">
+                      <p className="mt-1 text-[9px] text-amber-700">
+                        Acompanhe entradas e sa?das previstas.
+                      </p>
 
-                <CircleAlert
-                  size={15}
-                  className="mt-0.5 shrink-0 text-red-500"
+                    </div>
+
+                  </div>
+
+                </article>
+
+              </section>
+
+
+              <section className="grid gap-4 md:grid-cols-3">
+
+                <FinanceCard
+                  label="Receita recorrente"
+                  value={
+                    formatMoney(
+                      recurringRevenue
+                    )
+                  }
+                  helper="MRR cadastrado no per?odo"
+                  icon={
+                    <CircleDollarSign
+                      size={17}
+                    />
+                  }
+                  tone="blue"
                 />
 
-                <div>
+                <FinanceCard
+                  label="Ticket m?dio"
+                  value={
+                    formatMoney(
+                      averageTicket
+                    )
+                  }
+                  helper="Por cliente com receita"
+                  icon={
+                    <UsersRound
+                      size={17}
+                    />
+                  }
+                  tone="violet"
+                />
 
-                  <p className="text-[10px] font-black text-red-800">
-                    2 recebimentos em atraso
-                  </p>
+                <FinanceCard
+                  label="Resultado projetado"
+                  value={
+                    formatMoney(
+                      result
+                    )
+                  }
+                  helper="Fechamento do per?odo"
+                  icon={
+                    <Landmark
+                      size={17}
+                    />
+                  }
+                  tone="green"
+                />
 
-                  <p className="mt-1 text-[9px] leading-relaxed text-red-600">
-                    R$ 1.800 vencidos aguardando regularização.
-                  </p>
+              </section>
 
-                </div>
+            </>
+          )
+          : null
+      }
+
+
+      {
+        tab ===
+        "receber"
+          ? (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+              <div>
+
+                <h2 className="text-sm font-black text-slate-950">
+                  Contas a receber
+                </h2>
+
+                <p className="mt-1 text-[9px] font-semibold text-slate-400">
+                  Receitas de {
+                    monthFormatter.format(
+                      start
+                    )
+                  }.
+                </p>
 
               </div>
 
-            </div>
 
+              <div className="mt-5 space-y-2">
 
-            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
-
-              <div className="flex items-start gap-3">
-
-                <ReceiptText
-                  size={15}
-                  className="mt-0.5 shrink-0 text-amber-600"
-                />
-
-                <div>
-
-                  <p className="text-[10px] font-black text-amber-900">
-                    4 contas vencem nesta semana
-                  </p>
-
-                  <p className="mt-1 text-[9px] leading-relaxed text-amber-700">
-                    Total previsto de R$ 3.580 em saídas.
-                  </p>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-
-              <div className="flex items-start gap-3">
-
-                <TrendingUp
-                  size={15}
-                  className="mt-0.5 shrink-0 text-blue-600"
-                />
-
-                <div>
-
-                  <p className="text-[10px] font-black text-blue-900">
-                    Meta mensal em 72%
-                  </p>
-
-                  <p className="mt-1 text-[9px] leading-relaxed text-blue-700">
-                    Faltam R$ 13.600 para atingir R$ 50 mil.
-                  </p>
-
-                </div>
+                {
+                  revenues.length
+                    ? revenues.map(
+                        (
+                          entry
+                        ) => (
+                          <FinanceEntryRow
+                            key={
+                              entry.id
+                            }
+                            entry={
+                              entry
+                            }
+                            returnTo={
+                              returnTo
+                            }
+                          />
+                        )
+                      )
+                    : (
+                      <div className="rounded-xl border border-dashed border-slate-200 px-5 py-12 text-center text-[10px] font-semibold text-slate-400">
+                        Nenhuma receita cadastrada neste per?odo.
+                      </div>
+                    )
+                }
 
               </div>
 
-            </div>
-
-          </div>
-
-        </article>
-
-      </section>
+            </section>
+          )
+          : null
+      }
 
 
-      <section className="grid gap-4 md:grid-cols-3">
+      {
+        tab ===
+        "pagar"
+          ? (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div>
 
-          <div className="flex items-center justify-between">
+                <h2 className="text-sm font-black text-slate-950">
+                  Contas a pagar
+                </h2>
 
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-              Receita recorrente
-            </p>
+                <p className="mt-1 text-[9px] font-semibold text-slate-400">
+                  Despesas de {
+                    monthFormatter.format(
+                      start
+                    )
+                  }.
+                </p>
 
-            <CircleDollarSign
-              size={16}
-              className="text-blue-500"
-            />
-
-          </div>
-
-          <p className="mt-3 text-2xl font-black text-slate-950">
-            R$ 31.200
-          </p>
-
-          <p className="mt-1 text-[9px] font-semibold text-slate-400">
-            MRR atual
-          </p>
-
-        </article>
+              </div>
 
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mt-5 space-y-2">
 
-          <div className="flex items-center justify-between">
+                {
+                  expenses.length
+                    ? expenses.map(
+                        (
+                          entry
+                        ) => (
+                          <FinanceEntryRow
+                            key={
+                              entry.id
+                            }
+                            entry={
+                              entry
+                            }
+                            returnTo={
+                              returnTo
+                            }
+                          />
+                        )
+                      )
+                    : (
+                      <div className="rounded-xl border border-dashed border-slate-200 px-5 py-12 text-center text-[10px] font-semibold text-slate-400">
+                        Nenhuma despesa cadastrada neste per?odo.
+                      </div>
+                    )
+                }
 
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-              Ticket médio
-            </p>
+              </div>
 
-            <UsersRound
-              size={16}
-              className="text-violet-500"
-            />
-
-          </div>
-
-          <p className="mt-3 text-2xl font-black text-slate-950">
-            R$ 2.840
-          </p>
-
-          <p className="mt-1 text-[9px] font-semibold text-slate-400">
-            Por cliente ativo
-          </p>
-
-        </article>
-
-
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-
-          <div className="flex items-center justify-between">
-
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-              Saldo projetado
-            </p>
-
-            <Landmark
-              size={16}
-              className="text-emerald-500"
-            />
-
-          </div>
-
-          <p className="mt-3 text-2xl font-black text-slate-950">
-            R$ 18.920
-          </p>
-
-          <p className="mt-1 text-[9px] font-semibold text-slate-400">
-            Final do mês
-          </p>
-
-        </article>
-
-      </section>
+            </section>
+          )
+          : null
+      }
 
 
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-4">
+      {
+        tab ===
+        "fluxo"
+          ? (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
-        <div className="flex items-start gap-3">
+              <div>
 
-          <CircleAlert
-            size={16}
-            className="mt-0.5 shrink-0 text-slate-400"
-          />
+                <h2 className="text-sm font-black text-slate-950">
+                  Fluxo de caixa projetado
+                </h2>
 
-          <div>
+                <p className="mt-1 text-[9px] font-semibold text-slate-400">
+                  Movimenta??o prevista por vencimento.
+                </p>
 
-            <p className="text-[10px] font-black text-slate-600">
-              Primeira versão visual
-            </p>
+              </div>
 
-            <p className="mt-1 text-[9px] leading-relaxed text-slate-400">
-              Os valores exibidos nesta tela são demonstrativos. Na próxima etapa vamos estruturar contas a receber, contas a pagar, recorrências, categorias, clientes e fluxo de caixa real.
-            </p>
 
-          </div>
+              <div className="mt-5 space-y-2">
 
-        </div>
+                {
+                  monthEntries.length
+                    ? monthEntries.map(
+                        (
+                          entry
+                        ) => (
+                          <FinanceEntryRow
+                            key={
+                              entry.id
+                            }
+                            entry={
+                              entry
+                            }
+                            returnTo={
+                              returnTo
+                            }
+                          />
+                        )
+                      )
+                    : (
+                      <div className="rounded-xl border border-dashed border-slate-200 px-5 py-12 text-center text-[10px] font-semibold text-slate-400">
+                        Nenhuma movimenta??o cadastrada neste per?odo.
+                      </div>
+                    )
+                }
 
-      </div>
+              </div>
+
+            </section>
+          )
+          : null
+      }
+
+
+      {
+        tab ===
+        "relatorios"
+          ? (
+            <section className="grid gap-4 xl:grid-cols-2">
+
+              <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                <h2 className="text-sm font-black text-slate-950">
+                  Resultado do per?odo
+                </h2>
+
+                <div className="mt-5 space-y-3">
+
+                  <div className="flex items-center justify-between rounded-xl bg-blue-50 px-4 py-3">
+                    <span className="text-[9px] font-black text-blue-700">
+                      Receita
+                    </span>
+
+                    <strong className="text-[11px] text-blue-900">
+                      {
+                        formatMoney(
+                          revenueTotal
+                        )
+                      }
+                    </strong>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-xl bg-red-50 px-4 py-3">
+                    <span className="text-[9px] font-black text-red-700">
+                      Despesas
+                    </span>
+
+                    <strong className="text-[11px] text-red-900">
+                      {
+                        formatMoney(
+                          expenseTotal
+                        )
+                      }
+                    </strong>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3">
+                    <span className="text-[9px] font-black text-emerald-700">
+                      Resultado
+                    </span>
+
+                    <strong className="text-[11px] text-emerald-900">
+                      {
+                        formatMoney(
+                          result
+                        )
+                      }
+                    </strong>
+                  </div>
+
+                </div>
+
+              </article>
+
+
+              <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+                <h2 className="text-sm font-black text-slate-950">
+                  Por categoria
+                </h2>
+
+                <div className="mt-5 space-y-2">
+
+                  {
+                    categories.size
+                      ? Array.from(
+                          categories.entries()
+                        )
+                          .sort(
+                            (
+                              a,
+                              b
+                            ) =>
+                              (
+                                b[1].income +
+                                b[1].expense
+                              ) -
+                              (
+                                a[1].income +
+                                a[1].expense
+                              )
+                          )
+                          .map(
+                            (
+                              [
+                                category,
+                                values,
+                              ]
+                            ) => (
+                              <div
+                                key={
+                                  category
+                                }
+                                className="rounded-xl border border-slate-100 px-4 py-3"
+                              >
+
+                                <p className="text-[9px] font-black text-slate-700">
+                                  {category}
+                                </p>
+
+                                <div className="mt-1 flex gap-4 text-[8px] font-bold">
+
+                                  <span className="text-emerald-600">
+                                    + {
+                                      formatMoney(
+                                        values.income
+                                      )
+                                    }
+                                  </span>
+
+                                  <span className="text-red-600">
+                                    - {
+                                      formatMoney(
+                                        values.expense
+                                      )
+                                    }
+                                  </span>
+
+                                </div>
+
+                              </div>
+                            )
+                          )
+                      : (
+                        <p className="rounded-xl border border-dashed border-slate-200 px-5 py-12 text-center text-[10px] font-semibold text-slate-400">
+                          Nenhuma categoria movimentada no per?odo.
+                        </p>
+                      )
+                  }
+
+                </div>
+
+              </article>
+
+            </section>
+          )
+          : null
+      }
 
     </div>
   );

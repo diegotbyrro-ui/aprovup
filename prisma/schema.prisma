@@ -25,6 +25,7 @@ model Agency {
   reportTemplates          ReportTemplate[]
   supportTickets           SupportTicket[]
   mindMaps                 MindMap[]
+  financeEntries           FinanceEntry[]
 
   secretaryThreads        SecretaryThread[]
   secretaryPendingActions SecretaryPendingAction[]
@@ -156,6 +157,7 @@ model Client {
   monthlyApprovals         MonthlyApproval[]
   instagramConnection      InstagramConnection?
   instagramMetricSnapshots InstagramMetricSnapshot[]
+  financeEntries           FinanceEntry[]
 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -227,23 +229,23 @@ model ClientProfileDiagnosis {
 }
 
 model Content {
-  id            String    @id @default(cuid())
-  title         String
-  objective     String?
-  format        String?
+  id                 String    @id @default(cuid())
+  title              String
+  objective          String?
+  format             String?
   platform           String?
   plannedDate        DateTime?
   productionDeadline DateTime?
   responsible        String?
-  area          String    @default("GERAL")
-  priority      String    @default("MEDIA")
-  caption       String?
-  artText       String?
-  script        String?
-  briefing      String?
-  fileLinks     String?
-  coverImageUrl String?
-  status        String    @default("IDEIA")
+  area               String    @default("GERAL")
+  priority           String    @default("MEDIA")
+  caption            String?
+  artText            String?
+  script             String?
+  briefing           String?
+  fileLinks          String?
+  coverImageUrl      String?
+  status             String    @default("IDEIA")
 
   clientId String
   client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -998,7 +1000,6 @@ model SaasCoupon {
   @@index([appliesToPlanSlug])
 }
 
-
 model MindMap {
   id String @id @default(cuid())
 
@@ -1024,4 +1025,48 @@ model MindMap {
   @@index([agencyId])
   @@index([agencyId, clientId])
   @@index([agencyId, updatedAt])
+}
+
+model FinanceEntry {
+  id String @id @default(cuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  // RECEITA | DESPESA
+  type String
+
+  description String
+  category    String?
+
+  // Valor sempre armazenado em centavos.
+  amountCents Int
+
+  dueDate DateTime
+
+  // PENDENTE | PAGO
+  status String @default("PENDENTE")
+
+  paidAt        DateTime?
+  paymentMethod String?
+  notes         String?
+
+  isRecurring Boolean @default(false)
+
+  recurrenceGroup   String?
+  installmentNumber Int?
+  installmentTotal  Int?
+
+  createdByUserId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId, dueDate])
+  @@index([agencyId, type, status, dueDate])
+  @@index([agencyId, clientId, dueDate])
+  @@index([recurrenceGroup])
 }
