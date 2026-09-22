@@ -3449,13 +3449,15 @@ export async function deliverSecretaryAlertsToWhatsapp() {
       );
 
 
-    if (
-      local.hour !==
-        18
-    ) {
-      approvalAlerts.length =
-        0;
-    }
+    /*
+     * As aprova??es pendentes j? aparecem no
+     * resumo operacional di?rio.
+     *
+     * Evitamos um segundo template separado para
+     * reduzir a quantidade de mensagens proativas.
+     */
+    approvalAlerts.length =
+      0;
 
 
     for (
@@ -3831,6 +3833,20 @@ export async function deliverSecretaryDailyBriefs() {
     );
 
 
+  const tomorrowStart =
+    end;
+
+
+  const dayAfterTomorrow =
+    new Date(
+      tomorrowStart.getTime() +
+      24 *
+      60 *
+      60 *
+      1000
+    );
+
+
   const connections =
     await prisma
       .secretaryWhatsappConnection
@@ -3853,6 +3869,42 @@ export async function deliverSecretaryDailyBriefs() {
     const connection
     of connections
   ) {
+
+    /*
+     * Busca uma ?nica vez os compromissos de amanh?
+     * e depois filtra por pessoa.
+     */
+    const tomorrowEvents =
+      await findGoogleCalendarEvents({
+        agencyId:
+          connection.agencyId,
+
+        query:
+          '',
+
+        timeMin:
+          tomorrowStart,
+
+        timeMax:
+          dayAfterTomorrow,
+      }).catch(
+        (
+          error
+        ) => {
+
+          console.error(
+            'SECRETARY DAILY CALENDAR ERROR',
+            connection.agencyId,
+            error
+          );
+
+
+          return [] as
+            SecretaryCalendarReminderEvent[];
+        }
+      );
+
+
     const members =
       await prisma
         .secretaryWhatsappMember
@@ -4264,6 +4316,73 @@ export async function deliverSecretaryDailyBriefs() {
             );
 
 
+      const personalTomorrowEvents =
+        tomorrowEvents
+          .filter(
+            (
+              event
+            ) =>
+              calendarEventMatchesMember({
+                summary:
+                  event.summary,
+
+                description:
+                  event.description,
+
+                displayName:
+                  member.displayName,
+
+                userName:
+                  user.name,
+              })
+          )
+          .sort(
+            (
+              a,
+              b
+            ) =>
+              String(
+                a.start ||
+                ''
+              ).localeCompare(
+                String(
+                  b.start ||
+                  ''
+                )
+              )
+          );
+
+
+      const tomorrowAgenda =
+        personalTomorrowEvents.length
+          ? [
+              'Compromissos de amanh?:',
+
+              ...personalTomorrowEvents
+                .slice(
+                  0,
+                  10
+                )
+                .map(
+                  (
+                    event,
+                    index
+                  ) =>
+                    String(
+                      index +
+                      1
+                    ) +
+                    '. ' +
+                    calendarReminderMessage(
+                      event
+                    )
+                ),
+            ].join(
+              '\n'
+            )
+          : 'Compromissos de amanh?: nenhum.';
+
+
       const attentionLabel =
         isDirector
           ? 'Itens aguardando ação da Social Media: '
@@ -4314,6 +4433,8 @@ export async function deliverSecretaryDailyBriefs() {
             String(
               openAlerts
             ),
+
+          tomorrowAgenda,
         ].join(
           '\n'
         );
@@ -6002,6 +6123,7 @@ export async function deliverSecretaryCalendarReminders() {
        ================================================ */
 
     if (
+      false &&
       local.hour >=
         18 &&
       local.hour <=

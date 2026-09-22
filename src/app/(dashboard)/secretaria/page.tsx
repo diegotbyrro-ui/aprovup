@@ -209,6 +209,9 @@ export default async function SecretaryPage() {
                 inputType:
                   true,
 
+                metadata:
+                  true,
+
                 createdAt:
                   true,
               },
@@ -216,6 +219,53 @@ export default async function SecretaryPage() {
           },
         }),
     ]);
+
+
+  /*
+   * Carrega o estado real de entrega retornado
+   * pelo webhook da Meta.
+   */
+  const deliveries =
+    await prisma
+      .secretaryWhatsappDelivery
+      .findMany({
+        where: {
+          agencyId:
+            user.agencyId,
+        },
+
+        orderBy: {
+          createdAt:
+            'desc',
+        },
+
+        take:
+          1500,
+
+        select: {
+          dedupKey:
+            true,
+
+          status:
+            true,
+
+          error:
+            true,
+        },
+      });
+
+
+  const deliveryByDedupKey =
+    new Map(
+      deliveries.map(
+        (
+          delivery
+        ) => [
+          delivery.dedupKey,
+          delivery,
+        ] as const
+      )
+    );
 
 
   const secretaryName =
@@ -312,24 +362,70 @@ export default async function SecretaryPage() {
               orderedMessages.map(
                 (
                   message
-                ) => ({
-                  id:
-                    message.id,
+                ) => {
 
-                  role:
-                    message.role,
+                  const metadata =
+                    (
+                      message.metadata &&
+                      typeof message.metadata ===
+                        'object' &&
+                      !Array.isArray(
+                        message.metadata
+                      )
+                    )
+                      ? message.metadata as
+                          Record<
+                            string,
+                            unknown
+                          >
+                      : null;
 
-                  content:
-                    message.content,
 
-                  inputType:
-                    message.inputType,
+                  const dedupKey =
+                    typeof metadata
+                      ?.dedupKey ===
+                      'string'
+                      ? metadata.dedupKey
+                      : '';
 
-                  createdAt:
-                    message
-                      .createdAt
-                      .toISOString(),
-                })
+
+                  const delivery =
+                    dedupKey
+                      ? deliveryByDedupKey.get(
+                          dedupKey
+                        )
+                      : null;
+
+
+                  return {
+                    id:
+                      message.id,
+
+                    role:
+                      message.role,
+
+                    content:
+                      message.content,
+
+                    inputType:
+                      message.inputType,
+
+                    createdAt:
+                      message
+                        .createdAt
+                        .toISOString(),
+
+                    deliveryStatus:
+                      delivery
+                        ?.status ||
+                      null,
+
+                    deliveryError:
+                      delivery
+                        ?.error ||
+                      null,
+                  };
+                }
               ),
           };
         }

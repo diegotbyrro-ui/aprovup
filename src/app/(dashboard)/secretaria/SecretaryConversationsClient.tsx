@@ -29,6 +29,8 @@ type ConversationMessage = {
   content: string;
   inputType: string;
   createdAt: string;
+  deliveryStatus: string | null;
+  deliveryError: string | null;
 };
 
 
@@ -184,6 +186,101 @@ function formatTime(
         value
       )
     );
+}
+
+
+function deliveryLabel(
+  status:
+    string |
+    null
+) {
+  if (
+    status ===
+    "READ"
+  ) {
+    return "Lido";
+  }
+
+
+  if (
+    status ===
+    "DELIVERED"
+  ) {
+    return "Entregue";
+  }
+
+
+  if (
+    status ===
+    "FAILED" ||
+    status ===
+    "ERROR"
+  ) {
+    return "N?o entregue";
+  }
+
+
+  if (
+    status ===
+    "WAITING_TEMPLATE"
+  ) {
+    return "Aguardando template";
+  }
+
+
+  if (
+    status ===
+    "SENT"
+  ) {
+    return "Enviado ? Meta";
+  }
+
+
+  return "";
+}
+
+
+function deliveryClass(
+  status:
+    string |
+    null
+) {
+
+  if (
+    status ===
+    "FAILED" ||
+    status ===
+    "ERROR"
+  ) {
+    return "bg-red-100 text-red-800";
+  }
+
+
+  if (
+    status ===
+    "READ"
+  ) {
+    return "bg-emerald-100 text-emerald-800";
+  }
+
+
+  if (
+    status ===
+    "DELIVERED"
+  ) {
+    return "bg-emerald-100 text-emerald-700";
+  }
+
+
+  if (
+    status ===
+    "WAITING_TEMPLATE"
+  ) {
+    return "bg-amber-100 text-amber-800";
+  }
+
+
+  return "bg-blue-500 text-blue-50";
 }
 
 
@@ -775,13 +872,41 @@ export function SecretaryConversationsClient({
                                           </p>
 
                                           <div className={
-                                            "mt-2 flex items-center justify-end gap-1 text-[8px] font-semibold " +
+                                            "mt-2 flex flex-wrap items-center justify-end gap-1.5 text-[8px] font-semibold " +
                                             (
                                               fromLiv
                                                 ? "text-blue-100"
                                                 : "text-slate-400"
                                             )
                                           }>
+
+                                            {
+                                              fromLiv &&
+                                              message.deliveryStatus
+                                                ? (
+                                                  <span
+                                                    title={
+                                                      message.deliveryError ||
+                                                      undefined
+                                                    }
+                                                    className={
+                                                      "rounded-full px-2 py-0.5 font-black " +
+                                                      deliveryClass(
+                                                        message.deliveryStatus
+                                                      )
+                                                    }
+                                                  >
+                                                    {
+                                                      deliveryLabel(
+                                                        message.deliveryStatus
+                                                      )
+                                                    }
+                                                  </span>
+                                                )
+                                                : null
+                                            }
+
+
                                             {
                                               formatTime(
                                                 message
