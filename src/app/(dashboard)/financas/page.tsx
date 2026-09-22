@@ -557,7 +557,7 @@ function FinanceEntryRow({
           }
           {
             entry.category
-              ? " ? " +
+              ? " • " +
                 entry.category
               : ""
           }
@@ -1352,7 +1352,7 @@ export default async function FinancePage({
         "relatorios",
 
       label:
-        "Relat?rios",
+        "Relatórios",
     },
   ];
 
@@ -1381,11 +1381,11 @@ export default async function FinancePage({
             </div>
 
             <h1 className="mt-4 text-3xl font-black tracking-tight">
-              Finan?as
+              Finanças
             </h1>
 
             <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-slate-300">
-              Receitas, despesas, vencimentos, fluxo de caixa e resultado financeiro da ag?ncia.
+              Receitas, despesas, vencimentos, fluxo de caixa e resultado financeiro da agência.
             </p>
 
           </div>
@@ -1433,7 +1433,7 @@ export default async function FinancePage({
         "1"
           ? (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[10px] font-black text-emerald-700">
-              Lan?amento criado com sucesso.
+              Lançamento criado com sucesso.
             </div>
           )
           : null
@@ -1445,7 +1445,7 @@ export default async function FinancePage({
         "1"
           ? (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[10px] font-black text-red-700">
-              N?o foi poss?vel criar o lan?amento. Confira os campos obrigat?rios.
+              Não foi possível criar o lançamento. Confira os campos obrigatórios.
             </div>
           )
           : null
@@ -1500,7 +1500,7 @@ export default async function FinancePage({
             <div>
 
               <p className="text-[11px] font-black text-slate-900">
-                Novo lan?amento
+                Novo lançamento
               </p>
 
               <p className="mt-0.5 text-[9px] font-semibold text-slate-400">
@@ -1561,7 +1561,7 @@ export default async function FinancePage({
           <label className="space-y-1.5 xl:col-span-2">
 
             <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
-              Descri??o *
+              Descrição *
             </span>
 
             <input
@@ -1662,13 +1662,13 @@ export default async function FinancePage({
 
               <option>Mensalidade</option>
               <option>Projeto avulso</option>
-              <option>Servi?o extra</option>
+              <option>Serviço extra</option>
               <option>Equipe</option>
               <option>Terceirizados</option>
               <option>Ferramentas</option>
               <option>Aluguel</option>
               <option>Impostos</option>
-              <option>Tr?fego</option>
+              <option>Tráfego</option>
               <option>Equipamentos</option>
               <option>Transporte</option>
               <option>Outros</option>
@@ -1688,13 +1688,13 @@ export default async function FinancePage({
               className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-500"
             >
               <option value="">
-                N?o informado
+                Não informado
               </option>
 
               <option>Pix</option>
               <option>Boleto</option>
-              <option>Transfer?ncia</option>
-              <option>Cart?o</option>
+              <option>Transferência</option>
+              <option>Cartão</option>
               <option>Dinheiro</option>
               <option>Outro</option>
             </select>
@@ -1705,12 +1705,12 @@ export default async function FinancePage({
           <label className="space-y-1.5 md:col-span-2 xl:col-span-3">
 
             <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
-              Observa??es
+              Observações
             </span>
 
             <input
               name="notes"
-              placeholder="Informa??es adicionais..."
+              placeholder="Informações adicionais..."
               className="h-10 w-full rounded-xl border border-slate-200 px-3 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-500"
             />
 
@@ -1759,7 +1759,7 @@ export default async function FinancePage({
                 size={13}
               />
 
-              Criar lan?amento
+              Criar lançamento
             </button>
 
           </div>
@@ -1786,7 +1786,7 @@ export default async function FinancePage({
                   }
                   helper={
                     revenues.length +
-                    " lan?amento(s)"
+                    " lançamento(s)"
                   }
                   icon={
                     <CircleDollarSign
@@ -1816,7 +1816,7 @@ export default async function FinancePage({
                           1
                         ) +
                         "% do faturamento"
-                      : "Sem receita no per?odo"
+                      : "Sem receita no período"
                   }
                   icon={
                     <ArrowDownRight
@@ -1841,7 +1841,7 @@ export default async function FinancePage({
                         item.status !==
                         "PAGO"
                     ).length +
-                    " pend?ncia(s)"
+                    " pendência(s)"
                   }
                   icon={
                     <Clock3
@@ -1860,7 +1860,7 @@ export default async function FinancePage({
                   }
                   helper={
                     expenses.length +
-                    " lan?amento(s)"
+                    " lançamento(s)"
                   }
                   icon={
                     <ArrowUpRight
@@ -1913,11 +1913,11 @@ export default async function FinancePage({
                   <div>
 
                     <p className="text-[11px] font-black text-slate-950">
-                      Evolu??o financeira
+                      Evolução financeira
                     </p>
 
                     <p className="mt-1 text-[9px] font-semibold text-slate-400">
-                      Receitas x despesas dos ?ltimos 6 meses
+                      Receitas x despesas dos Últimos 6 meses
                     </p>
 
                   </div>
@@ -2017,11 +2017,11 @@ export default async function FinancePage({
                   <div>
 
                     <p className="text-[11px] font-black text-slate-950">
-                      Pr?ximos 7 dias
+                      Próximos 7 dias
                     </p>
 
                     <p className="mt-1 text-[9px] font-semibold text-slate-400">
-                      Entradas e sa?das previstas
+                      Entradas e saídas previstas
                     </p>
 
                   </div>
@@ -2141,7 +2141,7 @@ export default async function FinancePage({
                           )
                         : (
                           <div className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-[9px] font-semibold text-slate-400">
-                            Nenhum vencimento nos pr?ximos 7 dias.
+                            Nenhum vencimento nos próximos 7 dias.
                           </div>
                         )
                     }
@@ -2162,7 +2162,7 @@ export default async function FinancePage({
                   </p>
 
                   <p className="mt-1 text-[9px] font-semibold text-slate-400">
-                    Participa??o no faturamento do m?s
+                    Participação no faturamento do mês
                   </p>
 
 
@@ -2271,7 +2271,7 @@ export default async function FinancePage({
                     <div>
 
                       <p className="text-[11px] font-black text-slate-950">
-                        Aten??o financeira
+                        Atenção financeira
                       </p>
 
                       <p className="mt-1 text-[9px] font-semibold text-slate-400">
@@ -2314,11 +2314,11 @@ export default async function FinancePage({
                       <p className="text-[10px] font-black text-amber-900">
                         {
                           upcoming.length
-                        } vencimento(s) nos pr?ximos 7 dias
+                        } vencimento(s) nos próximos 7 dias
                       </p>
 
                       <p className="mt-1 text-[9px] text-amber-700">
-                        Acompanhe entradas e sa?das previstas.
+                        Acompanhe entradas e saídas previstas.
                       </p>
 
                     </div>
@@ -2339,7 +2339,7 @@ export default async function FinancePage({
                       recurringRevenue
                     )
                   }
-                  helper="MRR cadastrado no per?odo"
+                  helper="MRR cadastrado no período"
                   icon={
                     <CircleDollarSign
                       size={17}
@@ -2349,7 +2349,7 @@ export default async function FinancePage({
                 />
 
                 <FinanceCard
-                  label="Ticket m?dio"
+                  label="Ticket médio"
                   value={
                     formatMoney(
                       averageTicket
@@ -2371,7 +2371,7 @@ export default async function FinancePage({
                       result
                     )
                   }
-                  helper="Fechamento do per?odo"
+                  helper="Fechamento do período"
                   icon={
                     <Landmark
                       size={17}
@@ -2434,7 +2434,7 @@ export default async function FinancePage({
                       )
                     : (
                       <div className="rounded-xl border border-dashed border-slate-200 px-5 py-12 text-center text-[10px] font-semibold text-slate-400">
-                        Nenhuma receita cadastrada neste per?odo.
+                        Nenhuma receita cadastrada neste período.
                       </div>
                     )
                 }
@@ -2493,7 +2493,7 @@ export default async function FinancePage({
                       )
                     : (
                       <div className="rounded-xl border border-dashed border-slate-200 px-5 py-12 text-center text-[10px] font-semibold text-slate-400">
-                        Nenhuma despesa cadastrada neste per?odo.
+                        Nenhuma despesa cadastrada neste período.
                       </div>
                     )
                 }
@@ -2519,7 +2519,7 @@ export default async function FinancePage({
                 </h2>
 
                 <p className="mt-1 text-[9px] font-semibold text-slate-400">
-                  Movimenta??o prevista por vencimento.
+                  Movimentação prevista por vencimento.
                 </p>
 
               </div>
@@ -2548,7 +2548,7 @@ export default async function FinancePage({
                       )
                     : (
                       <div className="rounded-xl border border-dashed border-slate-200 px-5 py-12 text-center text-[10px] font-semibold text-slate-400">
-                        Nenhuma movimenta??o cadastrada neste per?odo.
+                        Nenhuma movimentação cadastrada neste período.
                       </div>
                     )
                 }
@@ -2570,7 +2570,7 @@ export default async function FinancePage({
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
                 <h2 className="text-sm font-black text-slate-950">
-                  Resultado do per?odo
+                  Resultado do período
                 </h2>
 
                 <div className="mt-5 space-y-3">
@@ -2692,7 +2692,7 @@ export default async function FinancePage({
                           )
                       : (
                         <p className="rounded-xl border border-dashed border-slate-200 px-5 py-12 text-center text-[10px] font-semibold text-slate-400">
-                          Nenhuma categoria movimentada no per?odo.
+                          Nenhuma categoria movimentada no período.
                         </p>
                       )
                   }
