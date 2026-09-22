@@ -524,7 +524,7 @@ export function ProductionBatchWorkspacePrototype({
 
 
     setSendMessage(
-      "Enviando material para analise..."
+      "Enviando material para an\u00e1lise..."
     );
 
 
@@ -611,7 +611,7 @@ export function ProductionBatchWorkspacePrototype({
 
 
       setSendMessage(
-        "Conteudo enviado para analise."
+        "Conte\u00fado enviado para an\u00e1lise."
       );
 
     }
@@ -839,7 +839,12 @@ export function ProductionBatchWorkspacePrototype({
               <div>
 
                 <p className="text-[9px] font-black uppercase tracking-[0.08em] text-slate-400">
-                  Materiais carregados
+                  {
+                    area ===
+                    "FILMMAKER"
+                      ? "Conteudos preparados"
+                      : "Materiais carregados"
+                  }
                 </p>
 
                 <p className="mt-1 text-2xl font-black text-slate-900">
@@ -901,7 +906,14 @@ export function ProductionBatchWorkspacePrototype({
       ) : null}
 
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
+      <div
+        className={
+          area ===
+          "FILMMAKER"
+            ? "grid gap-4"
+            : "grid gap-4 xl:grid-cols-[1fr_300px]"
+        }
+      >
 
         {/* ===================================================
             CONTEUDOS
@@ -1624,8 +1636,8 @@ export function ProductionBatchWorkspacePrototype({
                           itemSending
                             ? "Enviando..."
                             : itemSent
-                              ? "Enviado para analise"
-                              : "Enviar este conteudo para analise"
+                              ? "Enviado para an\u00e1lise"
+                              : "Enviar este conte\u00fado para an\u00e1lise"
                         }
                       </button>
 
@@ -1644,7 +1656,12 @@ export function ProductionBatchWorkspacePrototype({
 
         {/* ===================================================
             FECHAMENTO
+            Apenas Design continua com envio em lote.
+            Filmmaker trabalha exclusivamente por conteudo.
             =================================================== */}
+
+        {area ===
+        "DESIGN" ? (
 
         <aside>
 
@@ -1785,6 +1802,8 @@ export function ProductionBatchWorkspacePrototype({
           </div>
 
         </aside>
+
+        ) : null}
 
       </div>
 
