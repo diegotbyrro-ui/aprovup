@@ -546,17 +546,55 @@ export function ProductionBatchKanbanPrototype({
                                 key={
                                   item.id
                                 }
-                                className="flex items-center gap-2 text-[8px]"
+                                className="flex min-w-0 items-center gap-1.5 text-[8px]"
                               >
-                                <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-black text-slate-500">
+
+                                <span
+                                  title="Data de publicacao"
+                                  className="inline-flex shrink-0 items-center gap-1 rounded bg-indigo-50 px-1.5 py-1 font-black text-indigo-600"
+                                >
+                                  <span className="text-[6px] uppercase tracking-[0.04em] text-indigo-400">
+                                    PUB
+                                  </span>
+
                                   {formatDate(
                                     item.plannedDate
                                   )}
                                 </span>
 
-                                <span className="truncate font-semibold text-slate-600">
+
+                                <span
+                                  title="Data de entrega para producao"
+                                  className={
+                                    "inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-1 font-black " +
+                                    (
+                                      item.productionDeadline
+                                        ? "bg-amber-50 text-amber-700"
+                                        : "bg-slate-50 text-slate-400"
+                                    )
+                                  }
+                                >
+                                  <span className={
+                                    "text-[6px] uppercase tracking-[0.04em] " +
+                                    (
+                                      item.productionDeadline
+                                        ? "text-amber-500"
+                                        : "text-slate-300"
+                                    )
+                                  }>
+                                    ENT
+                                  </span>
+
+                                  {deadlineLabel(
+                                    item.productionDeadline
+                                  )}
+                                </span>
+
+
+                                <span className="min-w-0 flex-1 truncate font-semibold text-slate-600">
                                   {item.title}
                                 </span>
+
                               </div>
                             )
                           )}
