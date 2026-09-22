@@ -216,7 +216,7 @@ function deliveryLabel(
     status ===
     "ERROR"
   ) {
-    return "N?o entregue";
+    return "N\u00e3o entregue";
   }
 
 
@@ -232,7 +232,7 @@ function deliveryLabel(
     status ===
     "SENT"
   ) {
-    return "Enviado ? Meta";
+    return "Enviado \u00e0 Meta";
   }
 
 
