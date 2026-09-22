@@ -254,6 +254,27 @@ export function ProductionBatchWorkspacePrototype({
 
 
   const [
+    sendingItemId,
+    setSendingItemId,
+  ] =
+    useState<
+      string |
+      null
+    >(
+      null
+    );
+
+
+  const [
+    sentItemIds,
+    setSentItemIds,
+  ] =
+    useState<
+      string[]
+    >([]);
+
+
+  const [
     sendMessage,
     setSendMessage,
   ] =
@@ -457,6 +478,168 @@ export function ProductionBatchWorkspacePrototype({
     setSent(
       false
     );
+  }
+
+
+  async function sendSingleItem(
+    item:
+      Item
+  ) {
+
+    const selected =
+      files[
+        item.id
+      ] ||
+      [];
+
+
+    const externalLink =
+      (
+        links[
+          item.id
+        ] ||
+        ""
+      ).trim();
+
+
+    if (
+      (
+        selected.length ===
+          0 &&
+        !externalLink
+      ) ||
+      sendingItemId ||
+      sending ||
+      sentItemIds.includes(
+        item.id
+      )
+    ) {
+      return;
+    }
+
+
+    setSendingItemId(
+      item.id
+    );
+
+
+    setSendMessage(
+      "Enviando material para analise..."
+    );
+
+
+    try {
+
+      const body =
+        new FormData();
+
+
+      body.append(
+        "manifest",
+        JSON.stringify([
+          {
+            id:
+              item.id,
+          },
+        ])
+      );
+
+
+      for (
+        const file
+        of selected
+      ) {
+        body.append(
+          "files:" +
+            item.id,
+          file
+        );
+      }
+
+
+      if (
+        externalLink
+      ) {
+        body.append(
+          "link:" +
+            item.id,
+        externalLink
+        );
+      }
+
+
+      const response =
+        await fetch(
+          "/api/pacotes-producao/finalizar",
+          {
+            method:
+              "POST",
+
+            body,
+          }
+        );
+
+
+      const result =
+        await response.json();
+
+
+      if (
+        !response.ok ||
+        !result?.ok
+      ) {
+        throw new Error(
+          result?.message ||
+          "Nao foi possivel enviar este conteudo."
+        );
+      }
+
+
+      setSentItemIds(
+        (
+          current
+        ) =>
+          current.includes(
+            item.id
+          )
+            ? current
+            : [
+                ...current,
+                item.id,
+              ]
+      );
+
+
+      setSendMessage(
+        "Conteudo enviado para analise."
+      );
+
+    }
+    catch (
+      error
+    ) {
+
+      console.error(
+        error
+      );
+
+
+      setSendMessage(
+        "ERRO: " +
+        (
+          error instanceof Error
+            ? error.message
+            : "Falha ao enviar este conteudo."
+        )
+      );
+
+    }
+    finally {
+
+      setSendingItemId(
+        null
+      );
+    }
   }
 
 
@@ -745,6 +928,30 @@ export function ProductionBatchWorkspacePrototype({
                 );
 
 
+              const itemReady =
+                selected.length >
+                  0 ||
+                Boolean(
+                  (
+                    links[
+                      item.id
+                    ] ||
+                    ""
+                  ).trim()
+                );
+
+
+              const itemSent =
+                sentItemIds.includes(
+                  item.id
+                );
+
+
+              const itemSending =
+                sendingItemId ===
+                item.id;
+
+
               return (
 
                 <article
@@ -823,7 +1030,11 @@ export function ProductionBatchWorkspacePrototype({
                           ) : null}
 
 
-                          {selected.length >
+                          {itemSent ? (
+                            <span className="rounded-md bg-emerald-600 px-2 py-1 text-[8px] font-black uppercase text-white">
+                              Enviado para analise
+                            </span>
+                          ) : selected.length >
                           0 ? (
                             <span className="rounded-md bg-emerald-50 px-2 py-1 text-[8px] font-black uppercase text-emerald-600">
                               Material pronto
@@ -1374,6 +1585,50 @@ export function ProductionBatchWorkspacePrototype({
                         Os arquivos ser\u00e3o enviados ao Storage do AprovUp ao finalizar o pacote.
                       </p>
 
+                      <button
+                        type="button"
+                        disabled={
+                          !itemReady ||
+                          itemSending ||
+                          itemSent ||
+                          sending
+                        }
+                        onClick={
+                          () =>
+                            sendSingleItem(
+                              item
+                            )
+                        }
+                        className={[
+                          "mt-3",
+                          "flex",
+                          "h-10",
+                          "w-full",
+                          "items-center",
+                          "justify-center",
+                          "rounded-lg",
+                          "text-[9px]",
+                          "font-black",
+                          "transition",
+
+                          itemSent
+                            ? "cursor-default bg-emerald-50 text-emerald-700"
+                            : itemReady
+                              ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                              : "cursor-not-allowed bg-slate-100 text-slate-400",
+                        ].join(
+                          " "
+                        )}
+                      >
+                        {
+                          itemSending
+                            ? "Enviando..."
+                            : itemSent
+                              ? "Enviado para analise"
+                              : "Enviar este conteudo para analise"
+                        }
+                      </button>
+
                     </div>
 
                   </div>
@@ -1400,12 +1655,11 @@ export function ProductionBatchWorkspacePrototype({
             </p>
 
             <h3 className="mt-2 text-lg font-black text-slate-900">
-              Enviar todos juntos
+              Envio em lote
             </h3>
 
             <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
-              O envio fica liberado somente quando todos os conteúdos tiverem pelo menos um arquivo final selecionado.
-            </p>
+              Voce pode enviar cada conteudo separadamente assim que ele ficar pronto. Se preferir, continue usando o envio em lote.</p>
 
 
             <div className="mt-4 rounded-xl bg-slate-50 p-3">
