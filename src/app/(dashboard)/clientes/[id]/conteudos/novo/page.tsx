@@ -45,6 +45,47 @@ export default async function NovoConteudoClientePage({
     });
   if (!client) return notFound();
 
+
+  const safeDateParts =
+    /^\d{4}-\d{2}-\d{2}$/.test(
+      String(
+        date ||
+        ""
+      )
+    )
+      ? String(
+          date
+        ).split(
+          "-"
+        )
+      : [];
+
+
+  const fallbackCalendarReturn =
+    safeDateParts.length ===
+    3
+      ? (
+          "/calendario-editorial?mes=" +
+          String(
+            Number(
+              safeDateParts[1]
+            )
+          ) +
+          "&ano=" +
+          safeDateParts[0] +
+          "&cliente=" +
+          encodeURIComponent(
+            client.id
+          )
+        )
+      : "";
+
+
+  const calendarReturnValue =
+    retorno ||
+    fallbackCalendarReturn;
+
+
   const users =
     await prisma.user.findMany({
       where: {
@@ -122,8 +163,7 @@ export default async function NovoConteudoClientePage({
           type="hidden"
           name="calendarReturn"
           value={
-            retorno ||
-            ''
+            calendarReturnValue
           }
         />
 

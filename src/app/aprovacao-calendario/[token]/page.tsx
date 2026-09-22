@@ -2,6 +2,10 @@ import { AprovUpLogo } from '@/components/brand/AprovUpLogo';
 import { PreserveApprovalScroll } from '@/components/approval/PreserveApprovalScroll';
 import { PlanningAdjustmentForm } from './PlanningAdjustmentForm';
 import { prisma } from "@/lib/prisma";
+
+import {
+    listAprovUpReferenceFiles,
+} from "@/lib/aprovupStorage";
 import { notFound } from "next/navigation";
 import {
     approvePlanningContent,
@@ -166,6 +170,35 @@ export default async function MonthlyApprovalCalendarPage({
             },
         ],
     });
+
+    /*
+     * As fotos anexadas pela Social Media ficam no
+     * Storage, e nao diretamente no model Content.
+     *
+     * A aprovacao mensal tambem precisa carregar
+     * esses anexos para que o cliente veja exatamente
+     * as referencias enviadas para Design/Filmmaker.
+     */
+    const referenceFilesEntries =
+        await Promise.all(
+            contents.map(
+                async (
+                    content
+                ) => [
+                    content.id,
+                    await listAprovUpReferenceFiles(
+                        content.id
+                    ),
+                ] as const
+            )
+        );
+
+
+    const referenceFilesByContentId =
+        new Map(
+            referenceFilesEntries
+        );
+
 
     const totalContents = contents.length;
 
@@ -338,6 +371,11 @@ export default async function MonthlyApprovalCalendarPage({
                                             const area = content.area || "GERAL";
                                             const priority = content.priority || "MEDIA";
 
+                                            const referenceFiles =
+                                                referenceFilesByContentId.get(
+                                                    content.id
+                                                ) || [];
+
                                             return (
                                                 <div key={content.id} data-approval-item={content.id} className="p-5">
                                                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -389,6 +427,68 @@ export default async function MonthlyApprovalCalendarPage({
                                                                     />
                                                                 </div>
                                                             )}
+
+                                                            {referenceFiles.length > 0 ? (
+                                                                <div className="rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
+                                                                    <div className="flex items-center justify-between gap-3">
+                                                                        <div>
+                                                                            <p className="text-xs font-bold uppercase tracking-wider text-blue-600">
+                                                                                {"Fotos de refer\u00eancia"}
+                                                                            </p>
+
+                                                                            <p className="mt-1 text-xs text-slate-500">
+                                                                                {"Imagens anexadas pela equipe para orientar a cria\u00e7\u00e3o deste conte\u00fado."}
+                                                                            </p>
+                                                                        </div>
+
+                                                                        <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-blue-700">
+                                                                            {referenceFiles.length} foto(s)
+                                                                        </span>
+                                                                    </div>
+
+
+                                                                    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                                                                        {referenceFiles.map(
+                                                                            (
+                                                                                reference
+                                                                            ) => (
+                                                                                <a
+                                                                                    key={
+                                                                                        reference.url
+                                                                                    }
+                                                                                    href={
+                                                                                        reference.url
+                                                                                    }
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+                                                                                >
+                                                                                    <div className="aspect-square overflow-hidden bg-slate-100">
+                                                                                        <img
+                                                                                            src={
+                                                                                                reference.url
+                                                                                            }
+                                                                                            alt={
+                                                                                                reference.originalName ||
+                                                                                                "Referencia"
+                                                                                            }
+                                                                                            className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                                                                                        />
+                                                                                    </div>
+
+                                                                                    <div className="p-2">
+                                                                                        <p className="truncate text-[10px] font-bold text-slate-700">
+                                                                                            {reference.originalName ||
+                                                                                                reference.name}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </a>
+                                                                            )
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ) : null}
+
 
                                                             <div className="space-y-4">
                                                                 {content.briefing && (

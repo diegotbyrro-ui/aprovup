@@ -785,6 +785,81 @@ export async function createContent(formData: FormData) {
     );
 
 
+  /*
+   * Mesmo que o retorno tenha sido gerado enquanto
+   * outro mes estava aberto, o conteudo recem-criado
+   * deve retornar para o mes da sua data de publicacao.
+   *
+   * Exemplo:
+   * 05/10/2026 -> calendario de outubro/2026.
+   */
+  const normalizedCalendarReturn =
+    (
+      () => {
+        if (
+          !calendarReturn ||
+          !plannedDateValue
+        ) {
+          return calendarReturn;
+        }
+
+
+        const match =
+          /^(\d{4})-(\d{2})-\d{2}$/.exec(
+            plannedDateValue
+          );
+
+
+        if (
+          !match
+        ) {
+          return calendarReturn;
+        }
+
+
+        const destination =
+          new URL(
+            calendarReturn,
+            "https://aprovup.local"
+          );
+
+
+        destination.searchParams.set(
+          "mes",
+          String(
+            Number(
+              match[2]
+            )
+          )
+        );
+
+
+        destination.searchParams.set(
+          "ano",
+          match[1]
+        );
+
+
+        if (
+          !destination.searchParams.get(
+            "cliente"
+          )
+        ) {
+          destination.searchParams.set(
+            "cliente",
+            clientId
+          );
+        }
+
+
+        return (
+          destination.pathname +
+          destination.search
+        );
+      }
+    )();
+
+
   function createErrorHref(
     error:
       string
@@ -973,11 +1048,11 @@ export async function createContent(formData: FormData) {
 
 
   if (
-    calendarReturn
+    normalizedCalendarReturn
   ) {
     const destination =
       new URL(
-        calendarReturn,
+        normalizedCalendarReturn,
         "https://aprovup.local"
       );
 
