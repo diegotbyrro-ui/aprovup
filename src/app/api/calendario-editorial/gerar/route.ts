@@ -797,12 +797,7 @@ function fillCalendarPage({
       scale;
 
 
-  /*
-   * TAMANHO DINAMICO DO HEADER.
-   * O nome nunca sera cortado com "...".
-   */
-
-  function headerFontSize(
+  function fitHeader(
     text:
       string,
     initial:
@@ -837,7 +832,7 @@ function fillCalendarPage({
     ) {
       fontSize -=
         S(
-          0.5
+          0.4
         );
     }
 
@@ -847,9 +842,63 @@ function fillCalendarPage({
 
 
   /*
-   * NOME DO CLIENTE
-   * Sem fundo azul adicional.
+   * ==================================================
+   * HEADER
+   * Cobre SOMENTE os textos placeholder do PDF.
+   * ==================================================
    */
+
+  page.drawRectangle({
+    x:
+      X(
+        286
+      ),
+
+    y:
+      Y(
+        696
+      ),
+
+    width:
+      W(
+        470
+      ),
+
+    height:
+      H(
+        34
+      ),
+
+    color:
+      NAVY,
+  });
+
+
+  page.drawRectangle({
+    x:
+      X(
+        790
+      ),
+
+    y:
+      Y(
+        681
+      ),
+
+    width:
+      W(
+        190
+      ),
+
+    height:
+      H(
+        29
+      ),
+
+    color:
+      NAVY,
+  });
+
 
   const headerClient =
     cleanText(
@@ -872,11 +921,11 @@ function fillCalendarPage({
         ),
 
       size:
-        headerFontSize(
+        fitHeader(
           headerClient,
-          23,
-          13,
-          445
+          20,
+          11.5,
+          455
         ),
 
       font:
@@ -887,11 +936,6 @@ function fillCalendarPage({
     }
   );
 
-
-  /*
-   * MES / ANO
-   * Sem fundo azul adicional.
-   */
 
   const monthLabel =
     (
@@ -919,11 +963,11 @@ function fillCalendarPage({
         ),
 
       size:
-        headerFontSize(
+        fitHeader(
           monthLabel,
-          14,
+          13,
           10,
-          180
+          178
         ),
 
       font:
@@ -936,10 +980,12 @@ function fillCalendarPage({
 
 
   /*
-   * GRID DO NOVO TEMPLATE.
+   * ==================================================
+   * CALENDARIO
+   * ==================================================
    */
 
-  const columnX = [
+  const columns = [
     28,
     166,
     305,
@@ -995,6 +1041,51 @@ function fillCalendarPage({
 
   const cellWidth =
     135;
+
+
+  /*
+   * Primeiro apagamos TODOS os numeros,
+   * skeletons e placeholders do modelo.
+   */
+
+  for (
+    const row
+    of rows
+  ) {
+    for (
+      const x
+      of columns
+    ) {
+      page.drawRectangle({
+        x:
+          X(
+            x +
+            3
+          ),
+
+        y:
+          Y(
+            row.y +
+            3
+          ),
+
+        width:
+          W(
+            cellWidth -
+            6
+          ),
+
+        height:
+          H(
+            row.height -
+            6
+          ),
+
+        color:
+          WHITE,
+      });
+    }
+  }
 
 
   const firstWeekDay =
@@ -1069,6 +1160,140 @@ function fillCalendarPage({
   }
 
 
+  /*
+   * Outubro/2026 e demais meses de 5 semanas.
+   *
+   * Caso algum mes exija uma sexta semana,
+   * reduzimos dinamicamente a altura.
+   */
+
+  const totalSlots =
+    firstWeekDay +
+    daysInMonth;
+
+
+  const rowCount =
+    Math.ceil(
+      totalSlots /
+      7
+    );
+
+
+  const effectiveRows =
+    rowCount <=
+      5
+      ? rows
+      : Array.from(
+          {
+            length:
+              6,
+          },
+          (
+            _,
+            index
+          ) => ({
+            y:
+              102 +
+              (
+                5 -
+                index
+              ) *
+              83,
+
+            height:
+              76,
+          })
+        );
+
+
+  /*
+   * Se forem 6 semanas, reconstruimos
+   * a area inteira para caber corretamente.
+   */
+
+  if (
+    rowCount >
+    5
+  ) {
+    page.drawRectangle({
+      x:
+        X(
+          24
+        ),
+
+      y:
+        Y(
+          98
+        ),
+
+      width:
+        W(
+          976
+        ),
+
+      height:
+        H(
+          505
+        ),
+
+      color:
+        rgb(
+          0.975,
+          0.985,
+          0.998
+        ),
+    });
+
+
+    for (
+      const row
+      of effectiveRows
+    ) {
+      for (
+        const x
+        of columns
+      ) {
+        page.drawRectangle({
+          x:
+            X(
+              x
+            ),
+
+          y:
+            Y(
+              row.y
+            ),
+
+          width:
+            W(
+              cellWidth
+            ),
+
+          height:
+            H(
+              row.height
+            ),
+
+          color:
+            WHITE,
+
+          borderColor:
+            rgb(
+              0.88,
+              0.91,
+              0.95
+            ),
+
+          borderWidth:
+            S(
+              0.8
+            ),
+        });
+      }
+    }
+  }
+
+
   for (
     let day =
       1;
@@ -1095,63 +1320,27 @@ function fillCalendarPage({
       7;
 
 
+    const row =
+      effectiveRows[
+        rowIndex
+      ];
+
+
     if (
-      rowIndex >
-      4
+      !row
     ) {
       continue;
     }
 
 
-    const row =
-      rows[
-        rowIndex
-      ];
-
-
     const x =
-      columnX[
+      columns[
         columnIndex
       ];
 
 
     /*
-     * Limpa apenas o esqueleto interno
-     * do card do modelo.
-     */
-
-    page.drawRectangle({
-      x:
-        X(
-          x +
-          5
-        ),
-
-      y:
-        Y(
-          row.y +
-          5
-        ),
-
-      width:
-        W(
-          cellWidth -
-          10
-        ),
-
-      height:
-        H(
-          row.height -
-          10
-        ),
-
-      color:
-        WHITE,
-    });
-
-
-    /*
-     * NUMERO DO DIA.
+     * NUMERO DO DIA
      */
 
     page.drawCircle({
@@ -1190,7 +1379,7 @@ function fillCalendarPage({
               day <
                 10
                 ? 14.5
-                : 10.5
+                : 10.4
             )
           ),
 
@@ -1203,7 +1392,7 @@ function fillCalendarPage({
 
         size:
           S(
-            9.2
+            9.4
           ),
 
         font:
@@ -1290,7 +1479,7 @@ function fillCalendarPage({
 
             size:
               S(
-                7.6
+                7.8
               ),
 
             maxWidth:
@@ -1325,12 +1514,12 @@ function fillCalendarPage({
 
           size:
             S(
-              7.6
+              7.8
             ),
 
           lineHeight:
             S(
-              8.8
+              9
             ),
 
           font:
@@ -1341,15 +1530,11 @@ function fillCalendarPage({
         });
 
 
-        const usedLines =
+        cursorY -=
           Math.max(
             1,
             titleLines.length
-          );
-
-
-        cursorY -=
-          usedLines *
+          ) *
             9 +
           16;
 
@@ -1378,7 +1563,7 @@ function fillCalendarPage({
 
               size:
                 S(
-                  5.8
+                  5.9
                 ),
 
               font:
@@ -1421,7 +1606,7 @@ function fillCalendarPage({
 
           size:
             S(
-              5.3
+              5.4
             ),
 
           font:
@@ -1698,6 +1883,32 @@ function fillDetailPage({
       .toUpperCase();
 
 
+  page.drawRectangle({
+    x:
+      X(
+        258
+      ),
+
+    y:
+      Y(
+        696
+      ),
+
+    width:
+      W(
+        478
+      ),
+
+    height:
+      H(
+        34
+      ),
+
+    color:
+      NAVY,
+  });
+
+
   page.drawText(
     headerClient,
     {
@@ -1714,8 +1925,8 @@ function fillDetailPage({
       size:
         headerFontSize(
           headerClient,
-          23,
-          13,
+          20,
+          11.5,
           455
         ),
 
@@ -1740,6 +1951,32 @@ function fillDetailPage({
       .toUpperCase();
 
 
+  page.drawRectangle({
+    x:
+      X(
+        780
+      ),
+
+    y:
+      Y(
+        681
+      ),
+
+    width:
+      W(
+        198
+      ),
+
+    height:
+      H(
+        29
+      ),
+
+    color:
+      NAVY,
+  });
+
+
   page.drawText(
     monthLabel,
     {
@@ -1756,9 +1993,9 @@ function fillDetailPage({
       size:
         headerFontSize(
           monthLabel,
-          14,
+          13,
           10,
-          190
+          188
         ),
 
       font:
@@ -2332,7 +2569,7 @@ function fillDetailPage({
           Math.max(
             2,
             Math.min(
-              6,
+              5,
               Math.floor(
                 roomBelow /
                 9
@@ -2385,12 +2622,12 @@ function fillDetailPage({
 
           size:
             S(
-              7
+              8.2
             ),
 
           lineHeight:
             S(
-              8.7
+              9.8
             ),
 
           font:
