@@ -276,21 +276,152 @@ function wrapLines({
   const sourceText =
     cleanText(
       text
-    );
-
-
-  const words =
-    sourceText
+    )
       .replace(
         /\n+/g,
         ' '
       )
+      .replace(
+        /\s+/g,
+        ' '
+      )
+      .trim();
+
+
+  if (
+    !sourceText
+  ) {
+    return [];
+  }
+
+
+  /*
+   * Margem interna de seguranca:
+   * nunca usamos 100% da largura do card.
+   */
+
+  const safeWidth =
+    Math.max(
+      1,
+      maxWidth -
+      8
+    );
+
+
+  function widthOf(
+    value:
+      string
+  ) {
+    return font
+      .widthOfTextAtSize(
+        value,
+        size
+      );
+  }
+
+
+  /*
+   * Quebra palavras/tokens que sozinhos
+   * excedem a largura maxima.
+   *
+   * Isso resolve principalmente:
+   * - URLs
+   * - links do Instagram
+   * - palavras longas
+   * - strings sem espacos
+   */
+
+  function splitLongToken(
+    token:
+      string
+  ) {
+    if (
+      widthOf(
+        token
+      ) <=
+      safeWidth
+    ) {
+      return [
+        token,
+      ];
+    }
+
+
+    const chunks:
+      string[] =
+      [];
+
+
+    let current =
+      '';
+
+
+    for (
+      const char
+      of token
+    ) {
+      const candidate =
+        current +
+        char;
+
+
+      if (
+        widthOf(
+          candidate
+        ) <=
+        safeWidth
+      ) {
+        current =
+          candidate;
+      }
+      else {
+        if (
+          current
+        ) {
+          chunks.push(
+            current
+          );
+        }
+
+
+        current =
+          char;
+      }
+    }
+
+
+    if (
+      current
+    ) {
+      chunks.push(
+        current
+      );
+    }
+
+
+    return chunks;
+  }
+
+
+  const rawWords =
+    sourceText
       .split(
-        /\s+/
+        ' '
       )
       .filter(
         Boolean
       );
+
+
+  const words =
+    rawWords.flatMap(
+      (
+        word
+      ) =>
+        splitLongToken(
+          word
+        )
+    );
 
 
   const lines:
@@ -306,7 +437,6 @@ function wrapLines({
     const word
     of words
   ) {
-
     const candidate =
       current
         ? current +
@@ -316,38 +446,36 @@ function wrapLines({
 
 
     if (
-      font.widthOfTextAtSize(
-        candidate,
-        size
+      widthOf(
+        candidate
       ) <=
-      maxWidth
+      safeWidth
     ) {
-
       current =
         candidate;
 
+      continue;
     }
-    else {
 
-      if (
+
+    if (
+      current
+    ) {
+      lines.push(
         current
-      ) {
-        lines.push(
-          current
-        );
-      }
+      );
+    }
 
 
-      current =
-        word;
+    current =
+      word;
 
 
-      if (
-        lines.length >=
-        maxLines
-      ) {
-        break;
-      }
+    if (
+      lines.length >=
+      maxLines
+    ) {
+      break;
     }
   }
 
@@ -363,42 +491,99 @@ function wrapLines({
   }
 
 
+  /*
+   * Se houve corte pelo limite de linhas,
+   * adicionamos reticencias SEM ultrapassar
+   * a largura maxima.
+   */
+
+  const reconstructed =
+    lines.join(
+      ' '
+    );
+
+
   if (
-    words.length &&
-    lines.length ===
-      maxLines
+    reconstructed.length <
+      sourceText.length &&
+    lines.length >
+      0
   ) {
-
-    const consumed =
-      lines.join(
-        ' '
-      );
-
-
-    if (
-      consumed.length <
-      sourceText.length
-    ) {
-
+    let lastLine =
       lines[
         lines.length -
         1
-      ] =
-        fitText(
-          lines[
-            lines.length -
-            1
-          ] +
-          '...',
-          font,
-          size,
-          maxWidth
+      ];
+
+
+    while (
+      lastLine.length >
+        1 &&
+      widthOf(
+        lastLine +
+        '...'
+      ) >
+        safeWidth
+    ) {
+      lastLine =
+        lastLine.slice(
+          0,
+          -1
         );
     }
+
+
+    lines[
+      lines.length -
+      1
+    ] =
+      lastLine +
+      '...';
   }
 
 
-  return lines;
+  /*
+   * Validacao defensiva:
+   * nenhuma linha final pode ultrapassar safeWidth.
+   */
+
+  return lines.map(
+    (
+      line
+    ) => {
+      if (
+        widthOf(
+          line
+        ) <=
+        safeWidth
+      ) {
+        return line;
+      }
+
+
+      let adjusted =
+        line;
+
+
+      while (
+        adjusted.length >
+          1 &&
+        widthOf(
+          adjusted
+        ) >
+          safeWidth
+      ) {
+        adjusted =
+          adjusted.slice(
+            0,
+            -1
+          );
+      }
+
+
+      return adjusted;
+    }
+  );
 }
 
 function drawLines({
