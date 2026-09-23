@@ -18,15 +18,15 @@ model Agency {
   users   User[]
   clients Client[]
 
-  designKanbanColumns      DesignKanbanColumn[]
-  filmmakerKanbanColumns   FilmmakerKanbanColumn[]
-  googleCalendarConnection GoogleCalendarConnection?
-  aiProviderConnection     AiProviderConnection?
-  reportTemplates          ReportTemplate[]
+  designKanbanColumns        DesignKanbanColumn[]
+  filmmakerKanbanColumns     FilmmakerKanbanColumn[]
+  googleCalendarConnection   GoogleCalendarConnection?
+  aiProviderConnection       AiProviderConnection?
+  reportTemplates            ReportTemplate[]
   editorialCalendarTemplates EditorialCalendarTemplate[]
-  supportTickets           SupportTicket[]
-  mindMaps                 MindMap[]
-  financeEntries           FinanceEntry[]
+  supportTickets             SupportTicket[]
+  mindMaps                   MindMap[]
+  financeEntries             FinanceEntry[]
 
   secretaryThreads        SecretaryThread[]
   secretaryPendingActions SecretaryPendingAction[]
@@ -124,7 +124,6 @@ model EditorialCalendarTemplate {
   @@index([agencyId, isDefault])
 }
 
-
 model User {
   id             String    @id @default(cuid())
   name           String?
@@ -183,6 +182,16 @@ model Client {
   instagramConnection      InstagramConnection?
   instagramMetricSnapshots InstagramMetricSnapshot[]
   financeEntries           FinanceEntry[]
+
+  // Configuracao financeira do cliente.
+  financeMonthlyAmountCents Int?
+  financeBillingDay         Int?
+  financeStartDate          DateTime?
+  financeEndDate            DateTime?
+  financeStatus             String    @default("INATIVO")
+  financeRecurring          Boolean   @default(true)
+  financePaymentMethod      String?
+  financeNotes              String?
 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -1085,11 +1094,15 @@ model FinanceEntry {
   installmentNumber Int?
   installmentTotal  Int?
 
+  contractPeriod String?
+  source         String?
+
   createdByUserId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([agencyId, clientId, contractPeriod])
   @@index([agencyId, dueDate])
   @@index([agencyId, type, status, dueDate])
   @@index([agencyId, clientId, dueDate])

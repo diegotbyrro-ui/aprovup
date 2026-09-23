@@ -722,3 +722,520 @@ export async function reopenFinanceEntryAction(
     returnTo
   );
 }
+
+
+
+function parseOptionalFinanceDate(
+  value:
+    string
+) {
+  if (!value) {
+    return null;
+  }
+
+  return parseDate(
+    value
+  );
+}
+
+
+function parseFinanceBillingDay(
+  value:
+    string
+) {
+  const day =
+    Math.floor(
+      Number(
+        value
+      )
+    );
+
+
+  if (
+    !Number.isFinite(
+      day
+    ) ||
+    day <
+      1 ||
+    day >
+      31
+  ) {
+    return null;
+  }
+
+
+  return day;
+}
+
+
+export async function saveClientFinanceProfileAction(
+  clientId:
+    string,
+  formData:
+    FormData
+) {
+
+  const user =
+    await requireFinanceAccess();
+
+
+  const returnTo =
+    safeReturnTo(
+      field(
+        formData,
+        "returnTo"
+      )
+    );
+
+
+  const amountCents =
+    parseMoneyToCents(
+      field(
+        formData,
+        "monthlyAmount"
+      )
+    );
+
+
+  const billingDay =
+    parseFinanceBillingDay(
+      field(
+        formData,
+        "billingDay"
+      )
+    );
+
+
+  const startDate =
+    parseOptionalFinanceDate(
+      field(
+        formData,
+        "startDate"
+      )
+    );
+
+
+  const endDate =
+    parseOptionalFinanceDate(
+      field(
+        formData,
+        "endDate"
+      )
+    );
+
+
+  const financeStatus =
+    field(
+      formData,
+      "financeStatus"
+    ) ===
+      "ATIVO"
+      ? "ATIVO"
+      : "INATIVO";
+
+
+  const financeRecurring =
+    formData.get(
+      "financeRecurring"
+    ) ===
+    "on";
+
+
+  const paymentMethod =
+    field(
+      formData,
+      "paymentMethod"
+    );
+
+
+  const financeNotes =
+    field(
+      formData,
+      "financeNotes"
+    );
+
+
+  const client =
+    await prisma.client
+      .findFirst({
+        where: {
+          id:
+            clientId,
+
+          agencyId:
+            user.agencyId,
+        },
+
+        select: {
+          id:
+            true,
+        },
+      });
+
+
+  if (!client) {
+
+    redirect(
+      withResult(
+        returnTo,
+        "erro"
+      )
+    );
+  }
+
+
+  if (
+    financeStatus ===
+      "ATIVO" &&
+    (
+      !amountCents ||
+      !billingDay ||
+      !startDate
+    )
+  ) {
+
+    redirect(
+      withResult(
+        returnTo,
+        "erro"
+      )
+    );
+  }
+
+
+  if (
+    startDate &&
+    endDate &&
+    endDate <
+      startDate
+  ) {
+
+    redirect(
+      withResult(
+        returnTo,
+        "erro"
+      )
+    );
+  }
+
+
+  await prisma.client
+    .update({
+      where: {
+        id:
+          client.id,
+      },
+
+      data: {
+        financeMonthlyAmountCents:
+          amountCents,
+
+        financeBillingDay:
+          billingDay,
+
+        financeStartDate:
+          startDate,
+
+        financeEndDate:
+          endDate,
+
+        financeStatus,
+
+        financeRecurring,
+
+        financePaymentMethod:
+          paymentMethod ||
+          null,
+
+        financeNotes:
+          financeNotes ||
+          null,
+      },
+    });
+
+
+  revalidatePath(
+    "/financas"
+  );
+
+
+  redirect(
+    withResult(
+      returnTo,
+      "contrato"
+    )
+  );
+}
+
+
+export async function generateMonthlyClientReceivablesAction(
+  formData:
+    FormData
+) {
+
+  const user =
+    await requireFinanceAccess();
+
+
+  const period =
+    field(
+      formData,
+      "period"
+    );
+
+
+  if (
+    !/^\d{4}-\d{2}$/.test(
+      period
+    )
+  ) {
+
+    redirect(
+      "/financas?aba=contratos&erro=1"
+    );
+  }
+
+
+  const year =
+    Number(
+      period.slice(
+        0,
+        4
+      )
+    );
+
+
+  const month =
+    Number(
+      period.slice(
+        5,
+        7
+      )
+    );
+
+
+  if (
+    !Number.isFinite(
+      year
+    ) ||
+    month <
+      1 ||
+    month >
+      12
+  ) {
+
+    redirect(
+      "/financas?aba=contratos&erro=1"
+    );
+  }
+
+
+  const periodStart =
+    new Date(
+      Date.UTC(
+        year,
+        month -
+          1,
+        1,
+        15,
+        0,
+        0
+      )
+    );
+
+
+  const periodEnd =
+    new Date(
+      Date.UTC(
+        year,
+        month,
+        1,
+        15,
+        0,
+        0
+      )
+    );
+
+
+  const clients =
+    await prisma.client
+      .findMany({
+        where: {
+          agencyId:
+            user.agencyId,
+
+          financeStatus:
+            "ATIVO",
+
+          financeRecurring:
+            true,
+
+          financeMonthlyAmountCents: {
+            gt:
+              0,
+          },
+
+          financeBillingDay: {
+            not:
+              null,
+          },
+
+          financeStartDate: {
+            lt:
+              periodEnd,
+          },
+
+          OR: [
+            {
+              financeEndDate:
+                null,
+            },
+            {
+              financeEndDate: {
+                gte:
+                  periodStart,
+              },
+            },
+          ],
+        },
+
+        select: {
+          id:
+            true,
+
+          name:
+            true,
+
+          financeMonthlyAmountCents:
+            true,
+
+          financeBillingDay:
+            true,
+
+          financePaymentMethod:
+            true,
+        },
+      });
+
+
+  const data =
+    clients.flatMap(
+      (
+        client
+      ) => {
+
+        if (
+          !client.financeMonthlyAmountCents ||
+          !client.financeBillingDay
+        ) {
+          return [];
+        }
+
+
+        const lastDay =
+          new Date(
+            Date.UTC(
+              year,
+              month,
+              0,
+              15,
+              0,
+              0
+            )
+          )
+            .getUTCDate();
+
+
+        const dueDay =
+          Math.min(
+            client.financeBillingDay,
+            lastDay
+          );
+
+
+        return [
+          {
+            agencyId:
+              user.agencyId,
+
+            clientId:
+              client.id,
+
+            type:
+              "RECEITA",
+
+            description:
+              "Mensalidade " +
+              client.name,
+
+            category:
+              "Mensalidade",
+
+            amountCents:
+              client.financeMonthlyAmountCents,
+
+            dueDate:
+              new Date(
+                Date.UTC(
+                  year,
+                  month -
+                    1,
+                  dueDay,
+                  15,
+                  0,
+                  0
+                )
+              ),
+
+            status:
+              "PENDENTE",
+
+            paymentMethod:
+              client.financePaymentMethod ||
+              null,
+
+            isRecurring:
+              true,
+
+            contractPeriod:
+              period,
+
+            source:
+              "CLIENT_MONTHLY_CONTRACT",
+
+            createdByUserId:
+              user.id,
+          },
+        ];
+      }
+    );
+
+
+  if (
+    data.length >
+    0
+  ) {
+
+    await prisma.financeEntry
+      .createMany({
+        data,
+
+        skipDuplicates:
+          true,
+      });
+  }
+
+
+  revalidatePath(
+    "/financas"
+  );
+
+
+  redirect(
+    "/financas?aba=contratos&periodo=" +
+    encodeURIComponent(
+      period
+    ) +
+    "&gerado=1"
+  );
+}

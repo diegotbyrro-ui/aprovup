@@ -28,7 +28,9 @@ import {
 
 import {
   createFinanceEntryAction,
+  generateMonthlyClientReceivablesAction,
   reopenFinanceEntryAction,
+  saveClientFinanceProfileAction,
   settleFinanceEntryAction,
 } from "./actions";
 
@@ -724,6 +726,12 @@ export default async function FinancePage({
 
       clientes?:
         string;
+
+      contrato?:
+        string;
+
+      gerado?:
+        string;
     }>;
 }) {
 
@@ -745,6 +753,7 @@ export default async function FinancePage({
       "receber",
       "pagar",
       "fluxo",
+      "contratos",
       "relatorios",
     ].includes(
       String(
@@ -865,6 +874,30 @@ export default async function FinancePage({
               true,
 
             name:
+              true,
+
+            financeMonthlyAmountCents:
+              true,
+
+            financeBillingDay:
+              true,
+
+            financeStartDate:
+              true,
+
+            financeEndDate:
+              true,
+
+            financeStatus:
+              true,
+
+            financeRecurring:
+              true,
+
+            financePaymentMethod:
+              true,
+
+            financeNotes:
               true,
           },
 
@@ -1440,6 +1473,13 @@ export default async function FinancePage({
 
       label:
         "Fluxo de caixa",
+    },
+    {
+      key:
+        "contratos",
+
+      label:
+        "Contratos",
     },
     {
       key:
@@ -2811,6 +2851,417 @@ export default async function FinancePage({
                         Nenhuma movimentação cadastrada neste período.
                       </div>
                     )
+                }
+
+              </div>
+
+            </section>
+          )
+          : null
+      }
+
+
+      {
+        tab ===
+        "contratos"
+          ? (
+            <section className="space-y-4">
+
+              <article className="rounded-2xl border border-blue-200 bg-blue-50/40 p-5 shadow-sm">
+
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
+                  <div>
+
+                    <p className="text-[9px] font-black uppercase tracking-[0.12em] text-blue-600">
+                      Receita recorrente
+                    </p>
+
+                    <h2 className="mt-1 text-lg font-black text-slate-950">
+                      Mensalidades de {monthFormatter.format(start)}
+                    </h2>
+
+                    <p className="mt-1 max-w-2xl text-[10px] font-semibold leading-relaxed text-slate-500">
+                      Gere as contas a receber dos contratos ativos. O mesmo cliente nao sera duplicado dentro do mesmo mes.
+                    </p>
+
+                  </div>
+
+
+                  <form
+                    action={
+                      generateMonthlyClientReceivablesAction
+                    }
+                  >
+
+                    <input
+                      type="hidden"
+                      name="period"
+                      value={
+                        period
+                      }
+                    />
+
+                    <button
+                      type="submit"
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-[10px] font-black text-white hover:bg-blue-700"
+                    >
+                      <CircleDollarSign
+                        size={15}
+                      />
+
+                      Gerar mensalidades do mes
+                    </button>
+
+                  </form>
+
+                </div>
+
+              </article>
+
+
+              {
+                params.contrato ===
+                "1"
+                  ? (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[10px] font-black text-emerald-700">
+                      Contrato financeiro atualizado com sucesso.
+                    </div>
+                  )
+                  : null
+              }
+
+
+              {
+                params.gerado ===
+                "1"
+                  ? (
+                    <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-[10px] font-black text-blue-700">
+                      Mensalidades processadas. Lancamentos ja existentes neste periodo nao foram duplicados.
+                    </div>
+                  )
+                  : null
+              }
+
+
+              <div className="grid gap-4 xl:grid-cols-2">
+
+                {
+                  clients.map(
+                    (
+                      client
+                    ) => {
+
+                      const active =
+                        client.financeStatus ===
+                        "ATIVO";
+
+
+                      return (
+                        <article
+                          key={
+                            client.id
+                          }
+                          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                        >
+
+                          <div className="flex items-start justify-between gap-4">
+
+                            <div className="min-w-0">
+
+                              <p className="text-[8px] font-black uppercase tracking-[0.12em] text-slate-400">
+                                Cliente
+                              </p>
+
+                              <h3 className="mt-1 truncate text-sm font-black text-slate-950">
+                                {client.name}
+                              </h3>
+
+                              {
+                                client.financeMonthlyAmountCents
+                                  ? (
+                                    <p className="mt-1 text-[10px] font-black text-emerald-600">
+                                      {formatMoney(
+                                        client.financeMonthlyAmountCents
+                                      )} / mes
+                                    </p>
+                                  )
+                                  : (
+                                    <p className="mt-1 text-[9px] font-semibold text-slate-400">
+                                      Contrato financeiro ainda nao configurado
+                                    </p>
+                                  )
+                              }
+
+                            </div>
+
+
+                            <span
+                              className={
+                                active
+                                  ? "shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[8px] font-black text-emerald-700"
+                                  : "shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[8px] font-black text-slate-500"
+                              }
+                            >
+                              {
+                                active
+                                  ? "ATIVO"
+                                  : "INATIVO"
+                              }
+                            </span>
+
+                          </div>
+
+
+                          <form
+                            action={
+                              saveClientFinanceProfileAction.bind(
+                                null,
+                                client.id
+                              )
+                            }
+                            className="mt-5 grid gap-3 sm:grid-cols-2"
+                          >
+
+                            <input
+                              type="hidden"
+                              name="returnTo"
+                              value={
+                                "/financas?aba=contratos&periodo=" +
+                                period
+                              }
+                            />
+
+
+                            <label className="space-y-1.5">
+
+                              <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                                Valor mensal
+                              </span>
+
+                              <input
+                                name="monthlyAmount"
+                                inputMode="decimal"
+                                defaultValue={
+                                  client.financeMonthlyAmountCents
+                                    ? (
+                                        client.financeMonthlyAmountCents /
+                                        100
+                                      )
+                                        .toFixed(
+                                          2
+                                        )
+                                        .replace(
+                                          ".",
+                                          ","
+                                        )
+                                    : ""
+                                }
+                                placeholder="2500,00"
+                                className="h-10 w-full rounded-xl border border-slate-200 px-3 text-[10px] font-bold text-slate-700 outline-none focus:border-blue-500"
+                              />
+
+                            </label>
+
+
+                            <label className="space-y-1.5">
+
+                              <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                                Dia do vencimento
+                              </span>
+
+                              <input
+                                type="number"
+                                min="1"
+                                max="31"
+                                name="billingDay"
+                                defaultValue={
+                                  client.financeBillingDay ||
+                                  ""
+                                }
+                                placeholder="10"
+                                className="h-10 w-full rounded-xl border border-slate-200 px-3 text-[10px] font-bold text-slate-700 outline-none focus:border-blue-500"
+                              />
+
+                            </label>
+
+
+                            <label className="space-y-1.5">
+
+                              <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                                Inicio do contrato
+                              </span>
+
+                              <input
+                                type="date"
+                                name="startDate"
+                                defaultValue={
+                                  client.financeStartDate
+                                    ? new Date(
+                                        client.financeStartDate
+                                      )
+                                        .toISOString()
+                                        .slice(
+                                          0,
+                                          10
+                                        )
+                                    : ""
+                                }
+                                className="h-10 w-full rounded-xl border border-slate-200 px-3 text-[10px] font-bold text-slate-700 outline-none focus:border-blue-500"
+                              />
+
+                            </label>
+
+
+                            <label className="space-y-1.5">
+
+                              <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                                Termino opcional
+                              </span>
+
+                              <input
+                                type="date"
+                                name="endDate"
+                                defaultValue={
+                                  client.financeEndDate
+                                    ? new Date(
+                                        client.financeEndDate
+                                      )
+                                        .toISOString()
+                                        .slice(
+                                          0,
+                                          10
+                                        )
+                                    : ""
+                                }
+                                className="h-10 w-full rounded-xl border border-slate-200 px-3 text-[10px] font-bold text-slate-700 outline-none focus:border-blue-500"
+                              />
+
+                            </label>
+
+
+                            <label className="space-y-1.5">
+
+                              <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                                Status
+                              </span>
+
+                              <select
+                                name="financeStatus"
+                                defaultValue={
+                                  client.financeStatus ||
+                                  "INATIVO"
+                                }
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-700 outline-none focus:border-blue-500"
+                              >
+
+                                <option value="ATIVO">
+                                  Ativo
+                                </option>
+
+                                <option value="INATIVO">
+                                  Inativo
+                                </option>
+
+                              </select>
+
+                            </label>
+
+
+                            <label className="space-y-1.5">
+
+                              <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                                Forma de pagamento
+                              </span>
+
+                              <select
+                                name="paymentMethod"
+                                defaultValue={
+                                  client.financePaymentMethod ||
+                                  ""
+                                }
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-700 outline-none focus:border-blue-500"
+                              >
+
+                                <option value="">
+                                  Nao informado
+                                </option>
+
+                                <option value="Pix">
+                                  Pix
+                                </option>
+
+                                <option value="Boleto">
+                                  Boleto
+                                </option>
+
+                                <option value="Transferencia">
+                                  Transferencia
+                                </option>
+
+                                <option value="Cartao">
+                                  Cartao
+                                </option>
+
+                                <option value="Dinheiro">
+                                  Dinheiro
+                                </option>
+
+                              </select>
+
+                            </label>
+
+
+                            <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 sm:col-span-2">
+
+                              <input
+                                type="checkbox"
+                                name="financeRecurring"
+                                defaultChecked={
+                                  client.financeRecurring
+                                }
+                              />
+
+                              <span className="text-[9px] font-black text-slate-700">
+                                Gerar mensalidade recorrente
+                              </span>
+
+                            </label>
+
+
+                            <label className="space-y-1.5 sm:col-span-2">
+
+                              <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                                Observacoes financeiras
+                              </span>
+
+                              <textarea
+                                name="financeNotes"
+                                rows={2}
+                                defaultValue={
+                                  client.financeNotes ||
+                                  ""
+                                }
+                                placeholder="Reajuste, condicao especial, permuta parcial..."
+                                className="w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-[10px] font-semibold text-slate-700 outline-none focus:border-blue-500"
+                              />
+
+                            </label>
+
+
+                            <button
+                              type="submit"
+                              className="h-10 rounded-xl bg-slate-950 px-4 text-[9px] font-black text-white hover:bg-slate-800 sm:col-span-2"
+                            >
+                              Salvar contrato financeiro
+                            </button>
+
+                          </form>
+
+                        </article>
+                      );
+                    }
+                  )
                 }
 
               </div>
