@@ -105,6 +105,84 @@ function getDayKey(date: Date | null) {
     return new Date(date).toISOString().split("T")[0];
 }
 
+function LinkifyText({
+    text,
+}: {
+    text:
+        string;
+}) {
+    const parts =
+        text.split(
+            /(https?:\/\/[^\s]+)/g
+        );
+
+
+    return (
+        <>
+            {
+                parts.map(
+                    (
+                        part,
+                        index
+                    ) => {
+                        if (
+                            /^https?:\/\/[^\s]+$/.test(
+                                part
+                            )
+                        ) {
+                            const cleanUrl =
+                                part.replace(
+                                    /[),.;!?]+$/,
+                                    ""
+                                );
+
+
+                            const trailing =
+                                part.slice(
+                                    cleanUrl.length
+                                );
+
+
+                            return (
+                                <span
+                                    key={
+                                        index
+                                    }
+                                >
+                                    <a
+                                        href={
+                                            cleanUrl
+                                        }
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-semibold text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-800"
+                                    >
+                                        {cleanUrl}
+                                    </a>
+
+                                    {trailing}
+                                </span>
+                            );
+                        }
+
+
+                        return (
+                            <span
+                                key={
+                                    index
+                                }
+                            >
+                                {part}
+                            </span>
+                        );
+                    }
+                )
+            }
+        </>
+    );
+}
+
+
 function isPlanningAlreadyApproved(status: string) {
     return [
         "AGENDAMENTO_PRODUCAO",
@@ -498,7 +576,11 @@ export default async function MonthlyApprovalCalendarPage({
                                                                         </p>
 
                                                                         <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                                                                            {content.briefing}
+                                                                            <LinkifyText
+                                                                                text={
+                                                                                    content.briefing
+                                                                                }
+                                                                            />
                                                                         </p>
                                                                     </div>
                                                                 )}
@@ -510,7 +592,11 @@ export default async function MonthlyApprovalCalendarPage({
                                                                         </p>
 
                                                                         <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                                                                            {content.artText}
+                                                                            <LinkifyText
+                                                                                text={
+                                                                                    content.artText
+                                                                                }
+                                                                            />
                                                                         </p>
                                                                     </div>
                                                                 )}
@@ -523,7 +609,11 @@ export default async function MonthlyApprovalCalendarPage({
 
                                                                         <div className="mt-2 rounded-xl border border-slate-100 bg-slate-50 p-4">
                                                                             <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                                                                                {content.caption}
+                                                                                <LinkifyText
+                                                                                    text={
+                                                                                        content.caption
+                                                                                    }
+                                                                                />
                                                                             </p>
                                                                         </div>
                                                                     </div>
