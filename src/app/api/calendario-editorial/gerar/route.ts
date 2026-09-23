@@ -304,7 +304,7 @@ function wrapLines({
     Math.max(
       1,
       maxWidth -
-      8
+      12
     );
 
 
@@ -2559,7 +2559,7 @@ function fillDetailPage({
 
         const maxTextWidth =
           cardWidth -
-          98;
+          116;
 
 
         const kind =
@@ -2775,7 +2775,7 @@ function fillDetailPage({
 
             size:
               S(
-                7
+                8.2
               ),
 
             maxWidth:
