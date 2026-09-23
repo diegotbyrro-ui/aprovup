@@ -23,6 +23,7 @@ model Agency {
   googleCalendarConnection GoogleCalendarConnection?
   aiProviderConnection     AiProviderConnection?
   reportTemplates          ReportTemplate[]
+  editorialCalendarTemplates EditorialCalendarTemplate[]
   supportTickets           SupportTicket[]
   mindMaps                 MindMap[]
   financeEntries           FinanceEntry[]
@@ -99,6 +100,30 @@ model ReportTemplate {
   @@index([agencyId])
   @@index([agencyId, isDefault])
 }
+
+model EditorialCalendarTemplate {
+  id String @id @default(cuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  name             String
+  sourceFileUrl    String
+  originalFileName String
+  fileSize         Int
+
+  pageCount Int @default(2)
+
+  isDefault Boolean @default(false)
+  status    String  @default("ATIVO")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+  @@index([agencyId, isDefault])
+}
+
 
 model User {
   id             String    @id @default(cuid())

@@ -356,6 +356,19 @@ export async function AppSidebar() {
                 Modelos de relatório
               </span>
             </Link>
+
+            <Link
+              href="/configuracoes/calendario-editorial"
+              className="ap-sidebar-footer-link"
+            >
+              <CalendarDays
+                size={16}
+              />
+
+              <span>
+                {"Modelos de calendário"}
+              </span>
+            </Link>
           </>
 
         ) : null}

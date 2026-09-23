@@ -455,7 +455,33 @@ export default async function CalendarioEditorialPage({
                         </>
                     )}
 
-                    <Link
+                                        <Link
+                        href={
+                            '/calendario-editorial/exportar?mes=' +
+                            String(
+                                currentMonth +
+                                1
+                            ) +
+                            '&ano=' +
+                            String(
+                                currentYear
+                            ) +
+                            (
+                                selectedClient !==
+                                'TODOS'
+                                    ? '&cliente=' +
+                                      encodeURIComponent(
+                                          selectedClient
+                                      )
+                                    : ''
+                            )
+                        }
+                        className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700"
+                    >
+                        Gerar PDF do mes
+                    </Link>
+
+<Link
                         href={
                             selectedClient !== 'TODOS'
                                 ? `/design-grafico/nova?cliente=${selectedClient}`
