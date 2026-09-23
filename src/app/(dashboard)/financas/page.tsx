@@ -944,8 +944,18 @@ export default async function FinancePage({
     ]);
 
 
-  const monthEntries =
+  const monetaryEntries =
     entries.filter(
+      (
+        entry
+      ) =>
+        entry.paymentMethod !==
+        "Permuta"
+    );
+
+
+  const monthEntries =
+    monetaryEntries.filter(
       (
         entry
       ) =>
@@ -1111,7 +1121,7 @@ export default async function FinancePage({
 
 
   const upcoming =
-    entries
+    monetaryEntries
       .filter(
         (
           entry
@@ -1168,7 +1178,7 @@ export default async function FinancePage({
 
 
   const overdue =
-    entries.filter(
+    monetaryEntries.filter(
       (
         entry
       ) =>
@@ -1301,7 +1311,7 @@ export default async function FinancePage({
 
 
         const monthItems =
-          entries.filter(
+          monetaryEntries.filter(
             (
               entry
             ) =>
@@ -1947,6 +1957,7 @@ export default async function FinancePage({
               <option>Transferência</option>
               <option>Cartão</option>
               <option>Dinheiro</option>
+              <option>Permuta</option>
               <option>Outro</option>
             </select>
 
@@ -2980,11 +2991,24 @@ export default async function FinancePage({
                               {
                                 client.financeMonthlyAmountCents
                                   ? (
-                                    <p className="mt-1 text-[10px] font-black text-emerald-600">
-                                      {formatMoney(
-                                        client.financeMonthlyAmountCents
-                                      )} / mes
-                                    </p>
+                                    <>
+                                      <p className="mt-1 text-[10px] font-black text-emerald-600">
+                                        {formatMoney(
+                                          client.financeMonthlyAmountCents
+                                        )} / mes
+                                      </p>
+
+                                      {
+                                        client.financePaymentMethod ===
+                                        "Permuta"
+                                          ? (
+                                            <p className="mt-1 text-[8px] font-black uppercase tracking-wide text-amber-600">
+                                              Permuta ? fora do faturamento
+                                            </p>
+                                          )
+                                          : null
+                                      }
+                                    </>
                                   )
                                   : (
                                     <p className="mt-1 text-[9px] font-semibold text-slate-400">
@@ -3205,6 +3229,10 @@ export default async function FinancePage({
 
                                 <option value="Dinheiro">
                                   Dinheiro
+                                </option>
+
+                                <option value="Permuta">
+                                  Permuta
                                 </option>
 
                               </select>
