@@ -39,27 +39,6 @@ export async function createEditorialCalendarTemplateAction(
     );
 
 
-  const name =
-    String(
-      formData.get(
-        'name'
-      ) ||
-      ''
-    )
-      .trim()
-      .slice(
-        0,
-        80
-      );
-
-
-  if (!name) {
-    redirect(
-      '/configuracoes/calendario-editorial?error=name'
-    );
-  }
-
-
   const value =
     formData.get(
       'layoutPdf'
@@ -90,6 +69,34 @@ export async function createEditorialCalendarTemplateAction(
       file.name ||
       'calendario.pdf'
     );
+
+
+  const nameFromFile =
+    fileName
+      .replace(
+        /\.pdf$/i,
+        ''
+      )
+      .replace(
+        /[_-]+/g,
+        ' '
+      )
+      .replace(
+        /\s+/g,
+        ' '
+      )
+      .trim();
+
+
+  const name =
+    (
+      nameFromFile ||
+      'Calendario Editorial'
+    )
+      .slice(
+        0,
+        80
+      );
 
 
   const isPdf =

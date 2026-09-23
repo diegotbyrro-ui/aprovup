@@ -522,38 +522,10 @@ export default async function ExportEditorialCalendarPage({
           </div>
 
 
-          <label className="block space-y-2">
-
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-              Foco do mes
-            </span>
-
-            <input
-              name="foco"
-              type="text"
-              maxLength={180}
-              placeholder="Ex.: Matriculas 2027, campanha principal ou objetivo do mes"
-              className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm text-slate-800 outline-none focus:border-blue-500"
-            />
-
-          </label>
+          
 
 
-          <label className="block space-y-2">
-
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-              Observacao
-            </span>
-
-            <input
-              name="observacao"
-              type="text"
-              maxLength={180}
-              placeholder="Ex.: Ajustes e direcionamentos gerais"
-              className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm text-slate-800 outline-none focus:border-blue-500"
-            />
-
-          </label>
+          
 
 
           <button

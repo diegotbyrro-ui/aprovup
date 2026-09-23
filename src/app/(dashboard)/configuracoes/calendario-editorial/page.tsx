@@ -211,7 +211,7 @@ export default async function EditorialCalendarTemplatesPage({
           </h2>
 
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            Use o PDF ja diagramado com logo, identidade visual, calendario e pagina de detalhamento.
+            Envie apenas o PDF diagramado com a identidade visual da agencia. O nome do arquivo sera usado automaticamente como identificacao do modelo.
           </p>
 
 
@@ -222,24 +222,6 @@ export default async function EditorialCalendarTemplatesPage({
             encType="multipart/form-data"
             className="mt-6 space-y-5"
           >
-
-            <div>
-
-              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
-                Nome do modelo
-              </label>
-
-              <input
-                name="name"
-                type="text"
-                maxLength={80}
-                required
-                placeholder="Ex.: Calendario Editorial Level UP"
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-500"
-              />
-
-            </div>
-
 
             <div>
 
@@ -256,7 +238,7 @@ export default async function EditorialCalendarTemplatesPage({
               />
 
               <p className="mt-2 text-xs text-slate-400">
-                Minimo 2 paginas. Maximo 15 MB.
+                PDF com 2 paginas ou mais. Maximo 15 MB.
               </p>
 
             </div>
