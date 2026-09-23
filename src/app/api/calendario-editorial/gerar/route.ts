@@ -798,48 +798,68 @@ function fillCalendarPage({
 
 
   /*
-   * HEADLINE - NOME DO CLIENTE
+   * TAMANHO DINAMICO DO HEADER.
+   * O nome nunca sera cortado com "...".
    */
 
-  page.drawRectangle({
-    x:
-      X(
-        278
-      ),
+  function headerFontSize(
+    text:
+      string,
+    initial:
+      number,
+    minimum:
+      number,
+    maxWidth:
+      number
+  ) {
+    let fontSize =
+      S(
+        initial
+      );
 
-    y:
-      Y(
-        697
-      ),
 
-    width:
-      W(
-        410
-      ),
+    const minimumSize =
+      S(
+        minimum
+      );
 
-    height:
-      H(
-        40
-      ),
 
-    color:
-      NAVY,
-  });
+    while (
+      fontSize >
+        minimumSize &&
+      bold.widthOfTextAtSize(
+        text,
+        fontSize
+      ) >
+        W(
+          maxWidth
+        )
+    ) {
+      fontSize -=
+        S(
+          0.5
+        );
+    }
+
+
+    return fontSize;
+  }
+
+
+  /*
+   * NOME DO CLIENTE
+   * Sem fundo azul adicional.
+   */
+
+  const headerClient =
+    cleanText(
+      clientName
+    )
+      .toUpperCase();
 
 
   page.drawText(
-    fitText(
-      cleanText(
-        clientName
-      ).toUpperCase(),
-      bold,
-      S(
-        25
-      ),
-      W(
-        390
-      )
-    ),
+    headerClient,
     {
       x:
         X(
@@ -848,12 +868,15 @@ function fillCalendarPage({
 
       y:
         Y(
-          706
+          705
         ),
 
       size:
-        S(
-          25
+        headerFontSize(
+          headerClient,
+          23,
+          13,
+          445
         ),
 
       font:
@@ -867,52 +890,23 @@ function fillCalendarPage({
 
   /*
    * MES / ANO
+   * Sem fundo azul adicional.
    */
 
-  page.drawRectangle({
-    x:
-      X(
-        791
-      ),
-
-    y:
-      Y(
-        680
-      ),
-
-    width:
-      W(
-        196
-      ),
-
-    height:
-      H(
-        31
-      ),
-
-    color:
-      NAVY,
-  });
+  const monthLabel =
+    (
+      monthNames[
+        month -
+        1
+      ] +
+      ' / ' +
+      year
+    )
+      .toUpperCase();
 
 
   page.drawText(
-    fitText(
-      (
-        monthNames[
-          month -
-          1
-        ] +
-        ' / ' +
-        year
-      ).toUpperCase(),
-      bold,
-      S(
-        14
-      ),
-      W(
-        180
-      )
-    ),
+    monthLabel,
     {
       x:
         X(
@@ -925,8 +919,11 @@ function fillCalendarPage({
         ),
 
       size:
-        S(
-          14
+        headerFontSize(
+          monthLabel,
+          14,
+          10,
+          180
         ),
 
       font:
@@ -938,7 +935,11 @@ function fillCalendarPage({
   );
 
 
-  const columns = [
+  /*
+   * GRID DO NOVO TEMPLATE.
+   */
+
+  const columnX = [
     28,
     166,
     305,
@@ -949,7 +950,7 @@ function fillCalendarPage({
   ];
 
 
-  const templateRows = [
+  const rows = [
     {
       y:
         508,
@@ -957,6 +958,7 @@ function fillCalendarPage({
       height:
         92,
     },
+
     {
       y:
         407,
@@ -964,6 +966,7 @@ function fillCalendarPage({
       height:
         93,
     },
+
     {
       y:
         306,
@@ -971,6 +974,7 @@ function fillCalendarPage({
       height:
         93,
     },
+
     {
       y:
         205,
@@ -978,6 +982,7 @@ function fillCalendarPage({
       height:
         93,
     },
+
     {
       y:
         102,
@@ -1021,194 +1026,6 @@ function fillCalendarPage({
       .getUTCDate();
 
 
-  const totalSlots =
-    firstWeekDay +
-    daysInMonth;
-
-
-  const needsSixRows =
-    totalSlots >
-    35;
-
-
-  const activeRows =
-    needsSixRows
-      ? Array.from(
-          {
-            length:
-              6,
-          },
-          (
-            _,
-            index
-          ) => {
-            const totalHeight =
-              498;
-
-            const rowHeight =
-              totalHeight /
-              6;
-
-            return {
-              y:
-                102 +
-                (
-                  5 -
-                  index
-                ) *
-                rowHeight,
-
-              height:
-                rowHeight -
-                7,
-            };
-          }
-        )
-      : templateRows;
-
-
-  if (
-    needsSixRows
-  ) {
-
-    page.drawRectangle({
-      x:
-        X(
-          24
-        ),
-
-      y:
-        Y(
-          98
-        ),
-
-      width:
-        W(
-          976
-        ),
-
-      height:
-        H(
-          505
-        ),
-
-      color:
-        rgb(
-          0.975,
-          0.985,
-          0.998
-        ),
-    });
-
-
-    for (
-      let row =
-        0;
-      row <
-        6;
-      row +=
-        1
-    ) {
-
-      for (
-        let col =
-          0;
-        col <
-          7;
-        col +=
-          1
-      ) {
-
-        page.drawRectangle({
-          x:
-            X(
-              columns[
-                col
-              ]
-            ),
-
-          y:
-            Y(
-              activeRows[
-                row
-              ].y
-            ),
-
-          width:
-            W(
-              cellWidth
-            ),
-
-          height:
-            H(
-              activeRows[
-                row
-              ].height
-            ),
-
-          color:
-            WHITE,
-
-          borderColor:
-            rgb(
-              0.88,
-              0.91,
-              0.95
-            ),
-
-          borderWidth:
-            S(
-              0.8
-            ),
-        });
-      }
-    }
-  }
-  else {
-
-    for (
-      const row
-      of templateRows
-    ) {
-
-      for (
-        const x
-        of columns
-      ) {
-
-        page.drawRectangle({
-          x:
-            X(
-              x +
-              4
-            ),
-
-          y:
-            Y(
-              row.y +
-              4
-            ),
-
-          width:
-            W(
-              cellWidth -
-              8
-            ),
-
-          height:
-            H(
-              row.height -
-              8
-            ),
-
-          color:
-            WHITE,
-        });
-      }
-    }
-  }
-
-
   const byDay =
     new Map<
       number,
@@ -1220,7 +1037,6 @@ function fillCalendarPage({
     const content
     of contents
   ) {
-
     if (
       !content.plannedDate
     ) {
@@ -1234,34 +1050,38 @@ function fillCalendarPage({
       );
 
 
-    const list =
+    const current =
       byDay.get(
         day
       ) ||
       [];
 
 
-    list.push(
+    current.push(
       content
     );
 
 
     byDay.set(
       day,
-      list
+      current
     );
   }
 
 
   for (
-    let slot =
-      0;
-    slot <
-      activeRows.length *
-      7;
-    slot +=
+    let day =
+      1;
+    day <=
+      daysInMonth;
+    day +=
       1
   ) {
+    const slot =
+      firstWeekDay +
+      day -
+      1;
+
 
     const rowIndex =
       Math.floor(
@@ -1270,74 +1090,69 @@ function fillCalendarPage({
       );
 
 
-    const colIndex =
+    const columnIndex =
       slot %
       7;
 
 
-    const day =
-      slot -
-      firstWeekDay +
-      1;
+    if (
+      rowIndex >
+      4
+    ) {
+      continue;
+    }
 
 
     const row =
-      activeRows[
+      rows[
         rowIndex
       ];
 
 
     const x =
-      columns[
-        colIndex
+      columnX[
+        columnIndex
       ];
 
 
-    if (
-      day <
-        1 ||
-      day >
-        daysInMonth
-    ) {
+    /*
+     * Limpa apenas o esqueleto interno
+     * do card do modelo.
+     */
 
-      page.drawText(
-        'Fora do mes',
-        {
-          x:
-            X(
-              x +
-              40
-            ),
+    page.drawRectangle({
+      x:
+        X(
+          x +
+          5
+        ),
 
-          y:
-            Y(
-              row.y +
-              row.height /
-              2 -
-              2
-            ),
+      y:
+        Y(
+          row.y +
+          5
+        ),
 
-          size:
-            S(
-              5.4
-            ),
+      width:
+        W(
+          cellWidth -
+          10
+        ),
 
-          font:
-            regular,
+      height:
+        H(
+          row.height -
+          10
+        ),
 
-          color:
-            rgb(
-              0.62,
-              0.67,
-              0.75
-            ),
-        }
-      );
+      color:
+        WHITE,
+    });
 
 
-      continue;
-    }
-
+    /*
+     * NUMERO DO DIA.
+     */
 
     page.drawCircle({
       x:
@@ -1363,14 +1178,10 @@ function fillCalendarPage({
     });
 
 
-    const dayText =
+    page.drawText(
       String(
         day
-      );
-
-
-    page.drawText(
-      dayText,
+      ),
       {
         x:
           X(
@@ -1378,8 +1189,8 @@ function fillCalendarPage({
             (
               day <
                 10
-                ? 14.4
-                : 10.6
+                ? 14.5
+                : 10.5
             )
           ),
 
@@ -1392,7 +1203,7 @@ function fillCalendarPage({
 
         size:
           S(
-            9
+            9.2
           ),
 
         font:
@@ -1419,166 +1230,198 @@ function fillCalendarPage({
     }
 
 
-    const first =
-      items[
-        0
-      ];
+    let cursorY =
+      row.y +
+      row.height -
+      42;
 
 
-    const kind =
-      formatKind(
-        first.format ||
-        first.title
+    const visible =
+      items.slice(
+        0,
+        2
       );
 
 
-    page.drawCircle({
-      x:
-        X(
-          x +
-          10
-        ),
-
-      y:
-        Y(
-          row.y +
-          row.height -
-          43
-        ),
-
-      size:
-        S(
-          3
-        ),
-
-      color:
-        COLORS[
-          kind
-        ],
-    });
+    visible.forEach(
+      (
+        item,
+        index
+      ) => {
+        const kind =
+          formatKind(
+            item.format ||
+            item.title
+          );
 
 
-    const titleLines =
-      wrapLines({
-        text:
-          first.title,
+        page.drawCircle({
+          x:
+            X(
+              x +
+              10
+            ),
 
-        font:
-          bold,
+          y:
+            Y(
+              cursorY +
+              3
+            ),
 
-        size:
-          S(
-            6.1
-          ),
+          size:
+            S(
+              3.2
+            ),
 
-        maxWidth:
-          W(
-            111
-          ),
-
-        maxLines:
-          2,
-      });
-
-
-    drawLines({
-      page,
-
-      lines:
-        titleLines,
-
-      x:
-        X(
-          x +
-          17
-        ),
-
-      y:
-        Y(
-          row.y +
-          row.height -
-          45
-        ),
-
-      size:
-        S(
-          6.1
-        ),
-
-      lineHeight:
-        S(
-          7.2
-        ),
-
-      font:
-        bold,
-
-      color:
-        TEXT,
-    });
+          color:
+            COLORS[
+              kind
+            ],
+        });
 
 
-    page.drawText(
-      displayKind(
-        kind
-      ),
-      {
-        x:
-          X(
-            x +
-            17
-          ),
+        const titleLines =
+          wrapLines({
+            text:
+              item.title,
 
-        y:
-          Y(
-            row.y +
-            11
-          ),
+            font:
+              bold,
 
-        size:
-          S(
-            4.7
-          ),
+            size:
+              S(
+                7.6
+              ),
 
-        font:
-          bold,
+            maxWidth:
+              W(
+                110
+              ),
 
-        color:
-          COLORS[
-            kind
-          ],
+            maxLines:
+              items.length >
+                1
+                ? 2
+                : 3,
+          });
+
+
+        drawLines({
+          page,
+
+          lines:
+            titleLines,
+
+          x:
+            X(
+              x +
+              18
+            ),
+
+          y:
+            Y(
+              cursorY
+            ),
+
+          size:
+            S(
+              7.6
+            ),
+
+          lineHeight:
+            S(
+              8.8
+            ),
+
+          font:
+            bold,
+
+          color:
+            TEXT,
+        });
+
+
+        const usedLines =
+          Math.max(
+            1,
+            titleLines.length
+          );
+
+
+        cursorY -=
+          usedLines *
+            9 +
+          16;
+
+
+        if (
+          index ===
+          visible.length -
+            1
+        ) {
+          page.drawText(
+            displayKind(
+              kind
+            ),
+            {
+              x:
+                X(
+                  x +
+                  18
+                ),
+
+              y:
+                Y(
+                  row.y +
+                  10
+                ),
+
+              size:
+                S(
+                  5.8
+                ),
+
+              font:
+                bold,
+
+              color:
+                COLORS[
+                  kind
+                ],
+            }
+          );
+        }
       }
     );
 
 
     if (
       items.length >
-      1
+      2
     ) {
-
       page.drawText(
         '+' +
           String(
             items.length -
-            1
+            2
           ) +
-          ' conteudo',
+          ' mais',
         {
           x:
             X(
               x +
-              79
+              83
             ),
 
           y:
             Y(
               row.y +
-              11
+              10
             ),
 
           size:
             S(
-              4.5
+              5.3
             ),
 
           font:
@@ -1800,49 +1643,63 @@ function fillDetailPage({
       scale;
 
 
+  function headerFontSize(
+    text:
+      string,
+    initial:
+      number,
+    minimum:
+      number,
+    maxWidth:
+      number
+  ) {
+    let fontSize =
+      S(
+        initial
+      );
+
+
+    const minimumSize =
+      S(
+        minimum
+      );
+
+
+    while (
+      fontSize >
+        minimumSize &&
+      bold.widthOfTextAtSize(
+        text,
+        fontSize
+      ) >
+        W(
+          maxWidth
+        )
+    ) {
+      fontSize -=
+        S(
+          0.5
+        );
+    }
+
+
+    return fontSize;
+  }
+
+
   /*
-   * HEADLINE
+   * HEADER SEM RETANGULOS EXTRAS
    */
 
-  page.drawRectangle({
-    x:
-      X(
-        255
-      ),
-
-    y:
-      Y(
-        696
-      ),
-
-    width:
-      W(
-        455
-      ),
-
-    height:
-      H(
-        42
-      ),
-
-    color:
-      NAVY,
-  });
+  const headerClient =
+    cleanText(
+      clientName
+    )
+      .toUpperCase();
 
 
   page.drawText(
-    fitText(
-      cleanText(
-        clientName
-      ).toUpperCase(),
-      bold,
-      S(
-        25
-      ),
-      W(
-        430
-      )
-    ),
+    headerClient,
     {
       x:
         X(
@@ -1855,8 +1712,11 @@ function fillDetailPage({
         ),
 
       size:
-        S(
-          25
+        headerFontSize(
+          headerClient,
+          23,
+          13,
+          455
         ),
 
       font:
@@ -1868,54 +1728,20 @@ function fillDetailPage({
   );
 
 
-  /*
-   * MES / ANO
-   */
-
-  page.drawRectangle({
-    x:
-      X(
-        781
-      ),
-
-    y:
-      Y(
-        681
-      ),
-
-    width:
-      W(
-        207
-      ),
-
-    height:
-      H(
-        31
-      ),
-
-    color:
-      NAVY,
-  });
+  const monthLabel =
+    (
+      monthNames[
+        month -
+        1
+      ] +
+      ' / ' +
+      year
+    )
+      .toUpperCase();
 
 
   page.drawText(
-    fitText(
-      (
-        monthNames[
-          month -
-          1
-        ] +
-        ' / ' +
-        year
-      ).toUpperCase(),
-      bold,
-      S(
-        14
-      ),
-      W(
-        190
-      )
-    ),
+    monthLabel,
     {
       x:
         X(
@@ -1928,8 +1754,11 @@ function fillDetailPage({
         ),
 
       size:
-        S(
-          14
+        headerFontSize(
+          monthLabel,
+          14,
+          10,
+          190
         ),
 
       font:
@@ -1941,167 +1770,243 @@ function fillDetailPage({
   );
 
 
-  const columns = [
-    25,
-    517,
-  ];
+  /*
+   * AREA UTIL COMPLETA.
+   */
+
+  const leftX =
+    24;
 
 
-  const rows = [
-    {
-      y:
-        542,
-
-      height:
-        108,
-    },
-    {
-      y:
-        422,
-
-      height:
-        108,
-    },
-    {
-      y:
-        302,
-
-      height:
-        109,
-    },
-    {
-      y:
-        182,
-
-      height:
-        110,
-    },
-    {
-      y:
-        62,
-
-      height:
-        109,
-    },
-  ];
+  const rightX =
+    517;
 
 
   const cardWidth =
-    482;
+    483;
+
+
+  const top =
+    649;
+
+
+  const bottom =
+    55;
+
+
+  const gap =
+    10;
 
 
   /*
-   * Limpa todos os 10 placeholders internos.
+   * DISTRIBUICAO EQUILIBRADA:
+   * 7 itens = 4 esquerda + 3 direita.
+   * Cada coluna ocupa toda a altura disponivel.
    */
 
-  for (
-    const x
-    of columns
-  ) {
-
-    for (
-      const row
-      of rows
-    ) {
-
-      page.drawRectangle({
-        x:
-          X(
-            x +
-            4
-          ),
-
-        y:
-          Y(
-            row.y +
-            4
-          ),
-
-        width:
-          W(
-            cardWidth -
-            8
-          ),
-
-        height:
-          H(
-            row.height -
-            8
-          ),
-
-        color:
-          WHITE,
-      });
-    }
-  }
+  const leftCount =
+    Math.ceil(
+      items.length /
+      2
+    );
 
 
-  items
-    .slice(
+  const leftItems =
+    items.slice(
       0,
-      10
-    )
-    .forEach(
+      leftCount
+    );
+
+
+  const rightItems =
+    items.slice(
+      leftCount
+    );
+
+
+  /*
+   * Apaga todos os placeholders antigos da pagina 2.
+   */
+
+  page.drawRectangle({
+    x:
+      X(
+        20
+      ),
+
+    y:
+      Y(
+        48
+      ),
+
+    width:
+      W(
+        984
+      ),
+
+    height:
+      H(
+        610
+      ),
+
+    color:
+      rgb(
+        0.975,
+        0.985,
+        0.998
+      ),
+  });
+
+
+  function drawColumn(
+    columnItems:
+      typeof items,
+    x:
+      number
+  ) {
+    if (
+      columnItems.length ===
+      0
+    ) {
+      return;
+    }
+
+
+    const available =
+      top -
+      bottom;
+
+
+    const calculatedHeight =
+      (
+        available -
+        (
+          columnItems.length -
+          1
+        ) *
+        gap
+      ) /
+      columnItems.length;
+
+
+    /*
+     * Limita apenas o maximo.
+     * Se tiver poucos itens, eles crescem.
+     */
+
+    const cardHeight =
+      Math.min(
+        145,
+        calculatedHeight
+      );
+
+
+    const totalCardsHeight =
+      cardHeight *
+        columnItems.length +
+      gap *
+        (
+          columnItems.length -
+          1
+        );
+
+
+    /*
+     * Centraliza verticalmente.
+     */
+
+    const startTop =
+      top -
+      (
+        available -
+        totalCardsHeight
+      ) /
+      2;
+
+
+    columnItems.forEach(
       (
         content,
         index
       ) => {
+        const y =
+          startTop -
+          cardHeight *
+            (
+              index +
+              1
+            ) -
+          gap *
+            index;
+
 
         /*
-         * Preenche por coluna:
-         * 0-4 esquerda
-         * 5-9 direita
+         * CARD
          */
 
-        const column =
-          index <
-          5
-            ? 0
-            : 1;
+        page.drawRectangle({
+          x:
+            X(
+              x
+            ),
 
+          y:
+            Y(
+              y
+            ),
 
-        const rowIndex =
-          index %
-          5;
+          width:
+            W(
+              cardWidth
+            ),
 
+          height:
+            H(
+              cardHeight
+            ),
 
-        const x =
-          columns[
-            column
-          ];
+          color:
+            WHITE,
 
+          borderColor:
+            rgb(
+              0.86,
+              0.90,
+              0.95
+            ),
 
-        const row =
-          rows[
-            rowIndex
-          ];
+          borderWidth:
+            S(
+              0.8
+            ),
+        });
 
 
         /*
-         * BLOCO DO DIA
+         * COLUNA DO DIA
          */
 
         page.drawRectangle({
           x:
             X(
               x +
-              7
+              8
             ),
 
           y:
             Y(
-              row.y +
+              y +
               8
             ),
 
           width:
             W(
-              57
+              58
             ),
 
           height:
             H(
-              row.height -
+              cardHeight -
               16
             ),
 
@@ -2125,14 +2030,14 @@ function fillDetailPage({
 
             y:
               Y(
-                row.y +
-                row.height -
-                22
+                y +
+                cardHeight -
+                23
               ),
 
             size:
               S(
-                5.2
+                6
               ),
 
             font:
@@ -2159,35 +2064,37 @@ function fillDetailPage({
         const dayText =
           String(
             day
-          ).padStart(
-            2,
-            '0'
-          );
+          )
+            .padStart(
+              2,
+              '0'
+            );
 
 
         page.drawCircle({
           x:
             X(
               x +
-              35
+              37
             ),
 
           y:
             Y(
-              row.y +
-              50
+              y +
+              cardHeight /
+              2
             ),
 
           size:
             S(
-              17
+              18
             ),
 
           color:
             rgb(
-              0.90,
+              0.89,
               0.93,
-              0.98
+              0.99
             ),
         });
 
@@ -2198,18 +2105,20 @@ function fillDetailPage({
             x:
               X(
                 x +
-                26
+                27
               ),
 
             y:
               Y(
-                row.y +
-                46
+                y +
+                cardHeight /
+                2 -
+                4
               ),
 
             size:
               S(
-                10
+                11
               ),
 
             font:
@@ -2219,6 +2128,16 @@ function fillDetailPage({
               TEXT,
           }
         );
+
+
+        const textX =
+          x +
+          80;
+
+
+        const maxTextWidth =
+          cardWidth -
+          98;
 
 
         const kind =
@@ -2232,39 +2151,6 @@ function fillDetailPage({
          * FORMATO
          */
 
-        page.drawRectangle({
-          x:
-            X(
-              x +
-              78
-            ),
-
-          y:
-            Y(
-              row.y +
-              row.height -
-              29
-            ),
-
-          width:
-            W(
-              88
-            ),
-
-          height:
-            H(
-              17
-            ),
-
-          color:
-            rgb(
-              0.95,
-              0.965,
-              0.985
-            ),
-        });
-
-
         page.drawText(
           displayKind(
             kind
@@ -2272,20 +2158,19 @@ function fillDetailPage({
           {
             x:
               X(
-                x +
-                89
+                textX
               ),
 
             y:
               Y(
-                row.y +
-                row.height -
-                24
+                y +
+                cardHeight -
+                21
               ),
 
             size:
               S(
-                5.3
+                6.5
               ),
 
             font:
@@ -2308,20 +2193,19 @@ function fillDetailPage({
           {
             x:
               X(
-                x +
-                78
+                textX
               ),
 
             y:
               Y(
-                row.y +
-                row.height -
-                43
+                y +
+                cardHeight -
+                38
               ),
 
             size:
               S(
-                4.7
+                5.3
               ),
 
             font:
@@ -2333,72 +2217,100 @@ function fillDetailPage({
         );
 
 
-        const title =
-          fitText(
-            content.title,
-            bold,
-            S(
-              7.5
-            ),
-            W(
-              383
-            )
-          );
-
-
-        page.drawText(
-          title,
-          {
-            x:
-              X(
-                x +
-                78
-              ),
-
-            y:
-              Y(
-                row.y +
-                row.height -
-                57
-              ),
-
-            size:
-              S(
-                7.5
-              ),
+        const titleLines =
+          wrapLines({
+            text:
+              content.title,
 
             font:
               bold,
 
-            color:
-              TEXT,
-          }
-        );
+            size:
+              S(
+                8.7
+              ),
+
+            maxWidth:
+              W(
+                maxTextWidth
+              ),
+
+            maxLines:
+              2,
+          });
+
+
+        drawLines({
+          page,
+
+          lines:
+            titleLines,
+
+          x:
+            X(
+              textX
+            ),
+
+          y:
+            Y(
+              y +
+              cardHeight -
+              53
+            ),
+
+          size:
+            S(
+              8.7
+            ),
+
+          lineHeight:
+            S(
+              10.2
+            ),
+
+          font:
+            bold,
+
+          color:
+            TEXT,
+        });
 
 
         /*
          * RESUMO
          */
 
+        const titleHeight =
+          Math.max(
+            1,
+            titleLines.length
+          ) *
+          10;
+
+
+        const summaryLabelY =
+          y +
+          cardHeight -
+          63 -
+          titleHeight;
+
+
         page.drawText(
           'RESUMO',
           {
             x:
               X(
-                x +
-                78
+                textX
               ),
 
             y:
               Y(
-                row.y +
-                row.height -
-                73
+                summaryLabelY
               ),
 
             size:
               S(
-                4.7
+                5.3
               ),
 
             font:
@@ -2410,7 +2322,26 @@ function fillDetailPage({
         );
 
 
-        const summary =
+        const roomBelow =
+          summaryLabelY -
+          y -
+          14;
+
+
+        const maxSummaryLines =
+          Math.max(
+            2,
+            Math.min(
+              6,
+              Math.floor(
+                roomBelow /
+                9
+              )
+            )
+          );
+
+
+        const summaryLines =
           wrapLines({
             text:
               summaryFor(
@@ -2422,16 +2353,16 @@ function fillDetailPage({
 
             size:
               S(
-                5.7
+                7
               ),
 
             maxWidth:
               W(
-                382
+                maxTextWidth
               ),
 
             maxLines:
-              3,
+              maxSummaryLines,
           });
 
 
@@ -2439,29 +2370,27 @@ function fillDetailPage({
           page,
 
           lines:
-            summary,
+            summaryLines,
 
           x:
             X(
-              x +
-              78
+              textX
             ),
 
           y:
             Y(
-              row.y +
-              row.height -
-              86
+              summaryLabelY -
+              14
             ),
 
           size:
             S(
-              5.7
+              7
             ),
 
           lineHeight:
             S(
-              7.1
+              8.7
             ),
 
           font:
@@ -2472,6 +2401,19 @@ function fillDetailPage({
         });
       }
     );
+  }
+
+
+  drawColumn(
+    leftItems,
+    leftX
+  );
+
+
+  drawColumn(
+    rightItems,
+    rightX
+  );
 }
 
 export async function GET(
