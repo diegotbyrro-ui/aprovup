@@ -2681,7 +2681,11 @@ const query =
 
 
           <Link
-            href="/pronto-para-postar"
+            href={
+              `/pronto-para-postar?cliente=${encodeURIComponent(
+                clientId
+              )}`
+            }
             className="mt-5 flex h-9 items-center justify-center gap-2 rounded-lg bg-white text-[9px] font-bold text-slate-900 hover:bg-slate-100"
           >
             Ver conteúdos prontos
