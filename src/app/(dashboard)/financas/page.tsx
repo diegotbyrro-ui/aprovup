@@ -710,6 +710,12 @@ export default async function FinancePage({
       periodo?:
         string;
 
+      mes?:
+        string;
+
+      ano?:
+        string;
+
       ok?:
         string;
 
@@ -752,9 +758,84 @@ export default async function FinancePage({
       : "dashboard";
 
 
+  const selectedMonth =
+    /^\d{1,2}$/.test(
+      String(
+        params.mes ||
+        ""
+      )
+    )
+      ? String(
+          Number(
+            params.mes
+          )
+        ).padStart(
+          2,
+          "0"
+        )
+      : "";
+
+
+  const selectedYear =
+    /^\d{4}$/.test(
+      String(
+        params.ano ||
+        ""
+      )
+    )
+      ? String(
+          params.ano
+        )
+      : "";
+
+
+  const selectorPeriod =
+    selectedYear &&
+    selectedMonth
+      ? selectedYear +
+        "-" +
+        selectedMonth
+      : "";
+
+
   const period =
     validPeriod(
+      selectorPeriod ||
       params.periodo
+    );
+
+
+  const periodYear =
+    period.slice(
+      0,
+      4
+    );
+
+
+  const periodMonth =
+    period.slice(
+      5,
+      7
+    );
+
+
+  const financeYearOptions =
+    Array.from(
+      {
+        length:
+          7,
+      },
+      (
+        _,
+        index
+      ) =>
+        String(
+          Number(
+            periodYear
+          ) -
+          3 +
+          index
+        )
     );
 
 
@@ -1406,7 +1487,7 @@ export default async function FinancePage({
 
           <div className="flex flex-wrap items-center gap-2">
 
-            <form className="flex items-center gap-2">
+            <form className="flex flex-wrap items-end gap-2">
 
               <input
                 type="hidden"
@@ -1416,18 +1497,135 @@ export default async function FinancePage({
                 }
               />
 
-              <input
-                type="month"
-                name="periodo"
-                defaultValue={
-                  period
-                }
-                className="h-10 rounded-xl border border-white/15 bg-white/10 px-3 text-[10px] font-black text-white [color-scheme:dark]"
-              />
+
+              <div>
+
+                <p className="mb-1.5 text-[8px] font-black uppercase tracking-[0.12em] text-slate-400">
+                  Mes
+                </p>
+
+                <div className="relative">
+
+                  <CalendarDays
+                    size={14}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-blue-300"
+                  />
+
+                  <select
+                    name="mes"
+                    defaultValue={
+                      periodMonth
+                    }
+                    className="h-11 min-w-[145px] appearance-none rounded-xl border border-white/15 bg-white/10 pl-9 pr-8 text-[10px] font-black text-white outline-none transition hover:bg-white/15 focus:border-blue-400"
+                  >
+                    <option value="01" className="text-slate-900">
+                      Janeiro
+                    </option>
+
+                    <option value="02" className="text-slate-900">
+                      Fevereiro
+                    </option>
+
+                    <option value="03" className="text-slate-900">
+                      {"Mar\u00e7o"}
+                    </option>
+
+                    <option value="04" className="text-slate-900">
+                      Abril
+                    </option>
+
+                    <option value="05" className="text-slate-900">
+                      Maio
+                    </option>
+
+                    <option value="06" className="text-slate-900">
+                      Junho
+                    </option>
+
+                    <option value="07" className="text-slate-900">
+                      Julho
+                    </option>
+
+                    <option value="08" className="text-slate-900">
+                      Agosto
+                    </option>
+
+                    <option value="09" className="text-slate-900">
+                      Setembro
+                    </option>
+
+                    <option value="10" className="text-slate-900">
+                      Outubro
+                    </option>
+
+                    <option value="11" className="text-slate-900">
+                      Novembro
+                    </option>
+
+                    <option value="12" className="text-slate-900">
+                      Dezembro
+                    </option>
+                  </select>
+
+                  <ChevronDown
+                    size={13}
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                </div>
+
+              </div>
+
+
+              <div>
+
+                <p className="mb-1.5 text-[8px] font-black uppercase tracking-[0.12em] text-slate-400">
+                  Ano
+                </p>
+
+                <div className="relative">
+
+                  <select
+                    name="ano"
+                    defaultValue={
+                      periodYear
+                    }
+                    className="h-11 min-w-[100px] appearance-none rounded-xl border border-white/15 bg-white/10 px-4 pr-8 text-[10px] font-black text-white outline-none transition hover:bg-white/15 focus:border-blue-400"
+                  >
+                    {
+                      financeYearOptions.map(
+                        (
+                          year
+                        ) => (
+                          <option
+                            key={
+                              year
+                            }
+                            value={
+                              year
+                            }
+                            className="text-slate-900"
+                          >
+                            {year}
+                          </option>
+                        )
+                      )
+                    }
+                  </select>
+
+                  <ChevronDown
+                    size={13}
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                </div>
+
+              </div>
+
 
               <button
                 type="submit"
-                className="h-10 rounded-xl border border-white/15 bg-white/10 px-3 text-[9px] font-black"
+                className="flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5 text-[9px] font-black text-white shadow-lg shadow-blue-950/20 transition hover:bg-blue-500"
               >
                 Aplicar
               </button>
@@ -2170,47 +2368,14 @@ export default async function FinancePage({
 
                 <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
-                  <div className="flex items-start justify-between gap-4">
+                                    <div>
 
                     <p className="text-[11px] font-black text-slate-950">
                       Receita por cliente
                     </p>
 
-
-                    {
-                      rankedClients.length >
-                      5
-                        ? (
-                          <Link
-                            href={
-                              "/financas?aba=dashboard&periodo=" +
-                              encodeURIComponent(
-                                period
-                              ) +
-                              (
-                                showAllClients
-                                  ? ""
-                                  : "&clientes=todos"
-                              )
-                            }
-                            className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[8px] font-black text-blue-600 transition hover:border-blue-200 hover:bg-blue-50"
-                          >
-                            {
-                              showAllClients
-                                ? "Ver menos"
-                                : "Ver mais (" +
-                                  String(
-                                    rankedClients.length -
-                                    5
-                                  ) +
-                                  ")"
-                            }
-                          </Link>
-                        )
-                        : null
-                    }
-
                   </div>
+
 
                   <p className="mt-1 text-[9px] font-semibold text-slate-400">
                     Participação no faturamento do mês
@@ -2312,7 +2477,51 @@ export default async function FinancePage({
 
                   </div>
 
-                </article>
+                                  {
+                    rankedClients.length >
+                    5
+                      ? (
+                        <Link
+                          href={
+                            "/financas?aba=dashboard&periodo=" +
+                            encodeURIComponent(
+                              period
+                            ) +
+                            (
+                              showAllClients
+                                ? ""
+                                : "&clientes=todos"
+                            )
+                          }
+                          className="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 text-[9px] font-black text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
+                        >
+                          {
+                            showAllClients
+                              ? "Ver menos"
+                              : "Ver mais (" +
+                                String(
+                                  rankedClients.length -
+                                  5
+                                ) +
+                                ")"
+                          }
+
+                          <ChevronDown
+                            size={13}
+                            className={
+                              showAllClients
+                                ? "rotate-180"
+                                : ""
+                            }
+                          />
+
+                        </Link>
+                      )
+                      : null
+                  }
+
+
+</article>
 
 
                 <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
