@@ -2254,6 +2254,198 @@ async function sendProactive({
     );
 
 
+  /*
+   * ==================================================
+   * LIV PROACTIVE RATE LIMIT
+   * ==================================================
+   *
+   * A Meta pode recusar templates quando percebe
+   * excesso de notificacoes para o mesmo destinatario.
+   *
+   * Regras:
+   *
+   * 1. Mensagens dentro da janela de 24h continuam
+   *    podendo ser texto normal.
+   *
+   * 2. Templates proativos respeitam cooldown de
+   *    60 minutos por pessoa.
+   *
+   * 3. Se a Meta retornar o bloqueio de
+   *    "healthy ecosystem engagement", fazemos
+   *    um recuo de 6 horas antes de tentar novamente
+   *    para aquela pessoa.
+   *
+   * 4. Ordens diretas da diretoria nao entram
+   *    nesse limitador.
+   */
+  if (
+    !insideWindow &&
+    !isDirectorCommand
+  ) {
+
+    const now =
+      Date.now();
+
+
+    const oneHourAgo =
+      new Date(
+        now -
+        60 *
+          60 *
+          1000
+      );
+
+
+    const sixHoursAgo =
+      new Date(
+        now -
+        6 *
+          60 *
+          60 *
+          1000
+      );
+
+
+    const [
+      recentTemplate,
+      recentEcosystemFailure,
+    ] =
+      await Promise.all([
+
+        prisma
+          .secretaryWhatsappDelivery
+          .findFirst({
+            where: {
+              agencyId,
+
+              memberId,
+
+              templateUsed:
+                true,
+
+              sentAt: {
+                gte:
+                  oneHourAgo,
+              },
+
+              status: {
+                in: [
+                  'SENT',
+                  'DELIVERED',
+                  'READ',
+                ],
+              },
+            },
+
+            orderBy: {
+              sentAt:
+                'desc',
+            },
+
+            select: {
+              id:
+                true,
+
+              sentAt:
+                true,
+
+              status:
+                true,
+            },
+          }),
+
+
+        prisma
+          .secretaryWhatsappDelivery
+          .findFirst({
+            where: {
+              agencyId,
+
+              memberId,
+
+              templateUsed:
+                true,
+
+              updatedAt: {
+                gte:
+                  sixHoursAgo,
+              },
+
+              status:
+                'FAILED',
+
+              error: {
+                contains:
+                  'healthy ecosystem engagement',
+              },
+            },
+
+            orderBy: {
+              updatedAt:
+                'desc',
+            },
+
+            select: {
+              id:
+                true,
+
+              updatedAt:
+                true,
+
+              error:
+                true,
+            },
+          }),
+      ]);
+
+
+    if (
+      recentEcosystemFailure
+    ) {
+      console.log(
+        'LIV PROACTIVE SKIPPED - META ECOSYSTEM BACKOFF',
+        {
+          agencyId,
+          memberId,
+          dedupKey,
+          lastFailureAt:
+            recentEcosystemFailure
+              .updatedAt,
+        }
+      );
+
+
+      return {
+        status:
+          'SKIPPED',
+      };
+    }
+
+
+    if (
+      recentTemplate
+    ) {
+      console.log(
+        'LIV PROACTIVE SKIPPED - 60 MIN COOLDOWN',
+        {
+          agencyId,
+          memberId,
+          dedupKey,
+          lastSentAt:
+            recentTemplate
+              .sentAt,
+        }
+      );
+
+
+      return {
+        status:
+          'SKIPPED',
+      };
+    }
+  }
+
+
   try {
     let providerMessageId:
       string |
