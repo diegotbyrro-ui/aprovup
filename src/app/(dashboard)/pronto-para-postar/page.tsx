@@ -4,6 +4,7 @@ import { requireAgencyContext } from '@/lib/tenant';
 import { requirePermission } from '@/lib/userAccess';
 import { canAccessClient } from '@/lib/clientAccess';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { markContentAsPublished } from './actions';
 import { InstagramPublishButton } from '@/components/instagram/InstagramPublishButton';
@@ -90,7 +91,12 @@ export default async function ProntoParaPostarPage({
         await requireAgencyContext();
 
     const params = await searchParams;
-    let selectedClient = params.cliente || 'TODOS';
+
+    const selectedClient =
+        String(
+            params.cliente ||
+            ''
+        ).trim();
 
     const agencyClients = await prisma.client.findMany({
         where: {
@@ -121,18 +127,24 @@ export default async function ProntoParaPostarPage({
 
 
     if (
-        selectedClient !== 'TODOS' &&
+        !selectedClient ||
         !accessibleClientIds.includes(
             selectedClient
         )
     ) {
-        selectedClient =
-            'TODOS';
+        redirect(
+            '/clientes'
+        );
     }
 
 
     const selectedClientName =
-        clients.find((client) => client.id === selectedClient)?.name || 'Todos';
+        clients.find(
+            (client) =>
+                client.id ===
+                selectedClient
+        )?.name ||
+        'Cliente';
 
     const contents = await prisma.content.findMany({
         where: {
@@ -152,11 +164,8 @@ export default async function ProntoParaPostarPage({
                     mode: 'insensitive',
                 },
             },
-            ...(selectedClient !== 'TODOS'
-                ? {
-                    clientId: selectedClient,
-                }
-                : {}),
+            clientId:
+                selectedClient,
         },
         include: {
             client: {
@@ -224,7 +233,7 @@ export default async function ProntoParaPostarPage({
 
     const dateKeys = Object.keys(contentsByDate).sort();
 
-    const hasActiveFilters = selectedClient !== 'TODOS';
+    const hasActiveFilters = true;
 
     return (
         <div className="space-y-6">
@@ -282,9 +291,7 @@ export default async function ProntoParaPostarPage({
             <section className="grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
                 <Link
                     href={
-                        selectedClient === 'TODOS'
-                            ? '/pronto-para-postar'
-                            : `/pronto-para-postar?cliente=${encodeURIComponent(selectedClient)}`
+`/pronto-para-postar?cliente=${encodeURIComponent(selectedClient)}`
                     }
                     className="rounded-xl bg-slate-950 px-4 py-3 text-center text-sm font-black text-white shadow-sm"
                 >
@@ -293,9 +300,7 @@ export default async function ProntoParaPostarPage({
 
                 <Link
                     href={
-                        selectedClient === 'TODOS'
-                            ? '/pronto-para-postar/stories'
-                            : `/pronto-para-postar/stories?cliente=${encodeURIComponent(selectedClient)}`
+`/pronto-para-postar/stories?cliente=${encodeURIComponent(selectedClient)}`
                     }
                     className="rounded-xl px-4 py-3 text-center text-sm font-black text-slate-500 hover:bg-fuchsia-50 hover:text-fuchsia-700"
                 >
@@ -319,14 +324,12 @@ export default async function ProntoParaPostarPage({
                         </p>
                     </div>
 
-                    {hasActiveFilters && (
-                        <Link
-                            href="/pronto-para-postar"
-                            className="w-fit rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100"
-                        >
-                            Limpar filtros
-                        </Link>
-                    )}
+                    <Link
+                        href="/clientes"
+                        className="w-fit rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100"
+                    >
+                        Trocar cliente
+                    </Link>
                 </div>
 
                 <form
@@ -344,7 +347,6 @@ export default async function ProntoParaPostarPage({
                             defaultValue={selectedClient}
                             className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                         >
-                            <option value="TODOS">Todos os clientes</option>
                             {clients.map((client) => (
                                 <option key={client.id} value={client.id}>
                                     {client.name}
@@ -358,7 +360,7 @@ export default async function ProntoParaPostarPage({
                             type="submit"
                             className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800"
                         >
-                            Aplicar filtro
+                            Trocar cliente
                         </button>
                     </div>
                 </form>

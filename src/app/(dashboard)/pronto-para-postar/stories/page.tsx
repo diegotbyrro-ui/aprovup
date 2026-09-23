@@ -1,6 +1,10 @@
 import Link from 'next/link';
 
 import {
+  redirect,
+} from 'next/navigation';
+
+import {
   requireSaasFeature,
 } from '@/lib/saasAccess';
 
@@ -102,9 +106,11 @@ export default async function StoriesPage({
   const params =
     await searchParams;
 
-  let selectedClient =
-    params.cliente ||
-    'TODOS';
+  const selectedClient =
+    String(
+      params.cliente ||
+      ''
+    ).trim();
 
   const agencyClients =
     await prisma.client.findMany({
@@ -141,14 +147,14 @@ export default async function StoriesPage({
 
 
   if (
-    selectedClient !==
-      'TODOS' &&
+    !selectedClient ||
     !accessibleClientIds.includes(
       selectedClient
     )
   ) {
-    selectedClient =
-      'TODOS';
+    redirect(
+      '/clientes'
+    );
   }
 
 
@@ -173,14 +179,8 @@ export default async function StoriesPage({
           ],
         },
 
-        ...(
-          selectedClient !== 'TODOS'
-            ? {
-                clientId:
-                  selectedClient,
-              }
-            : {}
-        ),
+        clientId:
+          selectedClient,
       },
 
       include: {
@@ -262,14 +262,14 @@ export default async function StoriesPage({
     );
 
   const feedHref =
-    selectedClient === 'TODOS'
-      ? '/pronto-para-postar'
-      : `/pronto-para-postar?cliente=${encodeURIComponent(selectedClient)}`;
+    `/pronto-para-postar?cliente=${encodeURIComponent(
+      selectedClient
+    )}`;
 
   const storiesHref =
-    selectedClient === 'TODOS'
-      ? '/pronto-para-postar/stories'
-      : `/pronto-para-postar/stories?cliente=${encodeURIComponent(selectedClient)}`;
+    `/pronto-para-postar/stories?cliente=${encodeURIComponent(
+      selectedClient
+    )}`;
 
   return (
     <div className="space-y-6">
@@ -335,10 +335,6 @@ export default async function StoriesPage({
               defaultValue={selectedClient}
               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700"
             >
-              <option value="TODOS">
-                Todos os clientes
-              </option>
-
               {
                 clients.map(
                   (

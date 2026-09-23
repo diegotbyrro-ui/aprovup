@@ -2185,7 +2185,11 @@ const query =
                             </Link>
                           ) : approved ? (
                             <Link
-                              href="/pronto-para-postar"
+                              href={
+                                `/pronto-para-postar?cliente=${encodeURIComponent(
+                                  clientId
+                                )}`
+                              }
                               className="flex h-9 items-center justify-center gap-2 rounded-lg bg-emerald-50 px-3 text-[9px] font-bold text-emerald-700 hover:bg-emerald-100"
                             >
                               <CheckCircle2
