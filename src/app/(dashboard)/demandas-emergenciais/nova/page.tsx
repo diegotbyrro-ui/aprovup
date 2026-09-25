@@ -21,6 +21,10 @@ import {
 
 import { createEmergencyDemandAction } from "./actions";
 
+import {
+  ReferenceAttachmentsField,
+} from "@/components/content/ReferenceAttachmentsField";
+
 const fieldClass =
   "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-red-400 focus:ring-2 focus:ring-red-100";
 
@@ -223,6 +227,27 @@ export default async function NovaDemandaEmergencialPage({
             className={fieldClass}
           />
         </div>
+
+        <div>
+          <label className={labelClass}>
+            Link do arquivo / material em alta qualidade
+          </label>
+
+          <input
+            name="fileLinks"
+            type="url"
+            placeholder="Ex: https://drive.google.com/... ou link do WeTransfer / Dropbox"
+            className={fieldClass}
+          />
+
+          <p className="mt-2 text-xs leading-relaxed text-slate-400">
+            Use este campo quando o arquivo for muito pesado ou quando precisar enviar o material original em alta qualidade para a produ??o.
+          </p>
+        </div>
+
+        <ReferenceAttachmentsField
+          existing={[]}
+        />
 
         <div>
           <label className={labelClass}>

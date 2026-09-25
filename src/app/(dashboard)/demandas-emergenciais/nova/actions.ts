@@ -17,6 +17,11 @@ import {
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import {
+  deleteAprovUpReferenceFile,
+  uploadAprovUpReferenceFile,
+} from "@/lib/aprovupStorage";
+
 function text(
   formData: FormData,
   name: string
@@ -25,6 +30,134 @@ function text(
     formData.get(name) || ""
   ).trim();
 }
+
+function referenceImageFiles(
+  formData:
+    FormData
+) {
+
+  return formData
+    .getAll(
+      "referenceImages"
+    )
+    .filter(
+      (
+        value
+      ): value is File =>
+        value instanceof File &&
+        value.size > 0
+    );
+}
+
+
+function validateReferenceImages(
+  files:
+    File[]
+) {
+
+  for (
+    const file
+    of files
+  ) {
+
+    if (
+      !String(
+        file.type ||
+        ""
+      ).startsWith(
+        "image/"
+      )
+    ) {
+
+      throw new Error(
+        `O arquivo "${file.name}" n?o ? uma imagem.`
+      );
+    }
+  }
+}
+
+
+async function uploadEmergencyReferences(
+  contentId:
+    string,
+  formData:
+    FormData
+) {
+
+  const files =
+    referenceImageFiles(
+      formData
+    );
+
+
+  if (
+    files.length ===
+    0
+  ) {
+    return;
+  }
+
+
+  validateReferenceImages(
+    files
+  );
+
+
+  const uploaded:
+    string[] =
+    [];
+
+
+  try {
+
+    for (
+      const file
+      of files
+    ) {
+
+      const url =
+        await uploadAprovUpReferenceFile(
+          file,
+          contentId
+        );
+
+
+      if (
+        url
+      ) {
+
+        uploaded.push(
+          url
+        );
+      }
+    }
+
+  }
+  catch (
+    error
+  ) {
+
+    await Promise.all(
+      uploaded.map(
+        (
+          url
+        ) =>
+          deleteAprovUpReferenceFile(
+            contentId,
+            url
+          )
+            .catch(
+              () =>
+                false
+            )
+      )
+    );
+
+
+    throw error;
+  }
+}
+
 
 export async function createEmergencyDemandAction(
   formData: FormData
@@ -79,6 +212,13 @@ export async function createEmergencyDemandAction(
     text(
       formData,
       "caption"
+    );
+
+
+  const fileLinks =
+    text(
+      formData,
+      "fileLinks"
     );
 
   const requester =
@@ -204,7 +344,7 @@ export async function createEmergencyDemandAction(
 
         briefing,
 
-        fileLinks: "",
+        fileLinks,
 
         coverImageUrl: "",
 
@@ -215,6 +355,43 @@ export async function createEmergencyDemandAction(
           "APROVADO",
       },
     });
+
+  try {
+
+    await uploadEmergencyReferences(
+      content.id,
+      formData
+    );
+
+  }
+  catch (
+    error
+  ) {
+
+    console.error(
+      "Emergency demand reference upload:",
+      error
+    );
+
+
+    await prisma.content
+      .delete({
+        where: {
+          id:
+            content.id,
+        },
+      })
+      .catch(
+        () =>
+          null
+      );
+
+
+    redirect(
+      `/demandas-emergenciais/nova?cliente=${clientId}&error=reference-upload`
+    );
+  }
+
 
   const areaLabel =
     area === "DESIGN"
