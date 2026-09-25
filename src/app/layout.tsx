@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 
+import {
+  DeploymentVersionGuard,
+} from "@/components/system/DeploymentVersionGuard";
+
 import "./globals.css";
 
 
@@ -32,7 +36,10 @@ export default function RootLayout({
       lang="pt-BR"
       className="h-full antialiased"
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <DeploymentVersionGuard />
+        {children}
+      </body>
     </html>
   );
 }

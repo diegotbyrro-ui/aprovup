@@ -182,6 +182,13 @@ const nextConfig: NextConfig = {
   deploymentId,
 
 
+  env: {
+
+    NEXT_PUBLIC_APROVUP_DEPLOYMENT_ID:
+      deploymentId,
+  },
+
+
   generateBuildId:
     async () =>
       deploymentId,
