@@ -498,6 +498,13 @@ export default async function SecretaryPage() {
 
           <div className="flex items-center gap-3">
             <Link
+              href="/secretaria/reunioes"
+              className="inline-flex items-center gap-2 rounded-xl border border-blue-400/30 bg-blue-500/15 px-4 py-2.5 text-[10px] font-black text-blue-100 hover:bg-blue-500/25"
+            >
+              Reuniões
+            </Link>
+
+            <Link
               href="/secretaria/configuracoes"
               className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-[10px] font-black text-white hover:bg-white/15"
             >

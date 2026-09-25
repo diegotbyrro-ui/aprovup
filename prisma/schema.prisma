@@ -37,6 +37,8 @@ model Agency {
   secretaryWhatsappEvents     SecretaryWhatsappEvent[]
   secretaryWhatsappDeliveries SecretaryWhatsappDelivery[]
 
+  secretaryMeetings SecretaryMeeting[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -183,6 +185,7 @@ model Client {
   instagramConnection      InstagramConnection?
   instagramMetricSnapshots InstagramMetricSnapshot[]
   financeEntries           FinanceEntry[]
+  secretaryMeetings        SecretaryMeeting[]
 
   // Configuracao financeira do cliente.
   financeMonthlyAmountCents Int?
@@ -547,6 +550,114 @@ model MetaOAuthSession {
   @@index([clientId])
   @@index([userId])
   @@index([expiresAt])
+}
+
+model SecretaryMeeting {
+  id String @id @default(cuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  title  String
+  status String @default("SCHEDULED")
+  source String @default("GOOGLE_MEET")
+
+  calendarEventId  String?
+  calendarHtmlLink String?
+
+  googleMeetUri       String?
+  googleMeetCode      String?
+  googleMeetSpaceName String?
+
+  conferenceRecordName  String?
+  transcriptName        String?
+  transcriptDocumentUrl String?
+
+  scheduledStart DateTime?
+  scheduledEnd   DateTime?
+
+  startedAt DateTime?
+  endedAt   DateTime?
+
+  attendeeEmails Json?
+  participants   Json?
+
+  notes         String? @db.Text
+  rawTranscript String? @db.Text
+
+  summary      String? @db.Text
+  decisions    Json?
+  pendingItems Json?
+  ideas        Json?
+  actionPlan   Json?
+
+  processingError String? @db.Text
+
+  createdByUserId String?
+  createdByName   String?
+
+  processedAt DateTime?
+
+  transcriptEntries SecretaryMeetingTranscriptEntry[]
+  actions           SecretaryMeetingAction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agencyId, calendarEventId])
+  @@index([agencyId, scheduledStart])
+  @@index([agencyId, status])
+  @@index([clientId])
+  @@index([googleMeetCode])
+}
+
+model SecretaryMeetingTranscriptEntry {
+  id String @id @default(cuid())
+
+  meetingId String
+  meeting   SecretaryMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  providerEntryName   String? @unique
+  participantResource String?
+  speakerName         String?
+
+  text         String  @db.Text
+  languageCode String?
+
+  startTime DateTime?
+  endTime   DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([meetingId, startTime])
+}
+
+model SecretaryMeetingAction {
+  id String @id @default(cuid())
+
+  meetingId String
+  meeting   SecretaryMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  type   String @default("TASK")
+  status String @default("PROPOSED")
+
+  title       String
+  description String?   @db.Text
+  responsible String?
+  dueDateText String?
+  dueDate     DateTime?
+
+  payload Json?
+
+  executedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([meetingId, status])
 }
 
 model SecretaryThread {

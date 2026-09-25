@@ -3,6 +3,7 @@ import {
   createDecipheriv,
   createHash,
   randomBytes,
+  randomUUID,
 } from "node:crypto";
 
 import {
@@ -14,6 +15,7 @@ export const GOOGLE_CALENDAR_SCOPES = [
   "openid",
   "email",
   "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/meetings.space.readonly",
 ];
 
 
@@ -326,18 +328,84 @@ export async function getGoogleCalendarAccessTokenForAgency(
 
 
 type CreateGoogleCalendarEventInput = {
-  agencyId: string;
+  agencyId:
+    string;
 
-  title: string;
+  title:
+    string;
 
-  description?: string;
+  description?:
+    string;
 
-  location?: string;
+  location?:
+    string;
 
-  startDate: Date;
+  startDate:
+    Date;
 
-  endDate: Date;
+  endDate:
+    Date;
+
+  attendees?:
+    string[];
+
+  createMeet?:
+    boolean;
 };
+
+
+type GoogleCalendarCreatedEvent = {
+  id?:
+    string;
+
+  htmlLink?:
+    string;
+
+  hangoutLink?:
+    string;
+
+  conferenceData?: {
+    conferenceId?:
+      string;
+
+    entryPoints?: Array<{
+      entryPointType?:
+        string;
+
+      uri?:
+        string;
+    }>;
+
+    createRequest?: {
+      status?: {
+        statusCode?:
+          string;
+      };
+    };
+  };
+
+  error?: {
+    message?:
+      string;
+  };
+};
+
+
+function delay(
+  ms:
+    number
+) {
+
+  return new Promise(
+    (
+      resolve
+    ) =>
+      setTimeout(
+        resolve,
+        ms
+      )
+  );
+}
 
 
 export async function createGoogleCalendarEvent({
@@ -347,6 +415,8 @@ export async function createGoogleCalendarEvent({
   location,
   startDate,
   endDate,
+  attendees = [],
+  createMeet = false,
 }: CreateGoogleCalendarEventInput) {
 
   const auth =
@@ -358,7 +428,9 @@ export async function createGoogleCalendarEvent({
   if (!auth) {
 
     console.log(
-      `[GOOGLE CALENDAR] Agencia ${agencyId} sem Calendar conectado.`
+      '[GOOGLE CALENDAR] Agencia ' +
+      agencyId +
+      ' sem Calendar conectado.'
     );
 
     return null;
@@ -371,19 +443,78 @@ export async function createGoogleCalendarEvent({
     );
 
 
+  const normalizedAttendees =
+    Array.from(
+      new Set(
+        attendees
+          .map(
+            (
+              value
+            ) =>
+              String(
+                value ||
+                ''
+              )
+                .trim()
+                .toLowerCase()
+          )
+          .filter(
+            (
+              value
+            ) =>
+              /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+                value
+              )
+          )
+      )
+    );
+
+
+  const eventUrl =
+    new URL(
+      'https://www.googleapis.com/calendar/v3/calendars/' +
+      calendarId +
+      '/events'
+    );
+
+
+  if (
+    createMeet
+  ) {
+
+    eventUrl.searchParams.set(
+      'conferenceDataVersion',
+      '1'
+    );
+  }
+
+
+  if (
+    normalizedAttendees.length >
+    0
+  ) {
+
+    eventUrl.searchParams.set(
+      'sendUpdates',
+      'all'
+    );
+  }
+
+
   const response =
     await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`,
+      eventUrl,
       {
         method:
-          "POST",
+          'POST',
 
         headers: {
           Authorization:
-            `Bearer ${auth.accessToken}`,
+            'Bearer ' +
+            auth.accessToken,
 
-          "Content-Type":
-            "application/json",
+          'Content-Type':
+            'application/json',
         },
 
         body:
@@ -393,27 +524,54 @@ export async function createGoogleCalendarEvent({
 
             description:
               description ||
-              "",
+              '',
 
             location:
               location ||
-              "",
+              '',
 
             start: {
               dateTime:
-                startDate.toISOString(),
+                startDate
+                  .toISOString(),
 
               timeZone:
-                "America/Maceio",
+                'America/Maceio',
             },
 
             end: {
               dateTime:
-                endDate.toISOString(),
+                endDate
+                  .toISOString(),
 
               timeZone:
-                "America/Maceio",
+                'America/Maceio',
             },
+
+            attendees:
+              normalizedAttendees
+                .map(
+                  (
+                    email
+                  ) => ({
+                    email,
+                  })
+                ),
+
+            conferenceData:
+              createMeet
+                ? {
+                    createRequest: {
+                      requestId:
+                        randomUUID(),
+
+                      conferenceSolutionKey: {
+                        type:
+                          'hangoutsMeet',
+                      },
+                    },
+                  }
+                : undefined,
 
             reminders: {
               useDefault:
@@ -424,25 +582,128 @@ export async function createGoogleCalendarEvent({
     );
 
 
-  const result =
-    await response.json() as {
-      id?: string;
-      htmlLink?: string;
-
-      error?: {
-        message?: string;
-      };
-    };
+  let result =
+    await response
+      .json() as
+        GoogleCalendarCreatedEvent;
 
 
-  if (!response.ok) {
+  if (
+    !response.ok
+  ) {
 
     throw new Error(
-      `Google Calendar recusou o evento: ${
-        result.error?.message ||
+      'Google Calendar recusou o evento: ' +
+      (
+        result.error
+          ?.message ||
         response.status
-      }`
+      )
     );
+  }
+
+
+  /*
+   * A criacao da conferencia do Meet pode ser assincrona.
+   * Fazemos algumas consultas curtas para obter o link.
+   */
+  if (
+    createMeet &&
+    result.id &&
+    !result.hangoutLink
+  ) {
+
+    /*
+     * Guardamos o ID em uma constante porque o TypeScript
+     * nao preserva o narrowing de result.id depois de await.
+     */
+    const createdEventId =
+      result.id;
+
+
+    for (
+      let attempt =
+        0;
+      attempt <
+        6;
+      attempt++
+    ) {
+
+      await delay(
+        650
+      );
+
+
+      const eventReadUrl =
+        new URL(
+          'https://www.googleapis.com/calendar/v3/calendars/' +
+          calendarId +
+          '/events/' +
+          encodeURIComponent(
+            createdEventId
+          )
+        );
+
+
+      eventReadUrl
+        .searchParams
+        .set(
+          'conferenceDataVersion',
+          '1'
+        );
+
+
+      const readResponse =
+        await fetch(
+          eventReadUrl,
+          {
+            headers: {
+              Authorization:
+                'Bearer ' +
+                auth.accessToken,
+            },
+          }
+        );
+
+
+      if (
+        !readResponse.ok
+      ) {
+        continue;
+      }
+
+
+      const refreshed =
+        await readResponse
+          .json() as
+            GoogleCalendarCreatedEvent;
+
+
+      result =
+        refreshed;
+
+
+      const videoUri =
+        refreshed
+          .conferenceData
+          ?.entryPoints
+          ?.find(
+            (
+              entry
+            ) =>
+              entry.entryPointType ===
+              'video'
+          )
+          ?.uri;
+
+
+      if (
+        refreshed.hangoutLink ||
+        videoUri
+      ) {
+        break;
+      }
+    }
   }
 
 
