@@ -872,6 +872,7 @@ export default async function OperacaoPage({
 }: {
   searchParams?: Promise<{
     cliente?: string;
+    mes?: string;
   }>;
 }) {
   const currentUser =
@@ -890,6 +891,76 @@ export default async function OperacaoPage({
       query?.cliente ||
       ""
     ).trim();
+
+
+  const realNow =
+    new Date();
+
+
+  const currentPeriod =
+    String(
+      realNow.getFullYear()
+    ) +
+    "-" +
+    String(
+      realNow.getMonth() +
+      1
+    ).padStart(
+      2,
+      "0"
+    );
+
+
+  const requestedPeriod =
+    String(
+      query?.mes ||
+      ""
+    ).trim();
+
+
+  const validRequestedPeriod =
+    /^\d{4}-\d{2}$/.test(
+      requestedPeriod
+    ) &&
+    Number(
+      requestedPeriod.slice(
+        5,
+        7
+      )
+    ) >=
+      1 &&
+    Number(
+      requestedPeriod.slice(
+        5,
+        7
+      )
+    ) <=
+      12;
+
+
+  const selectedPeriod =
+    validRequestedPeriod
+      ? requestedPeriod
+      : currentPeriod;
+
+
+  const selectedYear =
+    Number(
+      selectedPeriod.slice(
+        0,
+        4
+      )
+    );
+
+
+  const selectedMonthIndex =
+    Number(
+      selectedPeriod.slice(
+        5,
+        7
+      )
+    ) -
+    1;
 
 
   /*
@@ -983,35 +1054,182 @@ export default async function OperacaoPage({
 
 
   const now =
-    new Date();
+    realNow;
+
 
   const today =
     startOfDay(
-      now
+      realNow
     );
+
 
   const monthStart =
     new Date(
-      now.getFullYear(),
-      now.getMonth(),
+      selectedYear,
+      selectedMonthIndex,
       1
     );
+
 
   const nextMonthStart =
     new Date(
-      now.getFullYear(),
-      now.getMonth() +
+      selectedYear,
+      selectedMonthIndex +
         1,
       1
     );
 
+
   const previousMonthStart =
     new Date(
-      now.getFullYear(),
-      now.getMonth() -
+      selectedYear,
+      selectedMonthIndex -
         1,
       1
     );
+
+
+  const previousPeriodDate =
+    new Date(
+      selectedYear,
+      selectedMonthIndex -
+        1,
+      1
+    );
+
+
+  const nextPeriodDate =
+    new Date(
+      selectedYear,
+      selectedMonthIndex +
+        1,
+      1
+    );
+
+
+  const previousPeriod =
+    String(
+      previousPeriodDate.getFullYear()
+    ) +
+    "-" +
+    String(
+      previousPeriodDate.getMonth() +
+        1
+    ).padStart(
+      2,
+      "0"
+    );
+
+
+  const nextPeriod =
+    String(
+      nextPeriodDate.getFullYear()
+    ) +
+    "-" +
+    String(
+      nextPeriodDate.getMonth() +
+        1
+    ).padStart(
+      2,
+      "0"
+    );
+
+
+  const isCurrentPeriod =
+    selectedPeriod ===
+    currentPeriod;
+
+
+  const isClosedPeriod =
+    nextMonthStart <=
+    today;
+
+
+  const periodCutoff =
+    isClosedPeriod
+      ? nextMonthStart
+      : today;
+
+
+  const monthOptions =
+    Array.from(
+      {
+        length:
+          25,
+      },
+      (
+        _,
+        index
+      ) => {
+
+        const date =
+          new Date(
+            realNow.getFullYear(),
+            realNow.getMonth() -
+              18 +
+              index,
+            1
+          );
+
+
+        return {
+          value:
+            String(
+              date.getFullYear()
+            ) +
+            "-" +
+            String(
+              date.getMonth() +
+                1
+            ).padStart(
+              2,
+              "0"
+            ),
+
+          label:
+            monthNames[
+              date.getMonth()
+            ] +
+            " de " +
+            date.getFullYear(),
+        };
+      }
+    );
+
+
+  if (
+    !monthOptions.some(
+      (
+        option
+      ) =>
+        option.value ===
+        selectedPeriod
+    )
+  ) {
+
+    monthOptions.push({
+      value:
+        selectedPeriod,
+
+      label:
+        monthNames[
+          selectedMonthIndex
+        ] +
+        " de " +
+        selectedYear,
+    });
+  }
+
+
+  monthOptions.sort(
+    (
+      a,
+      b
+    ) =>
+      b.value.localeCompare(
+        a.value
+      )
+  );
 
 
   const [
@@ -1087,7 +1305,10 @@ export default async function OperacaoPage({
           },
           plannedDate: {
             gte:
-              today,
+              monthStart,
+
+            lt:
+              nextMonthStart,
           },
 
           status: {
@@ -1126,6 +1347,14 @@ export default async function OperacaoPage({
               "ENVIADO_CLIENTE",
               "ALTERACAO_SOLICITADA",
             ],
+          },
+
+          plannedDate: {
+            gte:
+              monthStart,
+
+            lt:
+              nextMonthStart,
           },
         },
 
@@ -1503,7 +1732,7 @@ export default async function OperacaoPage({
         new Date(
           content.plannedDate as Date
         ) <
-          today &&
+          periodCutoff &&
         unresolvedStatuses.includes(
           content.status
         )
@@ -1601,8 +1830,8 @@ export default async function OperacaoPage({
 
   const daysInMonth =
     new Date(
-      now.getFullYear(),
-      now.getMonth() +
+      selectedYear,
+      selectedMonthIndex +
         1,
       0
     ).getDate();
@@ -1611,8 +1840,8 @@ export default async function OperacaoPage({
   const firstWeekDay =
     (
       new Date(
-        now.getFullYear(),
-        now.getMonth(),
+        selectedYear,
+        selectedMonthIndex,
         1
       ).getDay() +
       6
@@ -1698,6 +1927,38 @@ export default async function OperacaoPage({
         1
     );
   }
+
+
+  const monthBriefingCount =
+    monthContents.filter(
+      (
+        content
+      ) =>
+        planningStatuses.includes(
+          content.status
+        )
+    ).length;
+
+
+  const monthReviewCount =
+    monthContents.filter(
+      (
+        content
+      ) =>
+        reviewStatuses.includes(
+          content.status
+        )
+    ).length;
+
+
+  const monthClientApprovalCount =
+    monthContents.filter(
+      (
+        content
+      ) =>
+        content.status ===
+        "ENVIADO_CLIENTE"
+    ).length;
 
 
   const currentProductionContents =
@@ -1825,7 +2086,7 @@ export default async function OperacaoPage({
         "Briefing",
 
       value:
-        briefingCount,
+        monthBriefingCount,
 
       icon:
         <LayoutGrid
@@ -1841,7 +2102,7 @@ export default async function OperacaoPage({
         "Em produção",
 
       value:
-        productionCount,
+        currentProductionContents,
 
       icon:
         <Video
@@ -1857,7 +2118,7 @@ export default async function OperacaoPage({
         "Em revisão",
 
       value:
-        reviewCount,
+        monthReviewCount,
 
       icon:
         <Palette
@@ -1873,7 +2134,7 @@ export default async function OperacaoPage({
         "Aprovação",
 
       value:
-        clientApprovalCount,
+        monthClientApprovalCount,
 
       icon:
         <Send
@@ -1889,7 +2150,7 @@ export default async function OperacaoPage({
         "Concluído",
 
       value:
-        concludedCount,
+        currentCompletedContents,
 
       icon:
         <CheckCircle2
@@ -1931,6 +2192,25 @@ export default async function OperacaoPage({
                   )
                   : null
               }
+
+
+              <span
+                className={
+                  isCurrentPeriod
+                    ? "rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-blue-600"
+                    : isClosedPeriod
+                      ? "rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-600"
+                      : "rounded-full bg-amber-50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-amber-600"
+                }
+              >
+                {
+                  isCurrentPeriod
+                    ? "Atual"
+                    : isClosedPeriod
+                      ? "Fechado"
+                      : "Futuro"
+                }
+              </span>
             </div>
 
             <p className="mt-1 text-[11px] text-slate-400">
@@ -1946,6 +2226,12 @@ export default async function OperacaoPage({
           </div>
 
           <DashboardClientSelector
+            selectedPeriod={
+              selectedPeriod
+            }
+            monthOptions={
+              monthOptions
+            }
             clients={
               accessibleClients.map(
                 (
@@ -2273,7 +2559,7 @@ export default async function OperacaoPage({
               href={
                 selectedClientId
                   ? `/clientes/${selectedClientId}/calendario`
-                  : `/calendario-editorial?mes=${now.getMonth() + 1}&ano=${now.getFullYear()}`
+                  : `/calendario-editorial?mes=${selectedMonthIndex + 1}&ano=${selectedYear}`
               }
               className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
             >
@@ -2283,20 +2569,54 @@ export default async function OperacaoPage({
 
 
           <div className="mt-4 flex items-center justify-center gap-3">
-            <span className="text-slate-300">
-              ‹
-            </span>
 
-            <p className="text-[13px] font-bold text-slate-700">
-              {monthNames[
-                now.getMonth()
-              ]}{" "}
-              {now.getFullYear()}
+            <Link
+              href={
+                "/operacao?mes=" +
+                previousPeriod +
+                (
+                  selectedClientId
+                    ? "&cliente=" +
+                      encodeURIComponent(
+                        selectedClientId
+                      )
+                    : ""
+                )
+              }
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+            >
+              {"<"}
+            </Link>
+
+
+            <p className="min-w-[140px] text-center text-[13px] font-bold text-slate-700">
+              {
+                monthNames[
+                  selectedMonthIndex
+                ]
+              }{" "}
+              {selectedYear}
             </p>
 
-            <span className="text-slate-300">
-              ›
-            </span>
+
+            <Link
+              href={
+                "/operacao?mes=" +
+                nextPeriod +
+                (
+                  selectedClientId
+                    ? "&cliente=" +
+                      encodeURIComponent(
+                        selectedClientId
+                      )
+                    : ""
+                )
+              }
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+            >
+              {">"}
+            </Link>
+
           </div>
 
 
@@ -2335,6 +2655,7 @@ export default async function OperacaoPage({
                 }
 
                 const active =
+                  isCurrentPeriod &&
                   day ===
                     now.getDate();
 
