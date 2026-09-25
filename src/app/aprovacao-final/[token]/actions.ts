@@ -1,6 +1,13 @@
 'use server';
 
-import { prisma } from '@/lib/prisma';
+import {
+  prisma,
+} from '@/lib/prisma';
+
+import {
+  FINAL_PENDING_STATUSES,
+  resolveFinalApprovalContext,
+} from '@/lib/finalMonthlyApproval';
 
 import {
   aprovUpFileExists,
@@ -10,134 +17,250 @@ import {
 import {
   notifyResponsibleSocialMediaAboutQuestion,
 } from '@/lib/secretaryWhatsApp';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 
-async function resolveClientByToken(token: string) {
-  const gatewayApproval =
-    await prisma.approval.findUnique({
+import {
+  revalidatePath,
+} from 'next/cache';
+
+import {
+  redirect,
+} from 'next/navigation';
+
+
+export async function approveFinalContentAction(
+  token:
+    string,
+  contentId:
+    string,
+  _formData:
+    FormData
+) {
+
+  const context =
+    await resolveFinalApprovalContext(
+      token
+    );
+
+
+  if (
+    !context
+  ) {
+
+    redirect(
+      '/aprovacao-final/' +
+      token
+    );
+  }
+
+
+  const {
+    client,
+    start,
+    end,
+  } =
+    context;
+
+
+  const content =
+    await prisma.content.findFirst({
       where: {
-        token,
-      },
-      include: {
-        content: {
-          include: {
-            client: true,
-          },
+        id:
+          contentId,
+
+        clientId:
+          client.id,
+
+        plannedDate: {
+          gte:
+            start,
+
+          lt:
+            end,
+        },
+
+        status: {
+          in:
+            FINAL_PENDING_STATUSES,
         },
       },
     });
 
-  return gatewayApproval?.content?.client || null;
-}
 
-export async function approveFinalContentAction(
-  token: string,
-  contentId: string,
-  _formData: FormData
-) {
-  const client = await resolveClientByToken(token);
+  if (
+    !content
+  ) {
 
-  if (!client) {
-    redirect(`/aprovacao-final/${token}`);
-  }
-
-  const content = await prisma.content.findFirst({
-    where: {
-      id: contentId,
-      clientId: client.id,
-    },
-  });
-
-  if (!content) {
-    redirect(`/aprovacao-final/${token}`);
-  }
-
-  const approval = await prisma.approval.findFirst({
-    where: {
-      contentId,
-      status: 'PENDENTE',
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-
-  if (!approval) {
     redirect(
-      `/aprovacao-final/${token}?error=not-pending`
+      '/aprovacao-final/' +
+      token
     );
   }
 
-  await prisma.$transaction(async (transaction) => {
-    await transaction.approval.update({
-      where: {
-        id: approval.id,
-      },
-      data: {
-        status: 'APROVADO',
-        clientComment: null,
-      },
-    });
 
-    await transaction.content.update({
+  /*
+   * Approval individual antigo continua sendo atualizado
+   * quando existir, preservando o historico anterior.
+   */
+  const legacyApproval =
+    await prisma.approval.findFirst({
       where: {
-        id: contentId,
-      },
-      data: {
-        status: 'PRONTO_PARA_POSTAR',
-      },
-    });
-
-    await transaction.comment.create({
-      data: {
         contentId,
-        authorName: client.name,
-        authorRole: 'CLIENTE',
-        message:
-          'APROVAÇÃO FINAL: material aprovado na 2ª Etapa de Aprovação.',
+
+        status:
+          'PENDENTE',
+      },
+
+      orderBy: {
+        createdAt:
+          'desc',
       },
     });
 
-    await transaction.historyLog.create({
-      data: {
-        entityType: 'CONTENT',
-        entityId: contentId,
-        action: 'FINAL_APPROVAL_APPROVED',
-        description:
-          `Cliente aprovou o material final: ${content.title}.`,
-        authorName: client.name,
-      },
-    });
-  });
+
+  await prisma.$transaction(
+    async (
+      transaction
+    ) => {
+
+      if (
+        legacyApproval
+      ) {
+
+        await transaction
+          .approval
+          .update({
+            where: {
+              id:
+                legacyApproval.id,
+            },
+
+            data: {
+              status:
+                'APROVADO',
+
+              clientComment:
+                null,
+            },
+          });
+      }
+
+
+      await transaction
+        .content
+        .update({
+          where: {
+            id:
+              contentId,
+          },
+
+          data: {
+            status:
+              'PRONTO_PARA_POSTAR',
+          },
+        });
+
+
+      await transaction
+        .comment
+        .create({
+          data: {
+            contentId,
+
+            authorName:
+              client.name,
+
+            authorRole:
+              'CLIENTE',
+
+            message:
+              'APROVAÇÃO FINAL: material aprovado na 2ª Etapa de Aprovação.',
+          },
+        });
+
+
+      await transaction
+        .historyLog
+        .create({
+          data: {
+            entityType:
+              'CONTENT',
+
+            entityId:
+              contentId,
+
+            action:
+              'FINAL_APPROVAL_APPROVED',
+
+            description:
+              'Cliente aprovou o material final: ' +
+              content.title +
+              '.',
+
+            authorName:
+              client.name,
+          },
+        });
+    }
+  );
+
 
   revalidatePath(
-    `/aprovacao-final/${token}`
+    '/aprovacao-final/' +
+    token
   );
 
   revalidatePath(
-    `/clientes/${client.id}/aprovacao-final`
+    '/clientes/' +
+    client.id +
+    '/aprovacao-final'
   );
 
-  revalidatePath('/design');
-  revalidatePath('/filmmaker');
-  revalidatePath('/social-media');
-  revalidatePath('/social-media/avisos');
-  revalidatePath('/pronto-para-postar');
+  revalidatePath(
+    '/design'
+  );
+
+  revalidatePath(
+    '/filmmaker'
+  );
+
+  revalidatePath(
+    '/social-media'
+  );
+
+  revalidatePath(
+    '/social-media/avisos'
+  );
+
+  revalidatePath(
+    '/pronto-para-postar'
+  );
+
 
   redirect(
-    `/aprovacao-final/${token}?feedback=aprovado`
+    '/aprovacao-final/' +
+    token +
+    '?feedback=aprovado'
   );
 }
 
+
 export async function requestFinalChangesAction(
-  token: string,
-  contentId: string,
-  formData: FormData
+  token:
+    string,
+  contentId:
+    string,
+  formData:
+    FormData
 ) {
-  const message = String(
-    formData.get('message') || ''
-  ).trim();
+
+  const message =
+    String(
+      formData.get(
+        'message'
+      ) ||
+      ''
+    ).trim();
+
 
   const audioPath =
     String(
@@ -147,6 +270,7 @@ export async function requestFinalChangesAction(
       ''
     ).trim();
 
+
   const audioMimeType =
     String(
       formData.get(
@@ -154,9 +278,12 @@ export async function requestFinalChangesAction(
       ) ||
       ''
     )
-      .split(';')[0]
+      .split(
+        ';'
+      )[0]
       .trim()
       .toLowerCase();
+
 
   const rawDuration =
     Number(
@@ -165,6 +292,7 @@ export async function requestFinalChangesAction(
       ) ||
       0
     );
+
 
   const audioDurationMs =
     Number.isFinite(
@@ -181,27 +309,36 @@ export async function requestFinalChangesAction(
         )
       : 0;
 
+
   if (
     !message &&
     !audioPath
   ) {
+
     return {
-      ok: false,
+      ok:
+        false,
+
       message:
         'Escreva o ajuste ou grave um áudio.',
     };
   }
 
+
   if (
     message.length >
     2000
   ) {
+
     return {
-      ok: false,
+      ok:
+        false,
+
       message:
         'O ajuste deve ter no máximo 2000 caracteres.',
     };
   }
+
 
   const allowedAudioTypes =
     new Set([
@@ -213,83 +350,150 @@ export async function requestFinalChangesAction(
       'audio/x-m4a',
     ]);
 
+
   if (
     audioPath &&
     !allowedAudioTypes.has(
       audioMimeType
     )
   ) {
+
     return {
-      ok: false,
+      ok:
+        false,
+
       message:
         'Formato de áudio não permitido.',
     };
   }
 
-  const client = await resolveClientByToken(token);
 
-  if (!client) {
-    redirect(`/aprovacao-final/${token}`);
-  }
+  const context =
+    await resolveFinalApprovalContext(
+      token
+    );
 
-  const content = await prisma.content.findFirst({
-    where: {
-      id: contentId,
-      clientId: client.id,
-    },
-  });
 
-  if (!content) {
-    redirect(`/aprovacao-final/${token}`);
-  }
+  if (
+    !context
+  ) {
 
-  const approval = await prisma.approval.findFirst({
-    where: {
-      contentId,
-      status: 'PENDENTE',
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-
-  if (!approval) {
     redirect(
-      `/aprovacao-final/${token}?error=not-pending`
+      '/aprovacao-final/' +
+      token
     );
   }
+
+
+  const {
+    client,
+    start,
+    end,
+  } =
+    context;
+
+
+  const content =
+    await prisma.content.findFirst({
+      where: {
+        id:
+          contentId,
+
+        clientId:
+          client.id,
+
+        plannedDate: {
+          gte:
+            start,
+
+          lt:
+            end,
+        },
+
+        status: {
+          in:
+            FINAL_PENDING_STATUSES,
+        },
+      },
+    });
+
+
+  if (
+    !content
+  ) {
+
+    redirect(
+      '/aprovacao-final/' +
+      token
+    );
+  }
+
+
+  const legacyApproval =
+    await prisma.approval.findFirst({
+      where: {
+        contentId,
+
+        status:
+          'PENDENTE',
+      },
+
+      orderBy: {
+        createdAt:
+          'desc',
+      },
+    });
+
 
   let audioUrl =
     '';
 
-  if (audioPath) {
+
+  if (
+    audioPath
+  ) {
+
     const expectedPrefix =
-      `client-review-audio/ajuste-cliente-${contentId}-`;
+      'client-review-audio/ajuste-cliente-' +
+      contentId +
+      '-';
+
 
     if (
       !audioPath.startsWith(
         expectedPrefix
       )
     ) {
+
       return {
-        ok: false,
+        ok:
+          false,
+
         message:
           'Caminho do áudio inválido.',
       };
     }
+
 
     const exists =
       await aprovUpFileExists(
         audioPath
       );
 
-    if (!exists) {
+
+    if (
+      !exists
+    ) {
+
       return {
-        ok: false,
+        ok:
+          false,
+
         message:
           'O áudio ainda não chegou ao Storage.',
       };
     }
+
 
     audioUrl =
       getAprovUpPublicUrl(
@@ -297,13 +501,16 @@ export async function requestFinalChangesAction(
       );
   }
 
+
   const visibleMessage =
     message ||
     'Áudio de ajuste anexado.';
 
+
   const normalizedFormat =
     String(
-      content.format || ''
+      content.format ||
+      ''
     ).toUpperCase();
 
 
@@ -315,14 +522,17 @@ export async function requestFinalChangesAction(
   const returnsToFilmmaker =
     !returnsToSocialMedia &&
     (
-      content.area === 'FILMMAKER' ||
+      content.area ===
+        'FILMMAKER' ||
       [
         'REEL',
         'VIDEO',
         'TIKTOK',
         'SHORT',
       ].some(
-        (format) =>
+        (
+          format
+        ) =>
           normalizedFormat.includes(
             format
           )
@@ -335,80 +545,139 @@ export async function requestFinalChangesAction(
       ? 'Social Media'
       : returnsToFilmmaker
         ? 'Filmmaker / Edição'
-        : content.area === 'DESIGN'
+        : content.area ===
+            'DESIGN'
           ? 'Design / Fazendo'
           : 'Produção';
 
 
-  await prisma.$transaction(async (transaction) => {
-    await transaction.approval.update({
-      where: {
-        id: approval.id,
-      },
-      data: {
-        status: 'ALTERACAO_SOLICITADA',
-        clientComment: visibleMessage,
-      },
-    });
+  await prisma.$transaction(
+    async (
+      transaction
+    ) => {
 
-    await transaction.content.update({
-      where: {
-        id: contentId,
-      },
+      if (
+        legacyApproval
+      ) {
 
-      data: returnsToSocialMedia
-        ? {
-            status: 'ALTERACAO_SOLICITADA',
-            area: 'SOCIAL_MEDIA',
-          }
-        : returnsToFilmmaker
-          ? {
-              status: 'FILMMAKER_EDICAO',
-              area: 'FILMMAKER',
-            }
-          : content.area === 'DESIGN'
-            ? {
-                status: 'DESIGN_FAZENDO',
-                area: 'DESIGN',
-              }
-            : {
-                status: 'ALTERACAO_SOLICITADA',
-              },
-    });
+        await transaction
+          .approval
+          .update({
+            where: {
+              id:
+                legacyApproval.id,
+            },
 
-    await transaction.comment.create({
-      data: {
-        contentId,
-        authorName: client.name,
-        authorRole: 'CLIENTE',
-        message:
-          `ALTERACAO FINAL SOLICITADA PELO CLIENTE: ${visibleMessage}`,
+            data: {
+              status:
+                'ALTERACAO_SOLICITADA',
 
-        audioUrl:
-          audioUrl ||
-          null,
+              clientComment:
+                visibleMessage,
+            },
+          });
+      }
 
-        audioMimeType:
-          audioMimeType ||
-          null,
 
-        audioDurationMs:
-          audioDurationMs ||
-          null,
-      },
-    });
+      await transaction
+        .content
+        .update({
+          where: {
+            id:
+              contentId,
+          },
 
-    await transaction.historyLog.create({
-      data: {
-        entityType: 'CONTENT',
-        entityId: contentId,
-        action: 'FINAL_APPROVAL_CHANGE_REQUESTED',
-        description:
-          `Cliente solicitou alteração no material final: ${content.title}. Retornado para ${returnLabel}.`,
-        authorName: client.name,
-      },
-    });
-  });
+          data:
+            returnsToSocialMedia
+              ? {
+                  status:
+                    'ALTERACAO_SOLICITADA',
+
+                  area:
+                    'SOCIAL_MEDIA',
+                }
+              : returnsToFilmmaker
+                ? {
+                    status:
+                      'FILMMAKER_EDICAO',
+
+                    area:
+                      'FILMMAKER',
+                  }
+                : content.area ===
+                    'DESIGN'
+                  ? {
+                      status:
+                        'DESIGN_FAZENDO',
+
+                      area:
+                        'DESIGN',
+                    }
+                  : {
+                      status:
+                        'ALTERACAO_SOLICITADA',
+                    },
+        });
+
+
+      await transaction
+        .comment
+        .create({
+          data: {
+            contentId,
+
+            authorName:
+              client.name,
+
+            authorRole:
+              'CLIENTE',
+
+            message:
+              'ALTERACAO FINAL SOLICITADA PELO CLIENTE: ' +
+              visibleMessage,
+
+            audioUrl:
+              audioUrl ||
+              null,
+
+            audioMimeType:
+              audioMimeType ||
+              null,
+
+            audioDurationMs:
+              audioDurationMs ||
+              null,
+          },
+        });
+
+
+      await transaction
+        .historyLog
+        .create({
+          data: {
+            entityType:
+              'CONTENT',
+
+            entityId:
+              contentId,
+
+            action:
+              'FINAL_APPROVAL_CHANGE_REQUESTED',
+
+            description:
+              'Cliente solicitou alteração no material final: ' +
+              content.title +
+              '. Retornado para ' +
+              returnLabel +
+              '.',
+
+            authorName:
+              client.name,
+          },
+        });
+    }
+  );
+
 
   await notifyResponsibleSocialMediaAboutQuestion({
     agencyId:
@@ -421,33 +690,54 @@ export async function requestFinalChangesAction(
 
     message:
       visibleMessage,
-  }).catch(
-    (
-      error
-    ) => {
-      console.error(
-        'LIV final client adjustment:',
+  })
+    .catch(
+      (
         error
-      );
-    }
-  );
+      ) => {
+
+        console.error(
+          'LIV final client adjustment:',
+          error
+        );
+      }
+    );
 
 
   revalidatePath(
-    `/aprovacao-final/${token}`
+    '/aprovacao-final/' +
+    token
   );
 
   revalidatePath(
-    `/clientes/${client.id}/aprovacao-final`
+    '/clientes/' +
+    client.id +
+    '/aprovacao-final'
   );
 
-  revalidatePath('/design');
-  revalidatePath('/filmmaker');
-  revalidatePath('/social-media');
-  revalidatePath('/social-media/avisos');
-  revalidatePath('/pronto-para-postar');
+  revalidatePath(
+    '/design'
+  );
+
+  revalidatePath(
+    '/filmmaker'
+  );
+
+  revalidatePath(
+    '/social-media'
+  );
+
+  revalidatePath(
+    '/social-media/avisos'
+  );
+
+  revalidatePath(
+    '/pronto-para-postar'
+  );
+
 
   return {
-    ok: true,
+    ok:
+      true,
   };
 }

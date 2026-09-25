@@ -1,5 +1,12 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+
+import {
+  FINAL_PENDING_STATUSES,
+  FINAL_VISIBLE_STATUSES,
+  finalApprovalMonthNames,
+  resolveFinalApprovalContext,
+} from '@/lib/finalMonthlyApproval';
 import { PreserveApprovalScroll } from '@/components/approval/PreserveApprovalScroll';
 
 import {
@@ -11,17 +18,31 @@ import {
 } from './FinalAdjustmentForm';
 
 function statusLabel(status: string) {
-  if (status === 'ENVIADO_CLIENTE') {
+
+  if (
+    FINAL_PENDING_STATUSES.includes(
+      status
+    )
+  ) {
     return 'Aguardando aprovação';
   }
 
-  if (status === 'ALTERACAO_SOLICITADA') {
-    return 'Alteracao solicitada';
+
+  if (
+    status ===
+      'ALTERACAO_SOLICITADA'
+  ) {
+    return 'Alteração solicitada';
   }
 
-  if (status === 'PRONTO_PARA_POSTAR') {
+
+  if (
+    status ===
+      'PRONTO_PARA_POSTAR'
+  ) {
     return 'Aprovado';
   }
+
 
   return status;
 }
@@ -192,41 +213,97 @@ export default async function FinalApprovalPage({
       ? await searchParams
       : {};
 
-  const gatewayApproval =
-    await prisma.approval.findUnique({
-      where: {
-        token,
-      },
-      include: {
-        content: {
-          include: {
-            client: true,
-          },
-        },
-      },
-    });
+  const approvalContext =
+    await resolveFinalApprovalContext(
+      token
+    );
 
-  if (!gatewayApproval) {
+
+  if (
+    !approvalContext
+  ) {
     notFound();
   }
 
-  const client =
-    gatewayApproval.content.client;
+
+  const {
+    client,
+    month,
+    year,
+    start,
+    end,
+  } =
+    approvalContext;
+
 
   const contents = await prisma.content.findMany({
     where: {
-      clientId: client.id,
+      clientId:
+        client.id,
+
+      format: {
+        not:
+          'DEMANDA_EMERGENCIAL',
+      },
+
+      plannedDate: {
+        gte:
+          start,
+
+        lt:
+          end,
+      },
+
       status: {
-        in: [
-          'ENVIADO_CLIENTE',
-          'ALTERACAO_SOLICITADA',
-          'PRONTO_PARA_POSTAR',
-        ],
+        in:
+          FINAL_VISIBLE_STATUSES,
       },
-      approvals: {
-        some: {},
-      },
+
+      OR: [
+        {
+          finalMediaUrl: {
+            not:
+              null,
+          },
+        },
+
+        {
+          finalCoverUrl: {
+            not:
+              null,
+          },
+        },
+
+        {
+          finalExternalUrl: {
+            not:
+              null,
+          },
+        },
+
+        {
+          storyMediaUrl: {
+            not:
+              null,
+          },
+        },
+
+        {
+          storyCoverUrl: {
+            not:
+              null,
+          },
+        },
+
+        {
+          instagramMediaAssets: {
+            some:
+              {},
+          },
+        },
+      ],
     },
+
     include: {
       approvals: {
         orderBy: {
@@ -251,9 +328,14 @@ export default async function FinalApprovalPage({
   });
 
   const pending = contents.filter(
-    (content) =>
-      content.status === 'ENVIADO_CLIENTE'
+    (
+      content
+    ) =>
+      FINAL_PENDING_STATUSES.includes(
+        content.status
+      )
   );
+
 
   const approved = contents.filter(
     (content) =>
@@ -277,6 +359,14 @@ export default async function FinalApprovalPage({
           <h1 className="mt-3 text-4xl font-black">
             {client.name}
           </h1>
+
+          <p className="mt-2 text-sm font-bold text-blue-200">
+            {
+              finalApprovalMonthNames[
+                month
+              ]
+            } / {year}
+          </p>
 
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
             {

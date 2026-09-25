@@ -8,6 +8,11 @@ import {
 } from '@/lib/prisma';
 
 import {
+  FINAL_PENDING_STATUSES,
+  resolveFinalApprovalContext,
+} from '@/lib/finalMonthlyApproval';
+
+import {
   createAprovUpSignedUpload,
 } from '@/lib/aprovupStorage';
 
@@ -35,88 +40,105 @@ const ALLOWED_AUDIO_TYPES =
 
 
 function normalizeMime(
-  value: unknown
+  value:
+    unknown
 ) {
+
   return String(
     value ||
     ''
   )
-    .split(';')[0]
+    .split(
+      ';'
+    )[0]
     .trim()
     .toLowerCase();
 }
 
 
 export async function POST(
-  request: NextRequest,
+  request:
+    NextRequest,
+
   context: {
-    params: Promise<{
-      token: string;
-      contentId: string;
-    }>;
+    params:
+      Promise<{
+        token:
+          string;
+
+        contentId:
+          string;
+      }>;
   }
 ) {
+
   try {
+
     const {
       token,
       contentId,
     } =
       await context.params;
 
+
     if (
       !token ||
       !contentId
     ) {
+
       return NextResponse.json(
         {
-          ok: false,
+          ok:
+            false,
+
           message:
             'Link de aprovação inválido.',
         },
         {
-          status: 404,
+          status:
+            404,
         }
       );
     }
+
 
     /*
-     * O token identifica o portal do cliente.
-     * Mantemos a mesma semântica já usada pela
-     * página /aprovacao-final/[token].
+     * Funciona tanto com o novo token mensal quanto
+     * com os links antigos individuais.
      */
-    const portalApproval =
-      await prisma.approval.findUnique({
-        where: {
-          token,
-        },
+    const approvalContext =
+      await resolveFinalApprovalContext(
+        token
+      );
 
-        select: {
-          content: {
-            select: {
-              clientId:
-                true,
-            },
-          },
-        },
-      });
 
-    const clientId =
-      portalApproval
-        ?.content
-        ?.clientId;
+    if (
+      !approvalContext
+    ) {
 
-    if (!clientId) {
       return NextResponse.json(
         {
-          ok: false,
+          ok:
+            false,
+
           message:
             'Link de aprovação inválido.',
         },
         {
-          status: 404,
+          status:
+            404,
         }
       );
     }
+
+
+    const {
+      client,
+      start,
+      end,
+    } =
+      approvalContext;
+
 
     const content =
       await prisma.content.findFirst({
@@ -124,10 +146,21 @@ export async function POST(
           id:
             contentId,
 
-          clientId,
+          clientId:
+            client.id,
 
-          status:
-            'ENVIADO_CLIENTE',
+          plannedDate: {
+            gte:
+              start,
+
+            lt:
+              end,
+          },
+
+          status: {
+            in:
+              FINAL_PENDING_STATUSES,
+          },
         },
 
         select: {
@@ -136,104 +169,102 @@ export async function POST(
         },
       });
 
-    if (!content) {
+
+    if (
+      !content
+    ) {
+
       return NextResponse.json(
         {
-          ok: false,
+          ok:
+            false,
+
           message:
             'Este conteúdo não está disponível para ajuste.',
         },
         {
-          status: 409,
-        }
-      );
-    }
-
-    const pendingApproval =
-      await prisma.approval.findFirst({
-        where: {
-          contentId,
-
           status:
-            'PENDENTE',
-        },
-
-        select: {
-          id:
-            true,
-        },
-      });
-
-    if (!pendingApproval) {
-      return NextResponse.json(
-        {
-          ok: false,
-          message:
-            'Esta aprovação não está mais pendente.',
-        },
-        {
-          status: 409,
+            409,
         }
       );
     }
+
 
     const body =
       await request.json();
 
+
     const fileName =
-      typeof body?.fileName ===
+      typeof body
+        ?.fileName ===
         'string'
         ? body.fileName
         : '';
 
+
     const fileSize =
       Number(
-        body?.fileSize ||
+        body
+          ?.fileSize ||
         0
       );
 
+
     const contentType =
       normalizeMime(
-        body?.contentType
+        body
+          ?.contentType
       );
+
 
     if (
       !fileName ||
       !Number.isFinite(
         fileSize
       ) ||
-      fileSize <= 0 ||
+      fileSize <=
+        0 ||
       fileSize >
         MAX_AUDIO_BYTES
     ) {
+
       return NextResponse.json(
         {
-          ok: false,
+          ok:
+            false,
+
           message:
             'Áudio inválido ou maior que 15 MB.',
         },
         {
-          status: 400,
+          status:
+            400,
         }
       );
     }
+
 
     if (
       !ALLOWED_AUDIO_TYPES.has(
         contentType
       )
     ) {
+
       return NextResponse.json(
         {
-          ok: false,
+          ok:
+            false,
+
           message:
             'Formato de áudio não permitido.',
         },
         {
-          status: 400,
+          status:
+            400,
         }
       );
     }
+
 
     const prepared =
       await createAprovUpSignedUpload({
@@ -241,13 +272,16 @@ export async function POST(
           'client-review-audio',
 
         prefix:
-          `ajuste-cliente-${contentId}`,
+          'ajuste-cliente-' +
+          contentId,
 
         fileName,
       });
 
+
     return NextResponse.json({
-      ok: true,
+      ok:
+        true,
 
       bucket:
         'aprovup-files',
@@ -258,21 +292,29 @@ export async function POST(
       token:
         prepared.token,
     });
+
   }
-  catch (error) {
+  catch (
+    error
+  ) {
+
     console.error(
       'AprovUp client review audio:',
       error
     );
 
+
     return NextResponse.json(
       {
-        ok: false,
+        ok:
+          false,
+
         message:
           'Não foi possível preparar o áudio.',
       },
       {
-        status: 500,
+        status:
+          500,
       }
     );
   }

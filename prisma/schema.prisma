@@ -179,6 +179,7 @@ model Client {
   diagnoses                ClientProfileDiagnosis[]
   mindMaps                 MindMap[]
   monthlyApprovals         MonthlyApproval[]
+  finalMonthlyApprovals    FinalMonthlyApproval[]
   instagramConnection      InstagramConnection?
   instagramMetricSnapshots InstagramMetricSnapshot[]
   financeEntries           FinanceEntry[]
@@ -365,6 +366,23 @@ model MonthlyApproval {
   updatedAt DateTime @updatedAt
 
   @@unique([clientId, month, year])
+}
+
+model FinalMonthlyApproval {
+  id     String @id @default(cuid())
+  token  String @unique
+  month  Int
+  year   Int
+  status String @default("PENDENTE")
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([clientId, month, year])
+  @@index([clientId, year, month])
 }
 
 model InstagramMediaAsset {
