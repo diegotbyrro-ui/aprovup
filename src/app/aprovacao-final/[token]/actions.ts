@@ -244,6 +244,256 @@ export async function approveFinalContentAction(
 }
 
 
+export async function reopenFinalContentAction(
+  token:
+    string,
+  contentId:
+    string,
+  _formData:
+    FormData
+) {
+
+  const context =
+    await resolveFinalApprovalContext(
+      token
+    );
+
+
+  if (
+    !context
+  ) {
+
+    redirect(
+      '/aprovacao-final/' +
+      token
+    );
+  }
+
+
+  const {
+    client,
+    start,
+    end,
+  } =
+    context;
+
+
+  const content =
+    await prisma.content.findFirst({
+      where: {
+        id:
+          contentId,
+
+        clientId:
+          client.id,
+
+        plannedDate: {
+          gte:
+            start,
+
+          lt:
+            end,
+        },
+
+        status:
+          'PRONTO_PARA_POSTAR',
+      },
+
+      include: {
+        instagramPublication:
+          true,
+
+        instagramStoryPublication:
+          true,
+      },
+    });
+
+
+  if (
+    !content
+  ) {
+
+    redirect(
+      '/aprovacao-final/' +
+      token
+    );
+  }
+
+
+  const blockedStatuses =
+    [
+      'AGENDADO',
+      'PUBLICANDO',
+      'PUBLICADO',
+    ];
+
+
+  const feedStatus =
+    content
+      .instagramPublication
+      ?.status ||
+    '';
+
+
+  const storyStatus =
+    content
+      .instagramStoryPublication
+      ?.status ||
+    '';
+
+
+  if (
+    blockedStatuses.includes(
+      feedStatus
+    ) ||
+    blockedStatuses.includes(
+      storyStatus
+    )
+  ) {
+
+    redirect(
+      '/aprovacao-final/' +
+      token +
+      '?error=publication-locked'
+    );
+  }
+
+
+  const legacyApproval =
+    await prisma.approval.findFirst({
+      where: {
+        contentId,
+
+        status:
+          'APROVADO',
+      },
+
+      orderBy: {
+        updatedAt:
+          'desc',
+      },
+    });
+
+
+  await prisma.$transaction(
+    async (
+      transaction
+    ) => {
+
+      if (
+        legacyApproval
+      ) {
+
+        await transaction
+          .approval
+          .update({
+            where: {
+              id:
+                legacyApproval.id,
+            },
+
+            data: {
+              status:
+                'PENDENTE',
+
+              clientComment:
+                null,
+            },
+          });
+      }
+
+
+      await transaction
+        .content
+        .update({
+          where: {
+            id:
+              contentId,
+          },
+
+          data: {
+            status:
+              'ENVIADO_CLIENTE',
+          },
+        });
+
+
+      await transaction
+        .comment
+        .create({
+          data: {
+            contentId,
+
+            authorName:
+              client.name,
+
+            authorRole:
+              'CLIENTE',
+
+            message:
+              'APROVAÇÃO DESFEITA: o cliente marcou este material como não aprovado e ele retornou para a 2ª Etapa de Aprovação.',
+          },
+        });
+
+
+      await transaction
+        .historyLog
+        .create({
+          data: {
+            entityType:
+              'CONTENT',
+
+            entityId:
+              contentId,
+
+            action:
+              'FINAL_APPROVAL_REOPENED_BY_CLIENT',
+
+            description:
+              'Cliente desfez a aprovação final do conteúdo "' +
+              content.title +
+              '". Material retornado para a 2ª Etapa de Aprovação.',
+
+            authorName:
+              client.name,
+          },
+        });
+    }
+  );
+
+
+  revalidatePath(
+    '/aprovacao-final/' +
+    token
+  );
+
+  revalidatePath(
+    '/clientes/' +
+    client.id +
+    '/aprovacao-final'
+  );
+
+  revalidatePath(
+    '/social-media'
+  );
+
+  revalidatePath(
+    '/social-media/avisos'
+  );
+
+  revalidatePath(
+    '/pronto-para-postar'
+  );
+
+
+  redirect(
+    '/aprovacao-final/' +
+    token +
+    '?feedback=reaberto'
+  );
+}
+
+
 export async function requestFinalChangesAction(
   token:
     string,

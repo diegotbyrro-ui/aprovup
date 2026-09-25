@@ -10,7 +10,12 @@ import {
 import { PreserveApprovalScroll } from '@/components/approval/PreserveApprovalScroll';
 
 import {
+  ConfirmFinalReopenButton,
+} from '@/components/approval/ConfirmFinalReopenButton';
+
+import {
   approveFinalContentAction,
+  reopenFinalContentAction,
 } from './actions';
 
 import {
@@ -381,13 +386,25 @@ export default async function FinalApprovalPage({
           </div>
         )}
 
-        {query.feedback === 'alteracao' && (
+                {query.feedback === 'reaberto' && (
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 font-bold text-blue-800">
+            Aprovação desfeita. O material voltou para a 2ª Etapa de Aprovação.
+          </div>
+        )}
+
+{query.feedback === 'alteracao' && (
           <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 font-bold text-orange-800">
             Solicitação enviada para a equipe.
           </div>
         )}
 
-        {query.error === 'empty' && (
+                {query.error === 'publication-locked' && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">
+            Este material já foi agendado ou publicado. A aprovação não pode ser desfeita por este link.
+          </div>
+        )}
+
+{query.error === 'empty' && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">
             Escreva o ajuste solicitado antes de enviar.
           </div>
@@ -873,14 +890,40 @@ export default async function FinalApprovalPage({
                       </p>
 
                       {approvedContent ? (
-                        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                          <p className="font-black text-emerald-800">
-                            Conteúdo aprovado
+                        <div className="mt-6 space-y-3">
+
+                          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+
+                            <p className="font-black text-emerald-800">
+                              Conteúdo aprovado
+                            </p>
+
+                            <p className="mt-1 text-sm text-emerald-700">
+                              Este material já foi aprovado na segunda etapa.
+                            </p>
+
+                          </div>
+
+
+                          <form
+                            action={
+                              reopenFinalContentAction.bind(
+                                null,
+                                token,
+                                content.id
+                              )
+                            }
+                          >
+
+                            <ConfirmFinalReopenButton />
+
+                          </form>
+
+
+                          <p className="px-2 text-center text-[11px] leading-relaxed text-slate-400">
+                            Use esta opção somente se a aprovação foi feita por engano.
                           </p>
 
-                          <p className="mt-1 text-sm text-emerald-700">
-                            Este material já foi aprovado na segunda etapa.
-                          </p>
                         </div>
                       ) : adjustmentContent ? (
                         <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-5">

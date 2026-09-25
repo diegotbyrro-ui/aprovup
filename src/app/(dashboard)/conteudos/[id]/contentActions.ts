@@ -82,6 +82,226 @@ export async function generateApprovalLink(contentId: string) {
 
 
 
+export async function reopenFinalApprovalInternallyAction(
+  contentId:
+    string
+) {
+
+  const currentUser =
+    await requirePermission(
+      "social.manage"
+    );
+
+
+  const content =
+    await prisma.content.findFirst({
+      where: {
+        id:
+          contentId,
+
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
+
+        status:
+          "PRONTO_PARA_POSTAR",
+      },
+
+      include: {
+        instagramPublication:
+          true,
+
+        instagramStoryPublication:
+          true,
+      },
+    });
+
+
+  if (
+    !content
+  ) {
+
+    revalidatePath(
+      "/conteudos/" +
+      contentId
+    );
+
+    return;
+  }
+
+
+  const blockedStatuses =
+    [
+      "AGENDADO",
+      "PUBLICANDO",
+      "PUBLICADO",
+    ];
+
+
+  if (
+    blockedStatuses.includes(
+      content
+        .instagramPublication
+        ?.status ||
+      ""
+    ) ||
+    blockedStatuses.includes(
+      content
+        .instagramStoryPublication
+        ?.status ||
+      ""
+    )
+  ) {
+
+    throw new Error(
+      "Este conteúdo já foi agendado ou publicado e não pode retornar para aprovação por este botão."
+    );
+  }
+
+
+  const legacyApproval =
+    await prisma.approval.findFirst({
+      where: {
+        contentId,
+
+        status:
+          "APROVADO",
+      },
+
+      orderBy: {
+        updatedAt:
+          "desc",
+      },
+    });
+
+
+  const author =
+    currentUser.name ||
+    currentUser.email ||
+    "Equipe AprovUp";
+
+
+  await prisma.$transaction(
+    async (
+      transaction
+    ) => {
+
+      if (
+        legacyApproval
+      ) {
+
+        await transaction
+          .approval
+          .update({
+            where: {
+              id:
+                legacyApproval.id,
+            },
+
+            data: {
+              status:
+                "PENDENTE",
+
+              clientComment:
+                null,
+            },
+          });
+      }
+
+
+      await transaction
+        .content
+        .update({
+          where: {
+            id:
+              content.id,
+          },
+
+          data: {
+            status:
+              "ENVIADO_CLIENTE",
+          },
+        });
+
+
+      await transaction
+        .comment
+        .create({
+          data: {
+            contentId:
+              content.id,
+
+            authorName:
+              author,
+
+            authorRole:
+              currentUser.role ||
+              "EQUIPE",
+
+            message:
+              "APROVAÇÃO DESFEITA INTERNAMENTE: material marcado como não aprovado e devolvido para a 2ª Etapa de Aprovação.",
+          },
+        });
+
+
+      await transaction
+        .historyLog
+        .create({
+          data: {
+            entityType:
+              "CONTENT",
+
+            entityId:
+              content.id,
+
+            action:
+              "FINAL_APPROVAL_REOPENED_INTERNAL",
+
+            description:
+              'A equipe desfez a aprovação final do conteúdo "' +
+              content.title +
+              '". Material retornado para a 2ª Etapa de Aprovação.',
+
+            authorName:
+              author,
+          },
+        });
+    }
+  );
+
+
+  revalidatePath(
+    "/conteudos/" +
+    content.id
+  );
+
+  revalidatePath(
+    "/clientes/" +
+    content.clientId +
+    "/aprovacao-final"
+  );
+
+  revalidatePath(
+    "/social-media"
+  );
+
+  revalidatePath(
+    "/social-media/avisos"
+  );
+
+  revalidatePath(
+    "/pronto-para-postar"
+  );
+
+  revalidatePath(
+    "/calendario-editorial"
+  );
+}
+
+
+
+
 export async function markContentAsPublishedByDirectorAction(
   contentId:
     string

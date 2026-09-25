@@ -5,6 +5,10 @@ import Link from 'next/link';
 import { deleteContentAction, updateContentPlannedDateAction } from './delete-actions';
 import { notFound } from 'next/navigation';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+
+import {
+  ConfirmFinalReopenButton,
+} from '@/components/approval/ConfirmFinalReopenButton';
 import { updateContent, addComment, addTask, completeTask } from '@/app/actions';
 import { InstagramPreview } from '@/components/content/InstagramPreview';
 import { CarouselFinalUpload } from '@/components/content/CarouselFinalUpload';
@@ -12,6 +16,7 @@ import { inputClasses, labelClasses } from '@/lib/styles';
 import {
   generateApprovalLink,
   markContentAsPublishedByDirectorAction,
+  reopenFinalApprovalInternallyAction,
 } from './contentActions';
 import { hasPermission } from '@/lib/userAccess';
 import { SocialMediaProductionPanel } from './SocialMediaProductionPanel';
@@ -930,6 +935,13 @@ export default async function ConteudoDetailPage({
       id
     );
 
+
+  const reopenFinalApprovalAction =
+    reopenFinalApprovalInternallyAction.bind(
+      null,
+      id
+    );
+
   const canDirectorMarkPublished =
     currentUser.role ===
       'DIRECTOR' &&
@@ -1255,6 +1267,18 @@ export default async function ConteudoDetailPage({
                 </button>
               </form>
             )}
+
+            {canManageSocial &&
+              contentSafe.status ===
+                'PRONTO_PARA_POSTAR' && (
+                <form
+                  action={
+                    reopenFinalApprovalAction
+                  }
+                >
+                  <ConfirmFinalReopenButton />
+                </form>
+              )}
 
             {canDirectorMarkPublished && (
               <form
