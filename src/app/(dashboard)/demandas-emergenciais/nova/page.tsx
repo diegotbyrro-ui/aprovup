@@ -241,7 +241,7 @@ export default async function NovaDemandaEmergencialPage({
           />
 
           <p className="mt-2 text-xs leading-relaxed text-slate-400">
-            Use este campo quando o arquivo for muito pesado ou quando precisar enviar o material original em alta qualidade para a produ??o.
+            Use este campo quando o arquivo for muito pesado ou quando precisar enviar o material original em alta qualidade para a produção.
           </p>
         </div>
 

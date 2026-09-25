@@ -77,7 +77,7 @@ function browserStorageClient() {
   ) {
 
     throw new Error(
-      'Storage do AprovUp n?o est? configurado.'
+      'Storage do AprovUp não está configurado.'
     );
   }
 
@@ -473,7 +473,7 @@ export function SocialMediaQuickUpload({
 
       throw new Error(
         result?.message ||
-        'N?o foi poss?vel preparar o upload.'
+        'Não foi possível preparar o upload.'
       );
     }
 
@@ -496,7 +496,7 @@ export function SocialMediaQuickUpload({
     ) {
 
       throw new Error(
-        'O arquivo deve possuir no m?ximo 200 MB.'
+        'O arquivo deve possuir no máximo 200 MB.'
       );
     }
 
@@ -539,7 +539,7 @@ export function SocialMediaQuickUpload({
 
       throw new Error(
         error.message ||
-        'N?o foi poss?vel enviar o arquivo.'
+        'Não foi possível enviar o arquivo.'
       );
     }
 
@@ -595,7 +595,7 @@ export function SocialMediaQuickUpload({
 
       throw new Error(
         result?.message ||
-        'N?o foi poss?vel finalizar o material.'
+        'Não foi possível finalizar o material.'
       );
     }
   }
@@ -613,7 +613,7 @@ export function SocialMediaQuickUpload({
     ) {
 
       throw new Error(
-        'O carrossel aceita no m?ximo 10 p?ginas.'
+        'O carrossel aceita no máximo 10 páginas.'
       );
     }
 
@@ -664,7 +664,7 @@ export function SocialMediaQuickUpload({
 
         throw new Error(
           uploadResult?.message ||
-          'N?o foi poss?vel enviar o carrossel.'
+          'Não foi possível enviar o carrossel.'
         );
       }
     }
@@ -703,7 +703,7 @@ export function SocialMediaQuickUpload({
 
       throw new Error(
         readyResult?.message ||
-        'N?o foi poss?vel enviar o carrossel para Pronto para Postar.'
+        'Não foi possível enviar o carrossel para Pronto para Postar.'
       );
     }
   }
@@ -743,7 +743,7 @@ export function SocialMediaQuickUpload({
 
       throw new Error(
         result?.message ||
-        'N?o foi poss?vel mover o conte?do para Pronto para Postar.'
+        'Não foi possível mover o conteúdo para Pronto para Postar.'
       );
     }
   }
@@ -843,7 +843,7 @@ export function SocialMediaQuickUpload({
 
 
       setMessage(
-        'Material salvo. Conte?do enviado para Pronto para Postar.'
+        'Material salvo. Conteúdo enviado para Pronto para Postar.'
       );
 
 
@@ -863,7 +863,7 @@ export function SocialMediaQuickUpload({
         error instanceof
           Error
           ? error.message
-          : 'N?o foi poss?vel salvar o material.'
+          : 'Não foi possível salvar o material.'
       );
     }
     finally {
@@ -900,15 +900,15 @@ export function SocialMediaQuickUpload({
 
             <p className="text-sm font-black text-slate-900">
               {isCarousel
-                ? 'Anexar p?ginas do carrossel'
+                ? 'Anexar páginas do carrossel'
                 : 'Anexar material final'}
             </p>
 
 
             <p className="mt-1 text-xs leading-5 text-slate-500">
               {isCarousel
-                ? 'Escolha as imagens e depois arraste as miniaturas para definir exatamente a ordem de publica??o.'
-                : 'Selecione a imagem ou o v?deo final que ser? publicado.'}
+                ? 'Escolha as imagens e depois arraste as miniaturas para definir exatamente a ordem de publicação.'
+                : 'Selecione a imagem ou o vídeo final que será publicado.'}
             </p>
 
           </div>
@@ -1068,7 +1068,7 @@ export function SocialMediaQuickUpload({
                         preview.url
                       }
                       alt={
-                        `P?gina ${index + 1}`
+                        `Página ${index + 1}`
                       }
                       draggable={
                         false
@@ -1115,7 +1115,7 @@ export function SocialMediaQuickUpload({
           0 ? (
 
           <p className="mt-3 text-xs font-bold text-slate-500">
-            {assets.length} p?gina(s) j? anexada(s). As novas imagens ser?o adicionadas depois das atuais e poder?o ser reorganizadas abaixo ap?s salvar.
+            {assets.length} página(s) já anexada(s). As novas imagens serão adicionadas depois das atuais e poderão ser reorganizadas abaixo após salvar.
           </p>
 
         ) : null}
@@ -1132,7 +1132,7 @@ export function SocialMediaQuickUpload({
             size={16}
           />
 
-          Este conte?do j? est? em Pronto para Postar. Voc? ainda pode substituir o material.
+          Este conteúdo já está em Pronto para Postar. Você ainda pode substituir o material.
 
         </div>
 

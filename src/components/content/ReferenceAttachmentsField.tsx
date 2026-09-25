@@ -44,7 +44,7 @@ function formatAttachmentDate(
   if (
     !value
   ) {
-    return 'Data n?o informada';
+    return 'Data não informada';
   }
 
 
@@ -59,7 +59,7 @@ function formatAttachmentDate(
       date.getTime()
     )
   ) {
-    return 'Data n?o informada';
+    return 'Data não informada';
   }
 
 
@@ -643,11 +643,11 @@ export function ReferenceAttachmentsField({
           <div>
 
             <p className="text-sm font-black text-slate-900">
-              Anexos de refer?ncia
+              Anexos de referência
             </p>
 
             <p className="mt-0.5 text-[11px] text-slate-500">
-              Fotos para Design ou Filmmaker usar na cria??o.
+              Fotos para Design ou Filmmaker usar na criação.
             </p>
 
           </div>
@@ -831,7 +831,7 @@ export function ReferenceAttachmentsField({
                           image.originalName ||
                           image.name
                         }
-                        title="Voc? pode editar o nome do anexo"
+                        title="Você pode editar o nome do anexo"
                         className="h-8 w-full min-w-0 rounded-lg border border-transparent bg-transparent px-2 text-sm font-black text-slate-800 outline-none transition hover:border-slate-200 hover:bg-white focus:border-blue-300 focus:bg-white"
                       />
 
@@ -983,7 +983,7 @@ export function ReferenceAttachmentsField({
         0 ? (
 
           <p className="mt-2 text-[10px] font-bold text-red-500">
-            {removedExistingUrls.length} anexo(s) existente(s) ser?(?o) exclu?do(s) quando voc? salvar as altera??es.
+            {removedExistingUrls.length} anexo(s) existente(s) será(ão) excluído(s) quando você salvar as alterações.
           </p>
 
         ) : null}
@@ -1006,7 +1006,7 @@ export function ReferenceAttachmentsField({
               size={16}
             />
 
-            Anexar fotos de refer?ncia
+            Anexar fotos de referência
 
           </button>
 
@@ -1016,7 +1016,7 @@ export function ReferenceAttachmentsField({
 
 
       <p className="mt-3 text-[10px] leading-4 text-slate-400">
-        Voc? pode adicionar v?rias fotos de uma vez ou adicionar novas imagens em etapas. Marque os arquivos desejados e use Excluir selecionados para remover somente os escolhidos.
+        Você pode adicionar várias fotos de uma vez ou adicionar novas imagens em etapas. Marque os arquivos desejados e use Excluir selecionados para remover somente os escolhidos.
       </p>
 
     </section>

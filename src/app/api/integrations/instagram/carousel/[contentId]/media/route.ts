@@ -576,7 +576,7 @@ export async function DELETE(
           false,
 
         message:
-          'Sem permiss?o.',
+          'Sem permissão.',
       },
       {
         status:
@@ -613,7 +613,7 @@ export async function DELETE(
           false,
 
         message:
-          'Este carrossel n?o pode mais ser alterado.',
+          'Este carrossel não pode mais ser alterado.',
       },
       {
         status:
@@ -648,7 +648,7 @@ export async function DELETE(
           false,
 
         message:
-          'Sele??o de arquivos inv?lida.',
+          'Seleção de arquivos inválida.',
       },
       {
         status:
@@ -737,7 +737,7 @@ export async function DELETE(
           false,
 
         message:
-          'Uma ou mais artes selecionadas n?o foram encontradas.',
+          'Uma ou mais artes selecionadas não foram encontradas.',
       },
       {
         status:

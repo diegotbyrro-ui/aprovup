@@ -396,7 +396,7 @@ export function SocialMediaCarouselAssetsManager({
 
         throw new Error(
           payload?.message ||
-          'N?o foi poss?vel salvar a nova ordem.'
+          'Não foi possível salvar a nova ordem.'
         );
       }
 
@@ -422,7 +422,7 @@ export function SocialMediaCarouselAssetsManager({
         error instanceof
           Error
           ? error.message
-          : 'N?o foi poss?vel salvar a nova ordem.'
+          : 'Não foi possível salvar a nova ordem.'
       );
     }
     finally {
@@ -563,7 +563,7 @@ export function SocialMediaCarouselAssetsManager({
 
         throw new Error(
           payload?.message ||
-          'N?o foi poss?vel excluir as artes selecionadas.'
+          'Não foi possível excluir as artes selecionadas.'
         );
       }
 
@@ -581,7 +581,7 @@ export function SocialMediaCarouselAssetsManager({
 
 
       setMessage(
-        `${removedCount} arquivo(s) exclu?do(s).`
+        `${removedCount} arquivo(s) excluído(s).`
       );
 
 
@@ -596,7 +596,7 @@ export function SocialMediaCarouselAssetsManager({
         error instanceof
           Error
           ? error.message
-          : 'N?o foi poss?vel excluir as artes selecionadas.'
+          : 'Não foi possível excluir as artes selecionadas.'
       );
     }
     finally {
@@ -672,7 +672,7 @@ export function SocialMediaCarouselAssetsManager({
           1 ? (
 
             <span className="rounded-full bg-blue-50 px-3 py-1.5 text-[9px] font-bold text-blue-700">
-              M?ltiplas artes
+              Múltiplas artes
             </span>
 
           ) : null}
