@@ -39,28 +39,69 @@ export function InstagramPreview({
     null;
 
 
+  const normalizedFormat =
+    String(
+      format ||
+      ''
+    )
+      .trim()
+      .toUpperCase();
+
+
+  const isCarousel =
+    normalizedFormat.includes(
+      'CARROSSEL'
+    ) ||
+    normalizedFormat.includes(
+      'CAROUSEL'
+    ) ||
+    normalizedFormat.includes(
+      'ALBUM'
+    ) ||
+    carouselAssets.length >
+      1;
+
+
+  /*
+   * Em carrossel, a fonte da verdade sao os assets.
+   *
+   * Um finalMediaUrl antigo pode continuar salvo depois
+   * de excluir/reanexar paginas. Nao devemos deixar esse
+   * URL obsoleto quebrar a previa principal.
+   */
   const resolvedMediaUrl =
-    mediaUrl ||
-    firstCarouselAsset?.url ||
-    coverUrl ||
-    imageUrl ||
-    '';
+    isCarousel &&
+    firstCarouselAsset
+      ? firstCarouselAsset.url
+      : (
+          mediaUrl ||
+          firstCarouselAsset?.url ||
+          coverUrl ||
+          imageUrl ||
+          ''
+        );
 
 
   const resolvedMediaType =
-    mediaUrl
+    isCarousel &&
+    firstCarouselAsset
       ? (
-          mediaType ||
-          ''
+          firstCarouselAsset.mimeType ||
+          'image/*'
         )
-      : firstCarouselAsset
+      : mediaUrl
         ? (
-            firstCarouselAsset.mimeType ||
+            mediaType ||
             ''
           )
-        : resolvedMediaUrl
-          ? 'image/*'
-          : '';
+        : firstCarouselAsset
+          ? (
+              firstCarouselAsset.mimeType ||
+              ''
+            )
+          : resolvedMediaUrl
+            ? 'image/*'
+            : '';
 
 
   const isVideo =

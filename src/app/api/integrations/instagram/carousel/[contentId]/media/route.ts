@@ -528,6 +528,15 @@ export async function POST(
         data: {
           finalCoverUrl:
             assets[0].url,
+
+          finalMediaUrl:
+            assets[0].url,
+
+          finalMediaType:
+            assets.length >
+              1
+              ? 'carousel/image'
+              : assets[0].mimeType,
         },
 
       });
@@ -847,6 +856,20 @@ export async function DELETE(
         finalCoverUrl:
           first?.url ||
           null,
+
+        finalMediaUrl:
+          first?.url ||
+          null,
+
+        finalMediaType:
+          first
+            ? (
+                remaining.length >
+                  1
+                  ? 'carousel/image'
+                  : first.mimeType
+              )
+            : null,
       },
 
     });
