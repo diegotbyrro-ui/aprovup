@@ -16,6 +16,7 @@ import {
 } from '@/lib/userAccess';
 
 import {
+  deleteAprovUpCarouselFiles,
   uploadAprovUpFile,
 } from '@/lib/aprovupStorage';
 
@@ -575,14 +576,13 @@ export async function DELETE(
           false,
 
         message:
-          'Sem permissão.',
+          'Sem permiss?o.',
       },
       {
         status:
           403,
       }
     );
-
   }
 
 
@@ -613,47 +613,84 @@ export async function DELETE(
           false,
 
         message:
-          'Este carrossel não pode mais ser alterado.',
+          'Este carrossel n?o pode mais ser alterado.',
       },
       {
         status:
           409,
       }
     );
-
   }
 
 
-  const body =
-    await request.json();
+  let body:
+    {
+      assetId?:
+        unknown;
+
+      assetIds?:
+        unknown;
+    } =
+    {};
 
 
-  const assetId =
-    String(
-      body?.assetId ||
-      ''
+  try {
+
+    body =
+      await request.json();
+
+  }
+  catch {
+
+    return NextResponse.json(
+      {
+        ok:
+          false,
+
+        message:
+          'Sele??o de arquivos inv?lida.',
+      },
+      {
+        status:
+          400,
+      }
+    );
+  }
+
+
+  const rawIds =
+    Array.isArray(
+      body?.assetIds
+    )
+      ? body.assetIds
+      : [
+          body?.assetId,
+        ];
+
+
+  const assetIds =
+    Array.from(
+      new Set(
+        rawIds
+          .map(
+            (
+              value
+            ) =>
+              String(
+                value ||
+                ''
+              ).trim()
+          )
+          .filter(
+            Boolean
+          )
+      )
     );
 
 
-  const asset =
-    await prisma
-      .instagramMediaAsset
-      .findFirst({
-
-        where: {
-
-          id:
-            assetId,
-
-          contentId,
-
-        },
-
-      });
-
-
   if (
-    !asset
+    assetIds.length ===
+    0
   ) {
 
     return NextResponse.json(
@@ -662,24 +699,80 @@ export async function DELETE(
           false,
 
         message:
-          'Página não encontrada.',
+          'Selecione pelo menos uma arte para excluir.',
+      },
+      {
+        status:
+          400,
+      }
+    );
+  }
+
+
+  const assetsToDelete =
+    await prisma
+      .instagramMediaAsset
+      .findMany({
+
+        where: {
+          contentId,
+
+          id: {
+            in:
+              assetIds,
+          },
+        },
+
+      });
+
+
+  if (
+    assetsToDelete.length !==
+    assetIds.length
+  ) {
+
+    return NextResponse.json(
+      {
+        ok:
+          false,
+
+        message:
+          'Uma ou mais artes selecionadas n?o foram encontradas.',
       },
       {
         status:
           404,
       }
     );
-
   }
+
+
+  /*
+   * Primeiro removemos os arquivos fisicos.
+   * Caso o Storage falhe, os registros continuam
+   * intactos no banco.
+   */
+  await deleteAprovUpCarouselFiles(
+    assetsToDelete.map(
+      (
+        asset
+      ) =>
+        asset.url
+    )
+  );
 
 
   await prisma
     .instagramMediaAsset
-    .delete({
+    .deleteMany({
 
       where: {
-        id:
-          asset.id,
+        contentId,
+
+        id: {
+          in:
+            assetIds,
+        },
       },
 
     });
@@ -703,9 +796,8 @@ export async function DELETE(
 
 
   /*
-    Reorganizar a ordem após remoção.
-  */
-
+   * Reorganiza as posicoes depois da exclusao.
+   */
   for (
     let index = 0;
     index <
@@ -734,9 +826,7 @@ export async function DELETE(
           },
 
         });
-
     }
-
   }
 
 
@@ -762,12 +852,15 @@ export async function DELETE(
     });
 
 
-  return NextResponse.json({
+  return NextResponse.json(
+    {
+      ok:
+        true,
 
-    ok:
-      true,
-
-  });
+      removedCount:
+        assetsToDelete.length,
+    }
+  );
 }
 
 

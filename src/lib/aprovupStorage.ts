@@ -1074,3 +1074,151 @@ export async function deleteAprovUpReferenceFile(
 
   return true;
 }
+
+
+export async function deleteAprovUpCarouselFiles(
+  publicUrls:
+    string[]
+) {
+
+  const objectPaths:
+    string[] =
+    [];
+
+
+  const marker =
+    '/storage/v1/object/public/' +
+    BUCKET +
+    '/';
+
+
+  for (
+    const publicUrl
+    of publicUrls
+  ) {
+
+    if (
+      !publicUrl
+    ) {
+      continue;
+    }
+
+
+    let parsed:
+      URL;
+
+
+    try {
+
+      parsed =
+        new URL(
+          publicUrl
+        );
+
+    }
+    catch {
+
+      continue;
+    }
+
+
+    const markerIndex =
+      parsed.pathname.indexOf(
+        marker
+      );
+
+
+    if (
+      markerIndex ===
+      -1
+    ) {
+      continue;
+    }
+
+
+    let objectPath =
+      parsed.pathname.slice(
+        markerIndex +
+        marker.length
+      );
+
+
+    try {
+
+      objectPath =
+        decodeURIComponent(
+          objectPath
+        );
+
+    }
+    catch {
+
+      continue;
+    }
+
+
+    if (
+      !objectPath.startsWith(
+        'instagram-carousel/'
+      )
+    ) {
+      continue;
+    }
+
+
+    objectPaths.push(
+      objectPath
+    );
+  }
+
+
+  const uniquePaths =
+    Array.from(
+      new Set(
+        objectPaths
+      )
+    );
+
+
+  if (
+    uniquePaths.length ===
+    0
+  ) {
+    return 0;
+  }
+
+
+  const supabase =
+    storageClient();
+
+
+  const {
+    error,
+  } =
+    await supabase.storage
+      .from(
+        BUCKET
+      )
+      .remove(
+        uniquePaths
+      );
+
+
+  if (
+    error
+  ) {
+
+    console.error(
+      'AprovUp carousel remove:',
+      error
+    );
+
+
+    throw new Error(
+      'N?o foi poss?vel remover uma ou mais artes do Storage.'
+    );
+  }
+
+
+  return uniquePaths.length;
+}
