@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  GripVertical,
   Trash2,
 } from 'lucide-react';
 
@@ -64,6 +65,17 @@ export function SocialMediaCarouselAssetsManager({
 
 
   const [
+    items,
+    setItems,
+  ] =
+    useState<
+      MediaAsset[]
+    >(
+      assets
+    );
+
+
+  const [
     selectedIds,
     setSelectedIds,
   ] =
@@ -89,6 +101,28 @@ export function SocialMediaCarouselAssetsManager({
   ] =
     useState(
       ''
+    );
+
+
+  const [
+    draggingIndex,
+    setDraggingIndex,
+  ] =
+    useState<
+      number | null
+    >(
+      null
+    );
+
+
+  const [
+    overIndex,
+    setOverIndex,
+  ] =
+    useState<
+      number | null
+    >(
+      null
     );
 
 
@@ -121,6 +155,11 @@ export function SocialMediaCarouselAssetsManager({
 
   useEffect(
     () => {
+
+      setItems(
+        assets
+      );
+
 
       const validIds =
         new Set(
@@ -193,7 +232,7 @@ export function SocialMediaCarouselAssetsManager({
 
     if (
       selectedIds.length ===
-      assets.length
+      items.length
     ) {
 
       setSelectedIds(
@@ -205,12 +244,256 @@ export function SocialMediaCarouselAssetsManager({
 
 
     setSelectedIds(
-      assets.map(
+      items.map(
         (
           asset
         ) =>
           asset.id
       )
+    );
+  }
+
+
+  function handleDragStart(
+    event:
+      React.DragEvent<HTMLDivElement>,
+
+    index:
+      number
+  ) {
+
+    if (
+      !editable ||
+      loading
+    ) {
+
+      event.preventDefault();
+
+      return;
+    }
+
+
+    setDraggingIndex(
+      index
+    );
+
+
+    event.dataTransfer.effectAllowed =
+      'move';
+
+
+    event.dataTransfer.setData(
+      'text/plain',
+      String(
+        index
+      )
+    );
+  }
+
+
+  function handleDragOver(
+    event:
+      React.DragEvent<HTMLDivElement>,
+
+    index:
+      number
+  ) {
+
+    if (
+      !editable ||
+      draggingIndex ===
+        null
+    ) {
+      return;
+    }
+
+
+    event.preventDefault();
+
+
+    event.dataTransfer.dropEffect =
+      'move';
+
+
+    setOverIndex(
+      index
+    );
+  }
+
+
+  function handleDragEnd() {
+
+    setDraggingIndex(
+      null
+    );
+
+
+    setOverIndex(
+      null
+    );
+  }
+
+
+  async function saveOrder(
+    nextItems:
+      MediaAsset[],
+
+    previousItems:
+      MediaAsset[]
+  ) {
+
+    setItems(
+      nextItems
+    );
+
+
+    setLoading(
+      true
+    );
+
+
+    setMessage(
+      'Salvando nova ordem...'
+    );
+
+
+    try {
+
+      const response =
+        await fetch(
+          `/api/integrations/instagram/carousel/${contentId}/media`,
+          {
+            method:
+              'PUT',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+            },
+
+            body:
+              JSON.stringify({
+                orderedIds:
+                  nextItems.map(
+                    (
+                      asset
+                    ) =>
+                      asset.id
+                  ),
+              }),
+          }
+        );
+
+
+      const payload =
+        await response.json();
+
+
+      if (
+        !response.ok ||
+        !payload?.ok
+      ) {
+
+        throw new Error(
+          payload?.message ||
+          'N?o foi poss?vel salvar a nova ordem.'
+        );
+      }
+
+
+      setMessage(
+        'Ordem atualizada.'
+      );
+
+
+      router.refresh();
+
+    }
+    catch (
+      error
+    ) {
+
+      setItems(
+        previousItems
+      );
+
+
+      setMessage(
+        error instanceof
+          Error
+          ? error.message
+          : 'N?o foi poss?vel salvar a nova ordem.'
+      );
+    }
+    finally {
+
+      setLoading(
+        false
+      );
+    }
+  }
+
+
+  async function handleDrop(
+    event:
+      React.DragEvent<HTMLDivElement>,
+
+    targetIndex:
+      number
+  ) {
+
+    event.preventDefault();
+
+
+    if (
+      !editable ||
+      loading ||
+      draggingIndex ===
+        null ||
+      draggingIndex ===
+        targetIndex
+    ) {
+
+      handleDragEnd();
+
+      return;
+    }
+
+
+    const previous =
+      [
+        ...items,
+      ];
+
+
+    const next =
+      [
+        ...items,
+      ];
+
+
+    const [
+      moved,
+    ] =
+      next.splice(
+        draggingIndex,
+        1
+      );
+
+
+    next.splice(
+      targetIndex,
+      0,
+      moved
+    );
+
+
+    handleDragEnd();
+
+
+    await saveOrder(
+      next,
+      previous
     );
   }
 
@@ -315,7 +598,6 @@ export function SocialMediaCarouselAssetsManager({
           ? error.message
           : 'N?o foi poss?vel excluir as artes selecionadas.'
       );
-
     }
     finally {
 
@@ -344,8 +626,19 @@ export function SocialMediaCarouselAssetsManager({
 
 
           <p className="mt-1 text-[10px] text-slate-500">
-            {assets.length} arquivo(s) enviado(s)
+            {items.length} arquivo(s) enviado(s)
           </p>
+
+
+          {editable &&
+          items.length >
+            1 ? (
+
+            <p className="mt-1 text-[10px] font-bold text-blue-500">
+              Arraste as imagens para alterar a ordem do carrossel.
+            </p>
+
+          ) : null}
 
         </div>
 
@@ -353,7 +646,7 @@ export function SocialMediaCarouselAssetsManager({
         <div className="flex flex-wrap items-center gap-2">
 
           {editable &&
-          assets.length >
+          items.length >
             1 ? (
 
             <button
@@ -367,7 +660,7 @@ export function SocialMediaCarouselAssetsManager({
               className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[9px] font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
             >
               {selectedIds.length ===
-              assets.length
+              items.length
                 ? 'Desmarcar todas'
                 : 'Selecionar todas'}
             </button>
@@ -375,7 +668,7 @@ export function SocialMediaCarouselAssetsManager({
           ) : null}
 
 
-          {assets.length >
+          {items.length >
           1 ? (
 
             <span className="rounded-full bg-blue-50 px-3 py-1.5 text-[9px] font-bold text-blue-700">
@@ -391,7 +684,7 @@ export function SocialMediaCarouselAssetsManager({
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
 
-        {assets.map(
+        {items.map(
           (
             asset,
             index
@@ -417,18 +710,85 @@ export function SocialMediaCarouselAssetsManager({
                 key={
                   asset.id
                 }
-                className={
-                  checked
-                    ? 'relative overflow-hidden rounded-xl border-2 border-blue-500 bg-blue-50 shadow-sm'
-                    : 'relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50'
+                draggable={
+                  editable &&
+                  !loading
                 }
+                onDragStart={
+                  (
+                    event
+                  ) =>
+                    handleDragStart(
+                      event,
+                      index
+                    )
+                }
+                onDragOver={
+                  (
+                    event
+                  ) =>
+                    handleDragOver(
+                      event,
+                      index
+                    )
+                }
+                onDrop={
+                  (
+                    event
+                  ) =>
+                    handleDrop(
+                      event,
+                      index
+                    )
+                }
+                onDragEnd={
+                  handleDragEnd
+                }
+                className={[
+                  'relative',
+                  'overflow-hidden',
+                  'rounded-xl',
+                  'border-2',
+                  'bg-slate-50',
+                  'transition-all',
+                  editable &&
+                  !loading
+                    ? 'cursor-grab active:cursor-grabbing'
+                    : 'cursor-default',
+                  checked
+                    ? 'border-blue-500 bg-blue-50 shadow-sm'
+                    : '',
+                  !checked &&
+                  overIndex !==
+                    index
+                    ? 'border-slate-200'
+                    : '',
+                  draggingIndex ===
+                    index
+                    ? 'scale-95 opacity-40'
+                    : '',
+                  overIndex ===
+                    index &&
+                  draggingIndex !==
+                    index
+                    ? 'border-blue-500 ring-4 ring-blue-100'
+                    : '',
+                ].join(
+                  ' '
+                )}
               >
 
                 {editable ? (
 
                   <label
-                    className="absolute left-2 top-2 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/80 bg-white/95 shadow"
+                    className="absolute left-2 top-2 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/80 bg-white/95 shadow"
                     title="Selecionar arquivo"
+                    onMouseDown={
+                      (
+                        event
+                      ) =>
+                        event.stopPropagation()
+                    }
                   >
 
                     <input
@@ -453,6 +813,19 @@ export function SocialMediaCarouselAssetsManager({
                 ) : null}
 
 
+                {editable &&
+                items.length >
+                  1 ? (
+
+                  <span className="pointer-events-none absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-lg bg-white/95 text-slate-600 shadow">
+                    <GripVertical
+                      size={16}
+                    />
+                  </span>
+
+                ) : null}
+
+
                 <div className="aspect-square overflow-hidden bg-slate-100">
 
                   {isVideo ? (
@@ -463,6 +836,9 @@ export function SocialMediaCarouselAssetsManager({
                       }
                       controls
                       preload="metadata"
+                      draggable={
+                        false
+                      }
                       className="h-full w-full object-cover"
                     />
 
@@ -475,7 +851,10 @@ export function SocialMediaCarouselAssetsManager({
                       alt={
                         `Arte final ${index + 1}`
                       }
-                      className="h-full w-full object-cover"
+                      draggable={
+                        false
+                      }
+                      className="h-full w-full select-none object-cover"
                     />
 
                   )}
@@ -496,6 +875,15 @@ export function SocialMediaCarouselAssetsManager({
                     }
                     target="_blank"
                     rel="noreferrer"
+                    draggable={
+                      false
+                    }
+                    onMouseDown={
+                      (
+                        event
+                      ) =>
+                        event.stopPropagation()
+                    }
                     className="mt-2 inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-[9px] font-bold text-blue-700 transition hover:bg-blue-50"
                   >
                     Abrir arquivo
@@ -536,6 +924,7 @@ export function SocialMediaCarouselAssetsManager({
             <Trash2
               size={14}
             />
+
 
             {loading
               ? 'Excluindo...'
