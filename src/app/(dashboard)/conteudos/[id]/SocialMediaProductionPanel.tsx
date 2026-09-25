@@ -123,7 +123,7 @@ export function SocialMediaProductionPanel({
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Anexe o arquivo final e salve. O conteúdo irá direto para Pronto para Postar.
+            Anexe o arquivo final e salve. O conteúdo será encaminhado para a 2ª Etapa de Aprovação do cliente.
           </p>
         </div>
 

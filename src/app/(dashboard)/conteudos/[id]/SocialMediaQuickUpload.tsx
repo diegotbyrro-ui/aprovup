@@ -703,7 +703,7 @@ export function SocialMediaQuickUpload({
 
       throw new Error(
         readyResult?.message ||
-        'Não foi possível enviar o carrossel para Pronto para Postar.'
+        'Não foi possível encaminhar o carrossel para a 2ª Etapa de Aprovação.'
       );
     }
   }
@@ -743,7 +743,7 @@ export function SocialMediaQuickUpload({
 
       throw new Error(
         result?.message ||
-        'Não foi possível mover o conteúdo para Pronto para Postar.'
+        'Não foi possível encaminhar o conteúdo para a 2ª Etapa de Aprovação.'
       );
     }
   }
@@ -843,7 +843,7 @@ export function SocialMediaQuickUpload({
 
 
       setMessage(
-        'Material salvo. Conteúdo enviado para Pronto para Postar.'
+        'Material salvo. Conteúdo encaminhado para a 2ª Etapa de Aprovação.'
       );
 
 
@@ -1132,7 +1132,7 @@ export function SocialMediaQuickUpload({
             size={16}
           />
 
-          Este conteúdo já está em Pronto para Postar. Você ainda pode substituir o material.
+          Este conteúdo já foi aprovado na 2ª etapa e está em Pronto para Postar. Se o material for substituído, ele precisará passar pela aprovação novamente.
 
         </div>
 
@@ -1175,7 +1175,7 @@ export function SocialMediaQuickUpload({
 
         {loading
           ? 'Salvando material...'
-          : 'Salvar material e enviar para Pronto para Postar'}
+          : 'Salvar material e enviar para 2ª etapa de aprovação'}
 
       </button>
 

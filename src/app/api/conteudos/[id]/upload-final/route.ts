@@ -775,7 +775,7 @@ export async function POST(
             null,
 
           status:
-            'PRONTO_PARA_POSTAR',
+            'REVISAO_INTERNA',
         },
       });
 
@@ -836,7 +836,7 @@ export async function POST(
               'READY_VIDEO_REPLACED',
 
             description:
-              'Social Media substituiu o vídeo final pela versão preparada para publicação.',
+              'Social Media substituiu o vídeo final. A nova versão precisa passar pela 2ª Etapa de Aprovação.',
 
             authorName,
           },
@@ -859,7 +859,7 @@ export async function POST(
               'SOCIAL_MEDIA',
 
             message:
-              'Vídeo final substituído pela Social Media após finalização para publicação.',
+              'Vídeo final substituído pela Social Media e encaminhado novamente para aprovação do cliente.',
           },
         })
         .catch(
@@ -896,7 +896,7 @@ export async function POST(
           newVideoUrl,
 
         message:
-          'Vídeo final substituído com sucesso.',
+          'Vídeo substituído e encaminhado para nova aprovação.',
       });
     }
 
@@ -1024,7 +1024,7 @@ export async function POST(
 
         data: {
           status:
-            'PRONTO_PARA_POSTAR',
+            'REVISAO_INTERNA',
 
           finalUploadedAt:
             new Date(),
@@ -1052,10 +1052,10 @@ export async function POST(
               id,
 
             action:
-              'READY_TO_POST',
+              'SOCIAL_MEDIA_READY_FOR_FINAL_APPROVAL',
 
             description:
-              'Social Media salvou o material final. Conteúdo enviado diretamente para Pronto para Postar.',
+              'Social Media salvou o material final. Conteúdo encaminhado para a 2ª Etapa de Aprovação.',
 
             authorName:
               currentUser.name ||
@@ -1085,7 +1085,7 @@ export async function POST(
               'EQUIPE',
 
             message:
-              'Material final salvo pela Social Media e enviado para Pronto para Postar.',
+              'Material final salvo pela Social Media e encaminhado para a 2\u00aa Etapa de Aprova\u00e7\u00e3o.',
           },
         })
         .catch(
@@ -1099,7 +1099,7 @@ export async function POST(
           true,
 
         status:
-          'PRONTO_PARA_POSTAR',
+          'REVISAO_INTERNA',
       });
     }
 
@@ -1660,7 +1660,7 @@ export async function POST(
       const reviewStatus =
         content.area ===
           'SOCIAL_MEDIA'
-          ? 'PRONTO_PARA_POSTAR'
+          ? 'REVISAO_INTERNA'
           : content.area ===
               'FILMMAKER'
             ? 'FILMMAKER_ANALISE'
@@ -1992,7 +1992,7 @@ export async function POST(
           message:
             content.area ===
               'SOCIAL_MEDIA'
-              ? 'Material final salvo pela Social Media e enviado para Pronto para Postar.'
+              ? 'Material final salvo pela Social Media e encaminhado para a 2ª Etapa de Aprovação.'
               : content.format ===
                   'DESIGN_GRAFICO'
                 ? 'Material de Design Gráfico finalizado. A LIV avisou a Social Media responsável que o arquivo está disponível para download.'
