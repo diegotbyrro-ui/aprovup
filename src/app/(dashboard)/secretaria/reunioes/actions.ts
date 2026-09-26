@@ -179,6 +179,99 @@ export async function createSecretaryMeetingAction(
 }
 
 
+export async function deleteSecretaryMeetingAction(
+  meetingId:
+    string
+) {
+
+  const user =
+    await requirePermission(
+      'settings.manage'
+    );
+
+
+  const meeting =
+    await prisma
+      .secretaryMeeting
+      .findFirst({
+        where: {
+          id:
+            meetingId,
+
+          agencyId:
+            user.agencyId,
+        },
+
+        select: {
+          id:
+            true,
+
+          title:
+            true,
+        },
+      });
+
+
+  if (
+    !meeting
+  ) {
+
+    redirect(
+      '/secretaria/reunioes'
+    );
+  }
+
+
+  await prisma
+    .secretaryMeeting
+    .delete({
+      where: {
+        id:
+          meeting.id,
+      },
+    });
+
+
+  await prisma.historyLog
+    .create({
+      data: {
+        entityType:
+          'SECRETARY_MEETING',
+
+        entityId:
+          meeting.id,
+
+        action:
+          'MEETING_DELETED',
+
+        description:
+          'Reunião removida do AprovUp: ' +
+          meeting.title +
+          '.',
+
+        authorName:
+          user.name ||
+          user.email ||
+          'Equipe AprovUp',
+      },
+    })
+    .catch(
+      () =>
+        null
+    );
+
+
+  revalidatePath(
+    '/secretaria/reunioes'
+  );
+
+
+  redirect(
+    '/secretaria/reunioes'
+  );
+}
+
+
 export async function syncSecretaryMeetingAction(
   meetingId:
     string

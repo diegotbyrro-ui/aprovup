@@ -17,11 +17,16 @@ import {
 
 import {
   createSecretaryMeetingAction,
+  deleteSecretaryMeetingAction,
 } from './actions';
 
 import {
   CopyMeetingLinkButton,
 } from './CopyMeetingLinkButton';
+
+import {
+  ConfirmDeleteMeetingButton,
+} from './ConfirmDeleteMeetingButton';
 
 
 export const dynamic =
@@ -564,6 +569,22 @@ export default async function MeetingsPage({
 
                             Abrir
                           </Link>
+
+
+                          <form
+                            action={
+                              deleteSecretaryMeetingAction.bind(
+                                null,
+                                meeting.id
+                              )
+                            }
+                          >
+                            <ConfirmDeleteMeetingButton
+                              title={
+                                meeting.title
+                              }
+                            />
+                          </form>
 
                         </div>
 
