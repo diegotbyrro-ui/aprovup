@@ -183,9 +183,15 @@ export async function createGoogleMeetSpace({
         },
 
         body:
-          JSON.stringify(
-            {}
-          ),
+          JSON.stringify({
+            config: {
+              accessType:
+                'OPEN',
+
+              entryPointAccess:
+                'ALL',
+            },
+          }),
 
         cache:
           'no-store',

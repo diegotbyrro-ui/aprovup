@@ -1,0 +1,19 @@
+{
+  "addOns": {
+    "common": {
+      "name": "Liv - AprovUP",
+      "logoUrl": "https://aprovup.com.br/icon.png"
+    },
+    "meet": {
+      "web": {
+        "sidePanelUrl": "https://aprovup.com.br/meet-addon/side-panel",
+        "supportsScreenSharing": false,
+        "addOnOrigins": [
+          "https://aprovup.com.br"
+        ],
+        "logoUrl": "https://aprovup.com.br/icon.png",
+        "darkModeLogoUrl": "https://aprovup.com.br/icon.png"
+      }
+    }
+  }
+}
