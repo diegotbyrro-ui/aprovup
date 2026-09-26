@@ -143,6 +143,114 @@ async function meetFetch<T>({
 }
 
 
+export async function createGoogleMeetSpace({
+  agencyId,
+}: {
+  agencyId:
+    string;
+}) {
+
+  const auth =
+    await getGoogleCalendarAccessTokenForAgency(
+      agencyId
+    );
+
+
+  if (
+    !auth
+  ) {
+
+    throw new Error(
+      'Google não está conectado para esta agência.'
+    );
+  }
+
+
+  const response =
+    await fetch(
+      'https://meet.googleapis.com/v2/spaces',
+      {
+        method:
+          'POST',
+
+        headers: {
+          Authorization:
+            'Bearer ' +
+            auth.accessToken,
+
+          'Content-Type':
+            'application/json',
+        },
+
+        body:
+          JSON.stringify(
+            {}
+          ),
+
+        cache:
+          'no-store',
+      }
+    );
+
+
+  const payload =
+    await response
+      .json() as {
+        name?:
+          string;
+
+        meetingUri?:
+          string;
+
+        meetingCode?:
+          string;
+
+        error?: {
+          message?:
+            string;
+        };
+      };
+
+
+  if (
+    !response.ok
+  ) {
+
+    throw new Error(
+      payload.error
+        ?.message ||
+      'Google Meet recusou a criação da reunião.'
+    );
+  }
+
+
+  if (
+    !payload.name ||
+    !payload.meetingUri
+  ) {
+
+    throw new Error(
+      'Google Meet criou o espaço sem retornar um link de reunião.'
+    );
+  }
+
+
+  return {
+    name:
+      payload.name,
+
+    meetingUri:
+      payload.meetingUri,
+
+    meetingCode:
+      payload.meetingCode ||
+      extractGoogleMeetCode(
+        payload.meetingUri
+      ),
+  };
+}
+
+
 export function extractGoogleMeetCode(
   value:
     string |

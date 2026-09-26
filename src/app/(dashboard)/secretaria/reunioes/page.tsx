@@ -1,10 +1,10 @@
 import Link from 'next/link';
 
 import {
-  CalendarPlus,
-  ExternalLink,
   FileText,
+  Link2,
   Video,
+  Zap,
 } from 'lucide-react';
 
 import {
@@ -18,6 +18,10 @@ import {
 import {
   createSecretaryMeetingAction,
 } from './actions';
+
+import {
+  CopyMeetingLinkButton,
+} from './CopyMeetingLinkButton';
 
 
 export const dynamic =
@@ -72,6 +76,9 @@ function statusLabel(
       string,
       string
     > = {
+      READY:
+        'Link criado',
+
       SCHEDULED:
         'Agendada',
 
@@ -93,7 +100,18 @@ function statusLabel(
 }
 
 
-export default async function MeetingsPage() {
+export default async function MeetingsPage({
+  searchParams,
+}: {
+  searchParams?:
+    Promise<{
+      created?:
+        string;
+
+      error?:
+        string;
+    }>;
+}) {
 
   const user =
     await requirePermission(
@@ -101,10 +119,23 @@ export default async function MeetingsPage() {
     );
 
 
+  const params =
+    searchParams
+      ? await searchParams
+      : {};
+
+
+  const createdId =
+    String(
+      params.created ||
+      ''
+    );
+
+
   const [
     meetings,
-    clients,
     google,
+    createdMeeting,
   ] =
     await Promise.all([
 
@@ -135,42 +166,13 @@ export default async function MeetingsPage() {
             },
           },
 
-          orderBy: [
-            {
-              scheduledStart:
-                'desc',
-            },
-
-            {
-              createdAt:
-                'desc',
-            },
-          ],
+          orderBy: {
+            createdAt:
+              'desc',
+          },
 
           take:
             100,
-        }),
-
-
-      prisma.client
-        .findMany({
-          where: {
-            agencyId:
-              user.agencyId,
-          },
-
-          select: {
-            id:
-              true,
-
-            name:
-              true,
-          },
-
-          orderBy: {
-            name:
-              'asc',
-          },
         }),
 
 
@@ -190,7 +192,45 @@ export default async function MeetingsPage() {
               true,
           },
         }),
+
+
+      createdId
+        ? prisma
+            .secretaryMeeting
+            .findFirst({
+              where: {
+                id:
+                  createdId,
+
+                agencyId:
+                  user.agencyId,
+              },
+
+              select: {
+                id:
+                  true,
+
+                title:
+                  true,
+
+                googleMeetUri:
+                  true,
+              },
+            })
+        : Promise.resolve(
+            null
+          ),
     ]);
+
+
+  const errorMessage =
+    params.error ===
+      'invalid'
+      ? 'Digite um título para criar a reunião.'
+      : params.error ===
+          'meet'
+        ? 'O Google Meet não conseguiu criar o link. Confira a autorização da conta Google.'
+        : '';
 
 
   return (
@@ -227,7 +267,7 @@ export default async function MeetingsPage() {
 
 
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-300">
-              Crie reuniões com Google Meet e deixe a Liv transformar a transcrição em resumo, decisões, pendências e plano de ação.
+              Crie um Google Meet na hora, envie o link para o cliente e depois deixe a Liv organizar a transcrição, as decisões e os próximos passos.
             </p>
 
           </div>
@@ -254,165 +294,142 @@ export default async function MeetingsPage() {
       </section>
 
 
+      {
+        errorMessage
+          ? (
+            <section className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+              {errorMessage}
+            </section>
+          )
+          : null
+      }
+
+
+      {
+        createdMeeting
+          ?.googleMeetUri
+          ? (
+            <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
+                Reunião criada
+              </p>
+
+
+              <h2 className="mt-2 text-xl font-black text-emerald-950">
+                {createdMeeting.title}
+              </h2>
+
+
+              <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+
+                <div className="min-w-0">
+
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Link para enviar ao cliente
+                  </p>
+
+                  <p className="mt-1 truncate font-mono text-sm font-bold text-slate-800">
+                    {createdMeeting.googleMeetUri}
+                  </p>
+
+                </div>
+
+
+                <div className="flex shrink-0 flex-wrap gap-2">
+
+                  <CopyMeetingLinkButton
+                    url={
+                      createdMeeting.googleMeetUri
+                    }
+                  />
+
+
+                  <a
+                    href={
+                      createdMeeting.googleMeetUri
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700"
+                  >
+                    <Video
+                      size={14}
+                    />
+
+                    Entrar agora
+                  </a>
+
+                </div>
+
+              </div>
+
+            </section>
+          )
+          : null
+      }
+
+
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
 
-          <CalendarPlus
-            size={18}
-            className="text-blue-600"
-          />
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+            <Zap
+              size={19}
+            />
+          </div>
 
 
-          <h2 className="text-lg font-black text-slate-950">
-            Nova reunião com Google Meet
-          </h2>
+          <div>
+
+            <h2 className="text-lg font-black text-slate-950">
+              Criar reunião agora
+            </h2>
+
+            <p className="mt-1 text-xs text-slate-500">
+              Dê um nome para identificar a reunião no AprovUp. O link do Google Meet será criado imediatamente.
+            </p>
+
+          </div>
 
         </div>
-
-
-        <p className="mt-1 text-xs text-slate-500">
-          O AprovUp cria o evento, gera o link do Meet e envia os convites por e-mail.
-        </p>
 
 
         <form
           action={
             createSecretaryMeetingAction
           }
-          className="mt-5 grid gap-4 lg:grid-cols-2"
+          className="mt-5 flex flex-col gap-3 sm:flex-row"
         >
 
-          <label className="space-y-1 lg:col-span-2">
+          <label className="min-w-0 flex-1">
 
-            <span className="text-xs font-black text-slate-700">
-              Título
+            <span className="sr-only">
+              Título da reunião
             </span>
 
             <input
               name="title"
               required
-              placeholder="Ex.: Planejamento de Outubro - Rocha"
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400"
+              autoFocus
+              placeholder="Ex.: Reunião Rocha - Planejamento de Outubro"
+              className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
             />
 
           </label>
 
 
-          <label className="space-y-1">
-
-            <span className="text-xs font-black text-slate-700">
-              Cliente
-            </span>
-
-            <select
-              name="clientId"
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400"
-              defaultValue=""
-            >
-
-              <option value="">
-                Reunião interna / sem cliente
-              </option>
-
-
-              {
-                clients.map(
-                  (
-                    client
-                  ) => (
-                    <option
-                      key={
-                        client.id
-                      }
-                      value={
-                        client.id
-                      }
-                    >
-                      {client.name}
-                    </option>
-                  )
-                )
-              }
-
-            </select>
-
-          </label>
-
-
-          <label className="space-y-1">
-
-            <span className="text-xs font-black text-slate-700">
-              Convidados por e-mail
-            </span>
-
-            <input
-              name="attendees"
-              placeholder="yuri@empresa.com, raysa@empresa.com"
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400"
+          <button
+            type="submit"
+            className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-black text-white hover:bg-blue-700"
+          >
+            <Video
+              size={16}
             />
 
-          </label>
-
-
-          <label className="space-y-1">
-
-            <span className="text-xs font-black text-slate-700">
-              Início
-            </span>
-
-            <input
-              type="datetime-local"
-              name="start"
-              required
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400"
-            />
-
-          </label>
-
-
-          <label className="space-y-1">
-
-            <span className="text-xs font-black text-slate-700">
-              Término
-            </span>
-
-            <input
-              type="datetime-local"
-              name="end"
-              required
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400"
-            />
-
-          </label>
-
-
-          <label className="space-y-1 lg:col-span-2">
-
-            <span className="text-xs font-black text-slate-700">
-              Observações / materiais / pauta
-            </span>
-
-            <textarea
-              name="notes"
-              rows={4}
-              placeholder="Ex.: levar drone, lapela e câmera. Pauta: campanha de outubro."
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400"
-            />
-
-          </label>
-
-
-          <div className="lg:col-span-2">
-
-            <button
-              type="submit"
-              className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white hover:bg-blue-700"
-            >
-              Criar reunião + Google Meet
-            </button>
-
-          </div>
+            Criar Google Meet
+          </button>
 
         </form>
 
@@ -426,6 +443,10 @@ export default async function MeetingsPage() {
           <h2 className="font-black text-slate-950">
             Histórico de reuniões
           </h2>
+
+          <p className="mt-1 text-xs text-slate-500">
+            Os links ficam salvos para a Liv relacionar a transcrição e o resumo depois.
+          </p>
 
         </div>
 
@@ -453,7 +474,7 @@ export default async function MeetingsPage() {
                         className="flex flex-col gap-4 p-5 xl:flex-row xl:items-center xl:justify-between"
                       >
 
-                        <div>
+                        <div className="min-w-0">
 
                           <div className="flex flex-wrap items-center gap-2">
 
@@ -474,19 +495,10 @@ export default async function MeetingsPage() {
 
 
                           <p className="mt-2 text-xs text-slate-500">
-                            {
+                            Criada em {
                               formatDate(
-                                meeting.scheduledStart
+                                meeting.createdAt
                               )
-                            }
-                            {
-                              meeting.client
-                                ?.name
-                                ? ' · ' +
-                                  meeting
-                                    .client
-                                    .name
-                                : ''
                             }
                           </p>
 
@@ -511,21 +523,29 @@ export default async function MeetingsPage() {
                           {
                             meeting.googleMeetUri
                               ? (
-                                <a
-                                  href={
-                                    meeting
-                                      .googleMeetUri
-                                  }
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
-                                >
-                                  <Video
-                                    size={14}
+                                <>
+                                  <CopyMeetingLinkButton
+                                    url={
+                                      meeting.googleMeetUri
+                                    }
                                   />
 
-                                  Entrar no Meet
-                                </a>
+
+                                  <a
+                                    href={
+                                      meeting.googleMeetUri
+                                    }
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
+                                  >
+                                    <Video
+                                      size={14}
+                                    />
+
+                                    Entrar
+                                  </a>
+                                </>
                               )
                               : null
                           }
@@ -544,28 +564,6 @@ export default async function MeetingsPage() {
 
                             Abrir
                           </Link>
-
-
-                          {
-                            meeting.calendarHtmlLink
-                              ? (
-                                <a
-                                  href={
-                                    meeting
-                                      .calendarHtmlLink
-                                  }
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  title="Abrir no Google Agenda"
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50"
-                                >
-                                  <ExternalLink
-                                    size={14}
-                                  />
-                                </a>
-                              )
-                              : null
-                          }
 
                         </div>
 

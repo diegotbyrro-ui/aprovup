@@ -9,10 +9,7 @@ import {
 } from '@/lib/userAccess';
 
 import {
-  createGoogleCalendarEvent,
-} from '@/lib/googleCalendar';
-
-import {
+  createGoogleMeetSpace,
   extractGoogleMeetCode,
   findConferenceRecordByMeetingCode,
   getMeetParticipantDisplayName,
@@ -32,109 +29,6 @@ import {
 import {
   redirect,
 } from 'next/navigation';
-
-
-function parseMaceioDateTime(
-  value:
-    string
-) {
-
-  const text =
-    String(
-      value ||
-      ''
-    ).trim();
-
-
-  if (
-    !text
-  ) {
-
-    return null;
-  }
-
-
-  const normalized =
-    text.length ===
-      16
-      ? text +
-        ':00'
-      : text;
-
-
-  const date =
-    new Date(
-      normalized +
-      '-03:00'
-    );
-
-
-  return Number.isNaN(
-    date.getTime()
-  )
-    ? null
-    : date;
-}
-
-
-function attendeeList(
-  value:
-    string
-) {
-
-  return Array.from(
-    new Set(
-      value
-        .split(
-          /[\n,;]+/
-        )
-        .map(
-          (
-            item
-          ) =>
-            item
-              .trim()
-              .toLowerCase()
-        )
-        .filter(
-          (
-            item
-          ) =>
-            /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-              item
-            )
-        )
-    )
-  );
-}
-
-
-function meetUriFromCalendar(
-  event:
-    Awaited<
-      ReturnType<
-        typeof createGoogleCalendarEvent
-      >
-    >
-) {
-
-  return (
-    event
-      ?.hangoutLink ||
-    event
-      ?.conferenceData
-      ?.entryPoints
-      ?.find(
-        (
-          entry
-        ) =>
-          entry.entryPointType ===
-          'video'
-      )
-      ?.uri ||
-    ''
-  );
-}
 
 
 export async function createSecretaryMeetingAction(
@@ -157,63 +51,8 @@ export async function createSecretaryMeetingAction(
     ).trim();
 
 
-  const clientId =
-    String(
-      formData.get(
-        'clientId'
-      ) ||
-      ''
-    ).trim();
-
-
-  const start =
-    parseMaceioDateTime(
-      String(
-        formData.get(
-          'start'
-        ) ||
-        ''
-      )
-    );
-
-
-  const end =
-    parseMaceioDateTime(
-      String(
-        formData.get(
-          'end'
-        ) ||
-        ''
-      )
-    );
-
-
-  const notes =
-    String(
-      formData.get(
-        'notes'
-      ) ||
-      ''
-    ).trim();
-
-
-  const attendees =
-    attendeeList(
-      String(
-        formData.get(
-          'attendees'
-        ) ||
-        ''
-      )
-    );
-
-
   if (
-    !title ||
-    !start ||
-    !end ||
-    end <=
-      start
+    !title
   ) {
 
     redirect(
@@ -222,79 +61,41 @@ export async function createSecretaryMeetingAction(
   }
 
 
-  let validClientId:
-    string |
-    null =
-      null;
+  let space:
+    Awaited<
+      ReturnType<
+        typeof createGoogleMeetSpace
+      >
+    >;
 
 
-  if (
-    clientId
-  ) {
+  try {
 
-    const client =
-      await prisma.client
-        .findFirst({
-          where: {
-            id:
-              clientId,
+    space =
+      await createGoogleMeetSpace({
+        agencyId:
+          user.agencyId,
+      });
 
-            agencyId:
-              user.agencyId,
-          },
-
-          select: {
-            id:
-              true,
-          },
-        });
-
-
-    validClientId =
-      client
-        ?.id ||
-      null;
   }
-
-
-  const calendarEvent =
-    await createGoogleCalendarEvent({
-      agencyId:
-        user.agencyId,
-
-      title,
-
-      description:
-        notes,
-
-      startDate:
-        start,
-
-      endDate:
-        end,
-
-      attendees,
-
-      createMeet:
-        true,
-    });
-
-
-  if (
-    !calendarEvent
-      ?.id
+  catch (
+    error
   ) {
+
+    console.error(
+      '[SECRETARY MEETING] Falha ao criar Google Meet:',
+      error
+    );
+
 
     redirect(
-      '/secretaria/reunioes?error=calendar'
+      '/secretaria/reunioes?error=meet'
     );
   }
 
 
-  const googleMeetUri =
-    meetUriFromCalendar(
-      calendarEvent
-    );
+  const now =
+    new Date();
 
 
   const meeting =
@@ -305,44 +106,29 @@ export async function createSecretaryMeetingAction(
           agencyId:
             user.agencyId,
 
-          clientId:
-            validClientId,
-
           title,
 
           status:
-            'SCHEDULED',
+            'READY',
 
-          calendarEventId:
-            calendarEvent.id,
-
-          calendarHtmlLink:
-            calendarEvent
-              .htmlLink ||
-            null,
+          source:
+            'GOOGLE_MEET_DIRECT',
 
           googleMeetUri:
-            googleMeetUri ||
-            null,
+            space.meetingUri,
 
           googleMeetCode:
+            space.meetingCode ||
             extractGoogleMeetCode(
-              googleMeetUri
+              space.meetingUri
             ) ||
             null,
 
+          googleMeetSpaceName:
+            space.name,
+
           scheduledStart:
-            start,
-
-          scheduledEnd:
-            end,
-
-          attendeeEmails:
-            attendees,
-
-          notes:
-            notes ||
-            null,
+            now,
 
           createdByUserId:
             user.id,
@@ -368,7 +154,7 @@ export async function createSecretaryMeetingAction(
           'MEETING_CREATED',
 
         description:
-          'Reunião criada pela Liv/AprovUp: ' +
+          'Link do Google Meet criado pela Liv/AprovUp: ' +
           title +
           '.',
 
@@ -385,8 +171,10 @@ export async function createSecretaryMeetingAction(
 
 
   redirect(
-    '/secretaria/reunioes/' +
-    meeting.id
+    '/secretaria/reunioes?created=' +
+    encodeURIComponent(
+      meeting.id
+    )
   );
 }
 
