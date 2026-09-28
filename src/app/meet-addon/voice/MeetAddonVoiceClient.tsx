@@ -30,6 +30,14 @@ const MICROPHONE_STORAGE_KEY =
   'aprovup_liv_microphone_device_id';
 
 
+const MICROPHONE_GAIN_STORAGE_KEY =
+  'aprovup_liv_microphone_gain';
+
+
+const DEFAULT_MICROPHONE_GAIN =
+  2.2;
+
+
 export function MeetAddonVoiceClient() {
 
   const [
@@ -79,6 +87,15 @@ export function MeetAddonVoiceClient() {
     );
 
 
+  const [
+    microphoneGain,
+    setMicrophoneGain,
+  ] =
+    useState(
+      DEFAULT_MICROPHONE_GAIN
+    );
+
+
   const recorderRef =
     useRef<
       MediaRecorder |
@@ -97,12 +114,36 @@ export function MeetAddonVoiceClient() {
     );
 
 
+  const processedStreamRef =
+    useRef<
+      MediaStream |
+      null
+    >(
+      null
+    );
+
+
   const audioContextRef =
     useRef<
       AudioContext |
       null
     >(
       null
+    );
+
+
+  const gainNodeRef =
+    useRef<
+      GainNode |
+      null
+    >(
+      null
+    );
+
+
+  const microphoneGainRef =
+    useRef(
+      DEFAULT_MICROPHONE_GAIN
     );
 
 
@@ -168,6 +209,24 @@ export function MeetAddonVoiceClient() {
 
 
   function stopLevelMeter() {
+
+    processedStreamRef.current
+      ?.getTracks()
+      .forEach(
+        (
+          track
+        ) =>
+          track.stop()
+      );
+
+
+    processedStreamRef.current =
+      null;
+
+
+    gainNodeRef.current =
+      null;
+
 
     if (
       animationFrameRef.current !==
@@ -340,7 +399,7 @@ export function MeetAddonVoiceClient() {
 
     }
     catch {
-      // O medidor continua tentando.
+      // O browser pode iniciar o contexto logo depois.
     }
 
 
@@ -348,6 +407,54 @@ export function MeetAddonVoiceClient() {
       context.createMediaStreamSource(
         stream
       );
+
+
+    /*
+     * Ganho digital real.
+     *
+     * Diferente de apenas aumentar a barra visual,
+     * este audio amplificado sera efetivamente
+     * gravado e enviado para a transcricao.
+     */
+    const gainNode =
+      context.createGain();
+
+
+    gainNode.gain.value =
+      microphoneGainRef.current;
+
+
+    gainNodeRef.current =
+      gainNode;
+
+
+    /*
+     * O compressor segura picos quando o usuario
+     * chega perto do microfone ou fala mais alto,
+     * evitando distorcao depois do aumento de ganho.
+     */
+    const compressor =
+      context.createDynamicsCompressor();
+
+
+    compressor.threshold.value =
+      -22;
+
+
+    compressor.knee.value =
+      18;
+
+
+    compressor.ratio.value =
+      5;
+
+
+    compressor.attack.value =
+      0.003;
+
+
+    compressor.release.value =
+      0.2;
 
 
     const analyser =
@@ -359,12 +466,35 @@ export function MeetAddonVoiceClient() {
 
 
     analyser.smoothingTimeConstant =
-      0.72;
+      0.7;
+
+
+    const destination =
+      context.createMediaStreamDestination();
 
 
     source.connect(
+      gainNode
+    );
+
+
+    gainNode.connect(
+      compressor
+    );
+
+
+    compressor.connect(
       analyser
     );
+
+
+    compressor.connect(
+      destination
+    );
+
+
+    processedStreamRef.current =
+      destination.stream;
 
 
     const data =
@@ -413,12 +543,40 @@ export function MeetAddonVoiceClient() {
           );
 
 
+        /*
+         * Medidor em escala aproximadamente logaritmica.
+         *
+         * -60 dB = quase silencio.
+         * -30 dB = voz confortavel.
+         * -12 dB = bastante forte.
+         *
+         * Portanto o usuario nao precisa chegar a 100%.
+         */
+        const db =
+          rms >
+          0.000001
+            ? 20 *
+              Math.log10(
+                rms
+              )
+            : -100;
+
+
         const visualLevel =
-          Math.min(
-            100,
-            Math.round(
-              rms *
-              420
+          Math.max(
+            0,
+            Math.min(
+              100,
+              Math.round(
+                (
+                  (
+                    db +
+                    60
+                  ) /
+                  48
+                ) *
+                100
+              )
             )
           );
 
@@ -449,7 +607,6 @@ export function MeetAddonVoiceClient() {
 
     tick();
   }
-
 
   async function openMicrophone(
     requestedDeviceId?:
@@ -719,6 +876,62 @@ export function MeetAddonVoiceClient() {
   }
 
 
+  function changeMicrophoneGain(
+    value:
+      number
+  ) {
+
+    const nextGain =
+      Math.max(
+        1,
+        Math.min(
+          3,
+          value
+        )
+      );
+
+
+    microphoneGainRef.current =
+      nextGain;
+
+
+    setMicrophoneGain(
+      nextGain
+    );
+
+
+    window.localStorage
+      .setItem(
+        MICROPHONE_GAIN_STORAGE_KEY,
+        String(
+          nextGain
+        )
+      );
+
+
+    const gainNode =
+      gainNodeRef.current;
+
+
+    const context =
+      audioContextRef.current;
+
+
+    if (
+      gainNode &&
+      context
+    ) {
+
+      gainNode.gain
+        .setTargetAtTime(
+          nextGain,
+          context.currentTime,
+          0.025
+        );
+    }
+  }
+
+
   async function transcribe(
     blob:
       Blob
@@ -853,6 +1066,7 @@ export function MeetAddonVoiceClient() {
   function startRecording() {
 
     const stream =
+      processedStreamRef.current ||
       streamRef.current;
 
 
@@ -1020,11 +1234,11 @@ export function MeetAddonVoiceClient() {
 
         if (
           peak <
-          2
+          10
         ) {
 
           setError(
-            'Quase nenhum som chegou ao AprovUp. Verifique se o microfone correto está selecionado.'
+            'A voz chegou muito baixa. Aumente o ganho da Liv ou o volume do microfone e tente novamente.'
           );
 
 
@@ -1132,6 +1346,35 @@ export function MeetAddonVoiceClient() {
 
       let active =
         true;
+
+
+      const storedGain =
+        Number(
+          window.localStorage
+            .getItem(
+              MICROPHONE_GAIN_STORAGE_KEY
+            )
+        );
+
+
+      if (
+        Number.isFinite(
+          storedGain
+        ) &&
+        storedGain >=
+          1 &&
+        storedGain <=
+          3
+      ) {
+
+        microphoneGainRef.current =
+          storedGain;
+
+
+        setMicrophoneGain(
+          storedGain
+        );
+      }
 
 
       void (
@@ -1455,6 +1698,53 @@ export function MeetAddonVoiceClient() {
 
                 <div>
 
+                  <label className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                    Ganho da voz
+                  </label>
+
+
+                  <select
+                    value={
+                      String(
+                        microphoneGain
+                      )
+                    }
+                    onChange={
+                      (
+                        event
+                      ) =>
+                        changeMicrophoneGain(
+                          Number(
+                            event.target.value
+                          )
+                        )
+                    }
+                    className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-slate-900 px-3 text-[11px] font-bold text-white outline-none focus:border-blue-500"
+                  >
+
+                    <option value="1">
+                      Normal · 1.0x
+                    </option>
+
+                    <option value="1.6">
+                      Leve · +4 dB
+                    </option>
+
+                    <option value="2.2">
+                      Reforçado · +7 dB
+                    </option>
+
+                    <option value="3">
+                      Forte · +9.5 dB
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                <div>
+
                   <div className="flex items-center justify-between">
 
                     <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">
@@ -1464,12 +1754,12 @@ export function MeetAddonVoiceClient() {
                     <span className="text-[9px] font-bold text-slate-500">
                       {
                         level <
-                        3
+                        20
                           ? 'baixo'
                           : level <
-                              15
-                            ? 'bom'
-                            : 'forte'
+                              80
+                            ? 'ideal'
+                            : 'alto'
                       }
                     </span>
 
@@ -1495,6 +1785,11 @@ export function MeetAddonVoiceClient() {
 
                   <p className="mt-1.5 truncate text-[9px] text-slate-500">
                     {selectedMicrophoneName}
+                  </p>
+
+
+                  <p className="mt-1 text-[9px] text-slate-500">
+                    Para voz normal, tente manter o nível entre 35% e 75%. Não precisa chegar a 100%.
                   </p>
 
                 </div>
