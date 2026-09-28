@@ -350,7 +350,7 @@ export default async function MeetingsPage({
                         createdMeeting
                           .notes
                           .includes(
-                            'não oferece transcrição automática'
+                            'não oferece'
                           )
                             ? 'mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-relaxed text-amber-800'
                             : 'mt-4 rounded-2xl border border-emerald-200 bg-white/70 p-4 text-sm font-semibold leading-relaxed text-emerald-800'

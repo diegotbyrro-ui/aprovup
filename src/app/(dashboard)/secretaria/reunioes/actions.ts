@@ -142,12 +142,8 @@ export async function createSecretaryMeetingAction(
             space.name,
 
           notes:
-            space.transcriptionWarning ||
-            (
-              space.autoTranscriptionEnabled
-                ? 'Transcrição automática ativada pela Liv.'
-                : null
-            ),
+            space.artifactStatusMessage ||
+            null,
 
           scheduledStart:
             now,
