@@ -772,6 +772,257 @@ export async function findConferenceRecordByMeetingCode({
 }
 
 
+export type MeetRecording = {
+  name:
+    string;
+
+  state:
+    string;
+
+  startTime:
+    string |
+    null;
+
+  endTime:
+    string |
+    null;
+
+  driveDestination:
+    {
+      file?:
+        string;
+
+      exportUri?:
+        string;
+    } |
+    null;
+};
+
+
+export async function listMeetRecordings({
+  agencyId,
+  conferenceRecordName,
+}: {
+  agencyId:
+    string;
+
+  conferenceRecordName:
+    string;
+}) {
+
+  const payload =
+    await meetFetch<{
+      recordings?:
+        Array<{
+          name?:
+            string;
+
+          state?:
+            string;
+
+          startTime?:
+            string;
+
+          endTime?:
+            string;
+
+          driveDestination?: {
+            file?:
+              string;
+
+            exportUri?:
+              string;
+          };
+        }>;
+    }>({
+      agencyId,
+
+      url:
+        'https://meet.googleapis.com/v2/' +
+        conferenceRecordName +
+        '/recordings?pageSize=100',
+    });
+
+
+  return (
+    payload.recordings ||
+    []
+  )
+    .filter(
+      (
+        recording
+      ) =>
+        Boolean(
+          recording.name
+        )
+    )
+    .map(
+      (
+        recording
+      ): MeetRecording => ({
+        name:
+          recording.name ||
+          '',
+
+        state:
+          recording.state ||
+          '',
+
+        startTime:
+          recording.startTime ||
+          null,
+
+        endTime:
+          recording.endTime ||
+          null,
+
+        driveDestination:
+          recording
+            .driveDestination ||
+          null,
+      })
+    );
+}
+
+
+export async function downloadMeetRecording({
+  agencyId,
+  fileId,
+}: {
+  agencyId:
+    string;
+
+  fileId:
+    string;
+}) {
+
+  const auth =
+    await getGoogleCalendarAccessTokenForAgency(
+      agencyId
+    );
+
+
+  if (!auth) {
+    throw new Error(
+      'Google não está conectado para esta agência.'
+    );
+  }
+
+
+  const response =
+    await fetch(
+      'https://www.googleapis.com/drive/v3/files/' +
+      encodeURIComponent(
+        fileId
+      ) +
+      '?alt=media',
+      {
+        headers: {
+          Authorization:
+            'Bearer ' +
+            auth.accessToken,
+        },
+
+        cache:
+          'no-store',
+      }
+    );
+
+
+  if (!response.ok) {
+
+    const raw =
+      await response
+        .text()
+        .catch(
+          () => ''
+        );
+
+
+    let googleMessage =
+      raw;
+
+
+    try {
+
+      const parsed =
+        JSON.parse(
+          raw
+        ) as {
+          error?: {
+            message?:
+              string;
+          };
+        };
+
+
+      googleMessage =
+        parsed
+          .error
+          ?.message ||
+        raw;
+
+    }
+    catch {
+
+      // Mantemos o texto original.
+    }
+
+
+    if (
+      response.status ===
+        401 ||
+      response.status ===
+        403
+    ) {
+
+      throw new Error(
+        'O Google Drive ainda não autorizou a Liv a ler a gravação. ' +
+        'Ative a Google Drive API, autorize o escopo drive.meet.readonly ' +
+        'e reconecte a conta Google no AprovUp. ' +
+        (
+          googleMessage
+            ? 'Google: ' +
+              googleMessage
+            : ''
+        )
+      );
+    }
+
+
+    throw new Error(
+      'Não foi possível baixar a gravação do Google Drive. HTTP ' +
+      String(
+        response.status
+      ) +
+      (
+        googleMessage
+          ? ': ' +
+            googleMessage
+          : ''
+      )
+    );
+  }
+
+
+  const blob =
+    await response.blob();
+
+
+  if (
+    blob.size ===
+    0
+  ) {
+
+    throw new Error(
+      'O Google Drive retornou uma gravação vazia.'
+    );
+  }
+
+
+  return blob;
+}
+
 export async function listMeetTranscripts({
   agencyId,
   conferenceRecordName,

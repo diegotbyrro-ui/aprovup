@@ -12,6 +12,10 @@ import {
   processPendingWhatsappEvents,
 } from '@/lib/secretaryWhatsApp';
 
+import {
+  processSecretaryMeetingRecordings,
+} from '@/lib/secretaryMeetingRecording';
+
 
 export async function runSecretaryAutomation() {
   const whatsappInbound =
@@ -142,7 +146,41 @@ export async function runSecretaryAutomation() {
       );
 
 
+  const meetingRecordings =
+    await processSecretaryMeetingRecordings(
+      1
+    )
+      .catch(
+        (
+          error
+        ) => {
+          console.error(
+            'SECRETARY MEETING RECORDING ERROR',
+            error
+          );
+
+          return {
+            checked:
+              0,
+
+            processed:
+              0,
+
+            waiting:
+              0,
+
+            errors:
+              1,
+
+            results:
+              [],
+          };
+        }
+      );
+
+
   return {
+    meetingRecordings,
     whatsappInbound,
     publications,
     approvals,
