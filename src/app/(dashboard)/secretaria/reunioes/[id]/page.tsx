@@ -233,6 +233,28 @@ export default async function MeetingDetailPage({
           }
 
 
+          {
+            meeting.summary ||
+            meeting
+              .transcriptEntries
+              .length >
+              0
+              ? (
+                <a
+                  href={
+                    '/api/secretaria/reunioes/' +
+                    meeting.id +
+                    '/pdf'
+                  }
+                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700"
+                >
+                  Baixar relatório em PDF
+                </a>
+              )
+              : null
+          }
+
+
           <form
             action={
               syncAction
