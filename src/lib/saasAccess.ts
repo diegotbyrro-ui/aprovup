@@ -37,6 +37,39 @@ export type SaasAccessResult = {
 
 const activeStatuses = ['TRIAL', 'ACTIVE'] as const;
 
+
+/*
+ * Agencias internas do proprio AprovUp nao dependem
+ * de assinatura SaaS para a equipe operar o sistema.
+ *
+ * agency_level_up e a agencia interna principal.
+ *
+ * Outras agencias internas podem ser adicionadas por:
+ * APROVUP_INTERNAL_AGENCY_IDS=id1,id2
+ */
+function getInternalAgencyIds() {
+  const configured =
+    (
+      process.env.APROVUP_INTERNAL_AGENCY_IDS ||
+      ''
+    )
+      .split(',')
+      .map(
+        (
+          value
+        ) =>
+          value.trim()
+      )
+      .filter(Boolean);
+
+
+  return new Set([
+    'agency_level_up',
+    ...configured,
+  ]);
+}
+
+
 export async function getCurrentUserSaasAccess(): Promise<SaasAccessResult> {
   const user = await requireCurrentUser();
   const isCommander = isCommanderUser(user);
@@ -125,10 +158,22 @@ export async function getCurrentUserSaasAccess(): Promise<SaasAccessResult> {
    * quando nao existe uma assinatura SaaS separada
    * para cada colaborador.
    */
+  const isInternalAgency =
+    Boolean(
+      user.agencyId &&
+      getInternalAgencyIds().has(
+        user.agencyId
+      )
+    );
+
+
   if (
     user.role ===
       'SOCIAL_MEDIA' &&
-    agencyHasCommander
+    (
+      agencyHasCommander ||
+      isInternalAgency
+    )
   ) {
     return {
       hasActiveSubscription:
