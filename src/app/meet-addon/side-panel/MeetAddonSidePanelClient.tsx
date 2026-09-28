@@ -15,6 +15,7 @@ import type {
 import {
   Bot,
   Check,
+  EllipsisVertical,
   LoaderCircle,
   Mic,
   Send,
@@ -277,6 +278,15 @@ export function MeetAddonSidePanelClient({
     );
 
 
+  const voicePopupRef =
+    useRef<
+      Window |
+      null
+    >(
+      null
+    );
+
+
   useEffect(
     () => {
 
@@ -432,6 +442,10 @@ export function MeetAddonSidePanelClient({
           }
 
 
+          voicePopupRef.current =
+            null;
+
+
           setListening(
             false
           );
@@ -442,8 +456,25 @@ export function MeetAddonSidePanelClient({
 
         if (
           event.data?.type ===
+          'APROVUP_MEET_VOICE_RECORDING'
+        ) {
+
+          setListening(
+            true
+          );
+
+          return;
+        }
+
+
+        if (
+          event.data?.type ===
           'APROVUP_MEET_VOICE_ERROR'
         ) {
+
+          voicePopupRef.current =
+            null;
+
 
           setListening(
             false
@@ -987,6 +1018,37 @@ export function MeetAddonSidePanelClient({
   }
 
 
+  function openVoiceSettings() {
+
+    if (
+      listening
+    ) {
+      return;
+    }
+
+
+    const popup =
+      window.open(
+        '/meet-addon/voice?mode=settings',
+        'aprovup_meet_voice_settings',
+        'popup=yes,width=410,height=430'
+      );
+
+
+    if (!popup) {
+
+      setError(
+        'O navegador bloqueou a janela de configurações. Permita pop-ups do AprovUp.'
+      );
+
+      return;
+    }
+
+
+    popup.focus();
+  }
+
+
   function startVoice() {
 
     if (
@@ -1008,6 +1070,49 @@ export function MeetAddonSidePanelClient({
     }
 
 
+    /*
+     * Segundo clique no botão vermelho:
+     * encerra a fala.
+     */
+    if (
+      listening
+    ) {
+
+      const popup =
+        voicePopupRef.current;
+
+
+      if (
+        !popup ||
+        popup.closed
+      ) {
+
+        voicePopupRef.current =
+          null;
+
+
+        setListening(
+          false
+        );
+
+
+        return;
+      }
+
+
+      popup.postMessage(
+        {
+          type:
+            'APROVUP_MEET_VOICE_STOP',
+        },
+        window.location.origin
+      );
+
+
+      return;
+    }
+
+
     setError(
       ''
     );
@@ -1015,20 +1120,24 @@ export function MeetAddonSidePanelClient({
 
     const popup =
       window.open(
-        '/meet-addon/voice',
-        'aprovup_meet_voice',
-        'popup=yes,width=410,height=420'
+        '/meet-addon/voice?mode=capture',
+        'aprovup_meet_voice_capture',
+        'popup=yes,width=290,height=170'
       );
 
 
     if (!popup) {
 
       setError(
-        'O navegador bloqueou a janela do microfone. Permita pop-ups do AprovUp e tente novamente.'
+        'O navegador bloqueou o microfone da Liv. Permita pop-ups do AprovUp e tente novamente.'
       );
 
       return;
     }
+
+
+    voicePopupRef.current =
+      popup;
 
 
     setListening(
@@ -1047,17 +1156,24 @@ export function MeetAddonSidePanelClient({
             );
 
 
-            setListening(
-              false
-            );
+            if (
+              voicePopupRef.current ===
+              popup
+            ) {
+
+              voicePopupRef.current =
+                null;
+
+
+              setListening(
+                false
+              );
+            }
           }
 
         },
-        500
+        400
       );
-
-
-    popup.focus();
   }
 
   return (
@@ -1180,7 +1296,7 @@ export function MeetAddonSidePanelClient({
 
 
                   <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
-                    Clique em Falar para abrir o microfone da Liv. O áudio será transcrito e o texto voltará aqui para você conferir antes de enviar.
+                    Clique em Falar e comece a conversar. Use as três bolinhas apenas para trocar o microfone ou ajustar a sensibilidade.
                   </p>
 
                 </div>
@@ -1358,26 +1474,62 @@ export function MeetAddonSidePanelClient({
           />
 
 
-          <div className="mt-2 grid grid-cols-[auto_1fr] gap-2">
+          <div className="mt-2 grid grid-cols-[40px_auto_1fr] gap-2">
+
+            <button
+              type="button"
+              onClick={
+                openVoiceSettings
+              }
+              disabled={
+                listening ||
+                loading
+              }
+              title="Configurar microfone"
+              aria-label="Configurar microfone da Liv"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-slate-300 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <EllipsisVertical
+                size={17}
+              />
+            </button>
+
 
             <button
               type="button"
               onClick={
                 startVoice
               }
+              disabled={
+                loading
+              }
               className={
                 listening
-                  ? 'inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-3 text-[10px] font-black text-white'
-                  : 'inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/10 px-3 text-[10px] font-black text-slate-200'
+                  ? 'inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-700 px-3 text-[10px] font-black text-white shadow-lg shadow-red-950/20'
+                  : 'inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-3 text-[10px] font-black text-white hover:bg-red-700'
               }
             >
-              <Mic
-                size={14}
-              />
+              {
+                listening
+                  ? (
+                    <span className="relative flex h-2.5 w-2.5">
+
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-50" />
+
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white" />
+
+                    </span>
+                  )
+                  : (
+                    <Mic
+                      size={14}
+                    />
+                  )
+              }
 
               {
                 listening
-                  ? 'Microfone aberto'
+                  ? 'Finalizar'
                   : 'Falar'
               }
             </button>

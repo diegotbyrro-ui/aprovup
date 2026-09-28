@@ -2,10 +2,8 @@
 
 import {
   AlertTriangle,
-  CheckCircle2,
   LoaderCircle,
   Mic,
-  Square,
 } from 'lucide-react';
 
 import {
@@ -15,6 +13,11 @@ import {
 } from 'react';
 
 
+type VoiceMode =
+  | 'settings'
+  | 'capture';
+
+
 type VoiceStatus =
   | 'CHECKING'
   | 'NEED_PERMISSION'
@@ -22,7 +25,6 @@ type VoiceStatus =
   | 'ARMING'
   | 'RECORDING'
   | 'TRANSCRIBING'
-  | 'DONE'
   | 'ERROR';
 
 
@@ -39,6 +41,15 @@ const DEFAULT_MICROPHONE_GAIN =
 
 
 export function MeetAddonVoiceClient() {
+
+  const [
+    mode,
+    setMode,
+  ] =
+    useState<VoiceMode>(
+      'settings'
+    );
+
 
   const [
     status,
@@ -79,15 +90,6 @@ export function MeetAddonVoiceClient() {
 
 
   const [
-    level,
-    setLevel,
-  ] =
-    useState(
-      0
-    );
-
-
-  const [
     microphoneGain,
     setMicrophoneGain,
   ] =
@@ -96,16 +98,22 @@ export function MeetAddonVoiceClient() {
     );
 
 
-  const recorderRef =
-    useRef<
-      MediaRecorder |
-      null
-    >(
-      null
+  const [
+    level,
+    setLevel,
+  ] =
+    useState(
+      0
     );
 
 
-  const streamRef =
+  const modeRef =
+    useRef<VoiceMode>(
+      'settings'
+    );
+
+
+  const sourceStreamRef =
     useRef<
       MediaStream |
       null
@@ -117,6 +125,15 @@ export function MeetAddonVoiceClient() {
   const processedStreamRef =
     useRef<
       MediaStream |
+      null
+    >(
+      null
+    );
+
+
+  const recorderRef =
+    useRef<
+      MediaRecorder |
       null
     >(
       null
@@ -190,7 +207,8 @@ export function MeetAddonVoiceClient() {
       Record<
         string,
         unknown
-      >
+      > =
+        {}
   ) {
 
     if (!window.opener) {
@@ -208,25 +226,7 @@ export function MeetAddonVoiceClient() {
   }
 
 
-  function stopLevelMeter() {
-
-    processedStreamRef.current
-      ?.getTracks()
-      .forEach(
-        (
-          track
-        ) =>
-          track.stop()
-      );
-
-
-    processedStreamRef.current =
-      null;
-
-
-    gainNodeRef.current =
-      null;
-
+  function stopAudioPipeline() {
 
     if (
       animationFrameRef.current !==
@@ -241,6 +241,38 @@ export function MeetAddonVoiceClient() {
       animationFrameRef.current =
         null;
     }
+
+
+    sourceStreamRef.current
+      ?.getTracks()
+      .forEach(
+        (
+          track
+        ) =>
+          track.stop()
+      );
+
+
+    processedStreamRef.current
+      ?.getTracks()
+      .forEach(
+        (
+          track
+        ) =>
+          track.stop()
+      );
+
+
+    sourceStreamRef.current =
+      null;
+
+
+    processedStreamRef.current =
+      null;
+
+
+    gainNodeRef.current =
+      null;
 
 
     const context =
@@ -268,39 +300,10 @@ export function MeetAddonVoiceClient() {
   }
 
 
-  function stopCurrentStream() {
-
-    streamRef.current
-      ?.getTracks()
-      .forEach(
-        (
-          track
-        ) =>
-          track.stop()
-      );
-
-
-    streamRef.current =
-      null;
-
-
-    stopLevelMeter();
-  }
-
-
   async function refreshMicrophones(
     preferredDeviceId?:
       string
   ) {
-
-    if (
-      !navigator.mediaDevices
-        ?.enumerateDevices
-    ) {
-
-      return [];
-    }
-
 
     const devices =
       await navigator
@@ -323,7 +326,7 @@ export function MeetAddonVoiceClient() {
     );
 
 
-    const savedDeviceId =
+    const saved =
       preferredDeviceId ||
       window.localStorage
         .getItem(
@@ -332,29 +335,14 @@ export function MeetAddonVoiceClient() {
       '';
 
 
-    const exists =
-      inputs.some(
+    const selected =
+      inputs.find(
         (
           device
         ) =>
           device.deviceId ===
-          savedDeviceId
-      );
-
-
-    if (
-      exists
-    ) {
-
-      setSelectedDeviceId(
-        savedDeviceId
-      );
-
-      return inputs;
-    }
-
-
-    const defaultDevice =
+          saved
+      ) ||
       inputs.find(
         (
           device
@@ -365,11 +353,18 @@ export function MeetAddonVoiceClient() {
       inputs[0];
 
 
-    if (defaultDevice) {
+    if (selected) {
 
       setSelectedDeviceId(
-        defaultDevice.deviceId
+        selected.deviceId
       );
+
+
+      window.localStorage
+        .setItem(
+          MICROPHONE_STORAGE_KEY,
+          selected.deviceId
+        );
     }
 
 
@@ -377,13 +372,10 @@ export function MeetAddonVoiceClient() {
   }
 
 
-  async function startLevelMeter(
+  async function createAudioPipeline(
     stream:
       MediaStream
   ) {
-
-    stopLevelMeter();
-
 
     const context =
       new AudioContext();
@@ -399,7 +391,7 @@ export function MeetAddonVoiceClient() {
 
     }
     catch {
-      // O browser pode iniciar o contexto logo depois.
+      // Continua normalmente.
     }
 
 
@@ -409,13 +401,6 @@ export function MeetAddonVoiceClient() {
       );
 
 
-    /*
-     * Ganho digital real.
-     *
-     * Diferente de apenas aumentar a barra visual,
-     * este audio amplificado sera efetivamente
-     * gravado e enviado para a transcricao.
-     */
     const gainNode =
       context.createGain();
 
@@ -428,11 +413,6 @@ export function MeetAddonVoiceClient() {
       gainNode;
 
 
-    /*
-     * O compressor segura picos quando o usuario
-     * chega perto do microfone ou fala mais alto,
-     * evitando distorcao depois do aumento de ganho.
-     */
     const compressor =
       context.createDynamicsCompressor();
 
@@ -503,7 +483,7 @@ export function MeetAddonVoiceClient() {
       );
 
 
-    const tick =
+    const updateLevel =
       () => {
 
         analyser.getByteTimeDomainData(
@@ -543,15 +523,6 @@ export function MeetAddonVoiceClient() {
           );
 
 
-        /*
-         * Medidor em escala aproximadamente logaritmica.
-         *
-         * -60 dB = quase silencio.
-         * -30 dB = voz confortavel.
-         * -12 dB = bastante forte.
-         *
-         * Portanto o usuario nao precisa chegar a 100%.
-         */
         const db =
           rms >
           0.000001
@@ -562,7 +533,7 @@ export function MeetAddonVoiceClient() {
             : -100;
 
 
-        const visualLevel =
+        const nextLevel =
           Math.max(
             0,
             Math.min(
@@ -582,7 +553,7 @@ export function MeetAddonVoiceClient() {
 
 
         setLevel(
-          visualLevel
+          nextLevel
         );
 
 
@@ -593,40 +564,34 @@ export function MeetAddonVoiceClient() {
           maxLevelRef.current =
             Math.max(
               maxLevelRef.current,
-              visualLevel
+              nextLevel
             );
         }
 
 
         animationFrameRef.current =
           window.requestAnimationFrame(
-            tick
+            updateLevel
           );
       };
 
 
-    tick();
+    updateLevel();
+
+
+    return destination.stream;
   }
+
 
   async function openMicrophone(
     requestedDeviceId?:
       string
   ) {
 
-    setError(
-      ''
-    );
+    stopAudioPipeline();
 
 
-    setStatus(
-      'CHECKING'
-    );
-
-
-    stopCurrentStream();
-
-
-    const savedDeviceId =
+    const saved =
       requestedDeviceId ||
       window.localStorage
         .getItem(
@@ -635,19 +600,17 @@ export function MeetAddonVoiceClient() {
       '';
 
 
-    const makeConstraints =
-      (
-        deviceId?:
-          string
-      ): MediaStreamConstraints => ({
+    const constraints:
+      MediaStreamConstraints =
+      {
         audio: {
           deviceId:
-            deviceId &&
-            deviceId !==
+            saved &&
+            saved !==
               'default'
               ? {
                   exact:
-                    deviceId,
+                    saved,
                 }
               : undefined,
 
@@ -660,7 +623,7 @@ export function MeetAddonVoiceClient() {
           autoGainControl:
             true,
         },
-      });
+      };
 
 
     let stream:
@@ -672,9 +635,7 @@ export function MeetAddonVoiceClient() {
       stream =
         await navigator.mediaDevices
           .getUserMedia(
-            makeConstraints(
-              savedDeviceId
-            )
+            constraints
           );
 
     }
@@ -682,13 +643,10 @@ export function MeetAddonVoiceClient() {
       firstError
     ) {
 
-      /*
-       * Caso o microfone salvo tenha sido
-       * desconectado, tentamos o padrao.
-       */
       if (
-        savedDeviceId &&
-        firstError instanceof DOMException &&
+        saved &&
+        firstError instanceof
+          DOMException &&
         (
           firstError.name ===
             'OverconstrainedError' ||
@@ -699,9 +657,18 @@ export function MeetAddonVoiceClient() {
 
         stream =
           await navigator.mediaDevices
-            .getUserMedia(
-              makeConstraints()
-            );
+            .getUserMedia({
+              audio: {
+                echoCancellation:
+                  true,
+
+                noiseSuppression:
+                  true,
+
+                autoGainControl:
+                  true,
+              },
+            });
 
       }
       else {
@@ -711,11 +678,11 @@ export function MeetAddonVoiceClient() {
     }
 
 
-    streamRef.current =
+    sourceStreamRef.current =
       stream;
 
 
-    const audioTrack =
+    const track =
       stream
         .getAudioTracks()
         [0];
@@ -723,156 +690,22 @@ export function MeetAddonVoiceClient() {
 
     const actualDeviceId =
       String(
-        audioTrack
+        track
           ?.getSettings()
           .deviceId ||
-        savedDeviceId ||
+        saved ||
         ''
       );
 
 
-    const inputs =
-      await refreshMicrophones(
-        actualDeviceId
-      );
+    await refreshMicrophones(
+      actualDeviceId
+    );
 
 
-    const selectedExists =
-      inputs.some(
-        (
-          device
-        ) =>
-          device.deviceId ===
-          actualDeviceId
-      );
-
-
-    const finalDeviceId =
-      selectedExists
-        ? actualDeviceId
-        : (
-            inputs.find(
-              (
-                device
-              ) =>
-                device.deviceId ===
-                'default'
-            )
-              ?.deviceId ||
-            inputs[0]
-              ?.deviceId ||
-            actualDeviceId
-          );
-
-
-    if (
-      finalDeviceId
-    ) {
-
-      setSelectedDeviceId(
-        finalDeviceId
-      );
-
-
-      window.localStorage
-        .setItem(
-          MICROPHONE_STORAGE_KEY,
-          finalDeviceId
-        );
-    }
-
-
-    await startLevelMeter(
+    return await createAudioPipeline(
       stream
     );
-
-
-    setStatus(
-      'READY'
-    );
-
-
-    return stream;
-  }
-
-
-  async function requestMicrophonePermission() {
-
-    try {
-
-      await openMicrophone();
-
-    }
-    catch (
-      permissionError
-    ) {
-
-      const denied =
-        permissionError instanceof DOMException &&
-        permissionError.name ===
-          'NotAllowedError';
-
-
-      setError(
-        denied
-          ? (
-              'O Chrome bloqueou o microfone. ' +
-              'No aprovup.com.br, deixe Microfone como Permitir e tente novamente.'
-            )
-          : (
-              permissionError instanceof Error
-                ? permissionError.message
-                : 'Não foi possível abrir o microfone.'
-            )
-      );
-
-
-      setStatus(
-        'ERROR'
-      );
-    }
-  }
-
-
-  async function changeMicrophone(
-    deviceId:
-      string
-  ) {
-
-    setSelectedDeviceId(
-      deviceId
-    );
-
-
-    window.localStorage
-      .setItem(
-        MICROPHONE_STORAGE_KEY,
-        deviceId
-      );
-
-
-    try {
-
-      await openMicrophone(
-        deviceId
-      );
-
-    }
-    catch (
-      deviceError
-    ) {
-
-      setError(
-        deviceError instanceof Error
-          ? deviceError.message
-          : 'Não foi possível selecionar este microfone.'
-      );
-
-
-      setStatus(
-        'ERROR'
-      );
-    }
   }
 
 
@@ -939,11 +772,6 @@ export function MeetAddonVoiceClient() {
 
     setStatus(
       'TRANSCRIBING'
-    );
-
-
-    setError(
-      ''
     );
 
 
@@ -1022,11 +850,6 @@ export function MeetAddonVoiceClient() {
       }
 
 
-      setStatus(
-        'DONE'
-      );
-
-
       sendToMeet(
         'APROVUP_MEET_VOICE_RESULT',
         {
@@ -1036,66 +859,68 @@ export function MeetAddonVoiceClient() {
 
 
       window.setTimeout(
-        () => {
-
-          window.close();
-
-        },
-        650
+        () =>
+          window.close(),
+        250
       );
 
     }
     catch (
-      transcribeError
+      transcriptionError
     ) {
 
+      const message =
+        transcriptionError instanceof Error
+          ? transcriptionError.message
+          : 'Erro ao processar o áudio.';
+
+
+      sendToMeet(
+        'APROVUP_MEET_VOICE_ERROR',
+        {
+          message,
+        }
+      );
+
+
       setError(
-        transcribeError instanceof Error
-          ? transcribeError.message
-          : 'Erro ao processar o áudio.'
+        message
       );
 
 
       setStatus(
         'ERROR'
       );
+
+
+      if (
+        modeRef.current ===
+        'capture'
+      ) {
+
+        window.setTimeout(
+          () =>
+            window.close(),
+          1200
+        );
+      }
     }
   }
 
 
-  function startRecording() {
-
-    const stream =
-      processedStreamRef.current ||
-      streamRef.current;
-
-
-    if (
-      !stream ||
-      status !==
-        'READY'
-    ) {
-
-      return;
-    }
-
+  function startRecording(
+    stream:
+      MediaStream
+  ) {
 
     if (
       typeof MediaRecorder ===
       'undefined'
     ) {
 
-      setError(
+      throw new Error(
         'Este navegador não possui suporte ao gravador de áudio.'
       );
-
-
-      setStatus(
-        'ERROR'
-      );
-
-
-      return;
     }
 
 
@@ -1175,8 +1000,20 @@ export function MeetAddonVoiceClient() {
           false;
 
 
+        const message =
+          'A gravação foi interrompida pelo navegador.';
+
+
+        sendToMeet(
+          'APROVUP_MEET_VOICE_ERROR',
+          {
+            message,
+          }
+        );
+
+
         setError(
-          'A gravação foi interrompida pelo navegador.'
+          message
         );
 
 
@@ -1198,10 +1035,6 @@ export function MeetAddonVoiceClient() {
           maxLevelRef.current;
 
 
-        recordingActiveRef.current =
-          false;
-
-
         const chunks =
           chunksRef.current;
 
@@ -1210,16 +1043,32 @@ export function MeetAddonVoiceClient() {
           [];
 
 
-        stopCurrentStream();
+        recordingActiveRef.current =
+          false;
+
+
+        stopAudioPipeline();
 
 
         if (
           duration <
-          900
+          700
         ) {
 
+          const message =
+            'A fala ficou muito curta. Tente novamente.';
+
+
+          sendToMeet(
+            'APROVUP_MEET_VOICE_ERROR',
+            {
+              message,
+            }
+          );
+
+
           setError(
-            'O áudio ficou muito curto. Fale por pelo menos 1 segundo.'
+            message
           );
 
 
@@ -1237,8 +1086,20 @@ export function MeetAddonVoiceClient() {
           10
         ) {
 
+          const message =
+            'A voz chegou muito baixa. Abra as configurações da Liv e ajuste a sensibilidade.';
+
+
+          sendToMeet(
+            'APROVUP_MEET_VOICE_ERROR',
+            {
+              message,
+            }
+          );
+
+
           setError(
-            'A voz chegou muito baixa. Aumente o ganho da Liv ou o volume do microfone e tente novamente.'
+            message
           );
 
 
@@ -1256,8 +1117,20 @@ export function MeetAddonVoiceClient() {
           0
         ) {
 
+          const message =
+            'Nenhum áudio foi capturado.';
+
+
+          sendToMeet(
+            'APROVUP_MEET_VOICE_ERROR',
+            {
+              message,
+            }
+          );
+
+
           setError(
-            'Nenhum áudio foi capturado.'
+            message
           );
 
 
@@ -1288,15 +1161,10 @@ export function MeetAddonVoiceClient() {
 
 
     recorder.start(
-      200
+      180
     );
 
 
-    /*
-     * Gravamos desde já para não perder
-     * a primeira sílaba, mas o usuário
-     * recebe 450 ms de preparação visual.
-     */
     setStatus(
       'ARMING'
     );
@@ -1313,31 +1181,192 @@ export function MeetAddonVoiceClient() {
           setStatus(
             'RECORDING'
           );
+
+
+          sendToMeet(
+            'APROVUP_MEET_VOICE_RECORDING'
+          );
+
+
+          try {
+
+            window.blur();
+
+
+            window.opener
+              ?.focus();
+
+          }
+          catch {
+            // O navegador pode ignorar.
+          }
         }
 
       },
-      450
+      350
     );
   }
 
 
-  function stopRecording() {
+  async function prepareSettings() {
 
-    const recorder =
-      recorderRef.current;
+    try {
+
+      const permission =
+        navigator.permissions
+          ?.query
+          ? await navigator.permissions
+              .query({
+                name:
+                  'microphone' as
+                    PermissionName,
+              })
+          : null;
 
 
-    if (
-      !recorder ||
-      recorder.state ===
-        'inactive'
+      if (
+        permission?.state ===
+        'denied'
+      ) {
+
+        throw new Error(
+          'O microfone está bloqueado para aprovup.com.br. Altere a permissão do site para Permitir.'
+        );
+      }
+
+
+      if (
+        permission?.state ===
+        'granted'
+      ) {
+
+        await openMicrophone();
+
+
+        setStatus(
+          'READY'
+        );
+
+
+        return;
+      }
+
+
+      await refreshMicrophones();
+
+
+      setStatus(
+        'NEED_PERMISSION'
+      );
+
+    }
+    catch (
+      settingsError
     ) {
 
-      return;
+      setError(
+        settingsError instanceof Error
+          ? settingsError.message
+          : 'Não foi possível preparar o microfone.'
+      );
+
+
+      setStatus(
+        'ERROR'
+      );
     }
+  }
 
 
-    recorder.stop();
+  async function requestPermission() {
+
+    try {
+
+      setError(
+        ''
+      );
+
+
+      setStatus(
+        'CHECKING'
+      );
+
+
+      await openMicrophone();
+
+
+      setStatus(
+        'READY'
+      );
+
+    }
+    catch (
+      permissionError
+    ) {
+
+      setError(
+        permissionError instanceof Error
+          ? permissionError.message
+          : 'Não foi possível abrir o microfone.'
+      );
+
+
+      setStatus(
+        'ERROR'
+      );
+    }
+  }
+
+
+  async function changeMicrophone(
+    deviceId:
+      string
+  ) {
+
+    setSelectedDeviceId(
+      deviceId
+    );
+
+
+    window.localStorage
+      .setItem(
+        MICROPHONE_STORAGE_KEY,
+        deviceId
+      );
+
+
+    try {
+
+      setStatus(
+        'CHECKING'
+      );
+
+
+      await openMicrophone(
+        deviceId
+      );
+
+
+      setStatus(
+        'READY'
+      );
+
+    }
+    catch (
+      deviceError
+    ) {
+
+      setError(
+        deviceError instanceof Error
+          ? deviceError.message
+          : 'Não foi possível selecionar este microfone.'
+      );
+
+
+      setStatus(
+        'ERROR'
+      );
+    }
   }
 
 
@@ -1346,6 +1375,27 @@ export function MeetAddonVoiceClient() {
 
       let active =
         true;
+
+
+      const nextMode:
+        VoiceMode =
+        new URLSearchParams(
+          window.location.search
+        ).get(
+          'mode'
+        ) ===
+          'capture'
+          ? 'capture'
+          : 'settings';
+
+
+      modeRef.current =
+        nextMode;
+
+
+      setMode(
+        nextMode
+      );
 
 
       const storedGain =
@@ -1377,138 +1427,155 @@ export function MeetAddonVoiceClient() {
       }
 
 
+      function handleControlMessage(
+        event:
+          MessageEvent
+      ) {
+
+        if (
+          event.origin !==
+          window.location.origin
+        ) {
+          return;
+        }
+
+
+        if (
+          event.data?.type !==
+          'APROVUP_MEET_VOICE_STOP'
+        ) {
+          return;
+        }
+
+
+        const recorder =
+          recorderRef.current;
+
+
+        if (
+          recorder &&
+          recorder.state !==
+            'inactive'
+        ) {
+
+          recorder.stop();
+        }
+      }
+
+
+      window.addEventListener(
+        'message',
+        handleControlMessage
+      );
+
+
       void (
         async () => {
 
+          if (
+            !navigator.mediaDevices
+              ?.getUserMedia
+          ) {
+
+            const message =
+              'Este navegador não disponibilizou acesso ao microfone.';
+
+
+            setError(
+              message
+            );
+
+
+            setStatus(
+              'ERROR'
+            );
+
+
+            if (
+              nextMode ===
+              'capture'
+            ) {
+
+              sendToMeet(
+                'APROVUP_MEET_VOICE_ERROR',
+                {
+                  message,
+                }
+              );
+            }
+
+
+            return;
+          }
+
+
+          if (
+            nextMode ===
+            'settings'
+          ) {
+
+            await prepareSettings();
+
+
+            return;
+          }
+
+
           try {
 
-            if (
-              !navigator.mediaDevices
-                ?.getUserMedia
-            ) {
+            const stream =
+              await openMicrophone();
 
-              throw new Error(
-                'Este navegador não disponibilizou acesso ao microfone.'
-              );
+
+            if (!active) {
+              return;
             }
 
 
-            /*
-             * Se a permissão já estiver salva como
-             * "Permitir", abrimos automaticamente o
-             * microfone salvo. Não aparece nova
-             * solicitação do Chrome.
-             */
-            if (
-              navigator.permissions
-                ?.query
-            ) {
-
-              try {
-
-                const permission =
-                  await navigator.permissions
-                    .query({
-                      name:
-                        'microphone' as PermissionName,
-                    });
-
-
-                if (
-                  !active
-                ) {
-                  return;
-                }
-
-
-                if (
-                  permission.state ===
-                  'granted'
-                ) {
-
-                  await openMicrophone();
-
-                  return;
-                }
-
-
-                if (
-                  permission.state ===
-                  'denied'
-                ) {
-
-                  setError(
-                    'O microfone está bloqueado para aprovup.com.br. Altere a permissão do site para Permitir.'
-                  );
-
-
-                  setStatus(
-                    'ERROR'
-                  );
-
-
-                  return;
-                }
-
-              }
-              catch {
-                // Browser sem suporte completo à Permissions API.
-              }
-            }
-
-
-            await refreshMicrophones();
-
-
-            if (
-              active
-            ) {
-
-              setStatus(
-                'NEED_PERMISSION'
-              );
-            }
+            startRecording(
+              stream
+            );
 
           }
           catch (
-            initializationError
+            captureError
           ) {
 
-            if (
-              active
-            ) {
-
-              setError(
-                initializationError instanceof Error
-                  ? initializationError.message
-                  : 'Não foi possível preparar os microfones.'
-              );
+            const message =
+              captureError instanceof Error
+                ? captureError.message
+                : 'Não foi possível iniciar o microfone da Liv.';
 
 
-              setStatus(
-                'ERROR'
-              );
-            }
+            setError(
+              message
+            );
+
+
+            setStatus(
+              'ERROR'
+            );
+
+
+            sendToMeet(
+              'APROVUP_MEET_VOICE_ERROR',
+              {
+                message:
+                  message +
+                  ' Abra as três bolinhas para revisar o microfone.',
+              }
+            );
+
+
+            window.setTimeout(
+              () =>
+                window.close(),
+              1400
+            );
           }
 
         }
       )();
-
-
-      const handleDeviceChange =
-        () => {
-
-          void refreshMicrophones(
-            selectedDeviceId
-          );
-        };
-
-
-      navigator.mediaDevices
-        ?.addEventListener(
-          'devicechange',
-          handleDeviceChange
-        );
 
 
       return () => {
@@ -1517,18 +1584,17 @@ export function MeetAddonVoiceClient() {
           false;
 
 
-        navigator.mediaDevices
-          ?.removeEventListener(
-            'devicechange',
-            handleDeviceChange
-          );
+        window.removeEventListener(
+          'message',
+          handleControlMessage
+        );
 
 
         recordingActiveRef.current =
           false;
 
 
-        stopCurrentStream();
+        stopAudioPipeline();
       };
 
     },
@@ -1546,10 +1612,95 @@ export function MeetAddonVoiceClient() {
     );
 
 
-  const selectedMicrophoneName =
+  const microphoneName =
     selectedMicrophone
       ?.label ||
     'Microfone selecionado';
+
+
+  if (
+    mode ===
+    'capture'
+  ) {
+
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-950 p-3 text-white">
+
+        <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-4">
+
+          {
+            status ===
+              'TRANSCRIBING'
+              ? (
+                <div className="flex items-center gap-3">
+
+                  <LoaderCircle
+                    size={17}
+                    className="animate-spin text-blue-300"
+                  />
+
+                  <div>
+
+                    <p className="text-xs font-black">
+                      Liv está entendendo...
+                    </p>
+
+                    <p className="text-[9px] text-slate-500">
+                      Convertendo sua fala.
+                    </p>
+
+                  </div>
+
+                </div>
+              )
+              : status ===
+                  'ERROR'
+                ? (
+                  <div className="flex items-start gap-2">
+
+                    <AlertTriangle
+                      size={15}
+                      className="mt-0.5 shrink-0 text-red-300"
+                    />
+
+                    <p className="text-[10px] leading-relaxed text-red-100">
+                      {error}
+                    </p>
+
+                  </div>
+                )
+                : (
+                  <div className="flex items-center gap-3">
+
+                    <span className="relative flex h-3 w-3 shrink-0">
+
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
+
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+
+                    </span>
+
+                    <div>
+
+                      <p className="text-xs font-black">
+                        Liv ouvindo
+                      </p>
+
+                      <p className="text-[9px] text-slate-500">
+                        Finalize pelo botão vermelho.
+                      </p>
+
+                    </div>
+
+                  </div>
+                )
+          }
+
+        </div>
+
+      </main>
+    );
+  }
 
 
   return (
@@ -1559,7 +1710,7 @@ export function MeetAddonVoiceClient() {
 
         <div className="flex items-center gap-3">
 
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/20 text-violet-300">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/20 text-violet-300">
 
             <Mic
               size={17}
@@ -1567,15 +1718,14 @@ export function MeetAddonVoiceClient() {
 
           </div>
 
-
-          <div className="min-w-0">
+          <div>
 
             <p className="text-[9px] font-black uppercase tracking-[0.15em] text-violet-300">
-              Liv · AprovUp
+              Liv · Voz
             </p>
 
-            <p className="truncate text-sm font-black text-white">
-              Comando por voz
+            <p className="text-sm font-black">
+              Configurações
             </p>
 
           </div>
@@ -1587,16 +1737,14 @@ export function MeetAddonVoiceClient() {
           status ===
           'CHECKING'
             ? (
-              <div className="mt-4 flex items-center gap-3 rounded-xl bg-white/5 p-3">
+              <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
 
                 <LoaderCircle
-                  size={17}
-                  className="animate-spin text-violet-300"
+                  size={15}
+                  className="animate-spin"
                 />
 
-                <p className="text-xs font-bold text-slate-300">
-                  Preparando microfone...
-                </p>
+                Preparando microfone...
 
               </div>
             )
@@ -1608,25 +1756,16 @@ export function MeetAddonVoiceClient() {
           status ===
           'NEED_PERMISSION'
             ? (
-              <div className="mt-4">
-
-                <p className="text-[11px] leading-relaxed text-slate-300">
-                  Na primeira utilização, permita o acesso ao microfone para aprovup.com.br.
-                </p>
-
-
-                <button
-                  type="button"
-                  onClick={
-                    () =>
-                      void requestMicrophonePermission()
-                  }
-                  className="mt-3 h-10 w-full rounded-xl bg-blue-600 px-4 text-xs font-black text-white hover:bg-blue-700"
-                >
-                  Permitir microfone
-                </button>
-
-              </div>
+              <button
+                type="button"
+                onClick={
+                  () =>
+                    void requestPermission()
+                }
+                className="mt-4 h-10 w-full rounded-xl bg-blue-600 text-xs font-black"
+              >
+                Permitir microfone
+              </button>
             )
             : null
         }
@@ -1644,7 +1783,6 @@ export function MeetAddonVoiceClient() {
                     Microfone
                   </label>
 
-
                   <select
                     value={
                       selectedDeviceId
@@ -1657,7 +1795,7 @@ export function MeetAddonVoiceClient() {
                           event.target.value
                         )
                     }
-                    className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-slate-900 px-3 text-[11px] font-bold text-white outline-none focus:border-blue-500"
+                    className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-slate-900 px-3 text-[11px] font-bold text-white outline-none"
                   >
 
                     {
@@ -1666,7 +1804,6 @@ export function MeetAddonVoiceClient() {
                           microphone,
                           index
                         ) => (
-
                           <option
                             key={
                               microphone.deviceId ||
@@ -1678,13 +1815,11 @@ export function MeetAddonVoiceClient() {
                           >
                             {
                               microphone.label ||
-                              (
-                                'Microfone ' +
+                              'Microfone ' +
                                 String(
                                   index +
                                   1
                                 )
-                              )
                             }
                           </option>
                         )
@@ -1699,9 +1834,8 @@ export function MeetAddonVoiceClient() {
                 <div>
 
                   <label className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-                    Ganho da voz
+                    Sensibilidade
                   </label>
-
 
                   <select
                     value={
@@ -1719,11 +1853,11 @@ export function MeetAddonVoiceClient() {
                           )
                         )
                     }
-                    className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-slate-900 px-3 text-[11px] font-bold text-white outline-none focus:border-blue-500"
+                    className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-slate-900 px-3 text-[11px] font-bold text-white outline-none"
                   >
 
                     <option value="1">
-                      Normal · 1.0x
+                      Normal
                     </option>
 
                     <option value="1.6">
@@ -1748,7 +1882,7 @@ export function MeetAddonVoiceClient() {
                   <div className="flex items-center justify-between">
 
                     <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-                      Nível de entrada
+                      Teste do microfone
                     </span>
 
                     <span className="text-[9px] font-bold text-slate-500">
@@ -1764,7 +1898,6 @@ export function MeetAddonVoiceClient() {
                     </span>
 
                   </div>
-
 
                   <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/10">
 
@@ -1782,186 +1915,16 @@ export function MeetAddonVoiceClient() {
 
                   </div>
 
-
                   <p className="mt-1.5 truncate text-[9px] text-slate-500">
-                    {selectedMicrophoneName}
-                  </p>
-
-
-                  <p className="mt-1 text-[9px] text-slate-500">
-                    Para voz normal, tente manter o nível entre 35% e 75%. Não precisa chegar a 100%.
+                    {microphoneName}
                   </p>
 
                 </div>
 
 
-                <button
-                  type="button"
-                  onClick={
-                    startRecording
-                  }
-                  className="h-10 w-full rounded-xl bg-blue-600 px-4 text-xs font-black text-white hover:bg-blue-700"
-                >
-                  Começar a falar
-                </button>
-
-              </div>
-            )
-            : null
-        }
-
-
-        {
-          status ===
-          'ARMING'
-            ? (
-              <div className="mt-5 flex items-center gap-3">
-
-                <LoaderCircle
-                  size={17}
-                  className="animate-spin text-amber-300"
-                />
-
-                <div>
-
-                  <p className="text-sm font-black">
-                    Preparando...
-                  </p>
-
-                  <p className="text-[10px] text-slate-400">
-                    Pode falar quando aparecer “Ouvindo”.
-                  </p>
-
-                </div>
-
-              </div>
-            )
-            : null
-        }
-
-
-        {
-          status ===
-          'RECORDING'
-            ? (
-              <div className="mt-4">
-
-                <div className="flex items-center gap-3">
-
-                  <span className="relative flex h-3 w-3 shrink-0">
-
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
-
-                    <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
-
-                  </span>
-
-
-                  <div className="min-w-0 flex-1">
-
-                    <p className="text-sm font-black">
-                      Liv está ouvindo
-                    </p>
-
-                    <p className="truncate text-[9px] text-slate-500">
-                      {selectedMicrophoneName}
-                    </p>
-
-                  </div>
-
-                </div>
-
-
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
-
-                  <div
-                    className="h-full rounded-full bg-emerald-500 transition-[width] duration-75"
-                    style={{
-                      width:
-                        Math.max(
-                          1,
-                          level
-                        ) +
-                        '%',
-                    }}
-                  />
-
-                </div>
-
-
-                <button
-                  type="button"
-                  onClick={
-                    stopRecording
-                  }
-                  className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-xs font-black text-slate-950 hover:bg-slate-100"
-                >
-                  <Square
-                    size={12}
-                  />
-
-                  Finalizar
-                </button>
-
-              </div>
-            )
-            : null
-        }
-
-
-        {
-          status ===
-          'TRANSCRIBING'
-            ? (
-              <div className="mt-5 flex items-center gap-3">
-
-                <LoaderCircle
-                  size={18}
-                  className="animate-spin text-blue-300"
-                />
-
-
-                <div>
-
-                  <p className="text-sm font-black">
-                    Entendendo...
-                  </p>
-
-                  <p className="text-[10px] text-slate-400">
-                    Transformando sua fala em texto.
-                  </p>
-
-                </div>
-
-              </div>
-            )
-            : null
-        }
-
-
-        {
-          status ===
-          'DONE'
-            ? (
-              <div className="mt-5 flex items-center gap-3">
-
-                <CheckCircle2
-                  size={19}
-                  className="text-emerald-300"
-                />
-
-
-                <div>
-
-                  <p className="text-sm font-black">
-                    Comando reconhecido
-                  </p>
-
-                  <p className="text-[10px] text-slate-400">
-                    Voltando para a Liv...
-                  </p>
-
-                </div>
+                <p className="text-[9px] leading-relaxed text-slate-500">
+                  Microfone e sensibilidade ficam salvos automaticamente.
+                </p>
 
               </div>
             )
@@ -1975,28 +1938,26 @@ export function MeetAddonVoiceClient() {
             ? (
               <div className="mt-4">
 
-                <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-3">
+                <div className="flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3">
 
                   <AlertTriangle
-                    size={16}
+                    size={15}
                     className="mt-0.5 shrink-0 text-red-300"
                   />
 
-
-                  <p className="text-[10px] font-semibold leading-relaxed text-red-100">
+                  <p className="text-[10px] leading-relaxed text-red-100">
                     {error}
                   </p>
 
                 </div>
 
-
                 <button
                   type="button"
                   onClick={
                     () =>
-                      void requestMicrophonePermission()
+                      void requestPermission()
                   }
-                  className="mt-3 h-9 w-full rounded-xl border border-white/10 text-[10px] font-black text-slate-200 hover:bg-white/5"
+                  className="mt-3 h-9 w-full rounded-xl border border-white/10 text-[10px] font-black"
                 >
                   Tentar novamente
                 </button>
