@@ -7,6 +7,9 @@ export async function transcribeSecretaryAudio({
   agencyId,
   blob,
   fileName,
+  model,
+  language,
+  prompt,
 }: {
   agencyId:
     string;
@@ -15,6 +18,15 @@ export async function transcribeSecretaryAudio({
     Blob;
 
   fileName?:
+    string;
+
+  model?:
+    string;
+
+  language?:
+    string;
+
+  prompt?:
     string;
 }) {
   if (
@@ -67,6 +79,7 @@ export async function transcribeSecretaryAudio({
   data.append(
     'model',
     String(
+      model ||
       process.env
         .OPENAI_TRANSCRIBE_MODEL ||
       'gpt-4o-mini-transcribe'
@@ -76,8 +89,23 @@ export async function transcribeSecretaryAudio({
 
   data.append(
     'language',
-    'pt'
+    String(
+      language ||
+      'pt'
+    )
   );
+
+
+  if (
+    prompt
+      ?.trim()
+  ) {
+
+    data.append(
+      'prompt',
+      prompt.trim()
+    );
+  }
 
 
   const response =
