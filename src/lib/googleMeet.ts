@@ -1299,3 +1299,197 @@ export async function getMeetParticipantDisplayName({
     'Participante'
   );
 }
+
+export async function downloadMeetRecordingToFile({
+  agencyId,
+  fileId,
+  destinationPath,
+}: {
+  agencyId:
+    string;
+
+  fileId:
+    string;
+
+  destinationPath:
+    string;
+}) {
+
+  const auth =
+    await getGoogleCalendarAccessTokenForAgency(
+      agencyId
+    );
+
+
+  if (!auth) {
+
+    throw new Error(
+      'Google não está conectado para esta agência.'
+    );
+  }
+
+
+  const response =
+    await fetch(
+      'https://www.googleapis.com/drive/v3/files/' +
+      encodeURIComponent(
+        fileId
+      ) +
+      '?alt=media',
+      {
+        headers: {
+          Authorization:
+            'Bearer ' +
+            auth.accessToken,
+        },
+
+        cache:
+          'no-store',
+      }
+    );
+
+
+  if (!response.ok) {
+
+    const raw =
+      await response
+        .text()
+        .catch(
+          () => ''
+        );
+
+
+    let googleMessage =
+      raw;
+
+
+    try {
+
+      const parsed =
+        JSON.parse(
+          raw
+        ) as {
+          error?: {
+            message?:
+              string;
+          };
+        };
+
+
+      googleMessage =
+        parsed
+          .error
+          ?.message ||
+        raw;
+
+    }
+    catch {
+
+      // Mantemos a resposta original.
+    }
+
+
+    if (
+      response.status ===
+        401 ||
+      response.status ===
+        403
+    ) {
+
+      throw new Error(
+        'O Google Drive não autorizou a Liv a baixar a gravação. ' +
+        (
+          googleMessage
+            ? 'Google: ' +
+              googleMessage
+            : ''
+        )
+      );
+    }
+
+
+    throw new Error(
+      'Não foi possível baixar a gravação do Google Drive. HTTP ' +
+      String(
+        response.status
+      ) +
+      (
+        googleMessage
+          ? ': ' +
+            googleMessage
+          : ''
+      )
+    );
+  }
+
+
+  if (!response.body) {
+
+    throw new Error(
+      'O Google Drive não retornou o conteúdo da gravação.'
+    );
+  }
+
+
+  const {
+    createWriteStream,
+  } =
+    await import(
+      'node:fs'
+    );
+
+
+  const {
+    stat,
+  } =
+    await import(
+      'node:fs/promises'
+    );
+
+
+  const {
+    Readable,
+  } =
+    await import(
+      'node:stream'
+    );
+
+
+  const {
+    pipeline,
+  } =
+    await import(
+      'node:stream/promises'
+    );
+
+
+  await pipeline(
+    Readable.fromWeb(
+      response.body as any
+    ),
+
+    createWriteStream(
+      destinationPath
+    )
+  );
+
+
+  const fileStat =
+    await stat(
+      destinationPath
+    );
+
+
+  if (
+    fileStat.size <=
+    0
+  ) {
+
+    throw new Error(
+      'O Google Drive retornou uma gravação vazia.'
+    );
+  }
+
+
+  return fileStat.size;
+}

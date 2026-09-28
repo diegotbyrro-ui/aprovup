@@ -181,6 +181,10 @@ const nextConfig: NextConfig = {
 
   deploymentId,
 
+  serverExternalPackages: [
+    "ffmpeg-static",
+  ],
+
 
   env: {
 

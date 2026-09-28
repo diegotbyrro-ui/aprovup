@@ -3,25 +3,19 @@ import {
 } from '@/lib/prisma';
 
 import {
-  downloadMeetRecording,
   findConferenceRecordByMeetingCode,
   getGoogleMeetSpace,
   listMeetRecordings,
 } from '@/lib/googleMeet';
 
 import {
-  transcribeSecretaryAudio,
-} from '@/lib/secretaryAudio';
+  transcribeMeetRecordingInChunks,
+} from '@/lib/secretaryMeetingAudio';
 
 import {
   analyzeMeetingTranscript,
 } from '@/lib/meetingAi';
 
-
-const MAX_TRANSCRIPTION_FILE_SIZE =
-  20 *
-  1024 *
-  1024;
 
 
 const PROCESSABLE_STATUSES = [
@@ -30,6 +24,7 @@ const PROCESSABLE_STATUSES = [
   'WAITING_RECORDING',
   'RECORDING_ERROR',
   'TRANSCRIBED_RECORDING',
+  'RECORDING_TOO_LARGE',
 ];
 
 
@@ -459,110 +454,56 @@ export async function processSecretaryMeetingRecordingById({
       );
 
 
-      const recordingBlob =
-        await downloadMeetRecording({
+      /*
+       * O MP4 pode ter centenas de MB.
+       *
+       * Agora a Liv:
+       * 1. baixa o arquivo por streaming;
+       * 2. remove o vídeo;
+       * 3. converte a voz para MP3 mono 32 kbps;
+       * 4. divide em blocos de 30 minutos;
+       * 5. transcreve e salva cada bloco;
+       * 6. junta tudo em uma única transcrição.
+       */
+      const transcription =
+        await transcribeMeetRecordingInChunks({
           agencyId,
+
+          meetingId:
+            meeting.id,
 
           fileId:
             driveFileId,
+
+          recordingName:
+            generated.name,
+
+          recordingStart,
+
+          recordingEnd,
         });
 
 
+      rawTranscript =
+        transcription
+          .rawTranscript;
+
+
       console.log(
-        '[LIV MEETING] Gravação baixada:',
+        '[LIV MEETING] Áudio segmentado e transcrito:',
         {
           meetingId:
             meeting.id,
 
-          bytes:
-            recordingBlob.size,
+          recordingBytes:
+            transcription
+              .recordingBytes,
+
+          chunks:
+            transcription
+              .chunkCount,
         }
       );
-
-
-      /*
-       * A função de transcrição atual do AprovUp
-       * trabalha com arquivos até 20 MB.
-       *
-       * Não insistimos em arquivos maiores para não
-       * baixar/transcrever repetidamente a mesma reunião.
-       * A etapa seguinte do projeto será fragmentação
-       * automática para reuniões longas.
-       */
-      if (
-        recordingBlob.size >
-        MAX_TRANSCRIPTION_FILE_SIZE
-      ) {
-
-        const sizeMb =
-          (
-            recordingBlob.size /
-            1024 /
-            1024
-          ).toFixed(
-            1
-          );
-
-
-        await prisma
-          .secretaryMeeting
-          .update({
-            where: {
-              id:
-                meeting.id,
-            },
-
-            data: {
-              status:
-                'RECORDING_TOO_LARGE',
-
-              conferenceRecordName:
-                conference.name,
-
-              startedAt:
-                recordingStart,
-
-              endedAt:
-                recordingEnd,
-
-              transcriptName:
-                generated.name,
-
-              transcriptDocumentUrl:
-                recordingUrl,
-
-              processingError:
-                'A gravação foi encontrada, mas possui ' +
-                sizeMb +
-                ' MB. A versão atual da transcrição automática aceita até 20 MB.',
-            },
-          });
-
-
-        return {
-          meetingId:
-            meeting.id,
-
-          status:
-            'ERROR',
-
-          message:
-            'Gravação maior que 20 MB.',
-        };
-      }
-
-
-      rawTranscript =
-        await transcribeSecretaryAudio({
-          agencyId,
-
-          blob:
-            recordingBlob,
-
-          fileName:
-            'google-meet-recording.mp4',
-        });
-
 
       if (!rawTranscript) {
 
@@ -583,48 +524,6 @@ export async function processSecretaryMeetingRecordingById({
           async (
             tx
           ) => {
-
-            await tx
-              .secretaryMeetingTranscriptEntry
-              .deleteMany({
-                where: {
-                  meetingId:
-                    meeting.id,
-                },
-              });
-
-
-            await tx
-              .secretaryMeetingTranscriptEntry
-              .create({
-                data: {
-                  meetingId:
-                    meeting.id,
-
-                  providerEntryName:
-                    generated.name +
-                    '/liv-transcription',
-
-                  participantResource:
-                    null,
-
-                  speakerName:
-                    'Transcrição da gravação',
-
-                  text:
-                    rawTranscript,
-
-                  languageCode:
-                    'pt',
-
-                  startTime:
-                    recordingStart,
-
-                  endTime:
-                    recordingEnd,
-                },
-              });
-
 
             await tx
               .secretaryMeeting
