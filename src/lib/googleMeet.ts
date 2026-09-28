@@ -190,6 +190,13 @@ export async function createGoogleMeetSpace({
 
               entryPointAccess:
                 'ALL',
+
+              artifactConfig: {
+                transcriptionConfig: {
+                  autoTranscriptionGeneration:
+                    'ON',
+                },
+              },
             },
           }),
 
