@@ -199,7 +199,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source:
-          "/meet-addon/:path*",
+          "/meet-addon/side-panel/:path*",
 
         headers: [
           {
@@ -216,6 +216,21 @@ const nextConfig: NextConfig = {
 
             value:
               "same-origin-allow-popups",
+          },
+        ],
+      },
+
+      {
+        source:
+          "/meet-addon/auth/:path*",
+
+        headers: [
+          {
+            key:
+              "Cross-Origin-Opener-Policy",
+
+            value:
+              "unsafe-none",
           },
         ],
       },
