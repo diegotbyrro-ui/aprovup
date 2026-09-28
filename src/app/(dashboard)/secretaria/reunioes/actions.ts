@@ -38,7 +38,7 @@ export async function createSecretaryMeetingAction(
 
   const user =
     await requirePermission(
-      'settings.manage'
+      'secretary.use'
     );
 
 
@@ -297,7 +297,7 @@ export async function syncSecretaryMeetingAction(
 
   const user =
     await requirePermission(
-      'settings.manage'
+      'secretary.use'
     );
 
 

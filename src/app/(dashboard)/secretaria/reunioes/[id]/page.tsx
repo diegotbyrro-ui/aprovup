@@ -90,7 +90,7 @@ export default async function MeetingDetailPage({
 
   const user =
     await requirePermission(
-      'settings.manage'
+      'secretary.use'
     );
 
 

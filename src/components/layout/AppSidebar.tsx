@@ -99,11 +99,20 @@ export async function AppSidebar() {
       icon:
         "secretary",
 
+      /*
+       * Diretoria entra na central completa.
+       * Social Media entra somente em Reuniões.
+       */
       path:
-        "/secretaria",
+        hasPermission(
+          user,
+          "settings.manage"
+        )
+          ? "/secretaria"
+          : "/secretaria/reunioes",
 
       permission:
-        "settings.manage",
+        "secretary.use",
 
       activePrefixes: [
         "/secretaria",

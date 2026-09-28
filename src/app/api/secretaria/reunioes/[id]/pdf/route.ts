@@ -258,7 +258,7 @@ export async function GET(
     !currentUser.agencyId ||
     !hasPermission(
       currentUser,
-      'settings.manage'
+      'secretary.use'
     )
   ) {
 

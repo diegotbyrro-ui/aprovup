@@ -51,6 +51,7 @@ export const ROLE_DEFAULT_PERMISSIONS:
   SOCIAL_MEDIA: [
     "dashboard.view",
     "secretary.use",
+    "secretary.act",
     "social.view",
     "social.manage",
     "mindmap.view",
@@ -163,6 +164,8 @@ export function getEffectivePermissions(
     ) {
       const requiredSocialPermissions:
         PermissionKey[] = [
+          "secretary.use",
+          "secretary.act",
           "social.view",
           "social.manage",
         ];

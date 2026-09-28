@@ -394,6 +394,94 @@ export function MeetAddonSidePanelClient({
   useEffect(
     () => {
 
+      function handleVoiceMessage(
+        event:
+          MessageEvent
+      ) {
+
+        if (
+          event.origin !==
+          window.location.origin
+        ) {
+          return;
+        }
+
+
+        if (
+          event.data?.type ===
+          'APROVUP_MEET_VOICE_RESULT'
+        ) {
+
+          const text =
+            String(
+              event.data?.text ||
+              ''
+            ).trim();
+
+
+          if (text) {
+
+            setInput(
+              text
+            );
+
+
+            setError(
+              ''
+            );
+          }
+
+
+          setListening(
+            false
+          );
+
+          return;
+        }
+
+
+        if (
+          event.data?.type ===
+          'APROVUP_MEET_VOICE_ERROR'
+        ) {
+
+          setListening(
+            false
+          );
+
+
+          setError(
+            String(
+              event.data?.message ||
+              'Não foi possível processar o comando de voz.'
+            )
+          );
+        }
+      }
+
+
+      window.addEventListener(
+        'message',
+        handleVoiceMessage
+      );
+
+
+      return () => {
+
+        window.removeEventListener(
+          'message',
+          handleVoiceMessage
+        );
+      };
+
+    },
+    []
+  );
+
+
+  useEffect(
+    () => {
+
       if (
         !sdkReady
       ) {
@@ -901,111 +989,23 @@ export function MeetAddonSidePanelClient({
 
   function startVoice() {
 
-    const browserWindow =
-      window as
-        MeetBrowserWindow;
-
-
-    const Recognition =
-      browserWindow
-        .SpeechRecognition ||
-      browserWindow
-        .webkitSpeechRecognition;
+    if (
+      loading
+    ) {
+      return;
+    }
 
 
     if (
-      !Recognition
+      !token
     ) {
 
       setError(
-        'O reconhecimento de voz não está disponível neste navegador. Digite o comando para a Liv.'
+        'Conecte sua conta do AprovUp antes de falar com a Liv.'
       );
 
       return;
     }
-
-
-    if (
-      listening &&
-      recognitionRef.current
-    ) {
-
-      recognitionRef.current
-        .stop();
-
-      return;
-    }
-
-
-    const recognition =
-      new Recognition();
-
-
-    recognition.lang =
-      'pt-BR';
-
-
-    recognition.interimResults =
-      false;
-
-
-    recognition.continuous =
-      false;
-
-
-    recognition.onresult =
-      (
-        event
-      ) => {
-
-        const transcript =
-          String(
-            event
-              .results
-              ?.[0]
-              ?.[0]
-              ?.transcript ||
-            ''
-          )
-            .trim();
-
-
-        if (
-          transcript
-        ) {
-
-          setInput(
-            transcript
-          );
-        }
-      };
-
-
-    recognition.onerror =
-      () => {
-
-        setError(
-          'Não consegui ouvir o comando. Você pode tentar novamente ou digitar.'
-        );
-
-
-        setListening(
-          false
-        );
-      };
-
-
-    recognition.onend =
-      () => {
-
-        setListening(
-          false
-        );
-      };
-
-
-    recognitionRef.current =
-      recognition;
 
 
     setError(
@@ -1013,14 +1013,52 @@ export function MeetAddonSidePanelClient({
     );
 
 
+    const popup =
+      window.open(
+        '/meet-addon/voice',
+        'aprovup_meet_voice',
+        'popup=yes,width=480,height=650'
+      );
+
+
+    if (!popup) {
+
+      setError(
+        'O navegador bloqueou a janela do microfone. Permita pop-ups do AprovUp e tente novamente.'
+      );
+
+      return;
+    }
+
+
     setListening(
       true
     );
 
 
-    recognition.start();
-  }
+    const watcher =
+      window.setInterval(
+        () => {
 
+          if (popup.closed) {
+
+            window.clearInterval(
+              watcher
+            );
+
+
+            setListening(
+              false
+            );
+          }
+
+        },
+        500
+      );
+
+
+    popup.focus();
+  }
 
   return (
     <>
@@ -1142,7 +1180,7 @@ export function MeetAddonSidePanelClient({
 
 
                   <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
-                    Antes de criar ou alterar compromissos, a Liv mostra o que entendeu e pede confirmação.
+                    Clique em Falar para abrir o microfone da Liv. O áudio será transcrito e o texto voltará aqui para você conferir antes de enviar.
                   </p>
 
                 </div>
@@ -1339,7 +1377,7 @@ export function MeetAddonSidePanelClient({
 
               {
                 listening
-                  ? 'Ouvindo'
+                  ? 'Microfone aberto'
                   : 'Falar'
               }
             </button>

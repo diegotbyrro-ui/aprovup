@@ -12,6 +12,7 @@ import {
 } from '@/lib/prisma';
 
 import {
+  hasPermission,
   requirePermission,
 } from '@/lib/userAccess';
 
@@ -123,6 +124,13 @@ export default async function MeetingsPage({
 
   const user =
     await requirePermission(
+      'secretary.use'
+    );
+
+
+  const canManageSecretary =
+    hasPermission(
+      user,
       'settings.manage'
     );
 
@@ -259,12 +267,18 @@ export default async function MeetingsPage({
 
       <section className="rounded-3xl bg-slate-950 p-7 text-white shadow-sm">
 
-        <Link
-          href="/secretaria"
-          className="text-sm font-bold text-blue-300 hover:underline"
-        >
-          ← Voltar para Secretária IA
-        </Link>
+        {
+          canManageSecretary
+            ? (
+              <Link
+                href="/secretaria"
+                className="text-sm font-bold text-blue-300 hover:underline"
+              >
+                ← Voltar para Secretária IA
+              </Link>
+            )
+            : null
+        }
 
 
         <div className="mt-5 flex flex-wrap items-start justify-between gap-5">
@@ -303,8 +317,14 @@ export default async function MeetingsPage({
             <p className="mt-1 text-slate-300">
               {
                 google
-                  ?.googleAccountEmail ||
-                'Reconexão necessária'
+                  ?.connectedAt
+                  ? (
+                      canManageSecretary
+                        ? google.googleAccountEmail ||
+                          'Conta da agência'
+                        : 'Conta da agência conectada'
+                    )
+                  : 'Reconexão necessária'
               }
             </p>
 
@@ -608,20 +628,26 @@ export default async function MeetingsPage({
                           </Link>
 
 
-                          <form
-                            action={
-                              deleteSecretaryMeetingAction.bind(
-                                null,
-                                meeting.id
+                          {
+                            canManageSecretary
+                              ? (
+                                <form
+                                  action={
+                                    deleteSecretaryMeetingAction.bind(
+                                      null,
+                                      meeting.id
+                                    )
+                                  }
+                                >
+                                  <ConfirmDeleteMeetingButton
+                                    title={
+                                      meeting.title
+                                    }
+                                  />
+                                </form>
                               )
-                            }
-                          >
-                            <ConfirmDeleteMeetingButton
-                              title={
-                                meeting.title
-                              }
-                            />
-                          </form>
+                              : null
+                          }
 
                         </div>
 
