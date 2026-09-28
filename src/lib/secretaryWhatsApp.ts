@@ -692,6 +692,67 @@ async function downloadWhatsappMedia({
 }
 
 
+function getWhatsappMessageTimestamp(
+  message:
+    JsonRecord,
+
+  fallback?:
+    Date
+) {
+
+  /*
+   * A Cloud API do WhatsApp envia message.timestamp
+   * em Unix timestamp (segundos).
+   *
+   * Esse é o horário real da mensagem no WhatsApp,
+   * diferente do horário em que nosso servidor
+   * processou o webhook.
+   */
+  const raw =
+    message.timestamp;
+
+
+  const seconds =
+    typeof raw ===
+      'string' ||
+    typeof raw ===
+      'number'
+      ? Number(
+          raw
+        )
+      : Number.NaN;
+
+
+  if (
+    Number.isFinite(
+      seconds
+    ) &&
+    seconds >
+      0
+  ) {
+
+    const date =
+      new Date(
+        seconds *
+        1000
+      );
+
+
+    if (
+      !Number.isNaN(
+        date.getTime()
+      )
+    ) {
+
+      return date;
+    }
+  }
+
+
+  return fallback ||
+    new Date();
+}
+
 export async function ingestWhatsappWebhook(
   payload:
     unknown
@@ -958,6 +1019,12 @@ export async function ingestWhatsappWebhook(
             : 'unknown';
 
 
+        const receivedAt =
+          getWhatsappMessageTimestamp(
+            message
+          );
+
+
         if (
           !providerMessageId ||
           !fromPhone
@@ -1002,6 +1069,9 @@ export async function ingestWhatsappWebhook(
 
                 status:
                   'RECEIVED',
+
+                createdAt:
+                  receivedAt,
 
                 metadata:
                   JSON.parse(
@@ -1267,6 +1337,13 @@ export async function processWhatsappEvent(
     }
 
 
+    const inboundAt =
+      getWhatsappMessageTimestamp(
+        message,
+        event.createdAt
+      );
+
+
     const member =
       await prisma
         .secretaryWhatsappMember
@@ -1379,7 +1456,7 @@ export async function processWhatsappEvent(
 
         data: {
           lastInboundAt:
-            new Date(),
+            inboundAt,
         },
       });
 
@@ -1601,6 +1678,9 @@ export async function processWhatsappEvent(
 
                 inputType:
                   'TEXT',
+
+                createdAt:
+                  inboundAt,
               },
             });
 
@@ -1680,6 +1760,9 @@ export async function processWhatsappEvent(
             text,
 
           inputType,
+
+          createdAt:
+            inboundAt,
         },
       });
 
