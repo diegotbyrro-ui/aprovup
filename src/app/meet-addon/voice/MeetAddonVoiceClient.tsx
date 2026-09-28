@@ -16,11 +16,18 @@ import {
 
 
 type VoiceStatus =
+  | 'CHECKING'
+  | 'NEED_PERMISSION'
   | 'READY'
+  | 'ARMING'
   | 'RECORDING'
   | 'TRANSCRIBING'
   | 'DONE'
   | 'ERROR';
+
+
+const MICROPHONE_STORAGE_KEY =
+  'aprovup_liv_microphone_device_id';
 
 
 export function MeetAddonVoiceClient() {
@@ -30,7 +37,7 @@ export function MeetAddonVoiceClient() {
     setStatus,
   ] =
     useState<VoiceStatus>(
-      'READY'
+      'CHECKING'
     );
 
 
@@ -40,6 +47,35 @@ export function MeetAddonVoiceClient() {
   ] =
     useState(
       ''
+    );
+
+
+  const [
+    microphones,
+    setMicrophones,
+  ] =
+    useState<
+      MediaDeviceInfo[]
+    >(
+      []
+    );
+
+
+  const [
+    selectedDeviceId,
+    setSelectedDeviceId,
+  ] =
+    useState(
+      ''
+    );
+
+
+  const [
+    level,
+    setLevel,
+  ] =
+    useState(
+      0
     );
 
 
@@ -61,6 +97,24 @@ export function MeetAddonVoiceClient() {
     );
 
 
+  const audioContextRef =
+    useRef<
+      AudioContext |
+      null
+    >(
+      null
+    );
+
+
+  const animationFrameRef =
+    useRef<
+      number |
+      null
+    >(
+      null
+    );
+
+
   const chunksRef =
     useRef<
       Blob[]
@@ -69,25 +123,22 @@ export function MeetAddonVoiceClient() {
     );
 
 
-  useEffect(
-    () => {
+  const maxLevelRef =
+    useRef(
+      0
+    );
 
-      return () => {
 
-        streamRef
-          .current
-          ?.getTracks()
-          .forEach(
-            (
-              track
-            ) =>
-              track.stop()
-          );
-      };
+  const recordingStartedAtRef =
+    useRef(
+      0
+    );
 
-    },
-    []
-  );
+
+  const recordingActiveRef =
+    useRef(
+      false
+    );
 
 
   function sendToMeet(
@@ -113,6 +164,558 @@ export function MeetAddonVoiceClient() {
       },
       window.location.origin
     );
+  }
+
+
+  function stopLevelMeter() {
+
+    if (
+      animationFrameRef.current !==
+      null
+    ) {
+
+      window.cancelAnimationFrame(
+        animationFrameRef.current
+      );
+
+
+      animationFrameRef.current =
+        null;
+    }
+
+
+    const context =
+      audioContextRef.current;
+
+
+    audioContextRef.current =
+      null;
+
+
+    if (context) {
+
+      void context
+        .close()
+        .catch(
+          () =>
+            null
+        );
+    }
+
+
+    setLevel(
+      0
+    );
+  }
+
+
+  function stopCurrentStream() {
+
+    streamRef.current
+      ?.getTracks()
+      .forEach(
+        (
+          track
+        ) =>
+          track.stop()
+      );
+
+
+    streamRef.current =
+      null;
+
+
+    stopLevelMeter();
+  }
+
+
+  async function refreshMicrophones(
+    preferredDeviceId?:
+      string
+  ) {
+
+    if (
+      !navigator.mediaDevices
+        ?.enumerateDevices
+    ) {
+
+      return [];
+    }
+
+
+    const devices =
+      await navigator
+        .mediaDevices
+        .enumerateDevices();
+
+
+    const inputs =
+      devices.filter(
+        (
+          device
+        ) =>
+          device.kind ===
+          'audioinput'
+      );
+
+
+    setMicrophones(
+      inputs
+    );
+
+
+    const savedDeviceId =
+      preferredDeviceId ||
+      window.localStorage
+        .getItem(
+          MICROPHONE_STORAGE_KEY
+        ) ||
+      '';
+
+
+    const exists =
+      inputs.some(
+        (
+          device
+        ) =>
+          device.deviceId ===
+          savedDeviceId
+      );
+
+
+    if (
+      exists
+    ) {
+
+      setSelectedDeviceId(
+        savedDeviceId
+      );
+
+      return inputs;
+    }
+
+
+    const defaultDevice =
+      inputs.find(
+        (
+          device
+        ) =>
+          device.deviceId ===
+          'default'
+      ) ||
+      inputs[0];
+
+
+    if (defaultDevice) {
+
+      setSelectedDeviceId(
+        defaultDevice.deviceId
+      );
+    }
+
+
+    return inputs;
+  }
+
+
+  async function startLevelMeter(
+    stream:
+      MediaStream
+  ) {
+
+    stopLevelMeter();
+
+
+    const context =
+      new AudioContext();
+
+
+    audioContextRef.current =
+      context;
+
+
+    try {
+
+      await context.resume();
+
+    }
+    catch {
+      // O medidor continua tentando.
+    }
+
+
+    const source =
+      context.createMediaStreamSource(
+        stream
+      );
+
+
+    const analyser =
+      context.createAnalyser();
+
+
+    analyser.fftSize =
+      256;
+
+
+    analyser.smoothingTimeConstant =
+      0.72;
+
+
+    source.connect(
+      analyser
+    );
+
+
+    const data =
+      new Uint8Array(
+        analyser.fftSize
+      );
+
+
+    const tick =
+      () => {
+
+        analyser.getByteTimeDomainData(
+          data
+        );
+
+
+        let sum =
+          0;
+
+
+        for (
+          let index = 0;
+          index <
+          data.length;
+          index += 1
+        ) {
+
+          const sample =
+            (
+              data[index] -
+              128
+            ) /
+            128;
+
+
+          sum +=
+            sample *
+            sample;
+        }
+
+
+        const rms =
+          Math.sqrt(
+            sum /
+            data.length
+          );
+
+
+        const visualLevel =
+          Math.min(
+            100,
+            Math.round(
+              rms *
+              420
+            )
+          );
+
+
+        setLevel(
+          visualLevel
+        );
+
+
+        if (
+          recordingActiveRef.current
+        ) {
+
+          maxLevelRef.current =
+            Math.max(
+              maxLevelRef.current,
+              visualLevel
+            );
+        }
+
+
+        animationFrameRef.current =
+          window.requestAnimationFrame(
+            tick
+          );
+      };
+
+
+    tick();
+  }
+
+
+  async function openMicrophone(
+    requestedDeviceId?:
+      string
+  ) {
+
+    setError(
+      ''
+    );
+
+
+    setStatus(
+      'CHECKING'
+    );
+
+
+    stopCurrentStream();
+
+
+    const savedDeviceId =
+      requestedDeviceId ||
+      window.localStorage
+        .getItem(
+          MICROPHONE_STORAGE_KEY
+        ) ||
+      '';
+
+
+    const makeConstraints =
+      (
+        deviceId?:
+          string
+      ): MediaStreamConstraints => ({
+        audio: {
+          deviceId:
+            deviceId &&
+            deviceId !==
+              'default'
+              ? {
+                  exact:
+                    deviceId,
+                }
+              : undefined,
+
+          echoCancellation:
+            true,
+
+          noiseSuppression:
+            true,
+
+          autoGainControl:
+            true,
+        },
+      });
+
+
+    let stream:
+      MediaStream;
+
+
+    try {
+
+      stream =
+        await navigator.mediaDevices
+          .getUserMedia(
+            makeConstraints(
+              savedDeviceId
+            )
+          );
+
+    }
+    catch (
+      firstError
+    ) {
+
+      /*
+       * Caso o microfone salvo tenha sido
+       * desconectado, tentamos o padrao.
+       */
+      if (
+        savedDeviceId &&
+        firstError instanceof DOMException &&
+        (
+          firstError.name ===
+            'OverconstrainedError' ||
+          firstError.name ===
+            'NotFoundError'
+        )
+      ) {
+
+        stream =
+          await navigator.mediaDevices
+            .getUserMedia(
+              makeConstraints()
+            );
+
+      }
+      else {
+
+        throw firstError;
+      }
+    }
+
+
+    streamRef.current =
+      stream;
+
+
+    const audioTrack =
+      stream
+        .getAudioTracks()
+        [0];
+
+
+    const actualDeviceId =
+      String(
+        audioTrack
+          ?.getSettings()
+          .deviceId ||
+        savedDeviceId ||
+        ''
+      );
+
+
+    const inputs =
+      await refreshMicrophones(
+        actualDeviceId
+      );
+
+
+    const selectedExists =
+      inputs.some(
+        (
+          device
+        ) =>
+          device.deviceId ===
+          actualDeviceId
+      );
+
+
+    const finalDeviceId =
+      selectedExists
+        ? actualDeviceId
+        : (
+            inputs.find(
+              (
+                device
+              ) =>
+                device.deviceId ===
+                'default'
+            )
+              ?.deviceId ||
+            inputs[0]
+              ?.deviceId ||
+            actualDeviceId
+          );
+
+
+    if (
+      finalDeviceId
+    ) {
+
+      setSelectedDeviceId(
+        finalDeviceId
+      );
+
+
+      window.localStorage
+        .setItem(
+          MICROPHONE_STORAGE_KEY,
+          finalDeviceId
+        );
+    }
+
+
+    await startLevelMeter(
+      stream
+    );
+
+
+    setStatus(
+      'READY'
+    );
+
+
+    return stream;
+  }
+
+
+  async function requestMicrophonePermission() {
+
+    try {
+
+      await openMicrophone();
+
+    }
+    catch (
+      permissionError
+    ) {
+
+      const denied =
+        permissionError instanceof DOMException &&
+        permissionError.name ===
+          'NotAllowedError';
+
+
+      setError(
+        denied
+          ? (
+              'O Chrome bloqueou o microfone. ' +
+              'No aprovup.com.br, deixe Microfone como Permitir e tente novamente.'
+            )
+          : (
+              permissionError instanceof Error
+                ? permissionError.message
+                : 'Não foi possível abrir o microfone.'
+            )
+      );
+
+
+      setStatus(
+        'ERROR'
+      );
+    }
+  }
+
+
+  async function changeMicrophone(
+    deviceId:
+      string
+  ) {
+
+    setSelectedDeviceId(
+      deviceId
+    );
+
+
+    window.localStorage
+      .setItem(
+        MICROPHONE_STORAGE_KEY,
+        deviceId
+      );
+
+
+    try {
+
+      await openMicrophone(
+        deviceId
+      );
+
+    }
+    catch (
+      deviceError
+    ) {
+
+      setError(
+        deviceError instanceof Error
+          ? deviceError.message
+          : 'Não foi possível selecionar este microfone.'
+      );
+
+
+      setStatus(
+        'ERROR'
+      );
+    }
   }
 
 
@@ -225,7 +828,7 @@ export function MeetAddonVoiceClient() {
           window.close();
 
         },
-        900
+        650
       );
 
     }
@@ -233,14 +836,43 @@ export function MeetAddonVoiceClient() {
       transcribeError
     ) {
 
-      const message =
+      setError(
         transcribeError instanceof Error
           ? transcribeError.message
-          : 'Erro ao processar o áudio.';
+          : 'Erro ao processar o áudio.'
+      );
 
+
+      setStatus(
+        'ERROR'
+      );
+    }
+  }
+
+
+  function startRecording() {
+
+    const stream =
+      streamRef.current;
+
+
+    if (
+      !stream ||
+      status !==
+        'READY'
+    ) {
+
+      return;
+    }
+
+
+    if (
+      typeof MediaRecorder ===
+      'undefined'
+    ) {
 
       setError(
-        message
+        'Este navegador não possui suporte ao gravador de áudio.'
       );
 
 
@@ -249,147 +881,132 @@ export function MeetAddonVoiceClient() {
       );
 
 
-      sendToMeet(
-        'APROVUP_MEET_VOICE_ERROR',
-        {
-          message,
-        }
-      );
-    }
-  }
-
-
-  async function startRecording() {
-
-    if (
-      status ===
-      'RECORDING' ||
-      status ===
-      'TRANSCRIBING'
-    ) {
       return;
     }
 
 
-    setError(
-      ''
-    );
+    const candidates = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+    ];
 
 
-    try {
-
-      if (
-        !navigator.mediaDevices
-          ?.getUserMedia
-      ) {
-
-        throw new Error(
-          'Este navegador não disponibilizou acesso ao microfone.'
-        );
-      }
-
-
-      if (
-        typeof MediaRecorder ===
-        'undefined'
-      ) {
-
-        throw new Error(
-          'Este navegador não possui suporte ao gravador de áudio.'
-        );
-      }
-
-
-      const stream =
-        await navigator
-          .mediaDevices
-          .getUserMedia({
-            audio: {
-              echoCancellation:
-                true,
-
-              noiseSuppression:
-                true,
-
-              autoGainControl:
-                true,
-            },
-          });
-
-
-      streamRef.current =
-        stream;
-
-
-      chunksRef.current =
-        [];
-
-
-      const candidates = [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/ogg;codecs=opus',
-      ];
-
-
-      const selected =
-        candidates.find(
-          (
-            item
-          ) =>
-            MediaRecorder
-              .isTypeSupported(
-                item
-              )
-        );
-
-
-      const recorder =
-        selected
-          ? new MediaRecorder(
-              stream,
-              {
-                mimeType:
-                  selected,
-              }
-            )
-          : new MediaRecorder(
-              stream
-            );
-
-
-      recorderRef.current =
-        recorder;
-
-
-      recorder.ondataavailable =
+    const mimeType =
+      candidates.find(
         (
-          event
-        ) => {
-
-          if (
-            event.data.size >
-            0
-          ) {
-
-            chunksRef.current.push(
-              event.data
-            );
-          }
-        };
+          candidate
+        ) =>
+          MediaRecorder
+            .isTypeSupported(
+              candidate
+            )
+      );
 
 
-      recorder.onerror =
-        () => {
+    const recorder =
+      mimeType
+        ? new MediaRecorder(
+            stream,
+            {
+              mimeType,
+            }
+          )
+        : new MediaRecorder(
+            stream
+          );
 
-          stream
-            .getTracks()
-            .forEach(
-              (
-                track
-              ) =>
-                track.stop()
-            );
+
+    recorderRef.current =
+      recorder;
+
+
+    chunksRef.current =
+      [];
+
+
+    maxLevelRef.current =
+      0;
+
+
+    recordingStartedAtRef.current =
+      Date.now();
+
+
+    recordingActiveRef.current =
+      true;
+
+
+    recorder.ondataavailable =
+      (
+        event
+      ) => {
+
+        if (
+          event.data.size >
+          0
+        ) {
+
+          chunksRef.current.push(
+            event.data
+          );
+        }
+      };
+
+
+    recorder.onerror =
+      () => {
+
+        recordingActiveRef.current =
+          false;
+
+
+        setError(
+          'A gravação foi interrompida pelo navegador.'
+        );
+
+
+        setStatus(
+          'ERROR'
+        );
+      };
+
+
+    recorder.onstop =
+      () => {
+
+        const duration =
+          Date.now() -
+          recordingStartedAtRef.current;
+
+
+        const peak =
+          maxLevelRef.current;
+
+
+        recordingActiveRef.current =
+          false;
+
+
+        const chunks =
+          chunksRef.current;
+
+
+        chunksRef.current =
+          [];
+
+
+        stopCurrentStream();
+
+
+        if (
+          duration <
+          900
+        ) {
+
+          setError(
+            'O áudio ficou muito curto. Fale por pelo menos 1 segundo.'
+          );
 
 
           setStatus(
@@ -397,102 +1014,96 @@ export function MeetAddonVoiceClient() {
           );
 
 
+          return;
+        }
+
+
+        if (
+          peak <
+          2
+        ) {
+
           setError(
-            'A gravação foi interrompida pelo navegador.'
+            'Quase nenhum som chegou ao AprovUp. Verifique se o microfone correto está selecionado.'
           );
-        };
 
 
-      recorder.onstop =
-        () => {
-
-          stream
-            .getTracks()
-            .forEach(
-              (
-                track
-              ) =>
-                track.stop()
-            );
-
-
-          streamRef.current =
-            null;
-
-
-          const chunks =
-            chunksRef.current;
-
-
-          chunksRef.current =
-            [];
-
-
-          if (
-            chunks.length ===
-            0
-          ) {
-
-            setStatus(
-              'ERROR'
-            );
-
-
-            setError(
-              'Nenhum áudio foi capturado.'
-            );
-
-
-            return;
-          }
-
-
-          const blob =
-            new Blob(
-              chunks,
-              {
-                type:
-                  recorder.mimeType ||
-                  'audio/webm',
-              }
-            );
-
-
-          void transcribe(
-            blob
+          setStatus(
+            'ERROR'
           );
-        };
 
 
-      recorder.start(
-        250
-      );
+          return;
+        }
 
 
-      setStatus(
-        'RECORDING'
-      );
+        if (
+          chunks.length ===
+          0
+        ) {
 
-    }
-    catch (
-      startError
-    ) {
-
-      const message =
-        startError instanceof Error
-          ? startError.message
-          : 'Não foi possível ativar o microfone.';
+          setError(
+            'Nenhum áudio foi capturado.'
+          );
 
 
-      setStatus(
-        'ERROR'
-      );
+          setStatus(
+            'ERROR'
+          );
 
 
-      setError(
-        message
-      );
-    }
+          return;
+        }
+
+
+        const blob =
+          new Blob(
+            chunks,
+            {
+              type:
+                recorder.mimeType ||
+                'audio/webm',
+            }
+          );
+
+
+        void transcribe(
+          blob
+        );
+      };
+
+
+    recorder.start(
+      200
+    );
+
+
+    /*
+     * Gravamos desde já para não perder
+     * a primeira sílaba, mas o usuário
+     * recebe 450 ms de preparação visual.
+     */
+    setStatus(
+      'ARMING'
+    );
+
+
+    window.setTimeout(
+      () => {
+
+        if (
+          recorder.state ===
+          'recording'
+        ) {
+
+          setStatus(
+            'RECORDING'
+          );
+        }
+
+      },
+      450
+    );
   }
 
 
@@ -507,6 +1118,7 @@ export function MeetAddonVoiceClient() {
       recorder.state ===
         'inactive'
     ) {
+
       return;
     }
 
@@ -515,29 +1127,213 @@ export function MeetAddonVoiceClient() {
   }
 
 
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 p-5 text-white">
+  useEffect(
+    () => {
 
-      <section className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl">
+      let active =
+        true;
+
+
+      void (
+        async () => {
+
+          try {
+
+            if (
+              !navigator.mediaDevices
+                ?.getUserMedia
+            ) {
+
+              throw new Error(
+                'Este navegador não disponibilizou acesso ao microfone.'
+              );
+            }
+
+
+            /*
+             * Se a permissão já estiver salva como
+             * "Permitir", abrimos automaticamente o
+             * microfone salvo. Não aparece nova
+             * solicitação do Chrome.
+             */
+            if (
+              navigator.permissions
+                ?.query
+            ) {
+
+              try {
+
+                const permission =
+                  await navigator.permissions
+                    .query({
+                      name:
+                        'microphone' as PermissionName,
+                    });
+
+
+                if (
+                  !active
+                ) {
+                  return;
+                }
+
+
+                if (
+                  permission.state ===
+                  'granted'
+                ) {
+
+                  await openMicrophone();
+
+                  return;
+                }
+
+
+                if (
+                  permission.state ===
+                  'denied'
+                ) {
+
+                  setError(
+                    'O microfone está bloqueado para aprovup.com.br. Altere a permissão do site para Permitir.'
+                  );
+
+
+                  setStatus(
+                    'ERROR'
+                  );
+
+
+                  return;
+                }
+
+              }
+              catch {
+                // Browser sem suporte completo à Permissions API.
+              }
+            }
+
+
+            await refreshMicrophones();
+
+
+            if (
+              active
+            ) {
+
+              setStatus(
+                'NEED_PERMISSION'
+              );
+            }
+
+          }
+          catch (
+            initializationError
+          ) {
+
+            if (
+              active
+            ) {
+
+              setError(
+                initializationError instanceof Error
+                  ? initializationError.message
+                  : 'Não foi possível preparar os microfones.'
+              );
+
+
+              setStatus(
+                'ERROR'
+              );
+            }
+          }
+
+        }
+      )();
+
+
+      const handleDeviceChange =
+        () => {
+
+          void refreshMicrophones(
+            selectedDeviceId
+          );
+        };
+
+
+      navigator.mediaDevices
+        ?.addEventListener(
+          'devicechange',
+          handleDeviceChange
+        );
+
+
+      return () => {
+
+        active =
+          false;
+
+
+        navigator.mediaDevices
+          ?.removeEventListener(
+            'devicechange',
+            handleDeviceChange
+          );
+
+
+        recordingActiveRef.current =
+          false;
+
+
+        stopCurrentStream();
+      };
+
+    },
+    []
+  );
+
+
+  const selectedMicrophone =
+    microphones.find(
+      (
+        microphone
+      ) =>
+        microphone.deviceId ===
+        selectedDeviceId
+    );
+
+
+  const selectedMicrophoneName =
+    selectedMicrophone
+      ?.label ||
+    'Microfone selecionado';
+
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 p-3 text-white">
+
+      <section className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 shadow-xl">
 
         <div className="flex items-center gap-3">
 
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/20 text-violet-300">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/20 text-violet-300">
+
             <Mic
-              size={22}
+              size={17}
             />
+
           </div>
 
 
-          <div>
+          <div className="min-w-0">
 
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-violet-300">
+            <p className="text-[9px] font-black uppercase tracking-[0.15em] text-violet-300">
               Liv · AprovUp
             </p>
 
-            <h1 className="mt-1 text-xl font-black">
+            <p className="truncate text-sm font-black text-white">
               Comando por voz
-            </h1>
+            </p>
 
           </div>
 
@@ -546,12 +1342,33 @@ export function MeetAddonVoiceClient() {
 
         {
           status ===
-          'READY'
+          'CHECKING'
             ? (
-              <div className="mt-6">
+              <div className="mt-4 flex items-center gap-3 rounded-xl bg-white/5 p-3">
 
-                <p className="text-sm leading-relaxed text-slate-300">
-                  Ative o microfone e fale normalmente. Depois finalize a gravação para a Liv transformar sua voz em texto.
+                <LoaderCircle
+                  size={17}
+                  className="animate-spin text-violet-300"
+                />
+
+                <p className="text-xs font-bold text-slate-300">
+                  Preparando microfone...
+                </p>
+
+              </div>
+            )
+            : null
+        }
+
+
+        {
+          status ===
+          'NEED_PERMISSION'
+            ? (
+              <div className="mt-4">
+
+                <p className="text-[11px] leading-relaxed text-slate-300">
+                  Na primeira utilização, permita o acesso ao microfone para aprovup.com.br.
                 </p>
 
 
@@ -559,16 +1376,168 @@ export function MeetAddonVoiceClient() {
                   type="button"
                   onClick={
                     () =>
-                      void startRecording()
+                      void requestMicrophonePermission()
                   }
-                  className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-black text-white hover:bg-blue-700"
+                  className="mt-3 h-10 w-full rounded-xl bg-blue-600 px-4 text-xs font-black text-white hover:bg-blue-700"
                 >
-                  <Mic
-                    size={17}
-                  />
-
-                  Ativar microfone
+                  Permitir microfone
                 </button>
+
+              </div>
+            )
+            : null
+        }
+
+
+        {
+          status ===
+          'READY'
+            ? (
+              <div className="mt-4 space-y-3">
+
+                <div>
+
+                  <label className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                    Microfone
+                  </label>
+
+
+                  <select
+                    value={
+                      selectedDeviceId
+                    }
+                    onChange={
+                      (
+                        event
+                      ) =>
+                        void changeMicrophone(
+                          event.target.value
+                        )
+                    }
+                    className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-slate-900 px-3 text-[11px] font-bold text-white outline-none focus:border-blue-500"
+                  >
+
+                    {
+                      microphones.map(
+                        (
+                          microphone,
+                          index
+                        ) => (
+
+                          <option
+                            key={
+                              microphone.deviceId ||
+                              index
+                            }
+                            value={
+                              microphone.deviceId
+                            }
+                          >
+                            {
+                              microphone.label ||
+                              (
+                                'Microfone ' +
+                                String(
+                                  index +
+                                  1
+                                )
+                              )
+                            }
+                          </option>
+                        )
+                      )
+                    }
+
+                  </select>
+
+                </div>
+
+
+                <div>
+
+                  <div className="flex items-center justify-between">
+
+                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                      Nível de entrada
+                    </span>
+
+                    <span className="text-[9px] font-bold text-slate-500">
+                      {
+                        level <
+                        3
+                          ? 'baixo'
+                          : level <
+                              15
+                            ? 'bom'
+                            : 'forte'
+                      }
+                    </span>
+
+                  </div>
+
+
+                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-white/10">
+
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-[width] duration-75"
+                      style={{
+                        width:
+                          Math.max(
+                            1,
+                            level
+                          ) +
+                          '%',
+                      }}
+                    />
+
+                  </div>
+
+
+                  <p className="mt-1.5 truncate text-[9px] text-slate-500">
+                    {selectedMicrophoneName}
+                  </p>
+
+                </div>
+
+
+                <button
+                  type="button"
+                  onClick={
+                    startRecording
+                  }
+                  className="h-10 w-full rounded-xl bg-blue-600 px-4 text-xs font-black text-white hover:bg-blue-700"
+                >
+                  Começar a falar
+                </button>
+
+              </div>
+            )
+            : null
+        }
+
+
+        {
+          status ===
+          'ARMING'
+            ? (
+              <div className="mt-5 flex items-center gap-3">
+
+                <LoaderCircle
+                  size={17}
+                  className="animate-spin text-amber-300"
+                />
+
+                <div>
+
+                  <p className="text-sm font-black">
+                    Preparando...
+                  </p>
+
+                  <p className="text-[10px] text-slate-400">
+                    Pode falar quando aparecer “Ouvindo”.
+                  </p>
+
+                </div>
 
               </div>
             )
@@ -580,25 +1549,47 @@ export function MeetAddonVoiceClient() {
           status ===
           'RECORDING'
             ? (
-              <div className="mt-6">
+              <div className="mt-4">
 
-                <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-5 text-center">
+                <div className="flex items-center gap-3">
 
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-600 text-white">
-                    <Mic
-                      size={25}
-                    />
+                  <span className="relative flex h-3 w-3 shrink-0">
+
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
+
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+
+                  </span>
+
+
+                  <div className="min-w-0 flex-1">
+
+                    <p className="text-sm font-black">
+                      Liv está ouvindo
+                    </p>
+
+                    <p className="truncate text-[9px] text-slate-500">
+                      {selectedMicrophoneName}
+                    </p>
+
                   </div>
 
-
-                  <p className="mt-4 font-black text-red-100">
-                    Ouvindo...
-                  </p>
+                </div>
 
 
-                  <p className="mt-1 text-xs text-red-200/70">
-                    Fale o comando para a Liv.
-                  </p>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+
+                  <div
+                    className="h-full rounded-full bg-emerald-500 transition-[width] duration-75"
+                    style={{
+                      width:
+                        Math.max(
+                          1,
+                          level
+                        ) +
+                        '%',
+                    }}
+                  />
 
                 </div>
 
@@ -608,13 +1599,13 @@ export function MeetAddonVoiceClient() {
                   onClick={
                     stopRecording
                   }
-                  className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-slate-950 hover:bg-slate-100"
+                  className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-xs font-black text-slate-950 hover:bg-slate-100"
                 >
                   <Square
-                    size={15}
+                    size={12}
                   />
 
-                  Parar e transcrever
+                  Finalizar
                 </button>
 
               </div>
@@ -627,22 +1618,25 @@ export function MeetAddonVoiceClient() {
           status ===
           'TRANSCRIBING'
             ? (
-              <div className="mt-6 rounded-2xl border border-blue-500/20 bg-blue-500/10 p-6 text-center">
+              <div className="mt-5 flex items-center gap-3">
 
                 <LoaderCircle
-                  size={28}
-                  className="mx-auto animate-spin text-blue-300"
+                  size={18}
+                  className="animate-spin text-blue-300"
                 />
 
 
-                <p className="mt-4 font-black text-blue-100">
-                  A Liv está entendendo...
-                </p>
+                <div>
 
+                  <p className="text-sm font-black">
+                    Entendendo...
+                  </p>
 
-                <p className="mt-1 text-xs text-blue-200/70">
-                  Convertendo sua fala em texto.
-                </p>
+                  <p className="text-[10px] text-slate-400">
+                    Transformando sua fala em texto.
+                  </p>
+
+                </div>
 
               </div>
             )
@@ -654,22 +1648,25 @@ export function MeetAddonVoiceClient() {
           status ===
           'DONE'
             ? (
-              <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-6 text-center">
+              <div className="mt-5 flex items-center gap-3">
 
                 <CheckCircle2
-                  size={30}
-                  className="mx-auto text-emerald-300"
+                  size={19}
+                  className="text-emerald-300"
                 />
 
 
-                <p className="mt-3 font-black text-emerald-100">
-                  Comando reconhecido
-                </p>
+                <div>
 
+                  <p className="text-sm font-black">
+                    Comando reconhecido
+                  </p>
 
-                <p className="mt-1 text-xs text-emerald-200/70">
-                  Voltando para a reunião...
-                </p>
+                  <p className="text-[10px] text-slate-400">
+                    Voltando para a Liv...
+                  </p>
+
+                </div>
 
               </div>
             )
@@ -681,26 +1678,19 @@ export function MeetAddonVoiceClient() {
           status ===
           'ERROR'
             ? (
-              <div className="mt-6">
+              <div className="mt-4">
 
-                <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4">
+                <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-3">
 
-                  <div className="flex items-start gap-3">
-
-                    <AlertTriangle
-                      size={18}
-                      className="mt-0.5 shrink-0 text-red-300"
-                    />
+                  <AlertTriangle
+                    size={16}
+                    className="mt-0.5 shrink-0 text-red-300"
+                  />
 
 
-                    <p className="text-xs font-bold leading-relaxed text-red-100">
-                      {
-                        error ||
-                        'Não foi possível usar o microfone.'
-                      }
-                    </p>
-
-                  </div>
+                  <p className="text-[10px] font-semibold leading-relaxed text-red-100">
+                    {error}
+                  </p>
 
                 </div>
 
@@ -708,18 +1698,10 @@ export function MeetAddonVoiceClient() {
                 <button
                   type="button"
                   onClick={
-                    () => {
-
-                      setStatus(
-                        'READY'
-                      );
-
-                      setError(
-                        ''
-                      );
-                    }
+                    () =>
+                      void requestMicrophonePermission()
                   }
-                  className="mt-4 h-11 w-full rounded-xl border border-white/10 text-xs font-black text-slate-200 hover:bg-white/5"
+                  className="mt-3 h-9 w-full rounded-xl border border-white/10 text-[10px] font-black text-slate-200 hover:bg-white/5"
                 >
                   Tentar novamente
                 </button>

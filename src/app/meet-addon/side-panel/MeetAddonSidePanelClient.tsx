@@ -1017,7 +1017,7 @@ export function MeetAddonSidePanelClient({
       window.open(
         '/meet-addon/voice',
         'aprovup_meet_voice',
-        'popup=yes,width=480,height=650'
+        'popup=yes,width=410,height=420'
       );
 
 
