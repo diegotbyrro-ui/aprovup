@@ -141,6 +141,14 @@ export async function createSecretaryMeetingAction(
           googleMeetSpaceName:
             space.name,
 
+          notes:
+            space.transcriptionWarning ||
+            (
+              space.autoTranscriptionEnabled
+                ? 'Transcrição automática ativada pela Liv.'
+                : null
+            ),
+
           scheduledStart:
             now,
 

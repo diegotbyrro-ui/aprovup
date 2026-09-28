@@ -223,6 +223,9 @@ export default async function MeetingsPage({
 
                 googleMeetUri:
                   true,
+
+                notes:
+                  true,
               },
             })
         : Promise.resolve(
@@ -337,6 +340,27 @@ export default async function MeetingsPage({
               <h2 className="mt-2 text-xl font-black text-emerald-950">
                 {createdMeeting.title}
               </h2>
+
+
+              {
+                createdMeeting.notes
+                  ? (
+                    <div
+                      className={
+                        createdMeeting
+                          .notes
+                          .includes(
+                            'não oferece transcrição automática'
+                          )
+                            ? 'mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-relaxed text-amber-800'
+                            : 'mt-4 rounded-2xl border border-emerald-200 bg-white/70 p-4 text-sm font-semibold leading-relaxed text-emerald-800'
+                      }
+                    >
+                      {createdMeeting.notes}
+                    </div>
+                  )
+                  : null
+              }
 
 
               <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">

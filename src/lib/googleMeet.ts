@@ -143,6 +143,146 @@ async function meetFetch<T>({
 }
 
 
+type CreateMeetSpaceResponse = {
+  name?:
+    string;
+
+  meetingUri?:
+    string;
+
+  meetingCode?:
+    string;
+
+  error?: {
+    message?:
+      string;
+  };
+};
+
+
+async function requestGoogleMeetSpace({
+  accessToken,
+  autoTranscription,
+}: {
+  accessToken:
+    string;
+
+  autoTranscription:
+    boolean;
+}) {
+
+  const config:
+    Record<
+      string,
+      unknown
+    > = {
+      accessType:
+        'OPEN',
+
+      entryPointAccess:
+        'ALL',
+    };
+
+
+  if (
+    autoTranscription
+  ) {
+
+    config.artifactConfig = {
+      transcriptionConfig: {
+        autoTranscriptionGeneration:
+          'ON',
+      },
+    };
+  }
+
+
+  const response =
+    await fetch(
+      'https://meet.googleapis.com/v2/spaces',
+      {
+        method:
+          'POST',
+
+        headers: {
+          Authorization:
+            'Bearer ' +
+            accessToken,
+
+          'Content-Type':
+            'application/json',
+        },
+
+        body:
+          JSON.stringify({
+            config,
+          }),
+
+        cache:
+          'no-store',
+      }
+    );
+
+
+  const payload =
+    await response
+      .json() as
+        CreateMeetSpaceResponse;
+
+
+  return {
+    response,
+    payload,
+  };
+}
+
+
+function googleMeetCreationError(
+  payload:
+    CreateMeetSpaceResponse,
+
+  status:
+    number
+) {
+
+  return (
+    payload.error
+      ?.message ||
+    'Google Meet recusou a criação da reunião. HTTP ' +
+    String(
+      status
+    )
+  );
+}
+
+
+function autoTranscriptionUnavailable(
+  message:
+    string
+) {
+
+  const normalized =
+    message
+      .trim()
+      .toLowerCase();
+
+
+  return (
+    normalized.includes(
+      'updateautotranscriptiongeneration is not available'
+    ) ||
+    (
+      normalized.includes(
+        'autotranscription'
+      ) &&
+      normalized.includes(
+        'not available to the user'
+      )
+    )
+  );
+}
+
+
 export async function createGoogleMeetSpace({
   agencyId,
 }: {
@@ -166,74 +306,110 @@ export async function createGoogleMeetSpace({
   }
 
 
-  const response =
-    await fetch(
-      'https://meet.googleapis.com/v2/spaces',
-      {
-        method:
-          'POST',
+  /*
+   * Primeira tentativa:
+   * cria o Meet já com transcrição automática.
+   */
+  const automatic =
+    await requestGoogleMeetSpace({
+      accessToken:
+        auth.accessToken,
 
-        headers: {
-          Authorization:
-            'Bearer ' +
-            auth.accessToken,
-
-          'Content-Type':
-            'application/json',
-        },
-
-        body:
-          JSON.stringify({
-            config: {
-              accessType:
-                'OPEN',
-
-              entryPointAccess:
-                'ALL',
-
-              artifactConfig: {
-                transcriptionConfig: {
-                  autoTranscriptionGeneration:
-                    'ON',
-                },
-              },
-            },
-          }),
-
-        cache:
-          'no-store',
-      }
-    );
+      autoTranscription:
+        true,
+    });
 
 
-  const payload =
-    await response
-      .json() as {
-        name?:
-          string;
+  let payload =
+    automatic.payload;
 
-        meetingUri?:
-          string;
 
-        meetingCode?:
-          string;
+  let autoTranscriptionEnabled =
+    true;
 
-        error?: {
-          message?:
-            string;
-        };
-      };
+
+  let transcriptionWarning:
+    string |
+    null =
+      null;
 
 
   if (
-    !response.ok
+    !automatic.response.ok
   ) {
 
-    throw new Error(
-      payload.error
-        ?.message ||
-      'Google Meet recusou a criação da reunião.'
-    );
+    const automaticError =
+      googleMeetCreationError(
+        automatic.payload,
+        automatic.response.status
+      );
+
+
+    /*
+     * Algumas contas Google não possuem licença/permissão
+     * para autoTranscriptionGeneration.
+     *
+     * Nesse caso a Liv NÃO bloqueia a reunião.
+     * Ela tenta novamente criando um Meet normal.
+     */
+    if (
+      autoTranscriptionUnavailable(
+        automaticError
+      )
+    ) {
+
+      console.warn(
+        '[GOOGLE MEET] Transcrição automática indisponível. Criando reunião sem auto-transcrição:',
+        automaticError
+      );
+
+
+      const fallback =
+        await requestGoogleMeetSpace({
+          accessToken:
+            auth.accessToken,
+
+          autoTranscription:
+            false,
+        });
+
+
+      if (
+        !fallback.response.ok
+      ) {
+
+        throw new Error(
+          googleMeetCreationError(
+            fallback.payload,
+            fallback.response.status
+          )
+        );
+      }
+
+
+      payload =
+        fallback.payload;
+
+
+      autoTranscriptionEnabled =
+        false;
+
+
+      transcriptionWarning =
+        'A conta Google conectada não oferece transcrição automática. ' +
+        'O Meet foi criado normalmente. ' +
+        'Se essa conta possuir transcrição manual, ela pode ser iniciada dentro da reunião.';
+    }
+    else {
+
+      /*
+       * Erros reais de OAuth, API, configuração etc.
+       * continuam sendo exibidos em vez de serem escondidos.
+       */
+      throw new Error(
+        automaticError
+      );
+    }
   }
 
 
@@ -260,9 +436,12 @@ export async function createGoogleMeetSpace({
       extractGoogleMeetCode(
         payload.meetingUri
       ),
+
+    autoTranscriptionEnabled,
+
+    transcriptionWarning,
   };
 }
-
 
 export function extractGoogleMeetCode(
   value:
