@@ -82,14 +82,28 @@ export async function createSecretaryMeetingAction(
     error
   ) {
 
+    const googleError =
+      error instanceof Error
+        ? error.message
+        : String(
+            error
+          );
+
+
     console.error(
       '[SECRETARY MEETING] Falha ao criar Google Meet:',
-      error
+      googleError
     );
 
 
     redirect(
-      '/secretaria/reunioes?error=meet'
+      '/secretaria/reunioes?error=meet&detail=' +
+      encodeURIComponent(
+        googleError.slice(
+          0,
+          500
+        )
+      )
     );
   }
 

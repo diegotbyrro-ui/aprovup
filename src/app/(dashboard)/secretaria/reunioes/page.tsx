@@ -115,6 +115,9 @@ export default async function MeetingsPage({
 
       error?:
         string;
+
+      detail?:
+        string;
     }>;
 }) {
 
@@ -234,7 +237,17 @@ export default async function MeetingsPage({
       ? 'Digite um título para criar a reunião.'
       : params.error ===
           'meet'
-        ? 'O Google Meet não conseguiu criar o link. Confira a autorização da conta Google.'
+        ? (
+            'O Google Meet não conseguiu criar o link.' +
+            (
+              params.detail
+                ? ' Detalhe do Google: ' +
+                  String(
+                    params.detail
+                  )
+                : ' Confira a autorização da conta Google.'
+            )
+          )
         : '';
 
 
