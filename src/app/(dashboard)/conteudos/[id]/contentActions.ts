@@ -5,6 +5,10 @@ import { requirePermission } from "@/lib/userAccess";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
+import {
+  FINAL_PENDING_STATUSES,
+} from "@/lib/finalMonthlyApproval";
+
 export async function generateApprovalLink(contentId: string) {
     const currentUser =
         await requirePermission(
@@ -81,6 +85,130 @@ export async function generateApprovalLink(contentId: string) {
 
 
 
+
+
+
+export async function generateIndividualApprovalLink(
+  contentId:
+    string
+) {
+
+  const currentUser =
+    await requirePermission(
+      "social.manage"
+    );
+
+
+  const content =
+    await prisma.content.findFirst({
+      where: {
+        id:
+          contentId,
+
+        client: {
+          agencyId:
+            currentUser.agencyId,
+        },
+      },
+    });
+
+
+  if (!content) {
+    throw new Error(
+      "Conteúdo não encontrado."
+    );
+  }
+
+
+  /*
+   * O link individual e apenas uma alternativa
+   * para aprovar este conteudo.
+   *
+   * Nao altera o status do conteudo
+   * e nao interfere na 2a etapa normal.
+   */
+  if (
+    !FINAL_PENDING_STATUSES.includes(
+      content.status
+    )
+  ) {
+
+    throw new Error(
+      "Este conteúdo não está aguardando aprovação final."
+    );
+  }
+
+
+  const existingApproval =
+    await prisma.approval.findFirst({
+      where: {
+        contentId,
+
+        status:
+          "PENDENTE",
+      },
+
+      orderBy: {
+        createdAt:
+          "desc",
+      },
+    });
+
+
+  if (
+    existingApproval
+  ) {
+
+    revalidatePath(
+      `/conteudos/${contentId}`
+    );
+
+    return;
+  }
+
+
+  const token =
+    randomUUID();
+
+
+  await prisma.approval.create({
+    data: {
+      contentId,
+
+      token,
+
+      status:
+        "PENDENTE",
+    },
+  });
+
+
+  await prisma.historyLog.create({
+    data: {
+      entityType:
+        "CONTENT",
+
+      entityId:
+        contentId,
+
+      action:
+        "INDIVIDUAL_APPROVAL_LINK_CREATED",
+
+      description:
+        `Link individual de aprovação criado para o conteúdo "${content.title}".`,
+
+      authorName:
+        currentUser.name ||
+        currentUser.email ||
+        "Equipe AprovUp",
+    },
+  });
+
+
+  revalidatePath(
+    `/conteudos/${contentId}`
+  );
+}
 
 export async function reopenFinalApprovalInternallyAction(
   contentId:

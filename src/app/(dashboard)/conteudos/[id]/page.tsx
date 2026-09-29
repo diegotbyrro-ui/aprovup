@@ -15,6 +15,7 @@ import { CarouselFinalUpload } from '@/components/content/CarouselFinalUpload';
 import { inputClasses, labelClasses } from '@/lib/styles';
 import {
   generateApprovalLink,
+  generateIndividualApprovalLink,
   markContentAsPublishedByDirectorAction,
   reopenFinalApprovalInternallyAction,
 } from './contentActions';
@@ -27,6 +28,10 @@ import { listAprovUpReferenceFiles } from '@/lib/aprovupStorage';
 import {
   ReferenceAttachmentsField,
 } from '@/components/content/ReferenceAttachmentsField';
+
+import {
+  SocialApprovalLinkButton,
+} from '@/app/(dashboard)/social-media/SocialApprovalLinkButton';
 
 import {
   SocialMediaCarouselAssetsManager,
@@ -928,6 +933,25 @@ export default async function ConteudoDetailPage({
       null,
       id
     );
+
+
+  const generateIndividualApprovalLinkAction =
+    generateIndividualApprovalLink.bind(
+      null,
+      id
+    );
+
+
+  const canUseIndividualApproval =
+    [
+      'REVISAO_INTERNA',
+      'DESIGN_ANALISE',
+      'FILMMAKER_ANALISE',
+      'ENVIADO_CLIENTE',
+    ].includes(
+      contentSafe.status
+    );
+
 
   const markPublishedByDirectorAction =
     markContentAsPublishedByDirectorAction.bind(
@@ -1979,6 +2003,82 @@ export default async function ConteudoDetailPage({
         <aside className="space-y-6">
 
 
+          {canManageSocial &&
+          canUseIndividualApproval ? (
+
+            <section className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-5 shadow-sm">
+
+              <div className="border-b border-indigo-100 pb-3">
+
+                <p className="text-[10px] font-black uppercase tracking-[0.12em] text-indigo-500">
+                  Cliente
+                </p>
+
+                <h2 className="mt-1 text-lg font-black text-slate-900">
+                  Aprovação individual
+                </h2>
+
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  Envie somente este conteúdo para aprovação. A 2ª Etapa de Aprovação continua funcionando normalmente.
+                </p>
+
+              </div>
+
+
+              <div className="mt-4 space-y-2">
+
+                {pendingApprovalToken ? (
+
+                  <>
+
+                    <SocialApprovalLinkButton
+                      path={
+                        `/aprovacao-individual/${pendingApprovalToken}`
+                      }
+                    />
+
+                    <Link
+                      href={
+                        `/aprovacao-individual/${pendingApprovalToken}`
+                      }
+                      target="_blank"
+                      className="flex h-9 w-full items-center justify-center rounded-lg border border-indigo-200 bg-white px-3 text-[10px] font-black text-indigo-700 transition hover:bg-indigo-50"
+                    >
+                      Abrir link individual
+                    </Link>
+
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2">
+                      <p className="text-[10px] font-bold text-emerald-700">
+                        Link individual ativo
+                      </p>
+                    </div>
+
+                  </>
+
+                ) : (
+
+                  <form
+                    action={
+                      generateIndividualApprovalLinkAction
+                    }
+                  >
+
+                    <button
+                      type="submit"
+                      className="flex h-10 w-full items-center justify-center rounded-lg bg-indigo-600 px-4 text-[11px] font-black text-white transition hover:bg-indigo-700"
+                    >
+                      Gerar link individual
+                    </button>
+
+                  </form>
+
+                )}
+
+              </div>
+
+            </section>
+
+          ) : null}
 
 
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
