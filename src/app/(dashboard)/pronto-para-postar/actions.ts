@@ -447,3 +447,220 @@ export async function markStoryAsPublished(contentId: string) {
     revalidatePath("/pronto-para-postar");
     revalidatePath("/pronto-para-postar/stories");
 }
+
+
+const SOCIAL_PLATFORMS =
+    new Set([
+        "INSTAGRAM",
+        "TIKTOK",
+        "YOUTUBE",
+    ]);
+
+
+export async function updateSocialPlatformSelection(
+    contentId:
+        string,
+
+    platformInput:
+        string,
+
+    selected:
+        boolean
+) {
+
+    const currentUser =
+        await requirePermission(
+            "social.manage"
+        );
+
+
+    const platform =
+        String(
+            platformInput ||
+            ""
+        )
+            .trim()
+            .toUpperCase();
+
+
+    if (
+        !SOCIAL_PLATFORMS.has(
+            platform
+        )
+    ) {
+        throw new Error(
+            "Plataforma inválida."
+        );
+    }
+
+
+    const content =
+        await prisma.content.findFirst({
+            where: {
+                id:
+                    contentId,
+
+                client: {
+                    agencyId:
+                        currentUser.agencyId,
+                },
+
+                status:
+                    "PRONTO_PARA_POSTAR",
+            },
+
+            select: {
+                id:
+                    true,
+
+                finalMediaUrl:
+                    true,
+
+                finalMediaType:
+                    true,
+
+                instagramPublication: {
+                    select: {
+                        status:
+                            true,
+                    },
+                },
+            },
+        });
+
+
+    if (!content) {
+        throw new Error(
+            "Conteúdo não encontrado ou não está mais em Pronto para Postar."
+        );
+    }
+
+
+    if (
+        selected &&
+        platform ===
+            "YOUTUBE" &&
+        !(
+            content.finalMediaUrl &&
+            String(
+                content.finalMediaType ||
+                ""
+            ).startsWith(
+                "video/"
+            )
+        )
+    ) {
+
+        throw new Error(
+            "O YouTube exige um vídeo final neste conteúdo."
+        );
+    }
+
+
+    if (
+        platform ===
+            "INSTAGRAM" &&
+        !selected &&
+        [
+            "AGENDADO",
+            "PUBLICANDO",
+            "PUBLICADO",
+        ].includes(
+            content.instagramPublication
+                ?.status ||
+            ""
+        )
+    ) {
+
+        throw new Error(
+            "O Instagram já possui uma publicação agendada, em andamento ou concluída."
+        );
+    }
+
+
+    const existing =
+        await prisma.socialPublication.findUnique({
+            where: {
+                contentId_platform: {
+                    contentId,
+                    platform,
+                },
+            },
+        });
+
+
+    if (
+        existing &&
+        [
+            "AGENDADO",
+            "PUBLICANDO",
+            "PROCESSANDO",
+            "PUBLICADO",
+        ].includes(
+            existing.status
+        ) &&
+        existing.selected !==
+            selected
+    ) {
+
+        throw new Error(
+            "Esta plataforma já possui uma publicação em andamento ou concluída."
+        );
+    }
+
+
+    const publication =
+        await prisma.socialPublication.upsert({
+            where: {
+                contentId_platform: {
+                    contentId,
+                    platform,
+                },
+            },
+
+            create: {
+                contentId,
+                platform,
+                selected,
+
+                status:
+                    selected
+                        ? "SELECIONADO"
+                        : "NAO_SELECIONADO",
+            },
+
+            update: {
+                selected,
+
+                status:
+                    selected
+                        ? "SELECIONADO"
+                        : "NAO_SELECIONADO",
+
+                lastError:
+                    null,
+
+                errorAlertedAt:
+                    null,
+            },
+        });
+
+
+    revalidatePath(
+        "/pronto-para-postar"
+    );
+
+
+    return {
+        ok:
+            true,
+
+        platform,
+
+        selected:
+            publication.selected,
+
+        status:
+            publication.status,
+    };
+}

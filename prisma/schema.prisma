@@ -184,6 +184,7 @@ model Client {
   finalMonthlyApprovals    FinalMonthlyApproval[]
   instagramConnection      InstagramConnection?
   instagramMetricSnapshots InstagramMetricSnapshot[]
+  socialConnections        SocialConnection[]
   financeEntries           FinanceEntry[]
   secretaryMeetings        SecretaryMeeting[]
 
@@ -294,6 +295,7 @@ model Content {
   instagramPublication      InstagramPublication?
   instagramStoryPublication InstagramStoryPublication?
   instagramMediaAssets      InstagramMediaAsset[]
+  socialPublications        SocialPublication[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -478,6 +480,85 @@ model InstagramStoryPublication {
   @@index([instagramUserId])
 }
 
+model SocialConnection {
+  id String @id @default(cuid())
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // INSTAGRAM | TIKTOK | YOUTUBE
+  platform String
+
+  accountId       String?
+  accountName     String?
+  accountUsername String?
+
+  encryptedAccessToken  String?
+  encryptedRefreshToken String?
+
+  tokenExpiresAt DateTime?
+  scopes         String?
+
+  // PENDENTE | ATIVO | EXPIRADO | ERRO
+  status String @default("PENDENTE")
+
+  connectedByUserId String?
+  connectedAt       DateTime?
+  lastSyncAt        DateTime?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([clientId, platform])
+  @@index([platform, status])
+  @@index([clientId])
+}
+
+model SocialPublication {
+  id String @id @default(cuid())
+
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  // INSTAGRAM | TIKTOK | YOUTUBE
+  platform String
+
+  selected Boolean @default(true)
+
+  captionOverride String? @db.Text
+
+  titleOverride       String?
+  descriptionOverride String? @db.Text
+  privacyStatus       String?
+
+  // NAO_SELECIONADO | SELECIONADO | PRONTO
+  // AGENDADO | PUBLICANDO | PROCESSANDO
+  // PUBLICADO | ERRO
+  status String @default("SELECIONADO")
+
+  scheduledFor DateTime?
+  publishedAt  DateTime?
+
+  externalId String?
+  permalink  String?
+
+  attemptCount   Int       @default(0)
+  lastAttemptAt  DateTime?
+  lastError      String?   @db.Text
+  errorAlertedAt DateTime?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([contentId, platform])
+  @@index([platform, status])
+  @@index([scheduledFor])
+  @@index([contentId])
+}
 model InstagramConnection {
   id String @id @default(cuid())
 

@@ -2226,6 +2226,7 @@ async function sendProactive({
     'calendar-1h:',
     'capture-tomorrow:',
     'capture-upcoming:',
+    'social-publish-error:',
   ];
 
 
@@ -7355,5 +7356,467 @@ export async function notifyResponsibleSocialMediaAboutQuestion({
   return {
     attempted,
     sent,
+  };
+}
+
+
+type SocialPublicationErrorPlatform =
+  | 'INSTAGRAM'
+  | 'TIKTOK'
+  | 'YOUTUBE';
+
+
+export async function notifySocialPublicationError({
+  agencyId,
+  contentId,
+  publicationId,
+  platform,
+  errorMessage,
+  eventKey,
+}: {
+  agencyId:
+    string;
+
+  contentId:
+    string;
+
+  publicationId:
+    string;
+
+  platform:
+    SocialPublicationErrorPlatform;
+
+  errorMessage:
+    string;
+
+  eventKey:
+    string;
+}) {
+
+  const content =
+    await prisma.content.findFirst({
+      where: {
+        id:
+          contentId,
+
+        client: {
+          agencyId,
+        },
+      },
+
+      include: {
+        client:
+          true,
+      },
+    });
+
+
+  if (
+    !content ||
+    !content.client
+  ) {
+
+    return {
+      attempted:
+        0,
+
+      sent:
+        0,
+
+      alertId:
+        null,
+    };
+  }
+
+
+  const labels:
+    Record<
+      SocialPublicationErrorPlatform,
+      string
+    > = {
+
+    INSTAGRAM:
+      'Instagram',
+
+    TIKTOK:
+      'TikTok',
+
+    YOUTUBE:
+      'YouTube',
+  };
+
+
+  const platformLabel =
+    labels[
+      platform
+    ];
+
+
+  const cleanError =
+    String(
+      errorMessage ||
+      'Erro desconhecido.'
+    )
+      .trim()
+      .slice(
+        0,
+        1800
+      );
+
+
+  const dedupKey =
+    'social-publish-error:' +
+    platform +
+    ':' +
+    eventKey;
+
+
+  const existingAlert =
+    await prisma.secretaryAlert.findUnique({
+      where: {
+        agencyId_dedupKey: {
+          agencyId,
+          dedupKey,
+        },
+      },
+    });
+
+
+  const alert =
+    existingAlert
+      ? await prisma.secretaryAlert.update({
+          where: {
+            id:
+              existingAlert.id,
+          },
+
+          data: {
+            status:
+              'OPEN',
+
+            severity:
+              'ERROR',
+
+            title:
+              'Falha na publicação - ' +
+              platformLabel,
+
+            message:
+              cleanError,
+
+            clientId:
+              content.clientId,
+
+            contentId:
+              content.id,
+
+            publicationId,
+
+            metadata: {
+              platform,
+              eventKey,
+            },
+          },
+        })
+      : await prisma.secretaryAlert.create({
+          data: {
+            agencyId,
+            dedupKey,
+
+            type:
+              'SOCIAL_PUBLICATION_ERROR',
+
+            severity:
+              'ERROR',
+
+            status:
+              'OPEN',
+
+            title:
+              'Falha na publicação - ' +
+              platformLabel,
+
+            message:
+              cleanError,
+
+            clientId:
+              content.clientId,
+
+            contentId:
+              content.id,
+
+            publicationId,
+
+            metadata: {
+              platform,
+              eventKey,
+            },
+          },
+        });
+
+
+  const connection =
+    await getWhatsappConnection(
+      agencyId
+    );
+
+
+  if (!connection) {
+
+    return {
+      attempted:
+        0,
+
+      sent:
+        0,
+
+      alertId:
+        alert.id,
+    };
+  }
+
+
+  const members =
+    await prisma.secretaryWhatsappMember.findMany({
+      where: {
+        agencyId,
+
+        isActive:
+          true,
+
+        receiveAlerts:
+          true,
+
+        userId: {
+          not:
+            null,
+        },
+      },
+    });
+
+
+  if (
+    members.length ===
+    0
+  ) {
+
+    return {
+      attempted:
+        0,
+
+      sent:
+        0,
+
+      alertId:
+        alert.id,
+    };
+  }
+
+
+  const memberByUserId =
+    new Map<
+      string,
+      (typeof members)[number]
+    >();
+
+
+  for (
+    const member
+    of members
+  ) {
+
+    if (
+      member.userId
+    ) {
+
+      memberByUserId.set(
+        member.userId,
+        member
+      );
+    }
+  }
+
+
+  const userIds =
+    Array.from(
+      memberByUserId.keys()
+    );
+
+
+  const users =
+    await prisma.user.findMany({
+      where: {
+        agencyId,
+
+        status:
+          'APROVADO',
+
+        id: {
+          in:
+            userIds,
+        },
+
+        role: {
+          in: [
+            'SOCIAL_MEDIA',
+            'DIRECTOR',
+          ],
+        },
+      },
+    });
+
+
+  const recipients =
+    users
+      .filter(
+        (
+          user
+        ) => {
+
+          if (
+            user.role ===
+            'DIRECTOR'
+          ) {
+            return true;
+          }
+
+
+          return (
+            hasPermission(
+              user,
+              'social.manage'
+            ) &&
+            canAccessClient(
+              user,
+              content.client
+            )
+          );
+        }
+      )
+      .map(
+        (
+          user
+        ) =>
+          memberByUserId.get(
+            user.id
+          )
+      )
+      .filter(
+        (
+          member
+        ): member is
+          (typeof members)[number] =>
+            Boolean(
+              member
+            )
+      );
+
+
+  const whatsappMessage =
+    [
+      'A publicação automática encontrou um problema.',
+
+      '',
+
+      'Plataforma: ' +
+        platformLabel,
+
+      'Cliente: ' +
+        (
+          content.client.name ||
+          'Cliente'
+        ),
+
+      'Conteúdo: ' +
+        (
+          content.title ||
+          'Sem título'
+        ),
+
+      '',
+
+      'Erro: ' +
+        cleanError,
+
+      '',
+
+      'Abra o AprovUp > Pronto para Postar para revisar e tentar novamente.',
+    ].join(
+      String.fromCharCode(
+        10
+      )
+    );
+
+
+  let attempted =
+    0;
+
+  let sent =
+    0;
+
+
+  for (
+    const member
+    of recipients
+  ) {
+
+    attempted +=
+      1;
+
+
+    try {
+
+      const result =
+        await sendProactive({
+          agencyId,
+
+          memberId:
+            member.id,
+
+          toPhone:
+            member.phoneE164,
+
+          title:
+            '⚠️ Erro de publicação - ' +
+            platformLabel,
+
+          message:
+            whatsappMessage,
+
+          dedupKey:
+            dedupKey +
+            ':' +
+            member.id,
+        });
+
+
+      if (
+        result.status ===
+        'SENT'
+      ) {
+
+        sent +=
+          1;
+      }
+
+    }
+    catch (
+      error
+    ) {
+
+      console.error(
+        'LIV SOCIAL PUBLICATION ERROR ALERT:',
+        error
+      );
+    }
+  }
+
+
+  return {
+    attempted,
+    sent,
+
+    alertId:
+      alert.id,
   };
 }

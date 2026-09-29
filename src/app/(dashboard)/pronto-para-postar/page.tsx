@@ -11,6 +11,10 @@ import { InstagramPublishButton } from '@/components/instagram/InstagramPublishB
 import { InstagramScheduleControl } from '@/components/instagram/InstagramScheduleControl';
 import { ReadyPostComposer } from '@/components/content/ReadyPostComposer';
 
+import {
+    MultiPlatformSelector,
+} from './MultiPlatformSelector';
+
 const priorityLabels: Record<string, string> = {
     BAIXA: 'Baixa',
     MEDIA: 'Média',
@@ -175,6 +179,13 @@ export default async function ProntoParaPostarPage({
             },
 
             instagramPublication: true,
+
+            socialPublications: {
+                orderBy: {
+                    platform:
+                        'asc',
+                },
+            },
 
             instagramMediaAssets: {
                 orderBy: {
@@ -515,6 +526,23 @@ export default async function ProntoParaPostarPage({
                                                 ?.status ||
                                             'NAO_PREPARADO';
 
+
+                                        const instagramPlatformSelection =
+                                            content.socialPublications.find(
+                                                (
+                                                    publication
+                                                ) =>
+                                                    publication.platform ===
+                                                    'INSTAGRAM'
+                                            );
+
+
+                                        const instagramSelected =
+                                            instagramPlatformSelection
+                                                ? instagramPlatformSelection.selected
+                                                : true;
+
+
                                         const normalizedFormat =
                                             String(
                                                 content.format ||
@@ -591,6 +619,7 @@ export default async function ProntoParaPostarPage({
 
                                         const canPublishInstagram =
                                             Boolean(
+                                                instagramSelected &&
                                                 instagramConnection &&
                                                 (
                                                     isCarousel
@@ -616,8 +645,10 @@ export default async function ProntoParaPostarPage({
                                             );
 
                                         const publishDisabledReason =
-                                            !instagramConnection
-                                                ? 'Instagram não conectado.'
+                                            !instagramSelected
+                                                ? 'Instagram não foi selecionado para este conteúdo.'
+                                                : !instagramConnection
+                                                    ? 'Instagram não conectado.'
                                                 : isCarousel &&
                                                   carouselMediaCount < 2
                                                     ? 'Envie pelo menos 2 imagens do carrossel.'
@@ -828,6 +859,40 @@ export default async function ProntoParaPostarPage({
                                                     </div>
 
                                                     <aside className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+
+                                                        <MultiPlatformSelector
+                                                            contentId={
+                                                                content.id
+                                                            }
+                                                            hasVideo={
+                                                                Boolean(
+                                                                    content.finalMediaUrl &&
+                                                                    isVideoMedia
+                                                                )
+                                                            }
+                                                            instagramLegacyStatus={
+                                                                publicationStatus
+                                                            }
+                                                            publications={
+                                                                content.socialPublications.map(
+                                                                    (
+                                                                        publication
+                                                                    ) => ({
+                                                                        platform:
+                                                                            publication.platform,
+
+                                                                        selected:
+                                                                            publication.selected,
+
+                                                                        status:
+                                                                            publication.status,
+
+                                                                        lastError:
+                                                                            publication.lastError,
+                                                                    })
+                                                                )
+                                                            }
+                                                        />
 
                                                         <div className="rounded-xl border border-pink-100 bg-gradient-to-br from-pink-50 to-violet-50 p-4">
 
