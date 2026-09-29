@@ -227,6 +227,14 @@ function getPublicationTimingClass(
 
 
   if (
+    format ===
+    "DEMANDA_EMERGENCIAL"
+  ) {
+    return "border-red-500 bg-red-50 ring-1 ring-red-200";
+  }
+
+
+  if (
     [
       "PUBLICADO",
       "PUBLICADO_MANUALMENTE",
@@ -512,8 +520,15 @@ export function DesktopEditorialCalendar({
           localContents
             .filter(
               (content) =>
-                content.format !==
-                  "DESIGN_GRAFICO" &&
+                ![
+                  "DESIGN_GRAFICO",
+                  "DEMANDA_EMERGENCIAL",
+                ].includes(
+                  String(
+                    content.format ||
+                    ""
+                  )
+                ) &&
                 content.dateKey >
                   calendarTodayKey &&
                 ![
@@ -1094,6 +1109,11 @@ export function DesktopEditorialCalendar({
                           "DESIGN_GRAFICO";
 
 
+                        const emergencyDemand =
+                          content.format ===
+                          "DEMANDA_EMERGENCIAL";
+
+
                         const graphicLate =
                           graphicDesign &&
                           !content.hasFinalMaterial &&
@@ -1153,7 +1173,8 @@ export function DesktopEditorialCalendar({
                             }
                             draggable={
                               !savingId &&
-                              !graphicDesign
+                              !graphicDesign &&
+                              !emergencyDemand
                             }
                             onDragStart={(
                               event
@@ -1167,15 +1188,18 @@ export function DesktopEditorialCalendar({
                               handleDragEnd
                             }
                             title={
-                              graphicDesign
-                                ? content.hasFinalMaterial
-                                  ? "Material pronto — clique para baixar"
-                                  : "Design Gráfico — clique para abrir a demanda"
-                                : "Arraste para outro dia ou clique para abrir"
+                              emergencyDemand
+                                ? "Demanda emergencial — clique para revisar ou editar"
+                                : graphicDesign
+                                  ? content.hasFinalMaterial
+                                    ? "Material pronto — clique para baixar"
+                                    : "Design Gráfico — clique para abrir a demanda"
+                                  : "Arraste para outro dia ou clique para abrir"
                             }
                             className={[
                               "block",
-                              graphicDesign
+                              graphicDesign ||
+                              emergencyDemand
                                 ? "cursor-pointer"
                                 : "cursor-grab",
                               "rounded-lg",
@@ -1256,6 +1280,12 @@ export function DesktopEditorialCalendar({
                                   {graphicDesign ? (
                                     <span className="rounded-full border border-violet-200 bg-violet-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-violet-700">
                                       DESIGN GRÁFICO
+                                    </span>
+                                  ) : null}
+
+                                  {emergencyDemand ? (
+                                    <span className="rounded-full border border-red-200 bg-red-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-red-700">
+                                      DEMANDA EMERGENCIAL
                                     </span>
                                   ) : null}
 

@@ -214,6 +214,13 @@ export default async function CalendarioEditorialPage({
                         lte: monthEnd,
                     },
                 },
+                {
+                    format: 'DEMANDA_EMERGENCIAL',
+                    productionDeadline: {
+                        gte: monthStart,
+                        lte: monthEnd,
+                    },
+                },
             ],
             ...(selectedClient !== 'TODOS'
                 ? {
@@ -327,7 +334,14 @@ export default async function CalendarioEditorialPage({
     const editorialContents =
         contents.filter(
             (content) =>
-                content.format !== 'DESIGN_GRAFICO'
+                ![
+                    'DESIGN_GRAFICO',
+                    'DEMANDA_EMERGENCIAL',
+                ].includes(
+                    String(
+                        content.format || ''
+                    )
+                )
         );
 
     const urgentContents = editorialContents.filter(
@@ -591,7 +605,14 @@ export default async function CalendarioEditorialPage({
                         title: content.title,
                         clientName: content.client.name,
                         dateKey:
-                            content.format === 'DESIGN_GRAFICO'
+                            [
+                                'DESIGN_GRAFICO',
+                                'DEMANDA_EMERGENCIAL',
+                            ].includes(
+                                String(
+                                    content.format || ''
+                                )
+                            )
                                 ? content.productionDeadline
                                     ? getDateKey(
                                           new Date(
@@ -633,7 +654,14 @@ export default async function CalendarioEditorialPage({
                         title: content.title,
                         clientName: content.client.name,
                         dateKey:
-                            content.format === 'DESIGN_GRAFICO'
+                            [
+                                'DESIGN_GRAFICO',
+                                'DEMANDA_EMERGENCIAL',
+                            ].includes(
+                                String(
+                                    content.format || ''
+                                )
+                            )
                                 ? content.productionDeadline
                                     ? getDateKey(
                                           new Date(

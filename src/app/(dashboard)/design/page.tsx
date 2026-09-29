@@ -283,6 +283,43 @@ function getReturnNotice(
 
     if (
       item.authorRole ===
+        "DESIGN" &&
+      message.startsWith(
+        "DÚVIDA DO DESIGN:"
+      )
+    ) {
+      return {
+        source:
+          "DESIGN",
+
+        label:
+          "Dúvida enviada ao Social",
+
+        message:
+          message
+            .replace(
+              "DÚVIDA DO DESIGN:",
+              ""
+            )
+            .trim(),
+
+        audioUrl:
+          item.audioUrl ||
+          "",
+
+        audioMimeType:
+          item.audioMimeType ||
+          "",
+
+        audioDurationMs:
+          item.audioDurationMs ||
+          null,
+      };
+    }
+
+
+    if (
+      item.authorRole ===
         "SOCIAL_MEDIA" &&
       message.startsWith(
         "AJUSTE INTERNO SOLICITADO PELA SOCIAL MEDIA:"
@@ -366,9 +403,11 @@ function shouldEmphasizeReturn(
     content.area ===
       "DESIGN"
   ) {
-    return (
-      content.status ===
-      "DESIGN_FAZENDO"
+    return [
+      "DESIGN_FAZENDO",
+      "DESIGN_DUVIDA",
+    ].includes(
+      content.status
     );
   }
 
@@ -1346,6 +1385,12 @@ function EmergencyDesignCard({
       content
     );
 
+
+  const returnNotice =
+    getReturnNotice(
+      content
+    );
+
   return (
     <article className="overflow-hidden rounded-xl border-2 border-red-300 bg-white shadow-md ring-2 ring-red-100">
       <div className="flex items-center justify-between gap-2 bg-red-600 px-3 py-2.5 text-white">
@@ -1450,6 +1495,78 @@ function EmergencyDesignCard({
             <p className="mt-1.5 line-clamp-4 text-[9px] font-medium leading-relaxed text-slate-600">
               {content.briefing}
             </p>
+          </div>
+        ) : null}
+
+
+        {returnNotice ? (
+          <div
+            className={[
+              "mt-3",
+              "rounded-lg",
+              "border",
+              "p-2.5",
+
+              returnNotice.source ===
+                "CLIENTE"
+                ? "border-orange-200 bg-orange-50"
+                : returnNotice.source ===
+                    "DESIGN"
+                  ? "border-amber-200 bg-amber-50"
+                  : "border-blue-200 bg-blue-50",
+            ].join(" ")}
+          >
+            <p
+              className={[
+                "text-[8px]",
+                "font-black",
+                "uppercase",
+                "tracking-[0.07em]",
+
+                returnNotice.source ===
+                  "CLIENTE"
+                  ? "text-orange-700"
+                  : returnNotice.source ===
+                      "DESIGN"
+                    ? "text-amber-700"
+                    : "text-blue-700",
+              ].join(" ")}
+            >
+              {returnNotice.label}
+            </p>
+
+            <p
+              className={[
+                "mt-1.5",
+                "whitespace-pre-line",
+                "text-[9px]",
+                "font-semibold",
+                "leading-relaxed",
+
+                returnNotice.source ===
+                  "CLIENTE"
+                  ? "text-orange-950"
+                  : returnNotice.source ===
+                      "DESIGN"
+                    ? "text-amber-950"
+                    : "text-blue-950",
+              ].join(" ")}
+            >
+              {returnNotice.message}
+            </p>
+
+            {returnNotice.audioUrl ? (
+              <audio
+                controls
+                preload="metadata"
+                src={
+                  returnNotice.audioUrl
+                }
+                className="mt-2 h-8 w-full"
+              >
+                Seu navegador não suporta áudio.
+              </audio>
+            ) : null}
           </div>
         ) : null}
 
@@ -1810,7 +1927,7 @@ function DesignCard({
             <p
               className={[
                 "mt-1.5",
-                "line-clamp-4",
+                "whitespace-pre-line",
                 "text-[9px]",
                 "font-medium",
                 "leading-relaxed",
@@ -2333,6 +2450,7 @@ export default async function DesignPage({
               in: [
                 "CLIENTE",
                 "SOCIAL_MEDIA",
+                "DESIGN",
               ],
             },
           },

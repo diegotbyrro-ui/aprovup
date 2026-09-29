@@ -326,6 +326,14 @@ function getMobilePublicationClass(
 
 
   if (
+    content.format ===
+    "DEMANDA_EMERGENCIAL"
+  ) {
+    return "border-red-500 bg-red-50";
+  }
+
+
+  if (
     [
       "PUBLICADO",
       "PUBLICADO_MANUALMENTE",
@@ -538,8 +546,15 @@ export function MobileEditorialCalendar({
           contents
             .filter(
               (content) =>
-                content.format !==
-                  "DESIGN_GRAFICO" &&
+                ![
+                  "DESIGN_GRAFICO",
+                  "DEMANDA_EMERGENCIAL",
+                ].includes(
+                  String(
+                    content.format ||
+                    ""
+                  )
+                ) &&
                 content.dateKey >
                   todayKey &&
                 ![
@@ -910,7 +925,10 @@ export function MobileEditorialCalendar({
                             {content.format ===
                             "DESIGN_GRAFICO"
                               ? "DESIGN GRÁFICO"
-                              : content.format}
+                              : content.format ===
+                                  "DEMANDA_EMERGENCIAL"
+                                ? "DEMANDA EMERGENCIAL"
+                                : content.format}
 
                           </span>
 

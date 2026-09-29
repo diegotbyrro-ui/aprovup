@@ -236,6 +236,43 @@ function getReturnNotice(
 
     if (
       item.authorRole ===
+        "FILMMAKER" &&
+      message.startsWith(
+        "DÚVIDA PARA SOCIAL MEDIA:"
+      )
+    ) {
+      return {
+        source:
+          "FILMMAKER",
+
+        label:
+          "Dúvida enviada ao Social",
+
+        message:
+          message
+            .replace(
+              "DÚVIDA PARA SOCIAL MEDIA:",
+              ""
+            )
+            .trim(),
+
+        audioUrl:
+          item.audioUrl ||
+          "",
+
+        audioMimeType:
+          item.audioMimeType ||
+          "",
+
+        audioDurationMs:
+          item.audioDurationMs ||
+          null,
+      };
+    }
+
+
+    if (
+      item.authorRole ===
         "SOCIAL_MEDIA" &&
       message.startsWith(
         "AJUSTE INTERNO SOLICITADO PELA SOCIAL MEDIA:"
@@ -335,6 +372,7 @@ function shouldEmphasizeReturn(
       "FILMMAKER_AGENDAMENTO",
       "FILMMAKER_GRAVANDO",
       "FILMMAKER_EDICAO",
+      "FILMMAKER_DUVIDA_SOCIAL",
     ].includes(
       content.status
     );
@@ -1209,7 +1247,7 @@ function FilmmakerCard({
             <p
               className={[
                 "mt-1.5",
-                "line-clamp-4",
+                "whitespace-pre-line",
                 "text-[9px]",
                 "font-medium",
                 "leading-relaxed",
