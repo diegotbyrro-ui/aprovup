@@ -18,6 +18,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
+  cookies,
+} from "next/headers";
+
+import {
   deleteAprovUpReferenceFile,
   uploadAprovUpReferenceFile,
 } from "@/lib/aprovupStorage";
@@ -442,6 +446,45 @@ export async function createEmergencyDemandAction(
   revalidatePath(
     `/clientes/${clientId}/calendario`
   );
+
+  /*
+   * Somente agora a demanda foi criada,
+   * os anexos foram enviados e o histórico
+   * foi registrado.
+   *
+   * Portanto somente agora o navegador
+   * recebe autorização para descartar
+   * o rascunho.
+   */
+  const draftKey =
+    `aprovup:emergency-demand:${currentUser.agencyId}:${currentUser.id}`;
+
+
+  const cookieStore =
+    await cookies();
+
+
+  cookieStore.set(
+    "aprovup_emergency_draft_ack",
+    draftKey,
+    {
+      path:
+        "/",
+
+      sameSite:
+        "lax",
+
+      secure:
+        process.env.NODE_ENV ===
+        "production",
+
+      maxAge:
+        60 *
+        60 *
+        24,
+    }
+  );
+
 
   const destination =
     area === "FILMMAKER"

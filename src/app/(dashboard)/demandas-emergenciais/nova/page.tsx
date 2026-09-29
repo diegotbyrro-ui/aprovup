@@ -22,6 +22,10 @@ import {
 import { createEmergencyDemandAction } from "./actions";
 
 import {
+  EmergencyDemandDraftPersistence,
+} from "./EmergencyDemandDraftPersistence";
+
+import {
   ReferenceAttachmentsField,
 } from "@/components/content/ReferenceAttachmentsField";
 
@@ -114,6 +118,11 @@ export default async function NovaDemandaEmergencialPage({
     currentUser.email ||
     "Social Media";
 
+
+  const draftKey =
+    `aprovup:emergency-demand:${currentUser.agencyId}:${currentUser.id}`;
+
+
   const backHref =
     selectedClient
       ? `/calendario-editorial?cliente=${selectedClient}`
@@ -155,7 +164,14 @@ export default async function NovaDemandaEmergencialPage({
         </div>
       ) : null}
 
+      <EmergencyDemandDraftPersistence
+        draftKey={
+          draftKey
+        }
+      />
+
       <form
+        data-emergency-demand-form
         action={createEmergencyDemandAction}
         className="space-y-6 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm"
       >
