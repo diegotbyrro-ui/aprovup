@@ -24,6 +24,48 @@ import {
 } from '@supabase/supabase-js';
 
 
+const MAX_VIDEO_SIZE =
+  500 *
+  1024 *
+  1024;
+
+
+const MAX_OTHER_FILE_SIZE =
+  200 *
+  1024 *
+  1024;
+
+
+function isVideoFile(
+  file:
+    File
+) {
+
+  const type =
+    String(
+      file.type ||
+      ''
+    ).toLowerCase();
+
+
+  const name =
+    String(
+      file.name ||
+      ''
+    ).toLowerCase();
+
+
+  return (
+    type.startsWith(
+      'video/'
+    ) ||
+    /\.(mp4|mov|m4v|webm)$/i.test(
+      name
+    )
+  );
+}
+
+
 type PreparedUpload = {
   ok:
     boolean;
@@ -489,10 +531,25 @@ export function SocialMediaQuickUpload({
   ) {
 
     if (
+      isVideoFile(
+        file
+      ) &&
       file.size >
-      200 *
-      1024 *
-      1024
+        MAX_VIDEO_SIZE
+    ) {
+
+      throw new Error(
+        'O vídeo deve possuir no máximo 500 MB.'
+      );
+    }
+
+
+    if (
+      !isVideoFile(
+        file
+      ) &&
+      file.size >
+        MAX_OTHER_FILE_SIZE
     ) {
 
       throw new Error(

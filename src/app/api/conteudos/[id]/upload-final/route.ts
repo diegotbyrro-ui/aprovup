@@ -587,6 +587,66 @@ export async function POST(
           : 'arquivo.bin';
 
 
+      const contentType =
+        typeof body.contentType ===
+        'string'
+          ? body.contentType
+              .toLowerCase()
+          : '';
+
+
+      const fileSize =
+        Number(
+          body.fileSize ||
+          0
+        );
+
+
+      const isVideoUpload =
+        contentType.startsWith(
+          'video/'
+        ) ||
+        /\.(mp4|mov|m4v|webm)$/i.test(
+          fileName
+        );
+
+
+      const uses500MbVideoLimit =
+        content.area ===
+          'SOCIAL_MEDIA' ||
+        content.area ===
+          'FILMMAKER';
+
+
+      if (
+        uses500MbVideoLimit &&
+        isVideoUpload &&
+        (
+          fileSize <=
+            0 ||
+          fileSize >
+            500 *
+            1024 *
+            1024
+        )
+      ) {
+
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'O vídeo deve possuir no máximo 500 MB.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+      }
+
+
       const prepared =
         await createAprovUpSignedUpload({
           folder:
