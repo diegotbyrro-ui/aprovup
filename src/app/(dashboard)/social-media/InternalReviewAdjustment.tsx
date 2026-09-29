@@ -149,9 +149,12 @@ function extensionForMime(
 export function InternalReviewAdjustment({
   contentId,
   clientId,
+  targetLabel =
+    'produção',
 }: {
   contentId: string;
   clientId: string;
+  targetLabel?: string;
 }) {
   const router =
     useRouter();
@@ -743,12 +746,36 @@ export function InternalReviewAdjustment({
 
 
   return (
-    <form
-      onSubmit={
-        handleSubmit
-      }
-      className="rounded-lg border border-orange-100 bg-orange-50/60 p-2.5"
-    >
+    <details className="group overflow-hidden rounded-lg border border-orange-200 bg-orange-50/60">
+
+      <summary className="flex h-9 cursor-pointer list-none items-center justify-between gap-2 px-3 text-[8px] font-bold text-orange-700 transition hover:bg-orange-100 [&::-webkit-details-marker]:hidden">
+
+        <span className="flex items-center gap-1.5">
+          <AlertCircle
+            size={11}
+          />
+
+          Dúvida / ajuste com {targetLabel}
+        </span>
+
+
+        <span className="text-[7px] font-black uppercase tracking-[0.08em] text-orange-500 group-open:hidden">
+          Abrir
+        </span>
+
+        <span className="hidden text-[7px] font-black uppercase tracking-[0.08em] text-orange-500 group-open:inline">
+          Fechar
+        </span>
+
+      </summary>
+
+
+      <form
+        onSubmit={
+          handleSubmit
+        }
+        className="border-t border-orange-100 p-2.5"
+      >
       <div className="flex items-center gap-1.5">
         <AlertCircle
           size={11}
@@ -756,12 +783,12 @@ export function InternalReviewAdjustment({
         />
 
         <p className="text-[8px] font-bold text-orange-800">
-          Revisão interna
+          Falar com {targetLabel}
         </p>
       </div>
 
       <p className="mt-1 text-[8px] leading-relaxed text-orange-700/70">
-        Escreva o ajuste, grave um áudio ou use os dois.
+        Explique a dúvida ou alteração. Você também pode gravar um áudio.
       </p>
 
       <textarea
@@ -911,9 +938,12 @@ export function InternalReviewAdjustment({
         )}
 
         {submitting
-          ? 'Enviando ajuste...'
-          : 'Solicitar ajuste interno'}
+          ? 'Enviando...'
+          : 'Enviar para ' + targetLabel}
       </button>
-    </form>
+
+      </form>
+
+    </details>
   );
 }

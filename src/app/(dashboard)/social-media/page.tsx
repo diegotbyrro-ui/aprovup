@@ -2131,7 +2131,7 @@ const query =
 
 
                         <div className="mt-auto pt-2">
-                          {canSend ? (
+                          {productionReady ? (
                             <div className="space-y-2">
                               <InternalReviewAdjustment
                                 contentId={
@@ -2139,6 +2139,19 @@ const query =
                                 }
                                 clientId={
                                   clientId
+                                }
+                                targetLabel={
+                                  content.status ===
+                                    "DESIGN_ANALISE" ||
+                                  content.area ===
+                                    "DESIGN"
+                                    ? "Design"
+                                    : content.status ===
+                                          "FILMMAKER_ANALISE" ||
+                                        content.area ===
+                                          "FILMMAKER"
+                                      ? "Filmmaker"
+                                      : "Social Media"
                                 }
                               />
                               <form
@@ -2152,13 +2165,25 @@ const query =
                               >
                                 <button
                                   type="submit"
-                                  className="flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-[9px] font-bold text-white transition hover:bg-blue-700"
+                                  disabled={
+                                    !canSend
+                                  }
+                                  className="flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 text-[9px] font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                                 >
                                   <Send
                                     size={12}
                                   />
 
-                                  Enviar para 2ª aprovação
+                                  {
+                                    canSend
+                                      ? "Enviar para 2ª aprovação"
+                                      : !mediaUrl &&
+                                          !externalUrl
+                                        ? "Aguardando material final"
+                                        : !hasCaption
+                                          ? "Aguardando legenda"
+                                          : "Aguardando produção"
+                                  }
                                 </button>
                               </form>
                             </div>
