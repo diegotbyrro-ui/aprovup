@@ -1446,16 +1446,7 @@ export async function downloadMeetRecordingToFile({
       'node:fs/promises'
     );
 
-
-  const {
-    Readable,
-  } =
-    await import(
-      'node:stream'
-    );
-
-
-  const {
+const {
     pipeline,
   } =
     await import(
@@ -1464,9 +1455,7 @@ export async function downloadMeetRecordingToFile({
 
 
   await pipeline(
-    Readable.fromWeb(
-      response.body as any
-    ),
+    response.body as any,
 
     createWriteStream(
       destinationPath
