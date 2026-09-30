@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma';
 import { canAccessClient } from '@/lib/clientAccess';
 
 import { InstagramIcon } from '@/components/icons/InstagramIcon';
+import { YouTubeIcon } from '@/components/icons/YouTubeIcon';
+import { TikTokIcon } from '@/components/icons/TikTokIcon';
 import {
   hasPermission,
   requirePermission,
@@ -412,6 +414,7 @@ export default async function ClientesPage({
                   style={client.brandColor ? { background: client.brandColor } : undefined}
                 >
                   <div className="absolute right-4 top-4 z-30 flex gap-2">
+
                     <Link
                       href={`/clientes/${client.id}/instagram`}
                       title="Instagram do cliente"
@@ -419,6 +422,33 @@ export default async function ClientesPage({
                     >
                       <InstagramIcon size={18} />
                     </Link>
+
+
+                    <Link
+                      href={
+                        `/configuracoes/integracoes/redes-sociais?cliente=${encodeURIComponent(
+                          client.id
+                        )}`
+                      }
+                      title="YouTube do cliente"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-600/95 text-white shadow-sm backdrop-blur transition hover:bg-red-500"
+                    >
+                      <YouTubeIcon size={20} />
+                    </Link>
+
+
+                    <Link
+                      href={
+                        `/configuracoes/integracoes/redes-sociais?cliente=${encodeURIComponent(
+                          client.id
+                        )}`
+                      }
+                      title="TikTok do cliente"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/90 text-white shadow-sm backdrop-blur transition hover:bg-slate-900"
+                    >
+                      <TikTokIcon size={19} />
+                    </Link>
+
 
                     {canManageSocial && (
                       <Link
@@ -429,6 +459,7 @@ export default async function ClientesPage({
                         <Pencil size={17} />
                       </Link>
                     )}
+
                   </div>
                 </div>
 
