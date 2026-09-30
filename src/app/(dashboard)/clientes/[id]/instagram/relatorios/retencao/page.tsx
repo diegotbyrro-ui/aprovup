@@ -267,7 +267,7 @@ function average(
 }
 
 
-function RetentionBar({
+function RetentionChart({
   retained,
   skipped,
 }: {
@@ -277,10 +277,12 @@ function RetentionBar({
   skipped:
     number | null;
 }) {
+
   if (
     retained === null ||
     skipped === null
   ) {
+
     return (
       <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-bold text-slate-400">
         A Meta ainda não retornou a taxa de pulo deste Reel.
@@ -288,41 +290,402 @@ function RetentionBar({
     );
   }
 
+
+  const retainedValue =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        retained
+      )
+    );
+
+
+  const skippedValue =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        skipped
+      )
+    );
+
+
+  /*
+   * O único ponto de retenção real disponível aqui
+   * é o valor aos 3 segundos.
+   *
+   * A curva entre 0s e 3s é apenas uma interpolação
+   * visual entre 100% no início e o dado real da Meta
+   * aos 3 segundos.
+   */
+  const chartLeft =
+    32;
+
+  const chartRight =
+    308;
+
+  const chartTop =
+    18;
+
+  const chartBottom =
+    126;
+
+  const chartHeight =
+    chartBottom -
+    chartTop;
+
+
+  const retainedY =
+    chartBottom -
+    (
+      retainedValue /
+      100
+    ) *
+    chartHeight;
+
+
+  const controlY =
+    Math.max(
+      chartTop +
+        8,
+      retainedY -
+        12
+    );
+
+
+  const linePath =
+    [
+      'M',
+      chartLeft,
+      chartTop,
+
+      'C',
+      92,
+      chartTop +
+        5,
+
+      205,
+      controlY,
+
+      chartRight,
+      retainedY,
+    ].join(
+      ' '
+    );
+
+
+  const areaPath =
+    [
+      linePath,
+
+      'L',
+      chartRight,
+      chartBottom,
+
+      'L',
+      chartLeft,
+      chartBottom,
+
+      'Z',
+    ].join(
+      ' '
+    );
+
+
   return (
-    <div>
-      <div className="flex items-center justify-between gap-4 text-xs font-bold">
-        <span className="text-emerald-700">
-          Permaneceu após 3s · {formatPercent(retained)}
+    <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-sm">
+
+      <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+
+        <div>
+
+          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-violet-300">
+            Retenção inicial
+          </p>
+
+          <p className="mt-1 text-sm font-black text-white">
+            Comportamento nos primeiros 3 segundos
+          </p>
+
+        </div>
+
+
+        <span className="w-fit rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-1 text-[10px] font-black text-violet-200">
+          Dado real da Meta · 3s
         </span>
 
-        <span className="text-rose-600">
-          Pulou · {formatPercent(skipped)}
-        </span>
       </div>
 
-      <div className="mt-3 flex h-5 overflow-hidden rounded-full bg-rose-100">
-        <div
-          className="h-full bg-emerald-500 transition-all"
-          style={{
-            width:
-              `${Math.max(
-                0,
-                Math.min(
-                  100,
-                  retained
+
+      <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_170px]">
+
+        <div className="min-w-0 rounded-xl border border-white/5 bg-black/20 px-2 pb-1 pt-2">
+
+          <svg
+            viewBox="0 0 340 160"
+            className="h-44 w-full"
+            role="img"
+            aria-label={
+              `Retenção inicial: ${formatPercent(
+                retainedValue
+              )} permaneceu após 3 segundos`
+            }
+          >
+
+            <line
+              x1={chartLeft}
+              y1={chartTop}
+              x2={chartRight}
+              y2={chartTop}
+              stroke="#334155"
+              strokeWidth="1"
+            />
+
+            <line
+              x1={chartLeft}
+              y1={
+                chartTop +
+                chartHeight /
+                  2
+              }
+              x2={chartRight}
+              y2={
+                chartTop +
+                chartHeight /
+                  2
+              }
+              stroke="#334155"
+              strokeWidth="1"
+              strokeDasharray="4 5"
+            />
+
+            <line
+              x1={chartLeft}
+              y1={chartBottom}
+              x2={chartRight}
+              y2={chartBottom}
+              stroke="#334155"
+              strokeWidth="1"
+            />
+
+
+            <line
+              x1={chartRight}
+              y1={chartTop}
+              x2={chartRight}
+              y2={chartBottom}
+              stroke="#64748b"
+              strokeWidth="1"
+              strokeDasharray="4 5"
+            />
+
+
+            <path
+              d={areaPath}
+              fill="rgba(168, 85, 247, 0.14)"
+            />
+
+
+            <path
+              d={linePath}
+              fill="none"
+              stroke="#d946ef"
+              strokeWidth="4"
+              strokeLinecap="round"
+            />
+
+
+            <circle
+              cx={chartLeft}
+              cy={chartTop}
+              r="4"
+              fill="#f0abfc"
+            />
+
+
+            <circle
+              cx={chartRight}
+              cy={retainedY}
+              r="6"
+              fill="#f0abfc"
+              stroke="#701a75"
+              strokeWidth="3"
+            />
+
+
+            <rect
+              x={
+                chartRight -
+                80
+              }
+              y={
+                Math.max(
+                  chartTop +
+                    6,
+                  retainedY -
+                    32
                 )
-              )}%`,
-          }}
-        />
+              }
+              width="78"
+              height="24"
+              rx="8"
+              fill="#18181b"
+              stroke="#86198f"
+            />
+
+
+            <text
+              x={
+                chartRight -
+                41
+              }
+              y={
+                Math.max(
+                  chartTop +
+                    22,
+                  retainedY -
+                    16
+                )
+              }
+              textAnchor="middle"
+              fill="#f5d0fe"
+              fontSize="10"
+              fontWeight="700"
+            >
+              {formatPercent(
+                retainedValue
+              )}
+            </text>
+
+
+            <text
+              x="3"
+              y={
+                chartTop +
+                3
+              }
+              fill="#94a3b8"
+              fontSize="9"
+              fontWeight="700"
+            >
+              100%
+            </text>
+
+
+            <text
+              x="8"
+              y={
+                chartTop +
+                chartHeight /
+                  2 +
+                3
+              }
+              fill="#64748b"
+              fontSize="9"
+              fontWeight="700"
+            >
+              50%
+            </text>
+
+
+            <text
+              x="15"
+              y={
+                chartBottom +
+                3
+              }
+              fill="#64748b"
+              fontSize="9"
+              fontWeight="700"
+            >
+              0%
+            </text>
+
+
+            <text
+              x={chartLeft}
+              y="148"
+              textAnchor="middle"
+              fill="#94a3b8"
+              fontSize="10"
+              fontWeight="700"
+            >
+              0s
+            </text>
+
+
+            <text
+              x={chartRight}
+              y="148"
+              textAnchor="middle"
+              fill="#e879f9"
+              fontSize="10"
+              fontWeight="700"
+            >
+              3s
+            </text>
+
+          </svg>
+
+        </div>
+
+
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
+
+          <div className="rounded-xl border border-emerald-400/10 bg-emerald-400/10 p-3">
+
+            <p className="text-[9px] font-black uppercase tracking-wider text-emerald-300">
+              Permaneceu
+            </p>
+
+            <p className="mt-1 text-xl font-black text-white">
+              {formatPercent(
+                retainedValue
+              )}
+            </p>
+
+            <p className="mt-1 text-[10px] text-emerald-200/70">
+              após 3 segundos
+            </p>
+
+          </div>
+
+
+          <div className="rounded-xl border border-rose-400/10 bg-rose-400/10 p-3">
+
+            <p className="text-[9px] font-black uppercase tracking-wider text-rose-300">
+              Pulou
+            </p>
+
+            <p className="mt-1 text-xl font-black text-white">
+              {formatPercent(
+                skippedValue
+              )}
+            </p>
+
+            <p className="mt-1 text-[10px] text-rose-200/70">
+              até os 3 segundos
+            </p>
+
+          </div>
+
+        </div>
+
       </div>
 
-      <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
-        Este gráfico representa a retenção inicial disponível via API: quanto do público não pulou o Reel nos primeiros segundos. Ele não inventa uma curva segundo a segundo.
-      </p>
+
+      <div className="border-t border-white/10 px-4 py-3">
+
+        <p className="text-[10px] leading-relaxed text-slate-400">
+          A Meta disponibiliza aqui o ponto real de retenção aos 3 segundos. A linha entre 0s e 3s é uma interpolação visual para facilitar a leitura e não representa dados segundo a segundo.
+        </p>
+
+      </div>
+
     </div>
   );
 }
-
 
 function normalizeReportDate(
   value:
@@ -995,7 +1358,7 @@ export default async function ReelRetentionPage({
                   </div>
 
                   <div className="mt-6">
-                    <RetentionBar
+                    <RetentionChart
                       retained={item.retainedAfter3s}
                       skipped={item.skipRate}
                     />
