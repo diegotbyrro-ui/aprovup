@@ -100,7 +100,7 @@ function destination(
   const url =
     new URL(
       '/configuracoes/integracoes/redes-sociais',
-      request.url
+      youtubeOauthConfig().origin
     );
 
 

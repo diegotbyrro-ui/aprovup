@@ -55,7 +55,7 @@ export async function GET(
   const fallbackUrl =
     new URL(
       '/configuracoes/integracoes/redes-sociais',
-      request.url
+      youtubeOauthConfig().origin
     );
 
 

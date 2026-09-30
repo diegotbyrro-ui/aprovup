@@ -108,7 +108,7 @@ function destination(
   const url =
     new URL(
       '/configuracoes/integracoes/redes-sociais',
-      request.url
+      tiktokOauthConfig().origin
     );
 
 
