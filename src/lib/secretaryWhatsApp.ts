@@ -2241,6 +2241,30 @@ async function sendProactive({
     );
 
 
+  /*
+   * Avisos com horario operacional definido nao
+   * podem desaparecer apenas porque outro template
+   * foi enviado nos ultimos 60 minutos.
+   *
+   * O bloqueio de seguranca da Meta continua ativo.
+   */
+  const isCriticalScheduledReminder =
+    [
+      'daily:',
+      'calendar-tomorrow:',
+      'calendar-1h:',
+      'capture-tomorrow:',
+      'capture-upcoming:',
+    ].some(
+      (
+        prefix
+      ) =>
+        dedupKey.startsWith(
+          prefix
+        )
+    );
+
+
   if (
     !isDirectorCommand &&
     !isScheduledMessage &&
@@ -2507,7 +2531,8 @@ async function sendProactive({
 
 
     if (
-      recentTemplate
+      recentTemplate &&
+      !isCriticalScheduledReminder
     ) {
       console.log(
         'LIV PROACTIVE SKIPPED - 60 MIN COOLDOWN',
@@ -4822,10 +4847,14 @@ export async function deliverSecretaryCaptureReminders() {
         10
       );
 
+  /*
+   * Janela resiliente para o cron horario.
+   * A deduplicacao impede reenvio da mesma captacao.
+   */
   const upcomingStart =
     new Date(
       now.getTime() +
-      45 *
+      30 *
         60 *
         1000
     );
@@ -4833,7 +4862,7 @@ export async function deliverSecretaryCaptureReminders() {
   const upcomingEnd =
     new Date(
       now.getTime() +
-      75 *
+      90 *
         60 *
         1000
     );
@@ -5973,16 +6002,20 @@ export async function deliverSecretaryCalendarReminders() {
       .toISOString()
       .slice(0, 10);
 
+  /*
+   * Janela resiliente para o cron horario.
+   * A deduplicacao calendar-1h impede reenvio.
+   */
   const upcomingStart =
     new Date(
       now.getTime() +
-      45 * 60 * 1000
+      30 * 60 * 1000
     );
 
   const upcomingEnd =
     new Date(
       now.getTime() +
-      75 * 60 * 1000
+      90 * 60 * 1000
     );
 
   const morningCutoff =
