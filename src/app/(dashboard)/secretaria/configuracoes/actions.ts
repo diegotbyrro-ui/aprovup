@@ -378,6 +378,34 @@ export async function saveWhatsappConnectionAction(
     );
 
 
+  /*
+   * Uma conexao ja validada nao deve voltar para
+   * PENDENTE ao salvar configuracoes operacionais.
+   *
+   * Nova validacao e exigida apenas quando algum
+   * dado critico da conexao Meta for alterado.
+   */
+  const criticalConnectionChanged =
+    !existing ||
+    existing.wabaId !==
+      wabaId ||
+    existing.phoneNumberId !==
+      phoneNumberId ||
+    Boolean(
+      accessToken
+    ) ||
+    cleanGraphVersion(
+      existing.graphVersion
+    ) !==
+      graphVersion;
+
+
+  const nextStatus =
+    criticalConnectionChanged
+      ? "PENDENTE"
+      : existing.status;
+
+
   await prisma
     .secretaryWhatsappConnection
     .upsert({
@@ -409,7 +437,7 @@ export async function saveWhatsappConnectionAction(
         proactiveEnabled,
 
         status:
-          "PENDENTE",
+          nextStatus,
       },
 
       create: {
