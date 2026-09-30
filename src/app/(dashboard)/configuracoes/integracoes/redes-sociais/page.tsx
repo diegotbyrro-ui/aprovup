@@ -72,7 +72,7 @@ function dateLabel(
 ) {
 
   if (!value) {
-    return '—';
+    return 'â€”';
   }
 
 
@@ -299,25 +299,25 @@ export default async function SocialConnectionsPage({
       'Conta desconectada.',
 
     'server-config':
-      'As credenciais desta plataforma ainda não estão configuradas no servidor.',
+      'As credenciais desta plataforma ainda nÃ£o estÃ£o configuradas no servidor.',
 
     state:
-      'A sessão de conexão expirou ou não pôde ser validada. Tente novamente.',
+      'A sessÃ£o de conexÃ£o expirou ou nÃ£o pÃ´de ser validada. Tente novamente.',
 
     denied:
-      'A autorização foi cancelada.',
+      'A autorizaÃ§Ã£o foi cancelada.',
 
     token:
-      'A plataforma recusou a troca do código de autorização.',
+      'A plataforma recusou a troca do cÃ³digo de autorizaÃ§Ã£o.',
 
     channel:
-      'A conta Google foi autorizada, mas nenhum canal do YouTube pôde ser identificado.',
+      'A conta Google foi autorizada, mas nenhum canal do YouTube pÃ´de ser identificado.',
 
     profile:
-      'A conta TikTok foi autorizada, mas o perfil não pôde ser identificado.',
+      'A conta TikTok foi autorizada, mas o perfil nÃ£o pÃ´de ser identificado.',
 
     client:
-      'Este cliente não está disponível para o usuário atual.',
+      'Este cliente nÃ£o estÃ¡ disponÃ­vel para o usuÃ¡rio atual.',
   };
 
 
@@ -351,11 +351,11 @@ export default async function SocialConnectionsPage({
           }
           className="text-xs font-bold text-blue-200 hover:underline"
         >
-          ← Voltar para Pronto para Postar
+          â† Voltar para Pronto para Postar
         </Link>
 
         <p className="mt-5 text-xs font-black uppercase tracking-[0.14em] text-emerald-300">
-          Integrações sociais
+          IntegraÃ§Ãµes sociais
         </p>
 
         <h1 className="mt-2 text-3xl font-black">
@@ -438,7 +438,7 @@ export default async function SocialConnectionsPage({
               </h2>
 
               <p className="mt-1 text-xs text-slate-500">
-                Canal utilizado para publicar vídeos e Shorts.
+                Canal utilizado para publicar vÃ­deos e Shorts.
               </p>
 
             </div>
@@ -455,7 +455,7 @@ export default async function SocialConnectionsPage({
               {
                 youtube
                   ?.status ||
-                'NÃO CONECTADO'
+                'NÃƒO CONECTADO'
               }
             </span>
 
@@ -489,7 +489,7 @@ export default async function SocialConnectionsPage({
               {
                 youtube
                   ?.accountUsername ||
-                '—'
+                'â€”'
               }
             </p>
 
@@ -517,6 +517,27 @@ export default async function SocialConnectionsPage({
 
 
           <div className="mt-5 flex flex-wrap gap-2">
+            {
+              youtube
+                ?.status ===
+                  'ATIVO'
+                ? (
+                  <Link
+                    href={
+                      '/clientes/' +
+                      encodeURIComponent(
+                        selectedClient.id
+                      ) +
+                      '/youtube'
+                    }
+                    className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-black text-red-700 hover:bg-red-100"
+                  >
+                    Ver métricas
+                  </Link>
+                )
+                : null
+            }
+
 
             {
               youtube
@@ -604,7 +625,7 @@ export default async function SocialConnectionsPage({
               </h2>
 
               <p className="mt-1 text-xs text-slate-500">
-                Conta autorizada para publicação via Content Posting API.
+                Conta autorizada para publicaÃ§Ã£o via Content Posting API.
               </p>
 
             </div>
@@ -621,7 +642,7 @@ export default async function SocialConnectionsPage({
               {
                 tiktok
                   ?.status ||
-                'NÃO CONECTADO'
+                'NÃƒO CONECTADO'
               }
             </span>
 
@@ -651,11 +672,11 @@ export default async function SocialConnectionsPage({
             </p>
 
             <p>
-              <strong>Permissões:</strong>{' '}
+              <strong>PermissÃµes:</strong>{' '}
               {
                 tiktok
                   ?.scopes ||
-                '—'
+                'â€”'
               }
             </p>
 
@@ -760,11 +781,11 @@ export default async function SocialConnectionsPage({
       <section className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
 
         <p className="text-xs font-black text-blue-900">
-          Próxima etapa
+          PrÃ³xima etapa
         </p>
 
         <p className="mt-1 text-xs leading-relaxed text-blue-700">
-          Depois das contas conectadas, o AprovUp poderá renovar os tokens automaticamente e publicar cada conteúdo nas plataformas selecionadas de forma independente.
+          Depois das contas conectadas, o AprovUp poderÃ¡ renovar os tokens automaticamente e publicar cada conteÃºdo nas plataformas selecionadas de forma independente.
         </p>
 
       </section>
