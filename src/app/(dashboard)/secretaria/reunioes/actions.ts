@@ -23,6 +23,10 @@ import {
 } from '@/lib/meetingAi';
 
 import {
+  processSecretaryMeetingRecordingById,
+} from '@/lib/secretaryMeetingRecording';
+
+import {
   revalidatePath,
 } from 'next/cache';
 
@@ -351,6 +355,69 @@ export async function syncSecretaryMeetingAction(
   }
 
 
+  const processRecordingFallback =
+    async (
+      reason:
+        string
+    ) => {
+
+      console.log(
+        '[LIV MEETING] Usando gravacao como fallback:',
+        {
+          meetingId:
+            meeting.id,
+
+          reason,
+        }
+      );
+
+
+      await prisma
+        .secretaryMeeting
+        .update({
+          where: {
+            id:
+              meeting.id,
+          },
+
+          data: {
+            status:
+              'PROCESSING_RECORDING',
+
+            processingError:
+              null,
+          },
+        });
+
+
+      const result =
+        await processSecretaryMeetingRecordingById({
+          agencyId:
+            user.agencyId,
+
+          meetingId:
+            meeting.id,
+        });
+
+
+      console.log(
+        '[LIV MEETING] Resultado do fallback manual:',
+        result
+      );
+
+
+      revalidatePath(
+        '/secretaria/reunioes'
+      );
+
+
+      revalidatePath(
+        '/secretaria/reunioes/' +
+        meeting.id
+      );
+    };
+
+
   try {
 
     /*
@@ -442,49 +509,10 @@ export async function syncSecretaryMeetingAction(
       !transcript
     ) {
 
-      await prisma
-        .secretaryMeeting
-        .update({
-          where: {
-            id:
-              meeting.id,
-          },
-
-          data: {
-            status:
-              'WAITING_TRANSCRIPT',
-
-            googleMeetSpaceName:
-              space.name ||
-              null,
-
-            conferenceRecordName:
-              conference.name,
-
-            startedAt:
-              conference.startTime
-                ? new Date(
-                    conference.startTime
-                  )
-                : null,
-
-            endedAt:
-              conference.endTime
-                ? new Date(
-                    conference.endTime
-                  )
-                : null,
-
-            processingError:
-              'A reunião foi encontrada, mas a transcrição ainda não está disponível.',
-          },
-        });
-
-
-      revalidatePath(
-        '/secretaria/reunioes/' +
-        meeting.id
+      await processRecordingFallback(
+        'A transcricao nativa do Google Meet nao esta disponivel.'
       );
+
 
       return;
     }
@@ -505,9 +533,12 @@ export async function syncSecretaryMeetingAction(
       0
     ) {
 
-      throw new Error(
-        'A transcrição existe, mas ainda não possui falas disponíveis.'
+      await processRecordingFallback(
+        'A transcricao nativa existe, mas nao possui falas disponiveis.'
       );
+
+
+      return;
     }
 
 
