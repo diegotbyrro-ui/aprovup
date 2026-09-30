@@ -3876,6 +3876,9 @@ export type InstagramReelRetentionItem = {
   imageUrl:
     string | null;
 
+  videoUrl:
+    string | null;
+
   views:
     number | null;
 
@@ -4314,6 +4317,10 @@ export async function getInstagramReelRetention({
 
             imageUrl:
               media.thumbnail_url ||
+              media.media_url ||
+              null,
+
+            videoUrl:
               media.media_url ||
               null,
 
