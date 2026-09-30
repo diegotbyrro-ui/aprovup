@@ -195,8 +195,16 @@ export async function getCurrentUserSaasAccess(): Promise<SaasAccessResult> {
         canUseSocialPosting:
           true,
 
+        /*
+         * Social Media da agencia interna tambem
+         * precisa gerar os relatorios dos clientes
+         * aos quais possui acesso.
+         *
+         * O isolamento por carteira continua sendo
+         * aplicado por canAccessClient().
+         */
         canUseReports:
-          false,
+          true,
       },
     };
   }
