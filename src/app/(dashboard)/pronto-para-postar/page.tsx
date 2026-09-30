@@ -276,6 +276,15 @@ export default async function ProntoParaPostarPage({
 
                     <div className="flex flex-wrap gap-2">
                         <Link
+                            href={
+                                `/configuracoes/integracoes/redes-sociais?cliente=${encodeURIComponent(selectedClient)}`
+                            }
+                            className="rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm font-bold text-emerald-200 hover:bg-emerald-400/20"
+                        >
+                            Conexões sociais
+                        </Link>
+
+                        <Link
                             href="/entregas-semana"
                             className="rounded-xl bg-white px-4 py-2 text-sm font-bold text-slate-900 hover:bg-slate-100"
                         >
