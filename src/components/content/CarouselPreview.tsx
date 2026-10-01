@@ -3,6 +3,11 @@
 import { useState } from "react";
 
 import {
+  MediaLightbox,
+} from "@/components/content/MediaLightbox";
+
+
+import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -107,7 +112,17 @@ export function CarouselPreview({
 
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-black">
+    <MediaLightbox
+      assets={
+        assets
+      }
+      initialIndex={
+        safeIndex
+      }
+      title="Carrossel"
+      subtitle={`${assets.length} cards`}
+    >
+      <div className="relative h-full w-full overflow-hidden bg-black">
 
       {isVideo ? (
         <video
@@ -250,6 +265,7 @@ export function CarouselPreview({
         </>
       ) : null}
 
-    </div>
+      </div>
+    </MediaLightbox>
   );
 }

@@ -57,6 +57,9 @@ import {
 import {
   CarouselPreview,
 } from "@/components/content/CarouselPreview";
+import {
+  MediaLightbox,
+} from "@/components/content/MediaLightbox";
 
 
 function normalizeText(
@@ -1847,95 +1850,178 @@ const query =
                               : "aspect-[4/5]",
                           ].join(" ")}
                         >
-                        {multiAssets.length > 1 ? (
-                          <CarouselPreview
-                            assets={
-                              multiAssets
-                            }
-                            compact
-                          />
-                        ) : mediaUrl ? (
-                          isPdfPreview ? (
-                            <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-slate-100 p-4 text-center">
-                              <FileText
-                                size={28}
-                                className="text-red-500"
+
+                          {multiAssets.length > 1 ? (
+
+                            <CarouselPreview
+                              assets={
+                                multiAssets
+                              }
+                              compact
+                            />
+
+                          ) : mediaUrl ? (
+
+                            isPdfPreview ? (
+
+                              <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-slate-100 p-4 text-center">
+
+                                <FileText
+                                  size={28}
+                                  className="text-red-500"
+                                />
+
+                                <span className="text-[9px] font-black text-slate-700">
+                                  Arquivo PDF
+                                </span>
+
+                                <a
+                                  href={
+                                    mediaUrl
+                                  }
+                                  target="_blank"
+                                  rel="noreferrer noopener"
+                                  className="rounded-lg bg-slate-900 px-3 py-2 text-[8px] font-black text-white"
+                                >
+                                  Abrir PDF
+                                </a>
+
+                              </div>
+
+                            ) : isVideoPreview ? (
+
+                              <MediaLightbox
+                                assets={[
+                                  {
+                                    id:
+                                      content.id,
+                                    url:
+                                      mediaUrl,
+                                    mimeType:
+                                      content.finalMediaType ||
+                                      "video/mp4",
+                                  },
+                                ]}
+                                title={
+                                  cleanDemoName(
+                                    content.title
+                                  ) ||
+                                  "Vídeo"
+                                }
+                                subtitle="2ª Etapa de Aprovação • Vídeo"
+                              >
+
+                                <div className="relative flex h-full w-full items-center justify-center bg-black">
+
+                                  <video
+                                    src={
+                                      mediaUrl
+                                    }
+                                    controls
+                                    playsInline
+                                    preload="metadata"
+                                    className="h-full w-full object-contain"
+                                  >
+                                    Seu navegador não conseguiu reproduzir este vídeo.
+                                  </video>
+
+                                </div>
+
+                              </MediaLightbox>
+
+                            ) : (
+
+                              <MediaLightbox
+                                assets={[
+                                  {
+                                    id:
+                                      content.id,
+                                    url:
+                                      mediaUrl,
+                                    mimeType:
+                                      content.finalMediaType ||
+                                      "image/*",
+                                  },
+                                ]}
+                                title={
+                                  cleanDemoName(
+                                    content.title
+                                  ) ||
+                                  "Imagem"
+                                }
+                                subtitle="2ª Etapa de Aprovação • Imagem"
+                              >
+
+                                <div className="relative flex h-full w-full items-center justify-center bg-black">
+
+                                  <img
+                                    src={
+                                      mediaUrl
+                                    }
+                                    alt=""
+                                    className="h-full w-full object-contain"
+                                  />
+
+                                </div>
+
+                              </MediaLightbox>
+
+                            )
+
+                          ) : externalUrl ? (
+
+                            <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-blue-50 p-4 text-center">
+
+                              <ExternalLink
+                                size={26}
+                                className="text-blue-600"
                               />
 
-                              <span className="text-[9px] font-black text-slate-700">
-                                Arquivo PDF
+                              <span className="text-[9px] font-black text-blue-800">
+                                Material no Google Drive
                               </span>
 
                               <a
                                 href={
-                                  mediaUrl
+                                  externalUrl
                                 }
                                 target="_blank"
                                 rel="noreferrer noopener"
-                                className="rounded-lg bg-slate-900 px-3 py-2 text-[8px] font-black text-white"
+                                className="rounded-lg bg-blue-600 px-3 py-2 text-[8px] font-black text-white"
                               >
-                                Abrir PDF
+                                Abrir arquivo
                               </a>
+
                             </div>
-                          ) : isVideoPreview ? (
-                            <video
-                              src={
-                                mediaUrl
-                              }
-                              controls
-                              className="h-full w-full object-contain"
-                            />
+
                           ) : (
-                            <img
-                              src={
-                                mediaUrl
-                              }
-                              alt=""
-                              className="h-full w-full object-contain"
-                            />
-                          )
-                        ) : externalUrl ? (
-                          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-blue-50 p-4 text-center">
-                            <ExternalLink
-                              size={26}
-                              className="text-blue-600"
-                            />
 
-                            <span className="text-[9px] font-black text-blue-800">
-                              Material no Google Drive
-                            </span>
+                            <div className="flex flex-col items-center gap-2 text-slate-500">
 
-                            <a
-                              href={
-                                externalUrl
-                              }
-                              target="_blank"
-                              rel="noreferrer noopener"
-                              className="rounded-lg bg-blue-600 px-3 py-2 text-[8px] font-black text-white"
-                            >
-                              Abrir arquivo
-                            </a>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center gap-2 text-slate-500">
-                            {content.area ===
-                            "FILMMAKER" ? (
-                              <Video
-                                size={22}
-                              />
-                            ) : (
-                              <ImageIcon
-                                size={22}
-                              />
-                            )}
+                              {content.area ===
+                              "FILMMAKER" ? (
 
-                            <span className="text-[8px] font-bold">
-                              SEM PREVIEW
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                                <Video
+                                  size={22}
+                                />
 
+                              ) : (
+
+                                <ImageIcon
+                                  size={22}
+                                />
+
+                              )}
+
+                              <span className="text-[8px] font-bold">
+                                SEM PREVIEW
+                              </span>
+
+                            </div>
+
+                          )}
+
+                        </div>
 
                         {
                           storyAssets.length >

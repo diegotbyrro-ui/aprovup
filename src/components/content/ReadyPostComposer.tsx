@@ -4,7 +4,7 @@ import {
   Bookmark,
   CheckCircle2,
   Heart,
-  Layers3,
+
   Loader2,
   MessageCircle,
   MoreHorizontal,
@@ -36,6 +36,13 @@ import {
 import {
   ReadyVideoReplace,
 } from '@/components/content/ReadyVideoReplace';
+import {
+  CarouselPreview,
+} from '@/components/content/CarouselPreview';
+
+import {
+  MediaLightbox,
+} from '@/components/content/MediaLightbox';
 
 
 type PreviewAsset = {
@@ -230,11 +237,7 @@ export function ReadyPostComposer({
     caption !==
     savedCaption;
 
-  const carouselPreview =
-    isCarousel
-      ? assets[0]?.url ||
-        previewImageUrl
-      : null;
+
 
 
   async function saveCaption() {
@@ -324,54 +327,95 @@ export function ReadyPostComposer({
           </div>
 
           <div className="relative flex min-h-[300px] items-center justify-center bg-black">
-            {isCarousel &&
-            carouselPreview ? (
-              <>
-                <img
-                  src={
-                    carouselPreview
-                  }
-                  alt="Primeira página do carrossel"
-                  className="max-h-[480px] w-full object-contain"
-                />
 
-                <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-black/75 px-2.5 py-1 text-[10px] font-black text-white">
-                  <Layers3
-                    size={13}
+            {isCarousel &&
+            assets.length > 0 ? (
+
+              <CarouselPreview
+                assets={
+                  assets
+                }
+              />
+
+            ) : previewVideoUrl ? (
+
+              <MediaLightbox
+                assets={[
+                  {
+                    id:
+                      `${contentId}-video`,
+                    url:
+                      previewVideoUrl,
+                    mimeType:
+                      "video/mp4",
+                  },
+                ]}
+                title={
+                  clientName
+                }
+                subtitle="Instagram • Vídeo"
+              >
+
+                <div className="relative flex min-h-[300px] items-center justify-center bg-black">
+
+                  <video
+                    src={
+                      previewVideoUrl
+                    }
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="max-h-[480px] w-full object-contain"
+                  >
+                    Seu navegador não conseguiu reproduzir este vídeo.
+                  </video>
+
+                </div>
+
+              </MediaLightbox>
+
+            ) : previewImageUrl ? (
+
+              <MediaLightbox
+                assets={[
+                  {
+                    id:
+                      `${contentId}-image`,
+                    url:
+                      previewImageUrl,
+                    mimeType:
+                      "image/*",
+                  },
+                ]}
+                title={
+                  clientName
+                }
+                subtitle="Instagram • Imagem"
+              >
+
+                <div className="relative flex min-h-[300px] items-center justify-center bg-black">
+
+                  <img
+                    src={
+                      previewImageUrl
+                    }
+                    alt="Prévia da publicação"
+                    className="max-h-[480px] w-full object-contain"
                   />
 
-                  1/{Math.max(
-                    assets.length,
-                    1
-                  )}
                 </div>
-              </>
-            ) : previewVideoUrl ? (
-              <video
-                src={
-                  previewVideoUrl
-                }
-                controls
-                preload="metadata"
-                className="max-h-[480px] w-full object-contain"
-              >
-                Seu navegador não conseguiu reproduzir este vídeo.
-              </video>
-            ) : previewImageUrl ? (
-              <img
-                src={
-                  previewImageUrl
-                }
-                alt="Prévia da publicação"
-                className="max-h-[480px] w-full object-contain"
-              />
+
+              </MediaLightbox>
+
             ) : (
+
               <div className="flex min-h-[300px] items-center justify-center px-6 text-center text-xs font-bold text-slate-400">
                 A prévia aparecerá quando houver material final.
               </div>
-            )}
-          </div>
 
+            )}
+
+          </div>
           <div className="px-3 pb-4 pt-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 text-slate-900">
