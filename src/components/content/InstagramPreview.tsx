@@ -1,3 +1,12 @@
+"use client";
+
+import { useState } from "react";
+
+import {
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+
 export function InstagramPreview({
   clientName,
   caption,
@@ -39,6 +48,64 @@ export function InstagramPreview({
     null;
 
 
+  const [
+    activeCarouselIndex,
+    setActiveCarouselIndex,
+  ] = useState(0);
+
+
+  const activeCarouselAsset =
+    carouselAssets[
+      activeCarouselIndex
+    ] ||
+    firstCarouselAsset;
+
+
+  function showPreviousCarouselAsset() {
+
+    if (
+      carouselAssets.length <=
+      1
+    ) {
+      return;
+    }
+
+
+    setActiveCarouselIndex(
+      (
+        current
+      ) =>
+        current === 0
+          ? carouselAssets.length - 1
+          : current - 1
+    );
+
+  }
+
+
+  function showNextCarouselAsset() {
+
+    if (
+      carouselAssets.length <=
+      1
+    ) {
+      return;
+    }
+
+
+    setActiveCarouselIndex(
+      (
+        current
+      ) =>
+        current ===
+        carouselAssets.length - 1
+          ? 0
+          : current + 1
+    );
+
+  }
+
+
   const normalizedFormat =
     String(
       format ||
@@ -71,8 +138,8 @@ export function InstagramPreview({
    */
   const resolvedMediaUrl =
     isCarousel &&
-    firstCarouselAsset
-      ? firstCarouselAsset.url
+    activeCarouselAsset
+      ? activeCarouselAsset.url
       : (
           mediaUrl ||
           firstCarouselAsset?.url ||
@@ -84,9 +151,9 @@ export function InstagramPreview({
 
   const resolvedMediaType =
     isCarousel &&
-    firstCarouselAsset
+    activeCarouselAsset
       ? (
-          firstCarouselAsset.mimeType ||
+          activeCarouselAsset.mimeType ||
           'image/*'
         )
       : mediaUrl
@@ -218,9 +285,43 @@ export function InstagramPreview({
                 )}
 
                 {carouselCount > 1 ? (
-                  <span className="absolute right-3 top-3 rounded-full bg-slate-950/70 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm backdrop-blur">
-                    1 / {carouselCount}
-                  </span>
+                  <>
+                    <button
+                      type="button"
+                      onClick={
+                        showPreviousCarouselAsset
+                      }
+                      aria-label="Ver card anterior do carrossel"
+                      className="absolute left-3 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-slate-800 shadow-lg backdrop-blur transition hover:scale-105 hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <ChevronLeft
+                        size={18}
+                        strokeWidth={2.5}
+                      />
+                    </button>
+
+
+                    <button
+                      type="button"
+                      onClick={
+                        showNextCarouselAsset
+                      }
+                      aria-label="Ver proximo card do carrossel"
+                      className="absolute right-3 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-white/90 text-slate-800 shadow-lg backdrop-blur transition hover:scale-105 hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <ChevronRight
+                        size={18}
+                        strokeWidth={2.5}
+                      />
+                    </button>
+
+
+                    <span className="absolute right-3 top-3 z-20 rounded-full bg-slate-950/70 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm backdrop-blur">
+                      {
+                        activeCarouselIndex + 1
+                      } / {carouselCount}
+                    </span>
+                  </>
                 ) : null}
               </>
             ) : (
@@ -357,9 +458,37 @@ export function InstagramPreview({
                 asset,
                 index
               ) => (
-                <div
+                <button
+                  type="button"
                   key={`${asset.url}-${index}`}
-                  className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100"
+                  onClick={() =>
+                    setActiveCarouselIndex(
+                      index
+                    )
+                  }
+                  aria-label={`Ver card ${index + 1} do carrossel`}
+                  aria-pressed={
+                    activeCarouselIndex ===
+                    index
+                  }
+                  className={[
+                    "relative",
+                    "h-14",
+                    "w-14",
+                    "shrink-0",
+                    "overflow-hidden",
+                    "rounded-lg",
+                    "border-2",
+                    "bg-slate-100",
+                    "transition",
+                    "focus:outline-none",
+                    "focus:ring-2",
+                    "focus:ring-blue-500",
+                    activeCarouselIndex ===
+                    index
+                      ? "border-blue-500 ring-2 ring-blue-100"
+                      : "border-slate-200 hover:border-slate-300",
+                  ].join(" ")}
                 >
                   {
                     (
@@ -372,7 +501,7 @@ export function InstagramPreview({
                       )
                       ? (
                         <div className="flex h-full w-full items-center justify-center bg-slate-900 text-[9px] font-bold text-white">
-                          VÍDEO
+                          VIDEO
                         </div>
                       )
                       : (
@@ -388,7 +517,7 @@ export function InstagramPreview({
                   <span className="absolute bottom-0 right-0 rounded-tl bg-slate-950/70 px-1 text-[8px] font-bold text-white">
                     {index + 1}
                   </span>
-                </div>
+                </button>
               )
             )}
           </div>
