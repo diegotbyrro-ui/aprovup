@@ -1262,9 +1262,23 @@ function AnalysisBatchCard({
                   </span>
 
 
-                  <span className="min-w-0 flex-1 truncate font-semibold text-slate-600">
-                    {item.title}
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold text-slate-600">
+                      {item.title}
+                    </span>
+
+                    {item.fileLinks?.trim() ? (
+                      <a
+                        href={item.fileLinks.trim()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Abrir referencia"
+                        className="mt-1 inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[7px] font-black uppercase text-blue-700 transition hover:bg-blue-100"
+                      >
+                        Link de referencia
+                      </a>
+                    ) : null}
+                  </div>
 
 
                   <Link
