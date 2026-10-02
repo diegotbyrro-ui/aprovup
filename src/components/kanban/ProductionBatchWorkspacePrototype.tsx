@@ -49,6 +49,9 @@ type Item = {
   caption:
     string | null;
 
+  fileLinks:
+    string | null;
+
   referenceFiles:
     ReferenceFile[];
 };
@@ -1107,20 +1110,81 @@ export function ProductionBatchWorkspacePrototype({
                             </p>
 
                             <p className="mt-0.5 text-[9px] text-slate-400">
-                              Arquivos anexados pela Social para auxiliar na criação.
+                              Arquivos e links enviados pela Social para auxiliar na criação.
                             </p>
 
                           </div>
 
 
-                          {item.referenceFiles.length >
-                          0 ? (
-                            <span className="shrink-0 rounded-md bg-blue-50 px-2 py-1 text-[8px] font-black text-blue-600">
-                              {item.referenceFiles.length} anexo(s)
-                            </span>
-                          ) : null}
+                          <div className="flex shrink-0 items-center gap-2">
+
+                            {item.referenceFiles.length >
+                            0 ? (
+                              <span className="rounded-md bg-blue-50 px-2 py-1 text-[8px] font-black text-blue-600">
+                                {item.referenceFiles.length} anexo(s)
+                              </span>
+                            ) : null}
+
+
+                            {item.fileLinks?.trim() ? (
+                              <span className="rounded-md bg-violet-50 px-2 py-1 text-[8px] font-black text-violet-600">
+                                1 link
+                              </span>
+                            ) : null}
+
+                          </div>
 
                         </div>
+
+
+                        {item.fileLinks?.trim() ? (
+
+                          <div className="border-t border-violet-100 bg-violet-50/50 px-3 py-3">
+
+                            <div className="flex items-center gap-3">
+
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-violet-200 bg-white text-[9px] font-black text-violet-600">
+                                LINK
+                              </div>
+
+
+                              <div className="min-w-0 flex-1">
+
+                                <p className="text-[8px] font-black uppercase tracking-[0.07em] text-violet-700">
+                                  Link de referência
+                                </p>
+
+                                <p
+                                  className="mt-1 truncate text-[9px] font-semibold text-slate-700"
+                                  title={item.fileLinks.trim()}
+                                >
+                                  Material enviado pela Social Media
+                                </p>
+
+                                <p
+                                  className="mt-0.5 truncate text-[8px] text-slate-400"
+                                  title={item.fileLinks.trim()}
+                                >
+                                  {item.fileLinks.trim()}
+                                </p>
+
+                              </div>
+
+
+                              <a
+                                href={item.fileLinks.trim()}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex h-8 shrink-0 items-center justify-center rounded-md bg-violet-600 px-3 text-[8px] font-black text-white transition hover:bg-violet-700"
+                              >
+                                Abrir
+                              </a>
+
+                            </div>
+
+                          </div>
+
+                        ) : null}
 
 
                         {item.referenceFiles.length >
@@ -1319,6 +1383,7 @@ export function ProductionBatchWorkspacePrototype({
                                                 reference.name}
                                             </p>
 
+
                                             <p className="mt-0.5 text-[8px] font-medium text-slate-400">
                                               {reference.size >
                                               0
@@ -1345,6 +1410,7 @@ export function ProductionBatchWorkspacePrototype({
                                               Abrir
                                             </a>
 
+
                                             <a
                                               href={`/api/conteudos/${item.id}/reference-download?url=${encodeURIComponent(
                                                 reference.url
@@ -1370,7 +1436,11 @@ export function ProductionBatchWorkspacePrototype({
 
                           </div>
 
-                        ) : (
+                        ) : null}
+
+
+                        {!item.referenceFiles.length &&
+                        !item.fileLinks?.trim() ? (
 
                           <div className="border-t border-slate-100 bg-slate-50 px-3 py-4 text-center">
 
@@ -1380,10 +1450,9 @@ export function ProductionBatchWorkspacePrototype({
 
                           </div>
 
-                        )}
+                        ) : null}
 
                       </div>
-
 
                       {/* LEGENDA */}
 

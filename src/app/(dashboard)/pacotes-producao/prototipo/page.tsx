@@ -281,6 +281,10 @@ export default async function ProductionBatchPrototypePage({
             caption:
               content.caption,
 
+            fileLinks:
+              content.fileLinks ||
+              null,
+
             referenceFiles:
               referenceFiles.map(
                 (
