@@ -1193,6 +1193,30 @@ function FilmmakerCard({
               content.briefing}
           </p>
         ) : null}
+        {content.fileLinks ? (
+          <a
+            href={content.fileLinks.trim()}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={content.fileLinks.trim()}
+            className="mt-3 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-2 transition hover:border-blue-300 hover:bg-blue-100"
+          >
+            <ExternalLink
+              size={12}
+              className="shrink-0 text-blue-600"
+            />
+
+            <span className="min-w-0 flex-1">
+              <span className="block text-[8px] font-black uppercase tracking-[0.07em] text-blue-700">
+                Link de referÃªncia
+              </span>
+
+              <span className="mt-0.5 block truncate text-[9px] font-semibold text-blue-900">
+                Abrir material enviado pela Social Media
+              </span>
+            </span>
+          </a>
+        ) : null}
 
         {emphasizeReturn &&
         returnNotice ? (
