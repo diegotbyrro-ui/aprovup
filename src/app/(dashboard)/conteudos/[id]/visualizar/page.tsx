@@ -415,8 +415,22 @@ export default async function ViewContentPage({
       ? finalMediaUrl
       : '';
 
+  const normalizedArea =
+    String(
+      item.area ||
+      ''
+    )
+      .trim()
+      .toUpperCase();
+
   const backHref =
-    `/conteudos/${item.id}`;
+    normalizedArea === 'DESIGN' ||
+    normalizedArea === 'SOCIAL_DESIGN' ||
+    normalizedArea === 'SOCIAL_MEDIA'
+      ? '/design'
+      : normalizedArea === 'FILMMAKER'
+        ? '/filmmaker'
+        : `/conteudos/${item.id}`;
 
   return (
     <div className="mx-auto max-w-[1500px] space-y-5 px-4 py-5 lg:px-6">
@@ -512,49 +526,7 @@ export default async function ViewContentPage({
             value={briefing}
           />
 
-          {item.fileLinks?.trim() ? (
-            <section className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5 shadow-[0_10px_30px_-26px_rgba(15,23,42,0.45)]">
-              <div className="flex items-center gap-2">
-                <Paperclip
-                  size={16}
-                  className="text-blue-600"
-                />
 
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-600">
-                    Link de referência
-                  </p>
-
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Material enviado pela Social Media para auxiliar na criação.
-                  </p>
-                </div>
-              </div>
-
-              <a
-                href={item.fileLinks.trim()}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={item.fileLinks.trim()}
-                className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-blue-200 bg-white px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50"
-              >
-                <span className="min-w-0">
-                  <span className="block text-[10px] font-black uppercase tracking-[0.08em] text-blue-700">
-                    Referência da Social Media
-                  </span>
-
-                  <span className="mt-1 block truncate text-[11px] font-semibold text-blue-950">
-                    Abrir material de referência
-                  </span>
-                </span>
-
-                <Paperclip
-                  size={16}
-                  className="shrink-0 text-blue-600"
-                />
-              </a>
-            </section>
-          ) : null}
           {referenceImages.length > 0 ? (
             <section className="rounded-2xl border border-blue-100 bg-white p-5 shadow-[0_10px_30px_-26px_rgba(15,23,42,0.45)]">
               <div className="flex items-center gap-2">
@@ -650,6 +622,50 @@ export default async function ViewContentPage({
             title="Legenda"
             value={caption}
           />
+          {item.fileLinks?.trim() ? (
+            <section className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5 shadow-[0_10px_30px_-26px_rgba(15,23,42,0.45)]">
+              <div className="flex items-center gap-2">
+                <Paperclip
+                  size={16}
+                  className="text-blue-600"
+                />
+
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.12em] text-blue-600">
+                    Link de referência
+                  </p>
+
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Material enviado pela Social Media para auxiliar na criação.
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href={item.fileLinks.trim()}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={item.fileLinks.trim()}
+                className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-blue-200 bg-white px-4 py-3 transition hover:border-blue-300 hover:bg-blue-50"
+              >
+                <span className="min-w-0">
+                  <span className="block text-[10px] font-black uppercase tracking-[0.08em] text-blue-700">
+                    Referência da Social Media
+                  </span>
+
+                  <span className="mt-1 block truncate text-[11px] font-semibold text-blue-950">
+                    Abrir material de referência
+                  </span>
+                </span>
+
+                <Paperclip
+                  size={16}
+                  className="shrink-0 text-blue-600"
+                />
+              </a>
+            </section>
+          ) : null}
+
 
           <TextBlock
             title="Observações"
