@@ -33,10 +33,6 @@ import {
 } from "@/lib/prisma";
 
 import {
-  SyncedHorizontalScroll,
-} from "@/components/kanban/SyncedHorizontalScroll";
-
-import {
   KanbanClientFilter,
 } from "@/components/kanban/KanbanClientFilter";
 
@@ -2870,11 +2866,7 @@ export default async function DesignPage({
         </div>
 
 
-        <SyncedHorizontalScroll
-          alwaysShowTop
-          className="pb-2 [scrollbar-width:thin]"
-        >
-          <div className="flex min-h-[620px] gap-3">
+        <div className="overflow-x-auto pb-2 [scrollbar-width:thin]"><div className="flex min-h-[620px] gap-3">
             <ProductionBatchKanbanPrototype
               contents={
                 contents
@@ -3189,7 +3181,7 @@ export default async function DesignPage({
               }
             )}
           </div>
-        </SyncedHorizontalScroll>
+        </div>
       </section>
     </div>
   );
