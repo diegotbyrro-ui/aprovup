@@ -730,20 +730,18 @@ export function SecretaryConversationsClient({
                           </span>
 
                           {
-                            selected
-                              .lastInboundAt
-                              ? (
-                                <span>
-                                  Última entrada: {
-                                    formatDate(
-                                      selected
-                                        .lastInboundAt
-                                    )
-                                  }
-                                </span>
-                              )
-                              : null
-                          }
+  selected.updatedAt
+    ? (
+        <span>
+          Última atividade: {
+            formatDate(
+              selected.updatedAt
+            )
+          }
+        </span>
+      )
+    : null
+}
                         </div>
                       </div>
                     </div>
