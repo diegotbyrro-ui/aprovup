@@ -40,9 +40,7 @@ import {
   prisma,
 } from "@/lib/prisma";
 
-import {
-  SyncedHorizontalScroll,
-} from "@/components/kanban/SyncedHorizontalScroll";
+
 
 import {
   KanbanClientFilter,
@@ -1921,7 +1919,7 @@ export default async function FilmmakerPage({
         </div>
 
 
-        <SyncedHorizontalScroll className="pb-2 [scrollbar-width:thin]">
+        <div className="overflow-x-auto pb-2 [scrollbar-width:thin]">
           <div className="flex min-h-[640px] gap-3">
             <ProductionBatchKanbanPrototype
               contents={
@@ -2088,7 +2086,7 @@ export default async function FilmmakerPage({
               }
             )}
           </div>
-        </SyncedHorizontalScroll>
+        </div>
       </section>
     </div>
   );
