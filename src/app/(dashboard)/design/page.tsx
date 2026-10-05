@@ -465,17 +465,38 @@ function isLate(
     content.productionDeadline ||
     content.plannedDate;
 
+  /*
+   * FORA DO PRAZO mede atraso de producao.
+   *
+   * Conteudos que ja chegaram a Analise nao devem
+   * continuar sendo contabilizados como atraso do Design,
+   * mesmo que a Social Media ainda nao tenha marcado
+   * que foram publicados.
+   *
+   * A Analise atualmente contempla:
+   * - DESIGN_ANALISE
+   * - ENVIADO_CLIENTE
+   * - ALTERACAO_SOLICITADA
+   * - PRONTO_PARA_POSTAR
+   *
+   * Publicados tambem ficam fora da contagem.
+   */
+  const nonLateStatuses = [
+    "DESIGN_ANALISE",
+    "ENVIADO_CLIENTE",
+    "ALTERACAO_SOLICITADA",
+    "PRONTO_PARA_POSTAR",
+    "PUBLICADO",
+    "PUBLICADO_MANUALMENTE",
+  ];
+
   return Boolean(
     deadline &&
     new Date(
       deadline
     ) <
       new Date() &&
-    ![
-      "PRONTO_PARA_POSTAR",
-      "PUBLICADO",
-      "PUBLICADO_MANUALMENTE",
-    ].includes(
+    !nonLateStatuses.includes(
       String(
         content.status
       )
