@@ -2593,6 +2593,51 @@ export default async function DesignPage({
     ).length;
 
 
+  const demandCount =
+    contents.filter(
+      (
+        content
+      ) => {
+        const status = String(
+          content.status ||
+          ""
+        );
+
+        if (
+          [
+            "PUBLICADO",
+            "PUBLICADO_MANUALMENTE",
+          ].includes(
+            status
+          )
+        ) {
+          return false;
+        }
+
+        if (
+          [
+            "DEMANDA_EMERGENCIAL",
+            "DESIGN_GRAFICO",
+          ].includes(
+            content.format ||
+            ""
+          )
+        ) {
+          return true;
+        }
+
+        return [
+          "APROVADO",
+          "DESIGN_FAZENDO",
+          "DESIGN_DUVIDA",
+          "ALTERACAO_SOLICITADA",
+        ].includes(
+          status
+        );
+      }
+    ).length;
+
+
   return (
     <div className="space-y-4">
       {/* ===================================================
@@ -2656,7 +2701,7 @@ export default async function DesignPage({
         <CompactMetric
           label="Demandas"
           value={
-            contents.length
+            demandCount
           }
           tone="blue"
         />

@@ -474,6 +474,20 @@ function isLate(
     content.plannedDate;
 
   if (
+    [
+      "FILMMAKER_ANALISE",
+      "ENVIADO_CLIENTE",
+      "ALTERACAO_SOLICITADA",
+    ].includes(
+      String(
+        content.status
+      )
+    )
+  ) {
+    return false;
+  }
+
+  if (
     !deadline
   ) {
     return false;
@@ -1618,6 +1632,27 @@ export default async function FilmmakerPage({
     ).length;
 
 
+  const demandCount =
+    contents.filter(
+      (
+        item
+      ) => [
+        "APROVADO",
+        "FILMMAKER_PRE_PRODUCAO",
+        "FILMMAKER_AGENDAMENTO",
+        "FILMMAKER_GRAVANDO",
+        "FILMMAKER_EDICAO",
+        "FILMMAKER_DUVIDA_SOCIAL",
+        "ALTERACAO_SOLICITADA",
+      ].includes(
+        String(
+          item.status ||
+          ""
+        )
+      )
+    ).length;
+
+
   return (
     <div className="space-y-4">
       {/* ===================================================
@@ -1674,7 +1709,7 @@ export default async function FilmmakerPage({
         <CompactMetric
           label="Demandas"
           value={
-            contents.length
+            demandCount
           }
           tone="blue"
         />
