@@ -613,10 +613,12 @@ export default async function ViewContentPage({
             value={script}
           />
 
-          <TextBlock
-            title="Texto da arte"
-            value={artText}
-          />
+          {item.area !== 'DESIGN' ? (
+            <TextBlock
+              title="Texto da arte"
+              value={artText}
+            />
+          ) : null}
 
           <TextBlock
             title="Legenda"
