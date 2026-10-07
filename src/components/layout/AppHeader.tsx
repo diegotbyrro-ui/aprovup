@@ -10,8 +10,15 @@ import {
   AppHeaderClient,
 } from "@/components/layout/AppHeaderClient";
 
+import {
+  getLocale,
+} from "@/lib/i18n-server";
+
 
 export async function AppHeader() {
+  const locale =
+    await getLocale();
+
   const {
     user,
     agencyId,
@@ -32,7 +39,7 @@ export async function AppHeader() {
           {
             message: {
               contains:
-                "DÚVIDA",
+                "DÃšVIDA",
             },
           },
           {
@@ -44,7 +51,7 @@ export async function AppHeader() {
           {
             message: {
               contains:
-                "ALTERAÇÃO",
+                "ALTERAÃ‡ÃƒO",
             },
           },
           {
@@ -72,6 +79,9 @@ export async function AppHeader() {
 
   return (
     <AppHeaderClient
+      locale={
+        locale
+      }
       userName={
         user.name
       }

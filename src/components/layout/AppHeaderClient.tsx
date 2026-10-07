@@ -29,8 +29,21 @@ import {
   AprovUpThemeToggle,
 } from "@/components/theme/AprovUpThemeToggle";
 
+import {
+  LocaleSwitcher,
+} from "@/components/i18n/LocaleSwitcher";
+
+import {
+  t,
+  type Locale,
+  type TranslationKey,
+} from "@/lib/i18n";
+
 
 type AppHeaderClientProps = {
+  locale:
+    Locale;
+
   userName:
     | string
     | null;
@@ -47,110 +60,103 @@ type AppHeaderClientProps = {
 };
 
 
-const roleLabels:
-  Record<string, string> = {
-    DIRECTOR:
-      "Diretor",
+const pageMeta: Array<{
+  prefix:
+    string;
 
-    SOCIAL_MEDIA:
-      "Social Media",
+  titleKey:
+    TranslationKey;
 
-    DESIGN:
-      "Design",
-
-    FILMMAKER:
-      "Filmmaker",
-  };
-
-
-const pageMeta = [
+  descriptionKey:
+    TranslationKey;
+}> = [
   {
     prefix:
       "/operacao",
-    title:
-      "Dashboard",
-    description:
-      "Visão geral da operação",
+    titleKey:
+      "header.dashboardTitle",
+    descriptionKey:
+      "header.dashboardDescription",
   },
   {
     prefix:
       "/calendario-editorial",
-    title:
-      "Calendário editorial",
-    description:
-      "Planejamento e produção",
+    titleKey:
+      "header.calendarTitle",
+    descriptionKey:
+      "header.calendarDescription",
   },
   {
     prefix:
       "/social-media",
-    title:
-      "Social Media",
-    description:
-      "Planejamento e atendimento",
+    titleKey:
+      "header.socialTitle",
+    descriptionKey:
+      "header.socialDescription",
   },
   {
     prefix:
       "/clientes",
-    title:
-      "Clientes",
-    description:
-      "Gestão da carteira",
+    titleKey:
+      "header.clientsTitle",
+    descriptionKey:
+      "header.clientsDescription",
   },
   {
     prefix:
       "/filmmaker",
-    title:
-      "Filmmaker",
-    description:
-      "Produção audiovisual",
+    titleKey:
+      "header.filmmakerTitle",
+    descriptionKey:
+      "header.filmmakerDescription",
   },
   {
     prefix:
       "/captacoes",
-    title:
-      "Captações",
-    description:
-      "Agenda audiovisual",
+    titleKey:
+      "header.capturesTitle",
+    descriptionKey:
+      "header.capturesDescription",
   },
   {
     prefix:
       "/design",
-    title:
-      "Design",
-    description:
-      "Produção criativa",
+    titleKey:
+      "header.designTitle",
+    descriptionKey:
+      "header.designDescription",
   },
   {
     prefix:
       "/conteudos",
-    title:
-      "Conteúdos",
-    description:
-      "Produção e entregas",
+    titleKey:
+      "header.contentTitle",
+    descriptionKey:
+      "header.contentDescription",
   },
   {
     prefix:
       "/aprovacoes",
-    title:
-      "Aprovações",
-    description:
-      "Fluxos de aprovação",
+    titleKey:
+      "header.approvalsTitle",
+    descriptionKey:
+      "header.approvalsDescription",
   },
   {
     prefix:
       "/tarefas",
-    title:
-      "Tarefas",
-    description:
-      "Atividades da equipe",
+    titleKey:
+      "header.tasksTitle",
+    descriptionKey:
+      "header.tasksDescription",
   },
   {
     prefix:
       "/relatorios",
-    title:
-      "Relatórios",
-    description:
-      "Indicadores da operação",
+    titleKey:
+      "header.reportsTitle",
+    descriptionKey:
+      "header.reportsDescription",
   },
 ];
 
@@ -191,7 +197,10 @@ function getInitials(
 
 
 function resolveMeta(
-  pathname: string
+  pathname:
+    string,
+  locale:
+    Locale
 ) {
   const match =
     pageMeta.find(
@@ -203,18 +212,38 @@ function resolveMeta(
         )
     );
 
-  return (
-    match || {
+  if (!match) {
+    return {
       title:
-        "AprovUp",
+        t(
+          locale,
+          "header.defaultTitle"
+        ),
       description:
-        "Gestão da operação",
-    }
-  );
+        t(
+          locale,
+          "header.defaultDescription"
+        ),
+    };
+  }
+
+  return {
+    title:
+      t(
+        locale,
+        match.titleKey
+      ),
+    description:
+      t(
+        locale,
+        match.descriptionKey
+      ),
+  };
 }
 
 
 export function AppHeaderClient({
+  locale,
   userName,
   userEmail,
   role,
@@ -241,17 +270,10 @@ export function AppHeaderClient({
     pathname;
 
 
-  /*
-   * Controla a sidebar mobile e impede
-   * que o conteudo de tras role quando
-   * o menu estiver aberto.
-   */
   useEffect(
     () => {
-
       const body =
         document.body;
-
 
       body.classList.toggle(
         "ap-mobile-nav-open",
@@ -263,13 +285,13 @@ export function AppHeaderClient({
         event:
           KeyboardEvent
       ) {
-
         if (
           event.key ===
           "Escape"
         ) {
-
-          setMobileMenuPath(null);
+          setMobileMenuPath(
+            null
+          );
         }
       }
 
@@ -281,18 +303,15 @@ export function AppHeaderClient({
 
 
       return () => {
-
         window.removeEventListener(
           "keydown",
           handleKeyDown
         );
 
-
         body.classList.remove(
           "ap-mobile-nav-open"
         );
       };
-
     },
     [
       mobileMenuOpen,
@@ -302,17 +321,33 @@ export function AppHeaderClient({
 
   const meta =
     resolveMeta(
-      pathname
+      pathname,
+      locale
     );
 
   const displayName =
     userName ||
     userEmail ||
-    "Usuário";
+    t(
+      locale,
+      "header.userFallback"
+    );
+
+  const knownRole =
+    [
+      "DIRECTOR",
+      "SOCIAL_MEDIA",
+      "DESIGN",
+      "FILMMAKER",
+    ].includes(role);
 
   const roleLabel =
-    roleLabels[role] ||
-    role;
+    knownRole
+      ? t(
+          locale,
+          `roles.${role}` as TranslationKey
+        )
+      : role;
 
   const initials =
     getInitials(
@@ -343,155 +378,186 @@ export function AppHeaderClient({
             }
             aria-label={
               mobileMenuOpen
-                ? "Fechar menu"
-                : "Abrir menu"
+                ? t(
+                    locale,
+                    "header.closeMenu"
+                  )
+                : t(
+                    locale,
+                    "header.openMenu"
+                  )
             }
             aria-expanded={
               mobileMenuOpen
             }
           >
-
             {mobileMenuOpen ? (
-
               <X
                 size={20}
               />
-
             ) : (
-
               <Menu
                 size={20}
               />
-
             )}
-
           </button>
 
 
           <div className="ap-topbar-context">
-          <p className="ap-topbar-eyebrow">
-            {meta.description}
-          </p>
+            <p className="ap-topbar-eyebrow">
+              {meta.description}
+            </p>
 
-          <p className="ap-topbar-title">
-            {meta.title}
-          </p>
-        </div>
-
-
-        <div className="ap-topbar-actions">
-          <Link
-            href="/conteudos"
-            className="ap-topbar-search"
-            title="Abrir conteúdos"
-          >
-            <Search size={17} />
-
-            <span className="ap-topbar-search-label">
-              Buscar conteúdos, clientes...
-            </span>
-
-            <kbd className="ap-topbar-search-kbd">
-              ⌘ K
-            </kbd>
-          </Link>
+            <p className="ap-topbar-title">
+              {meta.title}
+            </p>
+          </div>
 
 
-          <AprovUpThemeToggle
-            compact
-          />
-
-
-          <Link
-            href="/social-media/avisos"
-            className="ap-header-icon-button"
-            title="Central de avisos"
-            aria-label="Central de avisos"
-          >
-            <Bell size={17} />
-
-            {notificationCount >
-            0 ? (
-              <span className="ap-header-notification-badge">
-                {notificationCount >
-                99
-                  ? "99+"
-                  : notificationCount}
-              </span>
-            ) : null}
-          </Link>
-
-
-          <details className="ap-user-menu">
-            <summary className="ap-user-summary">
-              <span className="ap-user-avatar">
-                {initials}
-              </span>
-
-              <span className="ap-user-copy">
-                <span className="ap-user-name">
-                  {displayName}
-                </span>
-
-                <span className="ap-user-role">
-                  {roleLabel}
-                </span>
-              </span>
-
-              <ChevronDown
-                size={15}
-                className="ap-user-chevron"
+          <div className="ap-topbar-actions">
+            <Link
+              href="/conteudos"
+              className="ap-topbar-search"
+              title={t(
+                locale,
+                "header.openContent"
+              )}
+            >
+              <Search
+                size={17}
               />
-            </summary>
+
+              <span className="ap-topbar-search-label">
+                {t(
+                  locale,
+                  "header.searchPlaceholder"
+                )}
+              </span>
+
+              <kbd className="ap-topbar-search-kbd">
+                âŒ˜ K
+              </kbd>
+            </Link>
 
 
-            <div className="ap-user-dropdown">
-              <div className="ap-user-dropdown-head">
-                <span className="ap-user-avatar ap-user-avatar-large">
+            <LocaleSwitcher
+              locale={locale}
+            />
+
+
+            <AprovUpThemeToggle
+              compact
+            />
+
+
+            <Link
+              href="/social-media/avisos"
+              className="ap-header-icon-button"
+              title={t(
+                locale,
+                "header.notifications"
+              )}
+              aria-label={t(
+                locale,
+                "header.notifications"
+              )}
+            >
+              <Bell
+                size={17}
+              />
+
+              {notificationCount >
+              0 ? (
+                <span className="ap-header-notification-badge">
+                  {notificationCount >
+                  99
+                    ? "99+"
+                    : notificationCount}
+                </span>
+              ) : null}
+            </Link>
+
+
+            <details className="ap-user-menu">
+              <summary className="ap-user-summary">
+                <span className="ap-user-avatar">
                   {initials}
                 </span>
 
-                <div className="min-w-0">
-                  <p className="ap-user-dropdown-name">
+                <span className="ap-user-copy">
+                  <span className="ap-user-name">
                     {displayName}
-                  </p>
+                  </span>
 
-                  <p className="ap-user-dropdown-email">
-                    {userEmail ||
-                      roleLabel}
-                  </p>
+                  <span className="ap-user-role">
+                    {roleLabel}
+                  </span>
+                </span>
+
+                <ChevronDown
+                  size={15}
+                  className="ap-user-chevron"
+                />
+              </summary>
+
+
+              <div className="ap-user-dropdown">
+                <div className="ap-user-dropdown-head">
+                  <span className="ap-user-avatar ap-user-avatar-large">
+                    {initials}
+                  </span>
+
+                  <div className="min-w-0">
+                    <p className="ap-user-dropdown-name">
+                      {displayName}
+                    </p>
+
+                    <p className="ap-user-dropdown-email">
+                      {userEmail ||
+                        roleLabel}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
 
-              <div className="ap-user-dropdown-separator" />
+                <div className="ap-user-dropdown-separator" />
 
 
-              <Link
-                href="/minha-assinatura"
-                className="ap-user-dropdown-item"
-              >
-                <UserRound size={16} />
-
-                Minha conta
-              </Link>
-
-
-              <form
-                action={logoutAction}
-              >
-                <button
-                  type="submit"
-                  className="ap-user-dropdown-item ap-user-dropdown-logout"
+                <Link
+                  href="/minha-assinatura"
+                  className="ap-user-dropdown-item"
                 >
-                  <LogOut size={16} />
+                  <UserRound
+                    size={16}
+                  />
 
-                  Sair
-                </button>
-              </form>
-            </div>
-          </details>
-        </div>
+                  {t(
+                    locale,
+                    "header.myAccount"
+                  )}
+                </Link>
+
+
+                <form
+                  action={logoutAction}
+                >
+                  <button
+                    type="submit"
+                    className="ap-user-dropdown-item ap-user-dropdown-logout"
+                  >
+                    <LogOut
+                      size={16}
+                    />
+
+                    {t(
+                      locale,
+                      "header.signOut"
+                    )}
+                  </button>
+                </form>
+              </div>
+            </details>
+          </div>
         </div>
       </header>
 
@@ -506,16 +572,20 @@ export function AppHeaderClient({
         ].join(" ")}
         onClick={
           () =>
-            setMobileMenuPath(null)
+            setMobileMenuPath(
+              null
+            )
         }
-        aria-label="Fechar menu"
+        aria-label={t(
+          locale,
+          "header.closeMenu"
+        )}
         tabIndex={
           mobileMenuOpen
             ? 0
             : -1
         }
       />
-
     </>
   );
 }

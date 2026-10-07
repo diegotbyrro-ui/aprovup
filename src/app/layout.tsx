@@ -4,6 +4,8 @@ import {
   DeploymentVersionGuard,
 } from "@/components/system/DeploymentVersionGuard";
 
+import { getLocale } from "@/lib/i18n-server";
+
 import "./globals.css";
 
 
@@ -14,7 +16,7 @@ export const metadata: Metadata = {
   },
 
   description:
-    "Aprovação, produção e gestão para agências.",
+    "AprovaÃ§Ã£o, produÃ§Ã£o e gestÃ£o para agÃªncias.",
 
   applicationName:
     "AprovUp",
@@ -26,14 +28,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale =
+    await getLocale();
+
   return (
     <html
-      lang="pt-BR"
+      lang={locale}
       className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col">
@@ -43,5 +49,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-

@@ -906,7 +906,7 @@ textarea:focus {
 
 /* =========================================================
    CRM LEGADO - COMPATIBILIDADE
-   ETAPA 6 FARÁ O REDESIGN COMPLETO
+   ETAPA 6 FARÃ O REDESIGN COMPLETO
    ========================================================= */
 
 :root[data-aprovup-theme="light"]
@@ -2920,5 +2920,36 @@ and (
           0px
         )
       );
+  }
+}
+
+/* AprovUp bilingual locale selector */
+.ap-locale-switcher {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ap-locale-switcher select {
+  height: 34px;
+  min-width: 132px;
+  padding: 0 28px 0 10px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+}
+
+.ap-locale-switcher select:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+}
+
+@media (max-width: 900px) {
+  .ap-locale-switcher select {
+    min-width: 112px;
   }
 }

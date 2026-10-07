@@ -14,11 +14,22 @@ import {
 } from "@/lib/commanderAccess";
 
 import {
+  t,
+} from "@/lib/i18n";
+
+import {
+  getLocale,
+} from "@/lib/i18n-server";
+
+import {
   getDirectorIntegrationAlerts,
 } from "@/lib/integrationHealth";
 
 
 export async function DirectorIntegrationAlert() {
+  const locale =
+    await getLocale();
+
   const user =
     await getCurrentUser();
 
@@ -65,9 +76,12 @@ export async function DirectorIntegrationAlert() {
           />
 
           <span className="truncate">
-            {"Aten\u00e7\u00e3o nas integra\u00e7\u00f5es: "}
+            {t(
+              locale,
+              "integrations.attention"
+            )}{" "}
             {alerts.join(
-              " \u2022 "
+              " â€¢ "
             )}
           </span>
         </div>
@@ -76,7 +90,10 @@ export async function DirectorIntegrationAlert() {
           href="/configuracoes/integracoes#saude-integracoes"
           className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-amber-800 hover:text-amber-950"
         >
-          Ver detalhes
+          {t(
+            locale,
+            "integrations.viewDetails"
+          )}
 
           <ArrowRight
             size={13}
