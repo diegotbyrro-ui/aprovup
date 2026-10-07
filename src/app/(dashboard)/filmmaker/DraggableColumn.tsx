@@ -1,8 +1,19 @@
-﻿'use client';
+'use client';
 
-import { ReactNode, useState, useTransition } from 'react';
-import { GripVertical } from 'lucide-react';
-import { reorderFilmmakerColumnAction } from './actions';
+import {
+  type DragEvent,
+  type ReactNode,
+  useState,
+  useTransition,
+} from 'react';
+
+import {
+  GripVertical,
+} from 'lucide-react';
+
+import {
+  reorderFilmmakerColumnAction,
+} from './actions';
 
 export default function DraggableColumn({
   columnId,
@@ -14,40 +25,85 @@ export default function DraggableColumn({
   const [isOver, setIsOver] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  function isColumnDrag(event: DragEvent) {
+    return Array.from(event.dataTransfer.types).includes(
+      'application/x-aprovup-column-id'
+    );
+  }
+
   return (
     <div
-      draggable
-      onDragStart={(event) => {
-        event.dataTransfer.setData('text/plain', columnId);
-        event.dataTransfer.effectAllowed = 'move';
-      }}
+      className={[
+        'relative',
+        'h-full',
+        'shrink-0',
+        isOver ? 'rounded-3xl ring-4 ring-blue-200' : '',
+        isPending ? 'opacity-60' : '',
+      ].join(' ')}
       onDragOver={(event) => {
+        if (!isColumnDrag(event)) {
+          return;
+        }
+
         event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = 'move';
         setIsOver(true);
       }}
-      onDragLeave={() => {
+      onDragLeave={(event) => {
+        const nextTarget = event.relatedTarget;
+
+        if (
+          nextTarget instanceof Node &&
+          event.currentTarget.contains(nextTarget)
+        ) {
+          return;
+        }
+
         setIsOver(false);
       }}
       onDrop={(event) => {
+        if (!isColumnDrag(event)) {
+          return;
+        }
+
         event.preventDefault();
+        event.stopPropagation();
         setIsOver(false);
 
-        const draggedColumnId = event.dataTransfer.getData('text/plain');
+        const draggedColumnId = event.dataTransfer.getData(
+          'application/x-aprovup-column-id'
+        );
 
         if (!draggedColumnId || draggedColumnId === columnId) {
           return;
         }
 
         startTransition(() => {
-          reorderFilmmakerColumnAction(draggedColumnId, columnId);
+          reorderFilmmakerColumnAction(
+            draggedColumnId,
+            columnId
+          );
         });
       }}
-      className={`relative h-full shrink-0 cursor-grab active:cursor-grabbing ${
-        isOver ? 'rounded-3xl ring-4 ring-blue-200' : ''
-      } ${isPending ? 'opacity-60' : ''}`}
-      title="Clique, segure e arraste para mover a coluna"
     >
-      <div className="absolute left-3 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-lg bg-white/80 text-slate-400 shadow-sm">
+      <div
+        draggable
+        onDragStart={(event) => {
+          event.stopPropagation();
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData(
+            'application/x-aprovup-column-id',
+            columnId
+          );
+        }}
+        onDragEnd={() => {
+          setIsOver(false);
+        }}
+        className="absolute left-3 top-3 z-30 flex h-7 w-7 cursor-grab items-center justify-center rounded-lg bg-white/90 text-slate-400 shadow-sm active:cursor-grabbing"
+        title="Segure para mover esta coluna"
+        aria-label="Mover coluna"
+      >
         <GripVertical size={15} />
       </div>
 

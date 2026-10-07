@@ -1256,21 +1256,19 @@ function AnalysisBatchCard({
 
         <div className="mt-2 space-y-1.5">
 
-          {batch.items
-            .slice(
-              0,
-              4
-            )
-            .map(
-              (
-                item
-              ) => (
-                <div
-                  key={
-                    item.id
-                  }
-                  className="flex items-center gap-2 text-[8px]"
-                >
+          {batch.items.map(
+            (
+              item
+            ) => (
+              <DraggableDesignCard
+                key={
+                  item.id
+                }
+                contentId={
+                  item.id
+                }
+              >
+                <div className="flex cursor-grab items-center gap-2 rounded-lg px-1 py-1 active:cursor-grabbing">
 
                   <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-black text-slate-500">
                     {formatDate(
@@ -1283,14 +1281,13 @@ function AnalysisBatchCard({
                     <span className="block truncate font-semibold text-slate-600">
                       {item.title}
                     </span>
-
-
                   </div>
 
 
                   <Link
                     href={`/conteudos/${item.id}/visualizar`}
                     className="inline-flex h-6 shrink-0 items-center justify-center gap-1 rounded-md border border-amber-200 bg-white px-2 text-[7px] font-black uppercase text-amber-700 transition hover:bg-amber-50"
+                    onClick={(event) => event.stopPropagation()}
                   >
                     Abrir
 
@@ -1300,16 +1297,9 @@ function AnalysisBatchCard({
                   </Link>
 
                 </div>
-              )
-            )}
-
-
-          {batch.items.length >
-          4 ? (
-            <p className="pt-1 text-[8px] font-bold text-amber-600">
-              + {batch.items.length - 4} conteudos
-            </p>
-          ) : null}
+              </DraggableDesignCard>
+            )
+          )}
 
         </div>
 
@@ -1321,7 +1311,7 @@ function AnalysisBatchCard({
           </p>
 
           <p className="mt-0.5 text-[9px] font-bold text-amber-800">
-            {batch.items.length} material(is) aguardando conferencia
+            {batch.items.length} material(is) aguardando confer\u00eancia
           </p>
 
         </div>
@@ -1336,7 +1326,6 @@ function AnalysisBatchCard({
     </article>
   );
 }
-
 
 function PriorityBadge({
   priority,
@@ -1594,7 +1583,8 @@ function EmergencyDesignCard({
 
 
         <div className="mt-3 border-t border-red-100 pt-3">
-          <details className="group/question">
+          {content.status === "DESIGN_FAZENDO" ? (
+<details className="group/question">
             <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-2 text-[9px] font-bold text-amber-700 [&::-webkit-details-marker]:hidden">
               <span>
                 Dúvida para Social
@@ -1634,6 +1624,7 @@ function EmergencyDesignCard({
               </button>
             </form>
           </details>
+        ) : null}
 
 
           <Link
@@ -1705,6 +1696,10 @@ function DesignCard({
     shouldEmphasizeReturn(
       content
     );
+
+  const canAskSocial =
+    content.status ===
+      "DESIGN_FAZENDO";
 
 
   return (
@@ -2054,7 +2049,8 @@ function DesignCard({
 
 
         <div className="mt-3 border-t border-slate-100 pt-3">
-          <details className="group/question">
+          {canAskSocial ? (
+<details className="group/question">
             <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-2 text-[9px] font-bold text-amber-700 [&::-webkit-details-marker]:hidden">
               <span>
                 Dúvida para Social
@@ -2094,6 +2090,7 @@ function DesignCard({
               </button>
             </form>
           </details>
+        ) : null}
 
 
           <Link
@@ -3200,13 +3197,7 @@ export default async function DesignPage({
                       statusKey={
                         column.statusKey
                       }
-                      disabled={
-                        isGraphicColumn ||
-                        column.statusKey ===
-                          "DESIGN_ANALISE" ||
-                        column.statusKey ===
-                          "PRONTO_PARA_POSTAR"
-                      }
+                      disabled={isGraphicColumn}
                     >
                       <div
                         className="

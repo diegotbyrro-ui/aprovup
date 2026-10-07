@@ -1292,7 +1292,12 @@ function FilmmakerCard({
 
 
         <div className="mt-3 border-t border-slate-100 pt-3">
-          <details>
+          {[
+  "FILMMAKER_PRE_PRODUCAO",
+  "FILMMAKER_AGENDAMENTO",
+  "FILMMAKER_GRAVANDO",
+  "FILMMAKER_EDICAO",
+].includes(String(content.status || "")) ? (<details>
             <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-2 text-[9px] font-bold text-amber-700 [&::-webkit-details-marker]:hidden">
               <span>
                 Dúvida para Social
@@ -1332,6 +1337,7 @@ function FilmmakerCard({
               </button>
             </form>
           </details>
+        ) : null}
 
 
           <div className="mt-2 grid grid-cols-2 gap-2">

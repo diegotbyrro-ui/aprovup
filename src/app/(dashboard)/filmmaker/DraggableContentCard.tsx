@@ -29,6 +29,8 @@ export function DraggableContentCard({
     <div
       data-aprovup-content-id={contentId}
       draggable
+      className="select-none cursor-grab active:cursor-grabbing"
+
       onDragEnd={(event) => {
         /*
          * Impede o DraggableColumn externo
@@ -65,10 +67,6 @@ export function DraggableContentCard({
           contentId
         );
 
-        event.dataTransfer.setData(
-          'text/plain',
-          contentId
-        );
       }}
       style={{
         opacity:
