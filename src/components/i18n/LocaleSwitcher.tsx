@@ -57,11 +57,11 @@ export function LocaleSwitcher({
         aria-label="Language"
       >
         <option value="pt-BR">
-          ðŸ‡§ðŸ‡· PortuguÃªs
+          PT-BR Português
         </option>
 
         <option value="en-US">
-          ðŸ‡ºðŸ‡¸ English
+          EN-US English
         </option>
       </select>
     </label>

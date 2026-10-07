@@ -435,7 +435,7 @@ export function AppHeaderClient({
               </span>
 
               <kbd className="ap-topbar-search-kbd">
-                âŒ˜ K
+                ⌘ K
               </kbd>
             </Link>
 

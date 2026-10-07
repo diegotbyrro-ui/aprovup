@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   },
 
   description:
-    "AprovaÃ§Ã£o, produÃ§Ã£o e gestÃ£o para agÃªncias.",
+    "Aprovação, produção e gestão para agências.",
 
   applicationName:
     "AprovUp",

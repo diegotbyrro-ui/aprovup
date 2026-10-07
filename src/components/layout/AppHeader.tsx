@@ -39,7 +39,7 @@ export async function AppHeader() {
           {
             message: {
               contains:
-                "DÃšVIDA",
+                "D�VIDA",
             },
           },
           {
@@ -51,7 +51,7 @@ export async function AppHeader() {
           {
             message: {
               contains:
-                "ALTERAÃ‡ÃƒO",
+                "ALTERA��O",
             },
           },
           {

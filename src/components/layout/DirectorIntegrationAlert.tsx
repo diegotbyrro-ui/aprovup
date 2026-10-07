@@ -81,7 +81,7 @@ export async function DirectorIntegrationAlert() {
               "integrations.attention"
             )}{" "}
             {alerts.join(
-              " â€¢ "
+              " • "
             )}
           </span>
         </div>
