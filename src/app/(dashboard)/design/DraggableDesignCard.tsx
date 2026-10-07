@@ -3,6 +3,7 @@
 import {
   useState,
   useTransition,
+  type DragEvent,
   type ReactNode,
 } from 'react';
 
@@ -12,6 +13,8 @@ import {
   updateDesignStatusAction,
 } from './actions';
 
+const CONTENT_DRAG_TYPE =
+  'application/x-aprovup-content-id';
 
 export function DraggableDesignCard({
   contentId,
@@ -30,30 +33,18 @@ export function DraggableDesignCard({
   return (
     <div
       data-aprovup-content-id={contentId}
-      draggable={
-        !disabled
-      }
-      onDragEnd={(event) => {
-        event.stopPropagation();
-        setIsDragging(false);
-      }}
-      onDragStart={(event) => {
-        if (
-          disabled
-        ) {
-          event.preventDefault();
+      draggable={!disabled}
+      className="select-none cursor-grab active:cursor-grabbing"
+      onDragStartCapture={(event) => {
+        if (disabled) {
           return;
         }
-
-        event.stopPropagation();
-
-        setIsDragging(true);
 
         event.dataTransfer.effectAllowed =
           'move';
 
         event.dataTransfer.setData(
-          'application/x-aprovup-content-id',
+          CONTENT_DRAG_TYPE,
           contentId
         );
 
@@ -67,6 +58,37 @@ export function DraggableDesignCard({
           contentId
         );
       }}
+      onDragStart={(event) => {
+        if (disabled) {
+          event.preventDefault();
+          return;
+        }
+
+        event.stopPropagation();
+        setIsDragging(true);
+
+        event.dataTransfer.effectAllowed =
+          'move';
+
+        event.dataTransfer.setData(
+          CONTENT_DRAG_TYPE,
+          contentId
+        );
+
+        event.dataTransfer.setData(
+          'application/content-id',
+          contentId
+        );
+
+        event.dataTransfer.setData(
+          'text/plain',
+          contentId
+        );
+      }}
+      onDragEnd={(event) => {
+        event.stopPropagation();
+        setIsDragging(false);
+      }}
       style={{
         opacity:
           isDragging
@@ -78,7 +100,6 @@ export function DraggableDesignCard({
     </div>
   );
 }
-
 
 export function DroppableDesignColumn({
   statusKey,
@@ -102,6 +123,16 @@ export function DroppableDesignColumn({
     startTransition,
   ] = useTransition();
 
+  function isContentDrag(
+    event: DragEvent
+  ) {
+    return Array.from(
+      event.dataTransfer.types
+    ).includes(
+      CONTENT_DRAG_TYPE
+    );
+  }
+
   return (
     <div
       data-aprovup-drop-status={statusKey}
@@ -112,7 +143,8 @@ export function DroppableDesignColumn({
       }
       onDragEnter={(event) => {
         if (
-          disabled
+          disabled ||
+          !isContentDrag(event)
         ) {
           return;
         }
@@ -144,7 +176,8 @@ export function DroppableDesignColumn({
       }}
       onDragOver={(event) => {
         if (
-          disabled
+          disabled ||
+          !isContentDrag(event)
         ) {
           return;
         }
@@ -159,7 +192,8 @@ export function DroppableDesignColumn({
       }}
       onDrop={(event) => {
         if (
-          disabled
+          disabled ||
+          !isContentDrag(event)
         ) {
           return;
         }
@@ -175,13 +209,10 @@ export function DroppableDesignColumn({
 
         const contentId =
           event.dataTransfer.getData(
-            'application/x-aprovup-content-id'
+            CONTENT_DRAG_TYPE
           ) ||
           event.dataTransfer.getData(
             'application/content-id'
-          ) ||
-          event.dataTransfer.getData(
-            'text/plain'
           );
 
         if (!contentId) {
@@ -209,7 +240,7 @@ export function DroppableDesignColumn({
               );
 
               window.alert(
-                'Não foi possível mover o conteúdo. Tente novamente.'
+                'NÃ£o foi possÃ­vel mover o conteÃºdo. Tente novamente.'
               );
             }
           }

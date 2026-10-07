@@ -832,7 +832,7 @@ function ClientResource({
             }
             alt=""
             className="h-full w-full object-cover"
-          />
+           draggable={false} />
         ) : (
           <span className="text-[10px] font-bold text-slate-500">
             {getInitials(
@@ -876,7 +876,7 @@ function ClientResource({
               rel="noreferrer"
               title="Banco de dados"
               className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
-            >
+             draggable={false}>
               <Database
                 size={12}
               />
@@ -893,7 +893,7 @@ function ClientResource({
               rel="noreferrer"
               title="Drive"
               className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
-            >
+             draggable={false}>
               <FolderOpen
                 size={12}
               />
@@ -910,7 +910,7 @@ function ClientResource({
               rel="noreferrer"
               title="Logo"
               className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
-            >
+             draggable={false}>
               <ImageIcon
                 size={12}
               />
@@ -1076,7 +1076,7 @@ function FilmmakerCard({
             }
             alt=""
             className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
-          />
+           draggable={false} />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate-400">
             <Video
@@ -1124,7 +1124,7 @@ function FilmmakerCard({
                 }
                 alt=""
                 className="h-full w-full object-cover"
-              />
+               draggable={false} />
             ) : (
               <span className="text-[8px] font-bold text-slate-500">
                 {getInitials(

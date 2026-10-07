@@ -3,6 +3,7 @@
 import {
   useState,
   useTransition,
+  type DragEvent,
   type ReactNode,
 } from 'react';
 
@@ -12,6 +13,8 @@ import {
   updateFilmmakerStatusAction,
 } from './actions';
 
+const CONTENT_DRAG_TYPE =
+  'application/x-aprovup-content-id';
 
 export function DraggableContentCard({
   contentId,
@@ -30,35 +33,12 @@ export function DraggableContentCard({
       data-aprovup-content-id={contentId}
       draggable
       className="select-none cursor-grab active:cursor-grabbing"
-
-      onDragEnd={(event) => {
-        /*
-         * Impede o DraggableColumn externo
-         * de interpretar o fim do drag
-         * como movimento da coluna.
-         */
-        event.stopPropagation();
-
-        setIsDragging(false);
-      }}
-      onDragStart={(event) => {
-        /*
-         * Filmmaker possui coluna draggable
-         * envolvendo o card.
-         *
-         * O stopPropagation garante que o
-         * drag iniciado no card continue
-         * sendo CARD e nao vire COLUMN.
-         */
-        event.stopPropagation();
-
-        setIsDragging(true);
-
+      onDragStartCapture={(event) => {
         event.dataTransfer.effectAllowed =
           'move';
 
         event.dataTransfer.setData(
-          'application/x-aprovup-content-id',
+          CONTENT_DRAG_TYPE,
           contentId
         );
 
@@ -67,6 +47,37 @@ export function DraggableContentCard({
           contentId
         );
 
+        event.dataTransfer.setData(
+          'text/plain',
+          contentId
+        );
+      }}
+      onDragStart={(event) => {
+        event.stopPropagation();
+
+        setIsDragging(true);
+
+        event.dataTransfer.effectAllowed =
+          'move';
+
+        event.dataTransfer.setData(
+          CONTENT_DRAG_TYPE,
+          contentId
+        );
+
+        event.dataTransfer.setData(
+          'application/content-id',
+          contentId
+        );
+
+        event.dataTransfer.setData(
+          'text/plain',
+          contentId
+        );
+      }}
+      onDragEnd={(event) => {
+        event.stopPropagation();
+        setIsDragging(false);
       }}
       style={{
         opacity:
@@ -79,7 +90,6 @@ export function DraggableContentCard({
     </div>
   );
 }
-
 
 export function DroppableFilmmakerColumn({
   statusKey,
@@ -101,6 +111,16 @@ export function DroppableFilmmakerColumn({
     startTransition,
   ] = useTransition();
 
+  function isContentDrag(
+    event: DragEvent
+  ) {
+    return Array.from(
+      event.dataTransfer.types
+    ).includes(
+      CONTENT_DRAG_TYPE
+    );
+  }
+
   return (
     <div
       data-aprovup-drop-status={statusKey}
@@ -110,6 +130,10 @@ export function DroppableFilmmakerColumn({
           : 'false'
       }
       onDragEnter={(event) => {
+        if (!isContentDrag(event)) {
+          return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
 
@@ -136,6 +160,10 @@ export function DroppableFilmmakerColumn({
         setIsOver(false);
       }}
       onDragOver={(event) => {
+        if (!isContentDrag(event)) {
+          return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
 
@@ -145,6 +173,10 @@ export function DroppableFilmmakerColumn({
         setIsOver(true);
       }}
       onDrop={(event) => {
+        if (!isContentDrag(event)) {
+          return;
+        }
+
         event.preventDefault();
         event.stopPropagation();
 
@@ -156,13 +188,10 @@ export function DroppableFilmmakerColumn({
 
         const contentId =
           event.dataTransfer.getData(
-            'application/x-aprovup-content-id'
+            CONTENT_DRAG_TYPE
           ) ||
           event.dataTransfer.getData(
             'application/content-id'
-          ) ||
-          event.dataTransfer.getData(
-            'text/plain'
           );
 
         if (!contentId) {
@@ -190,7 +219,7 @@ export function DroppableFilmmakerColumn({
               );
 
               window.alert(
-                'Não foi possível mover o conteúdo. Tente novamente.'
+                'NÃ£o foi possÃ­vel mover o conteÃºdo. Tente novamente.'
               );
             }
           }

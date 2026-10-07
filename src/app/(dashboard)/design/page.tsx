@@ -798,7 +798,7 @@ function ClientResource({
                   )}`
                 }
                 className="h-full w-full object-contain p-1.5"
-              />
+               draggable={false} />
             ) : (
               <span className="text-sm font-black text-slate-500">
                 {getInitials(
@@ -877,7 +877,7 @@ function ClientResource({
                       resource.title
                     }
                     className="group flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 text-[10px] font-black text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                  >
+                   draggable={false}>
 
                     <Icon
                       size={14}
@@ -1205,7 +1205,7 @@ function AnalysisBatchCard({
                 }
                 alt=""
                 className="h-full w-full object-cover"
-              />
+               draggable={false} />
             ) : (
               <span className="text-[9px] font-black text-amber-600">
                 {getInitials(
@@ -1284,16 +1284,47 @@ function AnalysisBatchCard({
                   </div>
 
 
-                  <Link
-                    href={`/conteudos/${item.id}/visualizar`}
-                    className="inline-flex h-6 shrink-0 items-center justify-center gap-1 rounded-md border border-amber-200 bg-white px-2 text-[7px] font-black uppercase text-amber-700 transition hover:bg-amber-50"
-                  >
-                    Abrir
+                                    <div className="relative flex shrink-0 items-center gap-1">
+                    <details>
+                      <summary className="flex h-6 cursor-pointer list-none items-center justify-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 text-[7px] font-black uppercase text-amber-700 [&::-webkit-details-marker]:hidden">
+                        D&uacute;vida
+                        <Send size={9} />
+                      </summary>
 
-                    <ExternalLink
-                      size={9}
-                    />
-                  </Link>
+                      <form
+                        action={sendDesignQuestionAction.bind(
+                          null,
+                          item.id
+                        )}
+                        className="absolute right-0 z-50 mt-1 w-52 rounded-lg border border-amber-200 bg-white p-2 shadow-xl"
+                      >
+                        <textarea
+                          name="message"
+                          rows={3}
+                          required
+                          placeholder="Escreva a d&uacute;vida..."
+                          className="w-full resize-none rounded-md border border-amber-200 bg-white px-2 py-1.5 text-[8px] font-medium text-slate-900 outline-none placeholder:text-slate-400"
+                        />
+
+                        <button
+                          type="submit"
+                          className="mt-1.5 flex h-7 w-full items-center justify-center gap-1 rounded-md bg-amber-500 text-[8px] font-bold text-white hover:bg-amber-600"
+                        >
+                          <Send size={9} />
+                          Enviar
+                        </button>
+                      </form>
+                    </details>
+
+                    <Link
+                      href={`/conteudos/${item.id}/visualizar`}
+                      draggable={false}
+                      className="inline-flex h-6 shrink-0 items-center justify-center gap-1 rounded-md border border-amber-200 bg-white px-2 text-[7px] font-black uppercase text-amber-700 transition hover:bg-amber-50"
+                    >
+                      Abrir
+                      <ExternalLink size={9} />
+                    </Link>
+                  </div>
 
                 </div>
               </DraggableDesignCard>
@@ -1430,7 +1461,7 @@ function EmergencyDesignCard({
                 }
                 alt=""
                 className="h-full w-full object-cover"
-              />
+               draggable={false} />
             ) : (
               <span className="text-[8px] font-black text-red-600">
                 {getInitials(
@@ -1582,7 +1613,7 @@ function EmergencyDesignCard({
 
 
         <div className="mt-3 border-t border-red-100 pt-3">
-          {content.status === "DESIGN_FAZENDO" ? (
+          {true ? (
 <details className="group/question">
             <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-2 text-[9px] font-bold text-amber-700 [&::-webkit-details-marker]:hidden">
               <span>
@@ -1696,9 +1727,7 @@ function DesignCard({
       content
     );
 
-  const canAskSocial =
-    content.status ===
-      "DESIGN_FAZENDO";
+  const canAskSocial = true;
 
 
   return (
@@ -1819,7 +1848,7 @@ function DesignCard({
               }
               alt=""
               className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
-            />
+             draggable={false} />
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate-400">
 
@@ -1873,7 +1902,7 @@ function DesignCard({
                 }
                 alt=""
                 className="h-full w-full object-cover"
-              />
+               draggable={false} />
             ) : (
               <span className="text-[8px] font-bold text-slate-500">
                 {getInitials(
