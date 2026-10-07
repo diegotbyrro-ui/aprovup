@@ -1287,7 +1287,6 @@ function AnalysisBatchCard({
                   <Link
                     href={`/conteudos/${item.id}/visualizar`}
                     className="inline-flex h-6 shrink-0 items-center justify-center gap-1 rounded-md border border-amber-200 bg-white px-2 text-[7px] font-black uppercase text-amber-700 transition hover:bg-amber-50"
-                    onClick={(event) => event.stopPropagation()}
                   >
                     Abrir
 
