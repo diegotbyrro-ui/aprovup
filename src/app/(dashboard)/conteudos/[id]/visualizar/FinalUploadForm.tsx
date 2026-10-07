@@ -88,6 +88,9 @@ type FinalUploadFormProps = {
 
   area?: string | null;
 
+
+  contentFormat?: string | null;
+
   feedMode?:
     | 'single'
     | 'carousel';
@@ -517,6 +520,8 @@ function ExternalDeliveryField({
 export default function FinalUploadForm({
   contentId,
   area,
+
+  contentFormat,
   feedMode =
     'single',
   currentFinalMediaUrl,
@@ -577,6 +582,20 @@ export default function FinalUploadForm({
       'SOCIAL_DESIGN' ||
     normalizedArea ===
       'SOCIAL_MEDIA';
+
+
+  const normalizedFormat =
+    String(
+      contentFormat ||
+      ''
+    )
+      .trim()
+      .toUpperCase();
+
+
+  const isGraphicDesign =
+    normalizedFormat ===
+    'DESIGN_GRAFICO';
 
 
   const canUploadLargeVideo =
@@ -990,6 +1009,30 @@ export default function FinalUploadForm({
       finalFiles.length >
         10
     ) {
+    if (
+      isGraphicDesign &&
+      (
+        finalFiles.length >
+          0 ||
+        Boolean(
+          coverFile
+        ) ||
+        storyFiles.length >
+          0 ||
+        Boolean(
+          storyCoverFile
+        )
+      )
+    ) {
+
+      setMessage(
+        'Design Gráfico utiliza somente entrega por link externo.'
+      );
+
+      return;
+
+    }
+
       setMessage(
         'Selecione no maximo 10 imagens para o Feed.'
       );
@@ -1377,6 +1420,113 @@ export default function FinalUploadForm({
 
 
   if (!isDesign) {
+  if (isGraphicDesign) {
+
+    return (
+      <form
+        onSubmit={
+          handleSubmit
+        }
+        className="space-y-4"
+      >
+
+        <section className="rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
+
+          <div className="flex items-center gap-3">
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+
+              <Link2
+                size={18}
+              />
+
+            </div>
+
+
+            <div>
+
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-violet-600">
+                Design Gráfico
+              </p>
+
+              <h3 className="text-sm font-black text-slate-900">
+                Entrega do material gráfico
+              </h3>
+
+            </div>
+
+          </div>
+
+
+          <p className="mt-3 text-xs leading-relaxed text-slate-500">
+            Como os arquivos gráficos costumam ser pesados, o AprovUp não fará upload deles. Envie o material pelo Google Drive ou outro serviço e cole aqui o link compartilhado.
+          </p>
+
+
+          <div className="mt-4">
+
+            <ExternalDeliveryField
+              currentUrl={
+                currentFinalExternalUrl
+              }
+              disabled={
+                isUploading ||
+                deletingKind !==
+                  null
+              }
+              deleting={
+                deletingKind ===
+                'external'
+              }
+              onDelete={
+                () =>
+                  handleDelete(
+                    'external'
+                  )
+              }
+            />
+
+          </div>
+
+        </section>
+
+
+        {message ? (
+
+          <div className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-bold text-blue-700">
+
+            {message}
+
+          </div>
+
+        ) : null}
+
+
+        <button
+          type="submit"
+          disabled={
+            isUploading ||
+            deletingKind !==
+              null
+          }
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-[11px] font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+
+          <UploadCloud
+            size={18}
+          />
+
+          {isUploading
+            ? 'Enviando material...'
+            : 'Enviar material para conferência'}
+
+        </button>
+
+      </form>
+    );
+
+  }
+
     return (
       <form
         onSubmit={

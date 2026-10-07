@@ -314,6 +314,20 @@ export async function POST(
       await request.json();
 
 
+    const normalizedFormat =
+      String(
+        content.format ||
+        ''
+      )
+        .trim()
+        .toUpperCase();
+
+
+    const isGraphicDesign =
+      normalizedFormat ===
+      'DESIGN_GRAFICO';
+
+
     const isReadyVideoAction =
       body?.action ===
         'prepare-ready-video' ||
@@ -560,6 +574,26 @@ export async function POST(
       body?.action ===
       'prepare'
     ) {
+      if (
+        isGraphicDesign
+      ) {
+
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Design Gráfico utiliza somente entrega por link externo.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+
+      }
+
       const kind =
         parseUploadKind(
           body.kind
@@ -1475,7 +1509,67 @@ export async function POST(
         externalResult.url;
 
 
+
       if (
+        isGraphicDesign &&
+        (
+          Boolean(
+            finalPath
+          ) ||
+          finalItems.length >
+            0 ||
+          Boolean(
+            coverPath
+          ) ||
+          Boolean(
+            storyPath
+          ) ||
+          storyItems.length >
+            0 ||
+          Boolean(
+            storyCoverPath
+          )
+        )
+      ) {
+
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Design Gráfico aceita somente link externo. Nenhum arquivo deve ser enviado.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+
+      }
+
+
+      if (
+        isGraphicDesign &&
+        !finalExternalUrl
+      ) {
+
+        return NextResponse.json(
+          {
+            ok:
+              false,
+
+            message:
+              'Informe o link externo do material gráfico.',
+          },
+          {
+            status:
+              400,
+          }
+        );
+
+      }
+if (
         !finalPath &&
         finalItems.length ===
           0 &&

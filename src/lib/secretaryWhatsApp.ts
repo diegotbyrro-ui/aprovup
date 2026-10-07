@@ -4690,56 +4690,105 @@ export async function deliverSecretaryDailyBriefs() {
           : 'Itens que precisam da sua atenção: ';
 
 
+      const totalApprovals =
+        pendingApprovals +
+        pendingMonthlyApprovals;
+
+
+      const approvalText =
+        totalApprovals ===
+        0
+          ? '😌 Nenhuma aprovação pendente. O botão "APROVADO" agradece!'
+          : '⏳ ' +
+            String(
+              totalApprovals
+            ) +
+            ' aprovação(ões) esperando atenção. Tem coisa querendo sair da fila 👀';
+
+
+      const instagramText =
+        errors > 0
+          ? '🚨 ' +
+            String(
+              errors
+            ) +
+            ' erro(s) no Instagram. A LIV achou melhor não fingir que não viu 😅'
+          : '📲 ' +
+            String(
+              published
+            ) +
+            ' publicado(s) • ' +
+            String(
+              scheduled
+            ) +
+            ' agendado(s) • 0 erro(s). Instagram comportado hoje 😌';
+
+
+      const attentionText =
+        socialAttention > 0
+          ? '👀 ' +
+            String(
+              socialAttention
+            ) +
+            ' item(ns) precisam da sua atenção. A LIV já está de olho!'
+          : '😎 Nenhum item aguardando ação da Social Media. Hoje o caos tirou folga.';
+
+
+      const alertText =
+        openAlerts > 0
+          ? '🚨 ' +
+            String(
+              openAlerts
+            ) +
+            ' alerta(s) operacional(is) aberto(s). Nada de pânico, mas vale uma olhada 👀'
+          : '🟢 Nenhum alerta operacional aberto. A fumaça ficou longe daqui hoje 😂';
+
+
+      const tomorrowText =
+        personalTomorrowEvents.length
+          ? tomorrowAgenda
+          : '📅 Agenda de amanhã tranquila. Pelo menos por enquanto... 😌';
+
+
       const message =
         [
-          'Boa noite, ' +
+          '🌙 Boa noite, ' +
             firstName +
             '!',
 
-          intro,
+          '',
 
-          'Conteúdos planejados hoje: ' +
+          'A LIV passou o dia de olho nos bastidores 👀 e trouxe o placar da operação. Vamos ver se hoje o caos bateu ponto ou resolveu tirar folga 😂',
+
+          '',
+
+          '📊 *PLACAR DO DIA*',
+
+          '🗂️ Conteúdos no radar: ' +
             String(
               planned
             ),
 
-          'Aprovações pendentes — conteúdos: ' +
-            String(
-              pendingApprovals
-            ) +
-            ', calendários mensais: ' +
-            String(
-              pendingMonthlyApprovals
-            ),
+          approvalText,
 
-          'Instagram hoje — publicados: ' +
-            String(
-              published
-            ) +
-            ', agendados: ' +
-            String(
-              scheduled
-            ) +
-            ', erros: ' +
-            String(
-              errors
-            ),
+          instagramText,
 
-          attentionLabel +
-            String(
-              socialAttention
-            ),
+          attentionText,
 
-          'Alertas operacionais abertos: ' +
-            String(
-              openAlerts
-            ),
+          alertText,
 
-          tomorrowAgenda,
+          '',
+
+          '📅 *AMANHÃ*',
+
+          tomorrowText,
+
+          '',
+
+          '💙 Por hoje é isso. Eu continuo de olho por aqui. Se alguma coisa começar a pegar fogo, você vai ficar sabendo 🔥👀',
         ].join(
           '\n'
         );
-
 
       const result =
         await sendProactive({

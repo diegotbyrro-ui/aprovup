@@ -382,6 +382,11 @@ export default async function ViewContentPage({
     );
 
 
+  const isGraphicDesignContent =
+    normalizedFormat ===
+    'DESIGN_GRAFICO';
+
+
   const isDesignCarousel =
     (
       item.area ===
@@ -686,11 +691,13 @@ export default async function ViewContentPage({
 
                   <h2 className="mt-1 text-[17px] font-black tracking-tight text-slate-950">
                     {
-                      isDesignCarousel
-                        ? 'Carrossel + Stories'
-                        : isDesignContent
-                          ? 'Feed + Stories'
-                          : 'Entrega do material final'
+                      isGraphicDesignContent
+                        ? 'Material gráfico'
+                        : isDesignCarousel
+                          ? 'Carrossel + Stories'
+                          : isDesignContent
+                            ? 'Feed + Stories'
+                            : 'Entrega do material final'
                     }
                   </h2>
                 </div>
@@ -710,19 +717,23 @@ export default async function ViewContentPage({
                       : "border-blue-100 bg-blue-50 text-blue-700",
                   ].join(" ")}
                 >
-                  {isDesignContent
-                    ? 'Design'
-                    : 'Filmmaker'}
+                  {isGraphicDesignContent
+                    ? 'Design Gráfico'
+                    : isDesignContent
+                      ? 'Design'
+                      : 'Filmmaker'}
                 </span>
               </div>
 
               <p className="mt-2 max-w-xl text-[11px] leading-5 text-slate-500">
                 {
-                  isDesignCarousel
-                    ? 'Organize as páginas do carrossel e envie a versão de Stories quando houver.'
-                    : isDesignContent
-                      ? 'Envie Feed e Stories de forma organizada. Você pode substituir apenas o arquivo que precisar.'
-                      : 'Envie o vídeo final e, se necessário, a capa. Arquivos grandes também podem ser entregues por link.'
+                  isGraphicDesignContent
+                    ? 'Materiais gráficos são entregues por link externo para evitar o envio de arquivos pesados pelo AprovUp.'
+                    : isDesignCarousel
+                      ? 'Organize as páginas do carrossel e envie a versão de Stories quando houver.'
+                      : isDesignContent
+                        ? 'Envie Feed e Stories de forma organizada. Você pode substituir apenas o arquivo que precisar.'
+                        : 'Envie o vídeo final e, se necessário, a capa. Arquivos grandes também podem ser entregues por link.'
                 }
               </p>
             </div>
@@ -730,7 +741,7 @@ export default async function ViewContentPage({
             <div className="p-4">
 
 
-            {isDesignCarousel ? (
+            {!isGraphicDesignContent && isDesignCarousel ? (
               <div className="mt-5">
                 <CarouselFinalUpload
                   key={
@@ -849,6 +860,9 @@ export default async function ViewContentPage({
               }
               area={
                 item.area
+              }
+              contentFormat={
+                item.format
               }
               feedMode={
                 isDesignCarousel

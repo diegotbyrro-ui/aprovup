@@ -1670,6 +1670,16 @@ function DesignCard({
       content.client?.name
     );
 
+  const isGraphicDesign =
+    String(
+      content.format ||
+      ''
+    )
+      .trim()
+      .toUpperCase() ===
+    'DESIGN_GRAFICO';
+
+
   const previewUrl =
     content.coverImageUrl ||
     content.finalCoverUrl ||
@@ -1751,51 +1761,113 @@ function DesignCard({
       ) : null}
 
 
-      <div className="relative aspect-[16/10] overflow-hidden border-b border-slate-100 bg-slate-100">
-        {previewUrl ? (
-          <img
-            src={
-              previewUrl
-            }
-            alt=""
-            className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
-          />
-        ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate-400">
-            <ImageIcon
-              size={22}
-            />
+      {isGraphicDesign ? (
 
-            <span className="text-[9px] font-bold uppercase tracking-[0.08em]">
-              Sem preview
-            </span>
+        <div className="border-b border-violet-100 bg-violet-50/40 px-3 py-4">
+
+          <div className="flex items-center justify-between gap-3">
+
+            <div className="flex items-center gap-2">
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+
+                <Palette
+                  size={16}
+                />
+
+              </div>
+
+
+              <div>
+
+                <p className="text-[9px] font-black uppercase tracking-[0.08em] text-violet-600">
+                  Material gráfico
+                </p>
+
+                <p className="mt-0.5 text-[9px] font-semibold text-slate-400">
+                  Entrega por link
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div className="flex items-center gap-1.5">
+
+              <PriorityBadge
+                priority={
+                  content.priority ||
+                  "MEDIA"
+                }
+              />
+
+              {late ? (
+                <span className="rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 text-[8px] font-bold text-red-600">
+                  ATRASADO
+                </span>
+              ) : null}
+
+            </div>
+
           </div>
-        )}
 
-
-        <div className="absolute left-2 top-2 flex items-center gap-1">
-          <PriorityBadge
-            priority={
-              content.priority ||
-              "MEDIA"
-            }
-          />
-
-          {late ? (
-            <span className="rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 text-[8px] font-bold text-red-600">
-              ATRASADO
-            </span>
-          ) : null}
         </div>
 
+      ) : (
 
-        {demo ? (
-          <span className="absolute right-2 top-2 rounded-md bg-violet-600 px-1.5 py-0.5 text-[7px] font-bold text-white shadow-sm">
-            DEMO
-          </span>
-        ) : null}
-      </div>
+        <div className="relative aspect-[16/10] overflow-hidden border-b border-slate-100 bg-slate-100">
 
+          {previewUrl ? (
+            <img
+              src={
+                previewUrl
+              }
+              alt=""
+              className="h-full w-full object-cover transition duration-200 group-hover:scale-[1.02]"
+            />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate-400">
+
+              <ImageIcon
+                size={22}
+              />
+
+              <span className="text-[9px] font-bold uppercase tracking-[0.08em]">
+                Sem preview
+              </span>
+
+            </div>
+          )}
+
+
+          <div className="absolute left-2 top-2 flex items-center gap-1">
+
+            <PriorityBadge
+              priority={
+                content.priority ||
+                "MEDIA"
+              }
+            />
+
+            {late ? (
+              <span className="rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 text-[8px] font-bold text-red-600">
+                ATRASADO
+              </span>
+            ) : null}
+
+          </div>
+
+
+          {demo ? (
+            <span className="absolute right-2 top-2 rounded-md bg-violet-600 px-1.5 py-0.5 text-[7px] font-bold text-white shadow-sm">
+              DEMO
+            </span>
+          ) : null}
+
+        </div>
+
+      )}
 
       <div className="p-3">
         <div className="flex items-center gap-2">
