@@ -17,7 +17,7 @@
     "ffmpeg-static": "^5.2.0",
     "googleapis": "^173.0.0",
     "lucide-react": "^1.14.0",
-    "next": "16.3.6",
+    "next": "16.3.8",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.3.289",
     "prisma": "^5.10.0",
@@ -32,7 +32,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.6",
+    "eslint-config-next": "16.3.8",
     "tailwindcss": "^4",
     "tsx": "^4.23.12",
     "typescript": "^5"
