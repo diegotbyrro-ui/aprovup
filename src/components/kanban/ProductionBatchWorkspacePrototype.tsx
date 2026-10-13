@@ -818,7 +818,7 @@ export function ProductionBatchWorkspacePrototype({
                 {area ===
                 "DESIGN"
                   ? "Design"
-                  : "Filmmaker"}
+                  : "Audio Visual"}
               </span>
 
             </div>

@@ -144,14 +144,14 @@ export default async function ProductionStagePackagePage({
   return (
     <main className="mx-auto max-w-[1320px] space-y-5 p-4 pb-12 md:p-7">
       <Link href={back} className="inline-flex items-center gap-2 text-xs font-bold text-indigo-600 hover:underline">
-        ← Voltar ao Kanban de {area === "FILMMAKER" ? "Filmmaker" : "Design"}
+        ← Voltar ao Kanban de {area === "FILMMAKER" ? "Audio Visual" : "Design"}
       </Link>
 
       <header className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-white p-5 shadow-sm md:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">
-              Pacote completo • {area === "FILMMAKER" ? "Filmmaker" : "Design"}
+              Pacote completo • {area === "FILMMAKER" ? "Audio Visual" : "Design"}
             </p>
             <h1 className="mt-2 text-2xl font-black text-slate-950">{client.name} • {friendlyPeriod(periodo)}</h1>
             <p className="mt-2 text-sm font-semibold text-slate-600">Etapa: {column.title}</p>

@@ -75,7 +75,7 @@ export async function FilmmakerCaptureAgenda() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-blue-600">
-            Agenda do Filmmaker
+            Agenda de Audio Visual
           </p>
 
           <h2 className="mt-1 text-2xl font-bold text-slate-900">

@@ -6,7 +6,7 @@ import { CalendarDays, AlertTriangle } from 'lucide-react';
 
 function getErrorMessage(error?: string) {
   if (error === 'busy') {
-    return 'Essa data já está ocupada para outro cliente. Como existe apenas 1 filmmaker, escolha outra data.';
+    return 'Essa data já está ocupada para outro cliente. Como ha apenas 1 profissional de Audio Visual, escolha outra data.';
   }
 
   if (error === 'missing') {
@@ -174,7 +174,7 @@ export default async function NovaCaptacaoPage({
 
             <div>
               <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-600">
-                Observações para o Filmmaker
+                Observações para a equipe de Audio Visual
               </label>
 
               <textarea
@@ -212,7 +212,7 @@ export default async function NovaCaptacaoPage({
             </div>
 
             <p className="mt-1 text-sm text-slate-500">
-              Dias já ocupados pelo filmmaker.
+              Dias já ocupados pela equipe de Audio Visual.
             </p>
 
             <div className="mt-5 space-y-3">

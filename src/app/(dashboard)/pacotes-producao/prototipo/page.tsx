@@ -328,7 +328,7 @@ export default async function ProductionBatchPrototypePage({
           }
           className="text-[10px] font-black text-slate-500 hover:text-slate-900"
         >
-          ← Voltar para {area === "FILMMAKER" ? "Filmmaker" : "Design"}
+          ← Voltar para {area === "FILMMAKER" ? "Audio Visual" : "Design"}
         </Link>
       </div>
 
