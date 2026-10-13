@@ -1288,7 +1288,8 @@ function AnalysisBatchCard({
                   item.id
                 }
               >
-                <div className="flex cursor-grab items-center gap-2 rounded-lg px-1 py-1 active:cursor-grabbing">
+                <div className="flex min-w-0 cursor-grab flex-col gap-1 rounded-lg border border-transparent px-1 py-1 text-[8px] transition hover:border-amber-100 hover:bg-amber-50/40 active:cursor-grabbing">
+  <div className="flex w-full min-w-0 items-center gap-1.5">
 
                   <span
   title="Data de publicacao"
@@ -1302,13 +1303,14 @@ function AnalysisBatchCard({
 
 
                   <div className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold text-slate-600">
+                    <span title={item.title} className="block w-full min-w-0 truncate text-[8px] leading-[13px] font-semibold normal-case tracking-normal text-slate-600">
                       {item.title}
                     </span>
                   </div>
 
 
-                                    <div className="relative flex shrink-0 items-center gap-1">
+                                    </div>
+<div className="relative flex w-full shrink-0 flex-wrap items-center justify-end gap-1">
                     <details>
                       <summary className="flex h-6 cursor-pointer list-none items-center justify-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 text-[7px] font-black uppercase text-amber-700 [&::-webkit-details-marker]:hidden">
                         D&uacute;vida

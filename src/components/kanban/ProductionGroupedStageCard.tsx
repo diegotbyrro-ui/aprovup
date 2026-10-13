@@ -169,7 +169,7 @@ export function ProductionGroupedStageCard<T extends GroupableContent>({
   </span>
   {publish ? `${publish.day}/${publish.month}` : "Sem data"}
 </span>
-                    <span className="min-w-0 flex-1 truncate text-[9px] font-semibold text-slate-700" title={item.title}>
+                    <span className="min-w-0 flex-1 truncate text-[8px] leading-[13px] font-semibold normal-case tracking-normal text-slate-600" title={item.title}>
                       {item.title}
                     </span>
                     <Link
