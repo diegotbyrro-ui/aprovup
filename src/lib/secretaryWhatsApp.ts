@@ -2,6 +2,8 @@ import {
   prisma,
 } from '@/lib/prisma';
 
+import { createHash } from 'node:crypto';
+
 import {
   canAccessClient,
 } from '@/lib/clientAccess';
@@ -5288,461 +5290,239 @@ function formatProductionDeadline(
 
 
 export async function deliverSecretaryProductionDeadlineReminders() {
-  const now =
-    new Date();
+  type ProductionReminderItem = {
+    id: string; title: string; area: string; status: string;
+    productionDeadline: Date; client: { name: string };
+  };
+  const now = new Date();
+  const agencyConnections = await prisma.secretaryWhatsappConnection.findMany({
+    where: { status: 'ATIVO', proactiveEnabled: true },
+    select: { agencyId: true },
+  });
+  const timezone = 'America/Maceio';
+  const dayKey = (date: Date) => {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const part = (name: string) => parts.find((p) => p.type === name)?.value || '';
+    return `${part('year')}-${part('month')}-${part('day')}`;
+  };
+  const today = dayKey(now);
+  const todayTime = now.getTime();
+  const maxDay = new Date(todayTime + 7 * 24 * 60 * 60 * 1000);
+  const present = (value: string, max = 35) =>
+    String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
+  const formatLine = (item: ProductionReminderItem) =>
+    `• ${present(item.client.name, 20)} — ${present(item.title, 36)} (${formatProductionDeadline(item.productionDeadline!)})`;
+  const section = (label: string, items: ProductionReminderItem[], limit: number) => {
+    if (!items.length) return [] as string[];
+    return [
+      `*${label} (${items.length})*`,
+      ...items.slice(0, limit).map(formatLine),
+      ...(items.length > limit ? [`+ ${items.length - limit} outra(s) demanda(s) no AprovUP.`] : []),
+    ];
+  };
+  // Um registro COVERED significa que a demanda foi incluida no alerta agrupado.
+  // Nao representa uma segunda mensagem enviada ao WhatsApp.
+  const coveredKey = (memberId: string, item: ProductionReminderItem) =>
+    `production-late-covered-v2:${memberId}:${item.id}:${item.productionDeadline!.toISOString()}`;
+  const oldKey = (memberId: string, item: ProductionReminderItem) =>
+    `production-deadline:OVERDUE:${item.id}:${item.productionDeadline!.toISOString()}:${memberId}`;
+  let sent = 0;
 
-  const connections =
-    await prisma
-      .secretaryWhatsappConnection
-      .findMany({
-        where: {
-          status:
-            'ATIVO',
+  for (const connection of agencyConnections) {
+    const members = await prisma.secretaryWhatsappMember.findMany({
+      where: {
+        agencyId: connection.agencyId,
+        isActive: true,
+        receiveAlerts: true,
+        userId: { not: null },
+      },
+    });
+    const userIds = members.map((member) => member.userId).filter((id): id is string => Boolean(id));
+    if (!userIds.length) continue;
 
-          proactiveEnabled:
-            true,
-        },
+    const users = await prisma.user.findMany({
+      where: {
+        id: { in: userIds },
+        agencyId: connection.agencyId,
+        status: 'APROVADO',
+        role: { in: ['DESIGN', 'FILMMAKER'] },
+      },
+      select: { id: true, role: true },
+    });
+    const roles = new Map(users.map((user) => [user.id, user.role] as const));
+    const recipients = members.filter((member) => member.userId && roles.has(member.userId));
+    if (!recipients.length) continue;
+
+    const [designColumns, videoColumns] = await Promise.all([
+      prisma.designKanbanColumn.findMany({
+        where: { agencyId: connection.agencyId, isActive: true },
+        select: { statusKey: true },
+      }),
+      prisma.filmmakerKanbanColumn.findMany({
+        where: { agencyId: connection.agencyId, isActive: true },
+        select: { statusKey: true },
+      }),
+    ]);
+    const excluded = new Set([
+      'DESIGN_ANALISE', 'DESIGN_DUVIDA', 'FILMMAKER_ANALISE',
+      'FILMMAKER_DUVIDA_SOCIAL', 'PRONTO_PARA_POSTAR',
+      'PUBLICADO', 'PUBLICADO_MANUALMENTE', 'ENVIADO_CLIENTE',
+      'FINALIZADO', 'CONCLUIDO', 'CANCELADO',
+    ]);
+    const isProductionStatus = (status: string) =>
+      !excluded.has(status) && !/(ANALISE|DUVIDA|APROVACAO|FINALIZ|CONCLUI|PUBLICAD|CANCELAD)/i.test(status);
+    const designStatuses = new Set(
+      (designColumns.length ? designColumns.map((c) => c.statusKey) :
+        ['APROVADO', 'DESIGN_GRAFICO', 'DESIGN_FAZENDO']).filter(isProductionStatus)
+    );
+    const videoStatuses = new Set(
+      (videoColumns.length ? videoColumns.map((c) => c.statusKey) :
+        ['APROVADO', 'FILMMAKER_PRE_PRODUCAO', 'FILMMAKER_AGENDAMENTO',
+          'FILMMAKER_GRAVANDO', 'FILMMAKER_EDICAO', 'ALTERACAO_SOLICITADA']).filter(isProductionStatus)
+    );
+
+    const contents = await prisma.content.findMany({
+      where: {
+        client: { agencyId: connection.agencyId },
+        OR: [
+          { area: 'DESIGN', status: { in: [...designStatuses] } },
+          { area: 'FILMMAKER', status: { in: [...videoStatuses] } },
+        ],
+      },
+      select: {
+        id: true, title: true, area: true, status: true,
+        productionDeadline: true, client: { select: { name: true } },
+      },
+      orderBy: [{ productionDeadline: 'asc' }, { id: 'asc' }],
+      take: 1000,
+    });
+
+    for (const member of recipients) {
+      if (!member.userId) continue;
+      const role = roles.get(member.userId);
+      if (role !== 'DESIGN' && role !== 'FILMMAKER') continue;
+      const sectorName = role === 'DESIGN' ? 'Design' : 'Audio Visual';
+      const sectorHref = role === 'DESIGN' ? '/design' : '/filmmaker';
+      const workload = contents.filter((item) => item.area === role);
+      if (!workload.length) continue;
+      const withDeadline = workload.filter(
+        (item): item is ProductionReminderItem => item.productionDeadline !== null
+      );
+      const withoutDeadline = workload.length - withDeadline.length;
+      const overdue = withDeadline.filter((item) => item.productionDeadline.getTime() <= todayTime);
+      const dueToday = withDeadline.filter(
+        (item) => item.productionDeadline.getTime() > todayTime && dayKey(item.productionDeadline) === today
+      );
+      const upcoming = withDeadline.filter(
+        (item) => item.productionDeadline.getTime() > todayTime &&
+          dayKey(item.productionDeadline) !== today && item.productionDeadline.getTime() < maxDay.getTime()
+      );
+      const later = withDeadline.length - overdue.length - dueToday.length - upcoming.length;
+
+      const digestKey = `production-summary-v2:${today}:${member.id}`;
+      const previousDigest = await prisma.secretaryWhatsappDelivery.findUnique({
+        where: { agencyId_dedupKey: { agencyId: connection.agencyId, dedupKey: digestKey } },
+        select: { status: true },
       });
-
-
-  let sent =
-    0;
-
-
-  for (
-    const connection
-    of connections
-  ) {
-    const members =
-      await prisma
-        .secretaryWhatsappMember
-        .findMany({
-          where: {
-            agencyId:
-              connection.agencyId,
-
-            isActive:
-              true,
-
-            receiveAlerts:
-              true,
-
-            userId: {
-              not:
-                null,
-            },
-          },
+      const digestWasSent = ['SENT', 'DELIVERED', 'READ'].includes(previousDigest?.status || '');
+      if (!digestWasSent) {
+        const message = [
+          `*Setor:* ${sectorName}`,
+          `*Pendentes:* ${workload.length}`,
+          ...section('Atrasadas', overdue, 3),
+          ...section('Para entregar hoje', dueToday, 4),
+          ...section('Proximos 7 dias', upcoming, 3),
+          ...(later ? [`*Mais adiante:* ${later} demanda(s).`] : []),
+          ...(withoutDeadline ? [`*Sem prazo de entrega:* ${withoutDeadline}.`] : []),
+          `*Acompanhe:* https://aprovup.com.br${sectorHref}`,
+        ].join('\n');
+        const result = await sendProactive({
+          agencyId: connection.agencyId,
+          memberId: member.id,
+          toPhone: member.phoneE164,
+          title: `Resumo de entregas - ${sectorName}`,
+          message,
+          dedupKey: digestKey,
         });
-
-
-    const userIds =
-      members
-        .map(
-          (member) =>
-            member.userId
-        )
-        .filter(
-          (value): value is string =>
-            Boolean(value)
-        );
-
-
-    if (!userIds.length) {
-      continue;
-    }
-
-
-    const users =
-      await prisma.user
-        .findMany({
-          where: {
-            agencyId:
-              connection.agencyId,
-
-            id: {
-              in:
-                userIds,
-            },
-
-            status:
-              'APROVADO',
-
-            role: {
-              in: [
-                'DESIGN',
-                'FILMMAKER',
-              ],
-            },
-          },
-
-          select: {
-            id:
-              true,
-
-            role:
-              true,
-          },
-        });
-
-
-    const roleByUserId =
-      new Map(
-        users.map(
-          (user) =>
-            [
-              user.id,
-              user.role,
-            ] as const
-        )
-      );
-
-
-    const productionMembers =
-      members.filter(
-        (member) =>
-          Boolean(
-            member.userId &&
-            roleByUserId.has(
-              member.userId
-            )
-          )
-      );
-
-
-    if (!productionMembers.length) {
-      continue;
-    }
-
-
-    const [
-      activeDesignColumns,
-      activeFilmmakerColumns,
-    ] =
-      await Promise.all([
-        prisma.designKanbanColumn
-          .findMany({
-            where: {
-              agencyId:
-                connection.agencyId,
-
-              isActive:
-                true,
-            },
-
-            select: {
-              statusKey:
-                true,
-            },
-          }),
-
-        prisma.filmmakerKanbanColumn
-          .findMany({
-            where: {
-              agencyId:
-                connection.agencyId,
-
-              isActive:
-                true,
-            },
-
-            select: {
-              statusKey:
-                true,
-            },
-          }),
-      ]);
-
-
-    const completedProductionStatuses =
-      new Set([
-        'PRONTO_PARA_POSTAR',
-        'PUBLICADO',
-        'PUBLICADO_MANUALMENTE',
-        'ENVIADO_CLIENTE',
-      ]);
-
-
-    const designStatusKeys =
-      (
-        activeDesignColumns.length
-          ? activeDesignColumns.map(
-              (
-                column
-              ) =>
-                column.statusKey
-            )
-          : [
-              'APROVADO',
-              'DESIGN_GRAFICO',
-              'DESIGN_FAZENDO',
-              'DESIGN_ANALISE',
-              'DESIGN_DUVIDA',
-            ]
-      ).filter(
-        (
-          status
-        ) =>
-          !completedProductionStatuses.has(
-            status
-          )
-      );
-
-
-    const filmmakerStatusKeys =
-      (
-        activeFilmmakerColumns.length
-          ? activeFilmmakerColumns.map(
-              (
-                column
-              ) =>
-                column.statusKey
-            )
-          : [
-              'APROVADO',
-              'FILMMAKER_PRE_PRODUCAO',
-              'FILMMAKER_AGENDAMENTO',
-              'FILMMAKER_GRAVANDO',
-              'FILMMAKER_EDICAO',
-              'FILMMAKER_ANALISE',
-              'FILMMAKER_DUVIDA_SOCIAL',
-              'ALTERACAO_SOLICITADA',
-            ]
-      ).filter(
-        (
-          status
-        ) =>
-          !completedProductionStatuses.has(
-            status
-          )
-      );
-
-
-    const contents =
-      await prisma.content
-        .findMany({
-          where: {
-            client: {
-              agencyId:
-                connection.agencyId,
-            },
-
-            OR: [
-              {
-                area:
-                  'DESIGN',
-
-                status: {
-                  in:
-                    designStatusKeys,
-                },
-              },
-
-              {
-                area:
-                  'FILMMAKER',
-
-                status: {
-                  in:
-                    filmmakerStatusKeys,
-                },
-              },
-            ],
-          },
-
-          select: {
-            id:
-              true,
-
-            title:
-              true,
-
-            area:
-              true,
-
-            status:
-              true,
-
-            priority:
-              true,
-
-            productionDeadline:
-              true,
-
-            plannedDate:
-              true,
-
-            client: {
-              select: {
-                name:
-                  true,
-              },
-            },
-          },
-
-          take:
-            500,
-        });
-
-
-    for (
-      const content
-      of contents
-    ) {
-      const deadline =
-        content.productionDeadline ||
-        content.plannedDate;
-
-      if (!deadline) {
-        continue;
-      }
-
-
-      const remaining =
-        deadline.getTime() -
-        now.getTime();
-
-      const hour =
-        60 * 60 * 1000;
-
-      let stage =
-        '';
-
-      let title =
-        '';
-
-
-      if (remaining <= 0) {
-        stage =
-          'OVERDUE';
-
-        title =
-          '⚠️ Demanda atrasada';
-      }
-      else if (
-        remaining >
-          5 * hour &&
-        remaining <=
-          7 * hour
-      ) {
-        stage =
-          '6H';
-
-        title =
-          'Entrega em cerca de 6 horas';
-      }
-      else if (
-        remaining >
-          23 * hour &&
-        remaining <=
-          25 * hour
-      ) {
-        stage =
-          '24H';
-
-        title =
-          'Entrega em cerca de 24 horas';
-      }
-      else {
-        continue;
-      }
-
-
-      for (
-        const member
-        of productionMembers
-      ) {
-        if (!member.userId) {
-          continue;
-        }
-
-
-        const role =
-          roleByUserId.get(
-            member.userId
-          );
-
-        const correctArea =
-          (
-            role ===
-              'DESIGN' &&
-            content.area ===
-              'DESIGN'
-          ) ||
-          (
-            role ===
-              'FILMMAKER' &&
-            content.area ===
-              'FILMMAKER'
-          );
-
-
-        if (!correctArea) {
-          continue;
-        }
-
-
-        const message =
-          [
-            '*Cliente:* ' +
-              content.client.name,
-
-            '*Demanda:* ' +
-              content.title,
-
-            '*Etapa:* ' +
-              String(content.status)
-                .replace(/_/g, ' '),
-
-            '*Prazo:* ' +
-              formatProductionDeadline(
-                deadline
-              ),
-
-            '*Prioridade:* ' +
-              String(
-                content.priority ||
-                'MEDIA'
-              ),
-          ].join('\n');
-
-
-        const result =
-          await sendProactive({
-            agencyId:
-              connection.agencyId,
-
-            memberId:
-              member.id,
-
-            toPhone:
-              member.phoneE164,
-
-            title,
-
-            message,
-
-            dedupKey:
-              'production-deadline:' +
-              stage +
-              ':' +
-              content.id +
-              ':' +
-              deadline.toISOString() +
-              ':' +
-              member.id,
-          });
-
-
-        if (
-          result.status ===
-          'SENT'
-        ) {
+        if (result.status === 'SENT') {
           sent += 1;
+          // Os prazos ja vencidos HOJE foram citados no resumo: nao cobrar duas vezes.
+          const todayOverdue = overdue.filter((item) => dayKey(item.productionDeadline) === today);
+          if (todayOverdue.length) {
+            await prisma.secretaryWhatsappDelivery.createMany({
+              data: todayOverdue.map((item) => ({
+                agencyId: connection.agencyId,
+                dedupKey: coveredKey(member.id, item),
+                memberId: member.id,
+                toPhone: member.phoneE164,
+                status: 'COVERED',
+                sentAt: new Date(),
+              })),
+              skipDuplicates: true,
+            });
+          }
         }
+      }
+
+      // Uma unica mensagem adicional reune os prazos que venceram HOJE desde o resumo.
+      const overdueToday = overdue.filter((item) => dayKey(item.productionDeadline) === today);
+      if (!overdueToday.length) continue;
+      const markerKeys = overdueToday.flatMap((item) => [coveredKey(member.id, item), oldKey(member.id, item)]);
+      const markers = await prisma.secretaryWhatsappDelivery.findMany({
+        where: {
+          agencyId: connection.agencyId,
+          dedupKey: { in: markerKeys },
+          status: { in: ['COVERED', 'SENT', 'DELIVERED', 'READ'] },
+        },
+        select: { dedupKey: true },
+      });
+      const existingMarkers = new Set(markers.map((marker) => marker.dedupKey));
+      const newlyOverdue = overdueToday.filter((item) =>
+        !existingMarkers.has(coveredKey(member.id, item)) &&
+        !existingMarkers.has(oldKey(member.id, item))
+      );
+      if (!newlyOverdue.length) continue;
+      const fingerprint = createHash('sha256').update(
+        newlyOverdue.map((item) => `${item.id}:${item.productionDeadline.toISOString()}`).sort().join('|')
+      ).digest('hex').slice(0, 24);
+      const overdueKey = `production-late-group-v2:${today}:${member.id}:${fingerprint}`;
+      const overdueMessage = [
+        `*Setor:* ${sectorName}`,
+        `*Prazo ultrapassado:* ${newlyOverdue.length} entrega(s)`,
+        ...newlyOverdue.slice(0, 9).map(formatLine),
+        ...(newlyOverdue.length > 9 ? [`+ ${newlyOverdue.length - 9} outra(s) entrega(s) atrasada(s).`] : []),
+        'Confira e atualize a etapa de cada material no AprovUP.',
+        `https://aprovup.com.br${sectorHref}`,
+      ].join('\n');
+      const result = await sendProactive({
+        agencyId: connection.agencyId,
+        memberId: member.id,
+        toPhone: member.phoneE164,
+        title: `Prazo vencido - ${sectorName}`,
+        message: overdueMessage,
+        dedupKey: overdueKey,
+      });
+      if (result.status === 'SENT') {
+        sent += 1;
+        await prisma.secretaryWhatsappDelivery.createMany({
+          data: newlyOverdue.map((item) => ({
+            agencyId: connection.agencyId,
+            dedupKey: coveredKey(member.id, item),
+            memberId: member.id,
+            toPhone: member.phoneE164,
+            status: 'COVERED',
+            sentAt: new Date(),
+          })),
+          skipDuplicates: true,
+        });
       }
     }
   }
-
 
   return sent;
 }
