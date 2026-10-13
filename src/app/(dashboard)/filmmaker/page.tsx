@@ -80,6 +80,11 @@ import {
 } from "./DraggableContentCard";
 
 
+import {
+  ProductionGroupedStageCard,
+  groupProductionKanbanItems,
+} from "@/components/kanban/ProductionGroupedStageCard";
+
 type FilmmakerContentItem =
   Prisma.ContentGetPayload<{
     include: {
@@ -2098,26 +2103,33 @@ export default async function FilmmakerPage({
                               </div>
                             </div>
                           ) : (
-                            items.map(
-                              (
-                                content
-                              ) => (
-                                <DraggableContentCard
-                                  key={
-                                    content.id
-                                  }
-                                  contentId={
-                                    content.id
-                                  }
-                                >
-                                  <FilmmakerCard
-                                    content={
-                                      content
-                                    }
-                                  />
-                                </DraggableContentCard>
-                              )
-                            )
+                            <>
+  {items
+    .filter((content) => content.format === "DEMANDA_EMERGENCIAL")
+    .map((content) => (
+      <DraggableContentCard
+        key={content.id}
+        contentId={content.id}
+      >
+        <FilmmakerCard content={content} />
+      </DraggableContentCard>
+    ))}
+
+  {groupProductionKanbanItems(
+    items.filter(
+      (content) => content.format !== "DEMANDA_EMERGENCIAL"
+    )
+  ).map((group) => (
+    <ProductionGroupedStageCard
+      key={group.key}
+      group={group}
+      area="FILMMAKER"
+      renderItem={(content) => (
+        <FilmmakerCard content={content} />
+      )}
+    />
+  ))}
+</>
                           )}
                         </div>
                       </DroppableFilmmakerColumn>

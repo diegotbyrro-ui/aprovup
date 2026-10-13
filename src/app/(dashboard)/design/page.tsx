@@ -58,6 +58,11 @@ import {
 } from "./DraggableDesignCard";
 
 
+import {
+  ProductionGroupedStageCard,
+  groupProductionKanbanItems,
+} from "@/components/kanban/ProductionGroupedStageCard";
+
 type DesignContentItem =
   Prisma.ContentGetPayload<{
     include: {
@@ -3268,35 +3273,33 @@ export default async function DesignPage({
                             )
                           )
                         ) : (
-                          items.map(
-                            (
-                              content
-                            ) => (
-                              <DraggableDesignCard
-                                key={
-                                  content.id
-                                }
-                                contentId={
-                                  content.id
-                                }
-                              >
-                                {content.format ===
-                                "DEMANDA_EMERGENCIAL" ? (
-                                  <EmergencyDesignCard
-                                    content={
-                                      content
-                                    }
-                                  />
-                                ) : (
-                                  <DesignCard
-                                    content={
-                                      content
-                                    }
-                                  />
-                                )}
-                              </DraggableDesignCard>
-                            )
-                          )
+                          <>
+  {items
+    .filter((content) => content.format === "DEMANDA_EMERGENCIAL")
+    .map((content) => (
+      <DraggableDesignCard
+        key={content.id}
+        contentId={content.id}
+      >
+        <EmergencyDesignCard content={content} />
+      </DraggableDesignCard>
+    ))}
+
+  {groupProductionKanbanItems(
+    items.filter(
+      (content) => content.format !== "DEMANDA_EMERGENCIAL"
+    )
+  ).map((group) => (
+    <ProductionGroupedStageCard
+      key={group.key}
+      group={group}
+      area="DESIGN"
+      renderItem={(content) => (
+        <DesignCard content={content} />
+      )}
+    />
+  ))}
+</>
                         )}
                       </div>
                     </DroppableDesignColumn>
