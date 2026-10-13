@@ -116,7 +116,7 @@ export async function createFilmmakerColumnAction(formData: FormData) {
       entityType: 'FILMMAKER_COLUMN',
       entityId: statusKey,
       action: 'CREATED',
-      description: `Coluna criada no Filmmaker: ${title}.`,
+      description: `Coluna criada no Audio Visual: ${title}.`,
       authorName: currentUser.name || currentUser.email || 'Equipe Level UP',
     },
   });
@@ -558,7 +558,7 @@ export async function sendFilmmakerQuestionAction(contentId: string, formData: F
         'FILMMAKER_QUESTION_SENT',
 
       description:
-        `Filmmaker enviou uma dúvida para a Social Media. Origem: ${originStatus}.`,
+        `Audio Visual enviou uma dúvida para a Social Media. Origem: ${originStatus}.`,
 
       authorName:
         currentUser.name ||

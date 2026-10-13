@@ -352,7 +352,7 @@ export default async function FilmmakerKanbanPage({
                         </p>
 
                         <h1 className="mt-2 text-4xl font-bold tracking-tight text-white">
-                            Área do Filmmaker
+                            Área de Audio Visual
                         </h1>
 
                         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
@@ -527,7 +527,7 @@ export default async function FilmmakerKanbanPage({
                     <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 className="text-lg font-bold text-red-800">
-                                Prioridade do Filmmaker
+                                Prioridade de Audio Visual
                             </h2>
 
                             <p className="text-sm text-red-600">

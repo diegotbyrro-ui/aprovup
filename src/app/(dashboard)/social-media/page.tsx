@@ -538,7 +538,7 @@ function ContentRow({
               ? "Social Media"
               : content.area ===
                   "FILMMAKER"
-                ? "Filmmaker"
+                ? "Audio Visual"
                 : "Design"}
           </span>
 
@@ -713,7 +713,7 @@ function DesignQuestionCard({
             rows={3}
             placeholder={
               filmmakerQuestion
-                ? "Responda para liberar o Filmmaker..."
+                ? "Responda para liberar o Audio Visual..."
                 : "Responda para liberar o Design..."
             }
             className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[9px] font-medium text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:bg-white"
@@ -1499,7 +1499,7 @@ const query =
           value={
             doubts.length
           }
-          description="Pendências de Design e Filmmaker"
+          description="Pendências de Design e Audio Visual"
           icon={
             <MessageCircleQuestion
               size={16}
@@ -1704,7 +1704,7 @@ const query =
               </p>
 
               <p className="mt-1 text-[8px] text-slate-400">
-                Quando Design, Filmmaker ou Social Media finalizarem, o conteúdo aparecerá aqui.
+                Quando Design, Audio Visual ou Social Media finalizarem, o conteúdo aparecerá aqui.
               </p>
             </div>
           </div>
@@ -2213,7 +2213,7 @@ const query =
                                           "FILMMAKER_ANALISE" ||
                                         content.area ===
                                           "FILMMAKER"
-                                      ? "Filmmaker"
+                                      ? "Audio Visual"
                                       : "Social Media"
                                 }
                               />
@@ -2392,7 +2392,7 @@ const query =
               </h2>
 
               <p className="mt-0.5 text-[9px] text-slate-400">
-                Responda Design ou Filmmaker para liberar a produção.
+                Responda Design ou Audio Visual para liberar a produção.
               </p>
             </div>
 

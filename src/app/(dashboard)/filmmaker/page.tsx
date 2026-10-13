@@ -1677,7 +1677,7 @@ export default async function FilmmakerPage({
           </p>
 
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-            Filmmaker
+            Audio Visual
           </h1>
 
           <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-slate-500">

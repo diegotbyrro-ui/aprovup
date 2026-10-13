@@ -112,7 +112,7 @@ const PERMISSION_GROUPS = [
 
   {
     title:
-      "Filmmaker",
+      "Audio Visual",
 
     description:
       "Produção audiovisual.",
@@ -341,7 +341,7 @@ export function InviteEmployeeForm() {
             </option>
 
             <option value="FILMMAKER">
-              Filmmaker
+              Audio Visual
             </option>
           </select>
         </div>

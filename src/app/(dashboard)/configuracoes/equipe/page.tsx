@@ -57,7 +57,7 @@ const ROLE_LABELS:
     "Design",
 
   FILMMAKER:
-    "Filmmaker",
+    "Audio Visual",
 };
 
 
@@ -99,12 +99,12 @@ const PERMISSION_OPTIONS = [
 
   [
     "filmmaker.view",
-    "Ver Filmmaker",
+    "Ver Audio Visual",
   ],
 
   [
     "filmmaker.manage",
-    "Gerenciar Filmmaker",
+    "Gerenciar Audio Visual",
   ],
 
   [
@@ -682,7 +682,7 @@ export default async function TeamAccessPage({
                             </option>
 
                             <option value="FILMMAKER">
-                              Filmmaker
+                              Audio Visual
                             </option>
                           </select>
 

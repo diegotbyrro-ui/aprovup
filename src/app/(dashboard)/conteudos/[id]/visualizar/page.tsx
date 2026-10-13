@@ -721,7 +721,7 @@ export default async function ViewContentPage({
                     ? 'Design Gráfico'
                     : isDesignContent
                       ? 'Design'
-                      : 'Filmmaker'}
+                      : 'Audio Visual'}
                 </span>
               </div>
 

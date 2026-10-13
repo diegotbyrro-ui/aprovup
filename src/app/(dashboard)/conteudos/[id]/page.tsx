@@ -43,9 +43,9 @@ import {
 
 const areaLabels: Record<string, string> = {
   DESIGN: 'Design',
-  FILMMAKER: 'Filmmaker',
+  FILMMAKER: 'Audio Visual',
   SOCIAL_DESIGN: 'Design',
-  AUDIOVISUAL: 'Filmmaker',
+  AUDIOVISUAL: 'Audio Visual',
   SOCIAL_MEDIA: 'Social Media',
   GERAL: 'Geral',
 };
@@ -1612,7 +1612,7 @@ export default async function ConteudoDetailPage({
                     </option>
 
                     <option value="FILMMAKER">
-                      Filmmaker
+                      Audio Visual
                     </option>
 
                     <option value="SOCIAL_MEDIA">
