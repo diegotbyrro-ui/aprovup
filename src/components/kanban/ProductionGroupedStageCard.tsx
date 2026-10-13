@@ -160,9 +160,15 @@ export function ProductionGroupedStageCard<T extends GroupableContent>({
               return (
                 <DragWrapper key={item.id} area={area} contentId={item.id}>
                   <div className="flex items-center gap-1.5 rounded-lg border border-slate-100 bg-slate-50 p-2 hover:border-indigo-100">
-                    <span className="shrink-0 rounded bg-indigo-50 px-1.5 py-1 text-[7px] font-black text-indigo-600">
-                      {publish ? `${publish.day}/${publish.month}` : "Sem data"}
-                    </span>
+                    <span
+  title="Data de publicacao"
+  className="inline-flex shrink-0 items-center gap-1 rounded bg-indigo-50 px-1.5 py-1 text-[7px] font-black text-indigo-600"
+>
+  <span className="text-[6px] uppercase tracking-[0.04em] text-indigo-400">
+    PUB
+  </span>
+  {publish ? `${publish.day}/${publish.month}` : "Sem data"}
+</span>
                     <span className="min-w-0 flex-1 truncate text-[9px] font-semibold text-slate-700" title={item.title}>
                       {item.title}
                     </span>

@@ -1188,6 +1188,21 @@ function buildAnalysisBatches(
 }
 
 
+function formatAnalysisCompactDate(value?: Date | string | null) {
+  if (!value) return "Sem data";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Sem data";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Maceio",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(date);
+}
 function AnalysisBatchCard({
   batch,
 }: {
@@ -1275,11 +1290,15 @@ function AnalysisBatchCard({
               >
                 <div className="flex cursor-grab items-center gap-2 rounded-lg px-1 py-1 active:cursor-grabbing">
 
-                  <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-black text-slate-500">
-                    {formatDate(
-                      item.plannedDate
-                    )}
-                  </span>
+                  <span
+  title="Data de publicacao"
+  className="inline-flex shrink-0 items-center gap-1 rounded bg-indigo-50 px-1.5 py-1 text-[7px] font-black text-indigo-600"
+>
+  <span className="text-[6px] uppercase tracking-[0.04em] text-indigo-400">
+    PUB
+  </span>
+  {formatAnalysisCompactDate(item.plannedDate)}
+</span>
 
 
                   <div className="min-w-0 flex-1">
