@@ -1356,6 +1356,14 @@ function AnalysisBatchCard({
           Acompanhamento pela Social Media
         </div>
 
+        <Link
+          draggable={false}
+          href={`/pacotes-producao/etapa?cliente=${encodeURIComponent(batch.clientId)}&area=DESIGN&etapa=DESIGN_ANALISE&periodo=${encodeURIComponent(analysisPeriod(batch.items[0]?.plannedDate).key)}`}
+          className="mt-3 flex min-h-9 items-center justify-center rounded-lg bg-slate-950 px-3 text-[9px] font-black text-white transition hover:bg-indigo-700"
+        >
+          Abrir pacote completo
+        </Link>
+
       </div>
 
     </article>
@@ -3294,9 +3302,7 @@ export default async function DesignPage({
       key={group.key}
       group={group}
       area="DESIGN"
-      renderItem={(content) => (
-        <DesignCard content={content} />
-      )}
+      statusKey={column.statusKey}
     />
   ))}
 </>

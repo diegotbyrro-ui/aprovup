@@ -2124,9 +2124,7 @@ export default async function FilmmakerPage({
       key={group.key}
       group={group}
       area="FILMMAKER"
-      renderItem={(content) => (
-        <FilmmakerCard content={content} />
-      )}
+      statusKey={column.statusKey}
     />
   ))}
 </>
