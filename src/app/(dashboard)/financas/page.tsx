@@ -35,6 +35,8 @@ import {
 } from "./actions";
 
 
+import { FinanceEntryManagement } from "./FinanceEntryManagement";
+
 export const dynamic =
   "force-dynamic";
 
@@ -489,6 +491,11 @@ type Entry = {
   installmentTotal:
     number |
     null;
+  clientId: string | null;
+  paymentMethod: string | null;
+  notes: string | null;
+  source: string | null;
+
 
   client: {
     id:
@@ -501,16 +508,11 @@ type Entry = {
 };
 
 
-function FinanceEntryRow({
-  entry,
-  returnTo,
-}: {
+function FinanceEntryRow({ entry, returnTo, clients, }: {
   entry:
     Entry;
 
-  returnTo:
-    string;
-}) {
+  returnTo: string; clients: { id: string; name: string }[]; }) {
 
   const status =
     statusInfo(
@@ -694,6 +696,9 @@ function FinanceEntryRow({
             )
         }
 
+      </div>
+      <div className="md:col-span-full border-t border-slate-100 pt-2">
+        <FinanceEntryManagement entry={entry} clients={clients} returnTo={returnTo} />
       </div>
 
     </div>
@@ -2739,7 +2744,7 @@ export default async function FinancePage({
                             }
                             returnTo={
                               returnTo
-                            }
+                            } clients={clients}
                           />
                         )
                       )
@@ -2798,7 +2803,7 @@ export default async function FinancePage({
                             }
                             returnTo={
                               returnTo
-                            }
+                            } clients={clients}
                           />
                         )
                       )
@@ -2853,7 +2858,7 @@ export default async function FinancePage({
                             }
                             returnTo={
                               returnTo
-                            }
+                            } clients={clients}
                           />
                         )
                       )

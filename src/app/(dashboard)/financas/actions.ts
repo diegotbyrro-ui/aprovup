@@ -1239,3 +1239,91 @@ export async function generateMonthlyClientReceivablesAction(
     "&gerado=1"
   );
 }
+
+// V4.1.103: edicao/exclusao exclusivamente de um lancamento pendente.
+export async function updateFinanceEntryAction(entryId: string, formData: FormData) {
+  const user = await requireFinanceAccess();
+  const returnTo = safeReturnTo(field(formData, "returnTo"));
+  const entry = await prisma.financeEntry.findFirst({
+    where: { id: entryId, agencyId: user.agencyId },
+    select: { id: true, status: true, source: true, clientId: true, description: true },
+  });
+  if (!entry || entry.status !== "PENDENTE") {
+    redirect(withResult(returnTo, "erro"));
+  }
+  const type = field(formData, "type");
+  const description = field(formData, "description");
+  const amountCents = parseMoneyToCents(field(formData, "amount"));
+  const dueDate = parseDate(field(formData, "dueDate"));
+  const category = field(formData, "category");
+  const paymentMethod = field(formData, "paymentMethod");
+  const notes = field(formData, "notes");
+  if (!["RECEITA", "DESPESA"].includes(type) || !description || description.length > 240 || !amountCents || !dueDate) {
+    redirect(withResult(returnTo, "erro"));
+  }
+  const requestedClientId = field(formData, "clientId");
+  let clientId: string | null = null;
+  if (requestedClientId) {
+    const client = await prisma.client.findFirst({
+      where: { id: requestedClientId, agencyId: user.agencyId },
+      select: { id: true },
+    });
+    if (!client) redirect(withResult(returnTo, "erro"));
+    clientId = client.id;
+  }
+  // Mensalidade gerada por contrato nao pode ser transferida para outro cliente.
+  if (entry.source === "CLIENT_MONTHLY_CONTRACT" && clientId !== entry.clientId) {
+    redirect(withResult(returnTo, "erro"));
+  }
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.financeEntry.updateMany({
+      where: { id: entry.id, agencyId: user.agencyId, status: "PENDENTE" },
+      data: {
+        type, description, amountCents, dueDate, clientId,
+        category: category || null,
+        paymentMethod: paymentMethod || null,
+        notes: notes || null,
+      },
+    });
+    if (updated.count !== 1) throw new Error("Lancamento alterado por outra operacao; tente novamente.");
+    await tx.historyLog.create({
+      data: {
+        entityType: "FINANCE_ENTRY", entityId: entry.id, action: "UPDATED",
+        description: `Lancamento financeiro editado: ${entry.description} -> ${description}. Agencia ${user.agencyId}.`,
+        authorName: user.name || user.email || "Equipe",
+      },
+    });
+  });
+  revalidatePath("/financas");
+  redirect(withResult(returnTo, "editado"));
+}
+
+export async function deleteFinanceEntryAction(entryId: string, formData: FormData) {
+  const user = await requireFinanceAccess();
+  const returnTo = safeReturnTo(field(formData, "returnTo"));
+  if (field(formData, "confirmDelete") !== "SIM") {
+    redirect(withResult(returnTo, "erro"));
+  }
+  const entry = await prisma.financeEntry.findFirst({
+    where: { id: entryId, agencyId: user.agencyId },
+    select: { id: true, description: true, status: true, recurrenceGroup: true, contractPeriod: true, source: true },
+  });
+  if (!entry || entry.status !== "PENDENTE") {
+    redirect(withResult(returnTo, "erro"));
+  }
+  await prisma.$transaction(async (tx) => {
+    const deleted = await tx.financeEntry.deleteMany({
+      where: { id: entry.id, agencyId: user.agencyId, status: "PENDENTE" },
+    });
+    if (deleted.count !== 1) throw new Error("Lancamento nao esta mais pendente; exclusao cancelada.");
+    await tx.historyLog.create({
+      data: {
+        entityType: "FINANCE_ENTRY", entityId: entry.id, action: "DELETED",
+        description: `Lancamento excluido: ${entry.description}. Agencia ${user.agencyId}. Periodo ${entry.contractPeriod || "avulso"}. Fonte ${entry.source || "manual"}. Grupo ${entry.recurrenceGroup || "nenhum"}.`,
+        authorName: user.name || user.email || "Equipe",
+      },
+    });
+  });
+  revalidatePath("/financas");
+  redirect(withResult(returnTo, "excluido"));
+}
