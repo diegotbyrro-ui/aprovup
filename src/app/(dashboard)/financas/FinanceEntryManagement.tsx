@@ -32,7 +32,7 @@ export function FinanceEntryManagement({
       <div className="flex flex-wrap items-center gap-2 text-[9px] text-slate-400">
         <button type="button" disabled title="Reabra o pagamento antes de editar" className="cursor-not-allowed rounded-lg border border-slate-200 px-3 py-2 text-[9px] font-bold text-slate-400 opacity-70">Editar</button>
         <button type="button" disabled title="Reabra o pagamento antes de excluir" className="cursor-not-allowed rounded-lg border border-slate-200 px-3 py-2 text-[9px] font-bold text-slate-400 opacity-70">Excluir</button>
-        <span>Reabra o pagamento para habilitar as alteracoes.</span>
+        <span>Reabra o pagamento para habilitar as alterações.</span>
       </div>
     );
   }
@@ -46,7 +46,7 @@ export function FinanceEntryManagement({
         <form action={updateFinanceEntryAction.bind(null, entry.id)} className="grid gap-2 border-t border-blue-100 bg-white p-3 sm:grid-cols-2">
           <input type="hidden" name="returnTo" value={returnTo} />
           <label className="text-[9px] font-semibold text-slate-600 sm:col-span-2">
-            DescriÃ§Ã£o
+            Descrição
             <input className={inputClass} name="description" required maxLength={240} defaultValue={entry.description} />
           </label>
           <label className="text-[9px] font-semibold text-slate-600">
@@ -81,17 +81,17 @@ export function FinanceEntryManagement({
           <label className="text-[9px] font-semibold text-slate-600">
             Forma de pagamento
             <select className={inputClass} name="paymentMethod" defaultValue={entry.paymentMethod || ""}>
-              <option value="">NÃ£o informado</option>
-              {['Pix','Boleto','Transferencia','Cartao','Dinheiro','Permuta','Outro'].map((method) => <option key={method} value={method}>{method}</option>)}
+              <option value="">Não informado</option>
+              {['Pix','Boleto','Transferencia','Cartao','Dinheiro','Permuta','Outro'].map((method) => <option key={method} value={method}>{method === 'Transferencia' ? 'Transfer\u00EAncia' : method === 'Cartao' ? 'Cart\u00E3o' : method}</option>)}
             </select>
           </label>
           <label className="text-[9px] font-semibold text-slate-600 sm:col-span-2">
-            ObservaÃ§Ãµes
+            Observações
             <input className={inputClass} name="notes" defaultValue={entry.notes || ""} />
           </label>
           <div className="sm:col-span-2">
-            <p className="mb-2 text-[9px] text-slate-500">Altera somente este lanÃ§amento; nÃ£o modifica outros meses.</p>
-            <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-[9px] font-bold text-white hover:bg-blue-700">Salvar alteraÃ§Ãµes</button>
+            <p className="mb-2 text-[9px] text-slate-500">Altera somente este lançamento; não modifica outros meses.</p>
+            <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-[9px] font-bold text-white hover:bg-blue-700">Salvar alterações</button>
           </div>
         </form>
       </details>
@@ -101,16 +101,16 @@ export function FinanceEntryManagement({
         </summary>
         <form action={deleteFinanceEntryAction.bind(null, entry.id)} className="max-w-sm space-y-2 border-t border-red-100 bg-white p-3">
           <input type="hidden" name="returnTo" value={returnTo} />
-          <p className="text-[9px] font-semibold text-red-700">Excluir apenas este lanÃ§amento: {entry.description}?</p>
-          <p className="text-[9px] text-slate-500">A exclusÃ£o Ã© permanente. Outras parcelas e mensalidades nÃ£o serÃ£o excluÃ­das.</p>
+          <p className="text-[9px] font-semibold text-red-700">Excluir apenas este lançamento: {entry.description}?</p>
+          <p className="text-[9px] text-slate-500">A exclusão é permanente. Outras parcelas e mensalidades não serão excluídas.</p>
           {entry.source === "CLIENT_MONTHLY_CONTRACT" ? (
-            <p className="text-[9px] font-semibold text-amber-700">AtenÃ§Ã£o: se gerar as mensalidades deste contrato novamente, esta cobranÃ§a poderÃ¡ reaparecer.</p>
+            <p className="text-[9px] font-semibold text-amber-700">Atenção: se gerar as mensalidades deste contrato novamente, esta cobrança poderá reaparecer.</p>
           ) : null}
           <label className="flex items-center gap-2 text-[9px] font-semibold text-red-800">
             <input type="checkbox" name="confirmDelete" value="SIM" required />
-            Confirmo excluir esta cobranÃ§a.
+            Confirmo excluir esta cobrança.
           </label>
-          <button type="submit" className="rounded-lg bg-red-600 px-3 py-2 text-[9px] font-bold text-white hover:bg-red-700">Confirmar exclusÃ£o</button>
+          <button type="submit" className="rounded-lg bg-red-600 px-3 py-2 text-[9px] font-bold text-white hover:bg-red-700">Confirmar exclusão</button>
         </form>
       </details>
     </div>
