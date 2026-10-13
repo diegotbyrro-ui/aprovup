@@ -1,4 +1,23 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+
+import {
+  DraggableDesignCard,
+  DroppableDesignColumn,
+} from "@/app/(dashboard)/design/DraggableDesignCard";
+
+import {
+  DraggableContentCard,
+  DroppableFilmmakerColumn,
+} from "@/app/(dashboard)/filmmaker/DraggableContentCard";
+
+import {
+  sendDesignQuestionAction,
+} from "@/app/(dashboard)/design/actions";
+
+import {
+  sendFilmmakerQuestionAction,
+} from "@/app/(dashboard)/filmmaker/actions";
 
 
 type Area =
@@ -45,6 +64,115 @@ type BatchContent = {
   } | null;
 };
 
+function BatchItemDrag({
+  area,
+  contentId,
+  children,
+}: {
+  area: Area;
+  contentId: string;
+  children: ReactNode;
+}) {
+  if (area === "DESIGN") {
+    return (
+      <DraggableDesignCard
+        contentId={contentId}
+      >
+        {children}
+      </DraggableDesignCard>
+    );
+  }
+
+  return (
+    <DraggableContentCard
+      contentId={contentId}
+    >
+      {children}
+    </DraggableContentCard>
+  );
+}
+
+function BatchDropZone({
+  area,
+  children,
+}: {
+  area: Area;
+  children: ReactNode;
+}) {
+  if (area === "DESIGN") {
+    return (
+      <DroppableDesignColumn
+        statusKey="APROVADO"
+      >
+        {children}
+      </DroppableDesignColumn>
+    );
+  }
+
+  return (
+    <DroppableFilmmakerColumn
+      statusKey="APROVADO"
+    >
+      {children}
+    </DroppableFilmmakerColumn>
+  );
+}
+
+function QuestionDetails({
+  area,
+  contentId,
+}: {
+  area: Area;
+  contentId: string;
+}) {
+  const action =
+    area === "DESIGN"
+      ? sendDesignQuestionAction.bind(
+          null,
+          contentId
+        )
+      : sendFilmmakerQuestionAction.bind(
+          null,
+          contentId
+        );
+
+  return (
+    <details className="relative shrink-0">
+      <summary
+        draggable={false}
+        className="flex h-6 cursor-pointer list-none items-center justify-center rounded-md border border-amber-200 bg-amber-50 px-2 text-[7px] font-black uppercase text-amber-700 [&::-webkit-details-marker]:hidden"
+      >
+        Dúvida
+      </summary>
+
+      <form
+        action={action}
+        className="absolute right-0 top-7 z-50 w-56 rounded-lg border border-amber-200 bg-white p-2 shadow-xl"
+      >
+        <textarea
+          name={
+            area === "DESIGN"
+              ? "message"
+              : "question"
+          }
+          rows={3}
+          required
+          draggable={false}
+          placeholder="Escreva a dúvida..."
+          className="w-full resize-none rounded-md border border-amber-200 bg-white px-2 py-1.5 text-[8px] font-medium text-slate-900 outline-none placeholder:text-slate-400"
+        />
+
+        <button
+          type="submit"
+          draggable={false}
+          className="mt-1.5 flex h-7 w-full items-center justify-center rounded-md bg-amber-500 text-[8px] font-bold text-white hover:bg-amber-600"
+        >
+          Enviar dúvida
+        </button>
+      </form>
+    </details>
+  );
+}
 
 function dateParts(
   value?:
@@ -449,7 +577,8 @@ export function ProductionBatchKanbanPrototype({
   return (
     <>
       {/* PACOTES MENSAIS */}
-      <div className="flex w-[292px] shrink-0 flex-col overflow-hidden rounded-xl border border-indigo-200 bg-indigo-50/30">
+      <BatchDropZone area={area}>
+        <div className="flex w-[292px] shrink-0 flex-col overflow-hidden rounded-xl border border-indigo-200 bg-indigo-50/30">
         <div className="border-b border-indigo-100 bg-white px-3 py-3">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-indigo-600" />
@@ -542,12 +671,17 @@ export function ProductionBatchKanbanPrototype({
                             (
                               item
                             ) => (
-                              <div
-                                key={
-                                  item.id
-                                }
-                                className="flex min-w-0 items-center gap-1.5 text-[8px]"
+                              <BatchItemDrag
+                                key={item.id}
+                                area={area}
+                                contentId={item.id}
                               >
+                                <div
+                                  key={
+                                    item.id
+                                  }
+                                  className="flex min-w-0 items-center gap-1.5 rounded-lg border border-transparent px-1 py-1 text-[8px] transition hover:border-indigo-100 hover:bg-indigo-50/40"
+                                >
 
                                 <span
                                   title="Data de publicacao"
@@ -595,7 +729,13 @@ export function ProductionBatchKanbanPrototype({
                                   {item.title}
                                 </span>
 
+                                <QuestionDetails
+                                  area={area}
+                                  contentId={item.id}
+                                />
+
                               </div>
+                              </BatchItemDrag>
                             )
                           )}
 
@@ -624,6 +764,7 @@ export function ProductionBatchKanbanPrototype({
 
 
                       <Link
+                        draggable={false}
                         href={
                           `/pacotes-producao/prototipo?cliente=${encodeURIComponent(
                             batch.clientId
@@ -640,11 +781,13 @@ export function ProductionBatchKanbanPrototype({
             )
           )}
         </div>
-      </div>
+        </div>
+      </BatchDropZone>
 
 
       {/* DEMANDAS EMERGENCIAIS */}
-      <div className="flex w-[292px] shrink-0 flex-col overflow-hidden rounded-xl border border-red-200 bg-red-50/30">
+      <BatchDropZone area={area}>
+        <div className="flex w-[292px] shrink-0 flex-col overflow-hidden rounded-xl border border-red-200 bg-red-50/30">
         <div className="border-b border-red-100 bg-white px-3 py-3">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-red-600" />
@@ -677,12 +820,16 @@ export function ProductionBatchKanbanPrototype({
               (
                 item
               ) => (
-                <article
-                  key={
-                    item.id
-                  }
-                  className="overflow-hidden rounded-xl border-2 border-red-300 bg-white shadow-sm ring-2 ring-red-50"
+                <BatchItemDrag
+                  area={area}
+                  contentId={item.id}
                 >
+                  <article
+                    key={
+                      item.id
+                    }
+                    className="overflow-hidden rounded-xl border-2 border-red-300 bg-white shadow-sm ring-2 ring-red-50"
+                  >
                   <div className="bg-red-600 px-3 py-2 text-[8px] font-black uppercase tracking-[0.07em] text-white">
                     Demanda emergencial
                   </div>
@@ -708,19 +855,27 @@ export function ProductionBatchKanbanPrototype({
                       </p>
                     </div>
 
+                                        <QuestionDetails
+                      area={area}
+                      contentId={item.id}
+                    />
+
                     <Link
+                      draggable={false}
                       href={`/conteudos/${item.id}/visualizar`}
-                      className="mt-3 flex h-9 items-center justify-center rounded-lg bg-red-600 text-[9px] font-black text-white hover:bg-red-700"
+                      className="mt-2 flex h-9 items-center justify-center rounded-lg bg-red-600 text-[9px] font-black text-white hover:bg-red-700"
                     >
                       Abrir emergência
                     </Link>
                   </div>
-                </article>
+                  </article>
+                </BatchItemDrag>
               )
             )
           )}
         </div>
-      </div>
+        </div>
+      </BatchDropZone>
     </>
   );
 }
