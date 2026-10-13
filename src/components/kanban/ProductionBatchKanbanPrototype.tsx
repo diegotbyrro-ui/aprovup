@@ -99,22 +99,23 @@ function BatchDropZone({
   area: Area;
   children: ReactNode;
 }) {
+  // A camada de drop tambem precisa de largura fixa no flex horizontal.
   if (area === "DESIGN") {
     return (
-      <DroppableDesignColumn
-        statusKey="APROVADO"
-      >
-        {children}
-      </DroppableDesignColumn>
+      <div className="w-[292px] min-w-[292px] shrink-0">
+        <DroppableDesignColumn statusKey="APROVADO">
+          {children}
+        </DroppableDesignColumn>
+      </div>
     );
   }
 
   return (
-    <DroppableFilmmakerColumn
-      statusKey="APROVADO"
-    >
-      {children}
-    </DroppableFilmmakerColumn>
+    <div className="w-[292px] min-w-[292px] shrink-0">
+      <DroppableFilmmakerColumn statusKey="APROVADO">
+        {children}
+      </DroppableFilmmakerColumn>
+    </div>
   );
 }
 
