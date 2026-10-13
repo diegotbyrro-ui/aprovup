@@ -67,16 +67,19 @@ type BatchContent = {
 function BatchItemDrag({
   area,
   contentId,
+  contentIds,
   children,
 }: {
   area: Area;
   contentId: string;
+  contentIds?: string[];
   children: ReactNode;
 }) {
   if (area === "DESIGN") {
     return (
       <DraggableDesignCard
         contentId={contentId}
+        contentIds={contentIds}
       >
         {children}
       </DraggableDesignCard>
@@ -86,6 +89,7 @@ function BatchItemDrag({
   return (
     <DraggableContentCard
       contentId={contentId}
+      contentIds={contentIds}
     >
       {children}
     </DraggableContentCard>
@@ -411,13 +415,7 @@ export function ProductionBatchKanbanPrototype({
         item.status ===
           "APROVADO" &&
         item.format !==
-          "DEMANDA_EMERGENCIAL" &&
-        !(
-          area ===
-            "DESIGN" &&
-          item.format ===
-            "DESIGN_GRAFICO"
-        )
+          "DEMANDA_EMERGENCIAL"
     );
 
 
@@ -616,6 +614,12 @@ export function ProductionBatchKanbanPrototype({
                   batch.items[0];
 
                 return (
+                  <BatchItemDrag
+                    key={`${batch.clientId}:${batch.month}:${batch.year}`}
+                    area={area}
+                    contentId={first?.id || ""}
+                    contentIds={batch.items.map((item) => item.id)}
+                  >
                   <article
                     key={`${batch.clientId}:${batch.month}:${batch.year}`}
                     className="overflow-hidden rounded-xl border border-indigo-200 bg-white shadow-sm"
@@ -647,6 +651,9 @@ export function ProductionBatchKanbanPrototype({
 
                           <p className="mt-0.5 text-[8px] font-black uppercase tracking-[0.06em] text-indigo-600">
                             {batch.period}
+                          </p>
+                          <p className="mt-1 text-[7px] font-medium text-indigo-500">
+                            Arraste pelo cabecalho para mover o pacote inteiro
                           </p>
                         </div>
 
@@ -777,6 +784,7 @@ export function ProductionBatchKanbanPrototype({
                       </Link>
                     </div>
                   </article>
+                  </BatchItemDrag>
                 );
               }
             )

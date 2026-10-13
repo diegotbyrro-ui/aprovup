@@ -429,6 +429,68 @@ export async function updateFilmmakerStatusAction(contentId: string, nextStatus:
   revalidatePath('/clientes');
 }
 
+
+// Movimentacao atomica para um card ou para um pacote de videos.
+export async function moveFilmmakerKanbanCardsAction(contentIds: string[], nextStatus: string) {
+  const currentUser = await checkAccess();
+  const ids = Array.from(new Set(contentIds.filter(
+    (id) => typeof id === 'string' && id.trim().length > 0
+  )));
+
+  if (!ids.length || ids.length > 100) {
+    throw new Error('Selecao de demandas invalida.');
+  }
+
+  const column = await prisma.filmmakerKanbanColumn.findFirst({
+    where: { agencyId: currentUser.agencyId, statusKey: nextStatus, isActive: true },
+  });
+  if (!column) throw new Error('Coluna de destino indisponivel.');
+
+  const contents = await prisma.content.findMany({
+    where: {
+      id: { in: ids },
+      area: 'FILMMAKER',
+      client: { agencyId: currentUser.agencyId },
+    },
+    select: { id: true, clientId: true, status: true },
+  });
+
+  if (contents.length !== ids.length) {
+    throw new Error('Uma ou mais demandas nao pertencem a este Kanban.');
+  }
+
+  const changing = contents.filter((content) => content.status !== nextStatus);
+  if (!changing.length) return;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.content.updateMany({
+      where: {
+        id: { in: changing.map((content) => content.id) },
+        area: 'FILMMAKER',
+        client: { agencyId: currentUser.agencyId },
+      },
+      data: { status: nextStatus },
+    });
+    await tx.historyLog.createMany({
+      data: changing.map((content) => ({
+        entityType: 'CONTENT',
+        entityId: content.id,
+        action: 'FILMMAKER_STATUS_UPDATED',
+        description: `Demanda movida pelo Kanban para ${column.title}.`,
+        authorName: currentUser.name || currentUser.email || 'Equipe Level UP',
+      })),
+    });
+  });
+
+  revalidatePath('/filmmaker');
+  for (const clientId of new Set(changing.map((item) => item.clientId))) {
+    revalidatePath(`/clientes/${clientId}`);
+  }
+  for (const content of changing) {
+    revalidatePath(`/conteudos/${content.id}`);
+  }
+}
+
 export async function sendFilmmakerQuestionAction(contentId: string, formData: FormData) {
   const currentUser = await checkAccess();
 

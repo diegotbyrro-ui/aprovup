@@ -10,20 +10,23 @@ import {
 import { useRouter } from 'next/navigation';
 
 import {
-  updateFilmmakerStatusAction,
+  moveFilmmakerKanbanCardsAction,
 } from './actions';
 
 const CONTENT_DRAG_TYPE =
   'application/x-aprovup-content-id';
+const BATCH_DRAG_TYPE = 'application/x-aprovup-content-ids';
 
 const COLUMN_DRAG_TYPE =
   'application/x-aprovup-column-id';
 
 export function DraggableContentCard({
   contentId,
+  contentIds,
   children,
 }: {
   contentId: string;
+  contentIds?: string[];
   children: ReactNode;
 }) {
   const [isDragging, setIsDragging] =
@@ -54,6 +57,7 @@ export function DraggableContentCard({
           contentId
         );
 
+        event.dataTransfer.setData(BATCH_DRAG_TYPE, JSON.stringify(contentIds?.length ? contentIds : [contentId]));
         event.stopPropagation();
         setIsDragging(true);
       }}
@@ -95,6 +99,7 @@ export function DroppableFilmmakerColumn({
     }
 
     return (
+      types.includes(BATCH_DRAG_TYPE) ||
       types.includes(CONTENT_DRAG_TYPE) ||
       types.includes('application/content-id') ||
       types.includes('text/plain')
@@ -149,28 +154,29 @@ export function DroppableFilmmakerColumn({
           return;
         }
 
-        const contentId =
-          event.dataTransfer.getData(
-            CONTENT_DRAG_TYPE
-          ) ||
-          event.dataTransfer.getData(
-            'application/content-id'
-          ) ||
-          event.dataTransfer.getData(
-            'text/plain'
-          );
-
-        if (!contentId) {
-          console.error(
-            '[APROVUP FILMMAKER] DROP SEM CONTENT ID'
-          );
-          return;
+        let movedIds: string[] = [];
+        const batch = event.dataTransfer.getData(BATCH_DRAG_TYPE);
+        if (batch) {
+          try {
+            const value: unknown = JSON.parse(batch);
+            if (Array.isArray(value) && value.every((id) => typeof id === 'string')) {
+              movedIds = value;
+            }
+          } catch {
+            movedIds = [];
+          }
         }
-
+        if (!movedIds.length) {
+          const id =
+            event.dataTransfer.getData(CONTENT_DRAG_TYPE) ||
+            event.dataTransfer.getData('application/content-id');
+          if (id) movedIds = [id];
+        }
+        if (!movedIds.length) return;
         startTransition(async () => {
           try {
-            await updateFilmmakerStatusAction(
-              contentId,
+            await moveFilmmakerKanbanCardsAction(
+              movedIds,
               statusKey
             );
 

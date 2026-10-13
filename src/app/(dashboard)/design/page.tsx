@@ -2634,7 +2634,6 @@ export default async function DesignPage({
       "DESIGN_ANALISE",
       "ENVIADO_CLIENTE",
       "ALTERACAO_SOLICITADA",
-      "PRONTO_PARA_POSTAR",
     ];
 
 
@@ -3036,16 +3035,10 @@ export default async function DesignPage({
                         ) {
                           return (
                             content.format ===
-                            "DESIGN_GRAFICO"
+                              "DESIGN_GRAFICO" &&
+                            content.status ===
+                              column.statusKey
                           );
-                        }
-
-
-                        if (
-                          content.format ===
-                          "DESIGN_GRAFICO"
-                        ) {
-                          return false;
                         }
 
 
@@ -3062,7 +3055,6 @@ export default async function DesignPage({
                             "DESIGN_ANALISE",
                             "ENVIADO_CLIENTE",
                             "ALTERACAO_SOLICITADA",
-                            "PRONTO_PARA_POSTAR",
                           ].includes(
                             content.status
                           );
@@ -3079,6 +3071,7 @@ export default async function DesignPage({
                           "PRONTO_PARA_POSTAR"
                         ) {
                           return [
+                            "PRONTO_PARA_POSTAR",
                             "PUBLICADO",
                             "PUBLICADO_MANUALMENTE",
                           ].includes(
@@ -3225,7 +3218,6 @@ export default async function DesignPage({
                       statusKey={
                         column.statusKey
                       }
-                      disabled={isGraphicColumn}
                     >
                       <div
                         className="
@@ -3266,14 +3258,13 @@ export default async function DesignPage({
                             (
                               batch
                             ) => (
-                              <AnalysisBatchCard
-                                key={
-                                  batch.key
-                                }
-                                batch={
-                                  batch
-                                }
-                              />
+                              <DraggableDesignCard
+                                key={batch.key}
+                                contentId={batch.items[0].id}
+                                contentIds={batch.items.map((item) => item.id)}
+                              >
+                                <AnalysisBatchCard batch={batch} />
+                              </DraggableDesignCard>
                             )
                           )
                         ) : (
@@ -3287,9 +3278,6 @@ export default async function DesignPage({
                                 }
                                 contentId={
                                   content.id
-                                }
-                                disabled={
-                                  isGraphicColumn
                                 }
                               >
                                 {content.format ===
