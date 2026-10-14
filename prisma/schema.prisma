@@ -27,6 +27,13 @@ model Agency {
   supportTickets             SupportTicket[]
   mindMaps                   MindMap[]
   financeEntries             FinanceEntry[]
+  fiscalProfile             AgencyFiscalProfile?
+  financeConnections        AgencyFinanceConnection[]
+  clientBillingProfiles     AgencyClientBillingProfile[]
+  agencyCharges             AgencyCharge[]
+  agencyFiscalDocuments     AgencyFiscalDocument[]
+  agencyWebhookEvents       AgencyFinanceWebhookEvent[]
+  agencyFinanceAuditEvents  AgencyFinanceAuditEvent[]
 
   secretaryThreads        SecretaryThread[]
   secretaryPendingActions SecretaryPendingAction[]
@@ -186,6 +193,7 @@ model Client {
   instagramMetricSnapshots InstagramMetricSnapshot[]
   socialConnections        SocialConnection[]
   financeEntries           FinanceEntry[]
+  agencyClientBillingProfiles AgencyClientBillingProfile[]
   secretaryMeetings        SecretaryMeeting[]
 
   // Configuracao financeira do cliente.
@@ -1276,6 +1284,8 @@ model FinanceEntry {
 
   agencyId String
   agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  agencyCharges AgencyCharge[]
+  agencyFiscalDocuments AgencyFiscalDocument[]
 
   clientId String?
   client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
@@ -1317,4 +1327,179 @@ model FinanceEntry {
   @@index([agencyId, type, status, dueDate])
   @@index([agencyId, clientId, dueDate])
   @@index([recurrenceGroup])
+}
+
+// APROVUP V4.1.110 - national billing and fiscal foundation.
+// Schema only: no provider integration is enabled by these models.
+model AgencyFiscalProfile {
+  id String @id @default(cuid())
+  agencyId String @unique
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+
+  legalName String?
+  cnpj String?
+  municipalRegistration String?
+  municipalityIbgeCode String?
+  stateCode String?
+  taxRegime String?
+  serviceCode String?
+  serviceDescription String? @db.Text
+  nfseEnvironment String @default("SANDBOX")
+  accountantApproved Boolean @default(false)
+  approvedByUserId String?
+  approvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([municipalityIbgeCode])
+}
+
+model AgencyFinanceConnection {
+  id String @id @default(cuid())
+  agencyId String
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+
+  domain String // PAYMENT | TAX
+  providerKey String
+  label String?
+  environment String @default("SANDBOX")
+  status String @default("PENDING_SETUP")
+  encryptedCredentialEnvelope String? @db.Text
+  credentialVersion String?
+  lastVerifiedAt DateTime?
+
+  charges AgencyCharge[]
+  fiscalDocuments AgencyFiscalDocument[]
+  webhookEvents AgencyFinanceWebhookEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agencyId, domain, providerKey, environment])
+  @@index([agencyId, status])
+}
+
+model AgencyClientBillingProfile {
+  id String @id @default(cuid())
+  agencyId String
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+  clientId String
+  client Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  billToLegalName String?
+  billToTaxId String?
+  billingEmail String?
+  billingPhoneE164 String?
+  preferredMethod String?
+  automationEnabled Boolean @default(false)
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agencyId, clientId])
+  @@index([agencyId, automationEnabled])
+}
+
+model AgencyCharge {
+  id String @id @default(cuid())
+  agencyId String
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+  financeEntryId String
+  financeEntry FinanceEntry @relation(fields: [financeEntryId], references: [id], onDelete: Restrict)
+  providerConnectionId String
+  providerConnection AgencyFinanceConnection @relation(fields: [providerConnectionId], references: [id], onDelete: Restrict)
+
+  clientId String?
+  idempotencyKey String
+  providerReference String?
+  requestFingerprint String?
+  amountCents Int
+  currency String @default("BRL")
+  dueDate DateTime
+  status String @default("DRAFT")
+  paidAt DateTime?
+  paymentUrl String?
+  boletoUrl String?
+  errorCode String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agencyId, idempotencyKey])
+  @@unique([agencyId, providerConnectionId, providerReference])
+  @@index([agencyId, financeEntryId])
+  @@index([agencyId, status, dueDate])
+}
+
+model AgencyFiscalDocument {
+  id String @id @default(cuid())
+  agencyId String
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+  financeEntryId String
+  financeEntry FinanceEntry @relation(fields: [financeEntryId], references: [id], onDelete: Restrict)
+  providerConnectionId String?
+  providerConnection AgencyFinanceConnection? @relation(fields: [providerConnectionId], references: [id], onDelete: Restrict)
+
+  clientId String?
+  idempotencyKey String
+  providerReference String?
+  status String @default("DRAFT")
+  amountCents Int
+  currency String @default("BRL")
+  issuerMunicipalityIbgeCode String
+  serviceCode String
+  rpsNumber String?
+  nfseNumber String?
+  verificationCode String?
+  protocol String?
+  xmlStorageKey String?
+  pdfStorageKey String?
+  errorCode String?
+  issuedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agencyId, idempotencyKey])
+  @@unique([agencyId, providerConnectionId, providerReference])
+  @@index([agencyId, financeEntryId])
+  @@index([agencyId, status, createdAt])
+}
+
+model AgencyFinanceWebhookEvent {
+  id String @id @default(cuid())
+  agencyId String
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+  providerConnectionId String
+  providerConnection AgencyFinanceConnection @relation(fields: [providerConnectionId], references: [id], onDelete: Restrict)
+
+  externalEventId String
+  payloadSha256 String?
+  status String @default("RECEIVED")
+  errorCode String?
+  processedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([providerConnectionId, externalEventId])
+  @@index([agencyId, status, createdAt])
+}
+
+model AgencyFinanceAuditEvent {
+  id String @id @default(cuid())
+  agencyId String
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+
+  entityType String
+  entityId String
+  action String
+  actorUserId String?
+  reasonCode String?
+  source String?
+  occurredAt DateTime @default(now())
+
+  @@index([agencyId, entityType, entityId])
+  @@index([agencyId, occurredAt])
 }
