@@ -1523,6 +1523,11 @@ export default async function FinancePage({
 
   return (
     <div className="space-y-5">
+      <div className="flex justify-end">
+        <Link href="/financas/integracoes" className="inline-flex items-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-blue-800 hover:bg-blue-100">
+          Bancos, cobrancas e NFS-e &rarr;
+        </Link>
+      </div>
 
       <section className="overflow-hidden rounded-3xl bg-slate-950 px-6 py-6 text-white shadow-sm sm:px-8">
 
