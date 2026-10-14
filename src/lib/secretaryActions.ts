@@ -39,12 +39,76 @@ export async function executeSecretaryPendingAction({
         authorName: authorName || user.name || user.email || 'Usuário',
       },
     }).catch(() => null);
-    return { content: 'Ação cancelada. Nenhuma alteração foi feita no Google Agenda.', htmlLink: null as string | null };
+    return { content: 'Ação cancelada. Nenhum lançamento financeiro ou compromisso foi criado.', htmlLink: null as string | null };
   }
 
   if (pending.expiresAt && pending.expiresAt < new Date()) {
     await prisma.secretaryPendingAction.update({ where: { id: pending.id }, data: { status: 'EXPIRED' } });
     throw new Error('Essa confirmação expirou. Faça o pedido novamente.');
+  }
+
+  // V4.1.105: movimento financeiro da LIV, atomico e idempotente por acao.
+  if (pending.type === 'LIV_FINANCE_CREATE') {
+    if (user.role !== 'DIRECTOR') {
+      throw new Error('Somente a diretoria pode registrar movimentacoes financeiras pela LIV.');
+    }
+    const data = pending.payload as Record<string, unknown>;
+    const type = String(data.kind || '');
+    const amountCents = Number(data.amountCents);
+    const description = String(data.description || '').trim().slice(0, 240);
+    const dueDate = new Date(String(data.dateISO || ''));
+    if (!['RECEITA', 'DESPESA'].includes(type) ||
+        !Number.isSafeInteger(amountCents) || amountCents < 1 || amountCents > 100000000 ||
+        description.length < 3 || Number.isNaN(dueDate.getTime())) {
+      throw new Error('Lancamento financeiro incompleto. Faca o pedido novamente.');
+    }
+    const requestedClientId = String(data.clientId || '').trim();
+    if (requestedClientId) {
+      const client = await prisma.client.findFirst({
+        where: { id: requestedClientId, agencyId }, select: { id: true },
+      });
+      if (!client) throw new Error('Cliente nao localizado nesta agencia.');
+    }
+    const paid = data.wasPaid === true;
+    const entry = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.secretaryPendingAction.updateMany({
+        where: { id: pending.id, agencyId, userId, status: 'PENDING' },
+        data: { status: 'EXECUTED' },
+      });
+      if (claimed.count !== 1) throw new Error('Esta confirmacao ja foi utilizada. Nenhum novo lancamento criado.');
+      const saved = await tx.financeEntry.create({
+        data: {
+          agencyId, createdByUserId: user.id,
+          type, description, amountCents, dueDate,
+          clientId: requestedClientId || null,
+          category: String(data.category || '').slice(0, 100) || null,
+          paymentMethod: String(data.paymentMethod || '').slice(0, 50) || null,
+          notes: String(data.notes || '').slice(0, 500) || null,
+          status: paid ? 'PAGO' : 'PENDENTE',
+          paidAt: paid ? dueDate : null,
+          isRecurring: false,
+          source: channel === 'WHATSAPP' ? 'LIV_WHATSAPP' : 'LIV_WEB',
+        },
+      });
+      await tx.historyLog.create({
+        data: {
+          entityType: 'FINANCE_ENTRY', entityId: saved.id,
+          action: 'LIV_FINANCE_CREATED',
+          description: `LIV registrou ${type} avulsa: ${description}, R$ ${(amountCents / 100).toFixed(2)}. Origem ${channel}. Agencia ${agencyId}.`,
+          authorName: authorName || user.name || user.email || 'Diretoria',
+        },
+      });
+      await tx.secretaryPendingAction.update({
+        where: { id: pending.id },
+        data: { result: { financeEntryId: saved.id, executedChannel: channel } },
+      });
+      return saved;
+    });
+    const label = type === 'DESPESA' ? 'Despesa' : 'Receita pontual';
+    return {
+      content: `✅ ${label} de R$ ${(amountCents / 100).toFixed(2).replace('.', ',')} registrada no Financeiro: ${entry.description}. ${paid ? 'Pagamento confirmado.' : 'Lancamento pendente.'}`,
+      htmlLink: 'https://aprovup.com.br/financas?aba=' + (type === 'DESPESA' ? 'despesas' : 'receber'),
+    };
   }
 
   if (!['GOOGLE_CALENDAR_CREATE', 'GOOGLE_CALENDAR_UPDATE'].includes(pending.type)) {

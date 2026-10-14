@@ -757,6 +757,7 @@ export default async function FinancePage({
       "dashboard",
       "receber",
       "pagar",
+      "despesas",
       "fluxo",
       "contratos",
       "relatorios",
@@ -1460,6 +1461,12 @@ export default async function FinancePage({
   }
 
 
+  const paidExpenseTotal = sum(expenses.filter(entry => entry.status === "PAGO").map(entry => entry.amountCents));
+  const oneOffIncomeTotal = sum(revenues.filter(entry => !entry.isRecurring).map(entry => entry.amountCents));
+  const expenseBreakdown = [...categories.entries()]
+    .map(([name, totals]) => [name, totals.expense] as const)
+    .filter(([, total]) => total > 0)
+    .sort((a, b) => b[1] - a[1]);
   const tabItems = [
     {
       key:
@@ -1482,6 +1489,14 @@ export default async function FinancePage({
       label:
         "A pagar",
     },
+    {
+      key:
+        "despesas",
+
+      label:
+        "Despesas",
+    },
+
     {
       key:
         "fluxo",
@@ -2822,6 +2837,71 @@ export default async function FinancePage({
       }
 
 
+      {
+        tab === "despesas" ? (
+          <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div>
+              <h2 className="text-sm font-black text-slate-950">Despesas e receitas pontuais</h2>
+              <p className="mt-1 text-[10px] text-slate-500">
+                Controle de gastos, categorias e trabalhos extras do mês. Os lançamentos da LIV aparecem aqui automaticamente.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-xl border border-rose-100 bg-rose-50 p-4">
+                <p className="text-[9px] font-bold uppercase tracking-wide text-rose-600">Despesas do período</p>
+                <p className="mt-1 text-lg font-black text-rose-700">{formatMoney(expenseTotal)}</p>
+              </div>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                <p className="text-[9px] font-bold uppercase tracking-wide text-emerald-700">Despesas pagas</p>
+                <p className="mt-1 text-lg font-black text-emerald-700">{formatMoney(paidExpenseTotal)}</p>
+              </div>
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+                <p className="text-[9px] font-bold uppercase tracking-wide text-blue-700">Receitas avulsas</p>
+                <p className="mt-1 text-lg font-black text-blue-700">{formatMoney(oneOffIncomeTotal)}</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-[9px] font-bold uppercase tracking-wide text-slate-600">Despesas / faturamento</p>
+                <p className="mt-1 text-lg font-black text-slate-900">{revenueTotal ? ((expenseTotal / revenueTotal) * 100).toFixed(1) + '%' : '—'}</p>
+              </div>
+            </div>
+            <div className="grid gap-4 xl:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 p-4">
+                <h3 className="text-xs font-black text-slate-900">Gastos por categoria</h3>
+                <div className="mt-3 space-y-3">
+                  {expenseBreakdown.length ? expenseBreakdown.map(([name, total]) => (
+                    <div key={name} className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-3 text-[10px]">
+                        <span className="font-semibold text-slate-700">{name}</span>
+                        <span className="font-black text-slate-900">{formatMoney(total)}</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-full rounded-full bg-rose-500" style={{ width: `${expenseTotal ? Math.max(1, Math.min(100, total * 100 / expenseTotal)) : 0}%` }} />
+                      </div>
+                    </div>
+                  )) : <p className="text-[10px] text-slate-400">Ainda não há despesas neste período.</p>}
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-4">
+                <h3 className="text-xs font-black text-slate-900">Resumo mensal</h3>
+                <div className="mt-3 space-y-2 text-[10px]">
+                  <div className="flex justify-between"><span>Faturamento lançado</span><b>{formatMoney(revenueTotal)}</b></div>
+                  <div className="flex justify-between"><span>Recebido</span><b>{formatMoney(receivedTotal)}</b></div>
+                  <div className="flex justify-between"><span>Despesas lançadas</span><b>{formatMoney(expenseTotal)}</b></div>
+                  <div className="flex justify-between"><span>Despesas pagas</span><b>{formatMoney(paidExpenseTotal)}</b></div>
+                  <div className="flex justify-between border-t border-slate-200 pt-2 text-sm font-black"><span>Resultado projetado</span><b>{formatMoney(result)}</b></div>
+                </div>
+                <p className="mt-3 text-[9px] text-slate-500">Valores pagos e pendentes são distintos. O resultado projetado considera todos os lançamentos do período.</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xs font-black text-slate-900">Lançamentos de despesas</h3>
+              {expenses.length ? expenses.map(entry => (
+                <FinanceEntryRow key={entry.id} entry={entry} returnTo={returnTo} clients={clients} />
+              )) : <p className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-[10px] text-slate-400">Nenhuma despesa cadastrada neste mês.</p>}
+            </div>
+          </section>
+        ) : null
+      }
       {
         tab ===
         "fluxo"
