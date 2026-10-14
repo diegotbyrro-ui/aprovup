@@ -13630,3 +13630,77 @@ article.danger {
       15px !important;
   }
 }
+
+/* APROVUP_CRM_CONTRASTE_V41107_R2 - INICIO */
+/* Regras limitadas a /crm/prospector: paineis claros e texto escuro. */
+.crm-prospector-page .prospector-search-panel,
+.crm-prospector-page .prospector-empty.panel,
+.crm-prospector-page .prospector-loading.panel {
+  color: #0f172a !important;
+}
+.crm-prospector-page .prospector-search-heading h3,
+.crm-prospector-page .prospector-empty strong,
+.crm-prospector-page .prospector-loading strong {
+  color: #0f172a !important;
+}
+.crm-prospector-page .prospector-search-heading p,
+.crm-prospector-page .prospector-empty span,
+.crm-prospector-page .prospector-loading span {
+  color: #475569 !important;
+  font-size: 12px !important;
+  line-height: 1.6 !important;
+}
+.crm-prospector-page .prospector-search-form label {
+  color: #1e293b !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+.crm-prospector-page .prospector-search-form input,
+.crm-prospector-page .prospector-search-form select {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  font-size: 13px !important;
+}
+.crm-prospector-page .prospector-main-field > div {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+.crm-prospector-page .prospector-main-field > div input {
+  background: transparent !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+.crm-prospector-page .prospector-search-form input::placeholder {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+  opacity: 1 !important;
+}
+.crm-prospector-page .prospector-search-form input::selection {
+  background: #bfdbfe !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+.crm-prospector-page .prospector-search-form select {
+  color-scheme: light !important;
+}
+.crm-prospector-page .prospector-search-form select option {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+/* Preserva o topo azul escuro, melhorando o contraste. */
+.crm-prospector-page .prospector-hero h2 { color: #ffffff !important; }
+.crm-prospector-page .prospector-hero p { color: #e2e8f0 !important; font-size: 13px !important; }
+.crm-prospector-page .prospector-hero .eyebrow { color: #93c5fd !important; }
+.crm-prospector-page .prospector-hero-points span { color: #f1f5f9 !important; font-size: 12px !important; }
+/* Informacoes secundarias das empresas encontradas. */
+.crm-prospector-page .prospector-results-heading > span,
+.crm-prospector-page .prospector-company-identity small,
+.crm-prospector-page .prospector-company-score span,
+.crm-prospector-page .prospector-company-value span {
+  color: #475569 !important;
+}
+/* APROVUP_CRM_CONTRASTE_V41107_R2 - FIM */
