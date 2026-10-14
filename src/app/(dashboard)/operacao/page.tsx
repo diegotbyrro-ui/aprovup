@@ -1,3 +1,6 @@
+/* APROVUP_I18N_DASHBOARD_V41108 */
+import { getLocale } from "@/lib/i18n-server";
+import { tDashboard } from "@/lib/i18n-dashboard";
 import Link from "next/link";
 
 import {
@@ -875,6 +878,14 @@ export default async function OperacaoPage({
     mes?: string;
   }>;
 }) {
+  const locale = await getLocale();
+  const monthNamesForLocale = locale === "en-US"
+    ? ["January","February","March","April","May","June","July","August","September","October","November","December"]
+    : monthNames;
+  const weekDaysForLocale = locale === "en-US"
+    ? ["MON","TUE","WED","THU","FRI","SAT","SUN"]
+    : weekDays;
+
   const currentUser =
     await requireCurrentUser();
 
@@ -1187,10 +1198,10 @@ export default async function OperacaoPage({
             ),
 
           label:
-            monthNames[
+            monthNamesForLocale[
               date.getMonth()
             ] +
-            " de " +
+            tDashboard(locale, " de ") +
             date.getFullYear(),
         };
       }
@@ -1212,10 +1223,10 @@ export default async function OperacaoPage({
         selectedPeriod,
 
       label:
-        monthNames[
+        monthNamesForLocale[
           selectedMonthIndex
         ] +
-        " de " +
+        tDashboard(locale, " de ") +
         selectedYear,
     });
   }
@@ -2083,7 +2094,7 @@ export default async function OperacaoPage({
   const pipeline = [
     {
       label:
-        "Briefing",
+        tDashboard(locale, "Briefing"),
 
       value:
         monthBriefingCount,
@@ -2099,7 +2110,7 @@ export default async function OperacaoPage({
 
     {
       label:
-        "Em produção",
+        tDashboard(locale, "Em produção"),
 
       value:
         currentProductionContents,
@@ -2115,7 +2126,7 @@ export default async function OperacaoPage({
 
     {
       label:
-        "Em revisão",
+        tDashboard(locale, "Em revisão"),
 
       value:
         monthReviewCount,
@@ -2131,7 +2142,7 @@ export default async function OperacaoPage({
 
     {
       label:
-        "Aprovação",
+        tDashboard(locale, "Aprovação"),
 
       value:
         monthClientApprovalCount,
@@ -2147,7 +2158,7 @@ export default async function OperacaoPage({
 
     {
       label:
-        "Concluído",
+        tDashboard(locale, "Concluído"),
 
       value:
         currentCompletedContents,
@@ -2179,7 +2190,7 @@ export default async function OperacaoPage({
                     ? cleanName(
                         selectedClient.name
                       )
-                    : "Visão geral da operação"
+                    : tDashboard(locale, "Visão geral da operação")
                 }
               </h1>
 
@@ -2187,7 +2198,7 @@ export default async function OperacaoPage({
                 selectedClient
                   ? (
                     <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-violet-600">
-                      Cliente selecionado
+                      {tDashboard(locale, "Cliente selecionado")}
                     </span>
                   )
                   : null
@@ -2205,10 +2216,10 @@ export default async function OperacaoPage({
               >
                 {
                   isCurrentPeriod
-                    ? "Atual"
+                    ? tDashboard(locale, "Atual")
                     : isClosedPeriod
-                      ? "Fechado"
-                      : "Futuro"
+                      ? tDashboard(locale, "Fechado")
+                      : tDashboard(locale, "Futuro")
                 }
               </span>
             </div>
@@ -2216,11 +2227,11 @@ export default async function OperacaoPage({
             <p className="mt-1 text-[11px] text-slate-400">
               {
                 selectedClient
-                  ? "Operação, calendário e resultados do Instagram em uma única visão."
+                  ? tDashboard(locale, "Operação, calendário e resultados do Instagram em uma única visão.")
                   : currentUser.role ===
                       "SOCIAL_MEDIA"
-                    ? "Visão consolidada somente dos clientes sob sua responsabilidade."
-                    : "Visão consolidada de todos os clientes da agência."
+                    ? tDashboard(locale, "Visão consolidada somente dos clientes sob sua responsabilidade.")
+                    : tDashboard(locale, "Visão consolidada de todos os clientes da agência.")
               }
             </p>
           </div>
@@ -2253,8 +2264,8 @@ export default async function OperacaoPage({
             allLabel={
               currentUser.role ===
               "DIRECTOR"
-                ? "Todos os clientes"
-                : "Meus clientes"
+                ? tDashboard(locale, "Todos os clientes")
+                : tDashboard(locale, "Meus clientes")
             }
           />
         </div>
@@ -2267,7 +2278,7 @@ export default async function OperacaoPage({
 
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <KpiCard
-          label="Conteúdos do mês"
+          label={tDashboard(locale, "Conteúdos do mês")}
           value={
             monthContents.length
           }
@@ -2279,11 +2290,11 @@ export default async function OperacaoPage({
             monthlyContentGoalTotal > 0
               ? (
                   monthContents.length +
-                  " de " +
+                  tDashboard(locale, " de ") +
                   monthlyContentGoalTotal +
-                  " conteúdos da meta mensal"
+                  tDashboard(locale, " conteúdos da meta mensal")
                 )
-              : "Meta mensal ainda não configurada"
+              : tDashboard(locale, "Meta mensal ainda não configurada")
           }
           icon={
             <FileText
@@ -2296,8 +2307,8 @@ export default async function OperacaoPage({
         <KpiCard
           label={
             selectedClient
-              ? "Cliente em análise"
-              : "Cobertura da carteira (%)"
+              ? tDashboard(locale, "Cliente em análise")
+              : tDashboard(locale, "Cobertura da carteira (%)")
           }
           value={
             selectedClient
@@ -2312,9 +2323,9 @@ export default async function OperacaoPage({
                 )
               : (
                   currentClientIds.size +
-                  " de " +
+                  tDashboard(locale, " de ") +
                   accessibleClients.length +
-                  " clientes com conteúdo no mês (" +
+                  tDashboard(locale, " clientes com conteúdo no mês (") +
                   portfolioCoverage +
                   "%)"
                 )
@@ -2328,14 +2339,14 @@ export default async function OperacaoPage({
         />
 
         <KpiCard
-          label="Pendências"
+          label={tDashboard(locale, "Pendências")}
           value={
             currentPending
           }
           delta={
             pendingDelta
           }
-          helper="vs. mês anterior"
+          helper={tDashboard(locale, "vs. mês anterior")}
           icon={
             <Clock3
               size={18}
@@ -2346,14 +2357,14 @@ export default async function OperacaoPage({
         />
 
         <KpiCard
-          label="Aprovações concluídas"
+          label={tDashboard(locale, "Aprovações concluídas")}
           value={
             approvalsThisMonth
           }
           delta={
             approvalDelta
           }
-          helper="vs. mês anterior"
+          helper={tDashboard(locale, "vs. mês anterior")}
           icon={
             <CheckCircle2
               size={18}
@@ -2379,19 +2390,19 @@ export default async function OperacaoPage({
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-[15px] font-bold text-slate-900">
-                        Instagram
+                        {tDashboard(locale, "Instagram")}
                       </h2>
 
                       {
                         instagramConnection
                           ? (
                             <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-emerald-600">
-                              Conectado
+                              {tDashboard(locale, "Conectado")}
                             </span>
                           )
                           : (
                             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-slate-500">
-                              Não conectado
+                              {tDashboard(locale, "Não conectado")}
                             </span>
                           )
                       }
@@ -2408,7 +2419,7 @@ export default async function OperacaoPage({
                                     selectedClient.name
                                   )
                             )
-                          : "Conecte a conta profissional para acompanhar os resultados."
+                          : tDashboard(locale, "Conecte a conta profissional para acompanhar os resultados.")
                       }
                     </p>
                   </div>
@@ -2418,7 +2429,7 @@ export default async function OperacaoPage({
                   href={`/clientes/${selectedClient.id}/instagram`}
                   className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-blue-600 transition hover:bg-slate-50"
                 >
-                  Abrir análise completa
+                  {tDashboard(locale, "Abrir análise completa")}
 
                   <ArrowUpRight
                     size={11}
@@ -2434,7 +2445,7 @@ export default async function OperacaoPage({
                   ? (
                     <div className="grid grid-cols-2 gap-3 p-4 xl:grid-cols-4">
                       <InstagramMetricCard
-                        label="Seguidores"
+                        label={tDashboard(locale, "Seguidores")}
                         value={
                           instagramMetrics.followersCount
                         }
@@ -2444,7 +2455,7 @@ export default async function OperacaoPage({
                         helper={
                           instagramConnection.username
                             ? `@${instagramConnection.username}`
-                            : "Perfil conectado"
+                            : tDashboard(locale, "Perfil conectado")
                         }
                         icon={
                           <UsersRound
@@ -2454,7 +2465,7 @@ export default async function OperacaoPage({
                       />
 
                       <InstagramMetricCard
-                        label="Alcance"
+                        label={tDashboard(locale, "Alcance")}
                         value={
                           instagramMetrics.current.reach
                         }
@@ -2469,7 +2480,7 @@ export default async function OperacaoPage({
                       />
 
                       <InstagramMetricCard
-                        label="Visualizações"
+                        label={tDashboard(locale, "Visualizações")}
                         value={
                           instagramMetrics.current.views
                         }
@@ -2484,7 +2495,7 @@ export default async function OperacaoPage({
                       />
 
                       <InstagramMetricCard
-                        label="Interações"
+                        label={tDashboard(locale, "Interações")}
                         value={
                           instagramMetrics.current.interactions
                         }
@@ -2506,22 +2517,22 @@ export default async function OperacaoPage({
                           <p className="text-[11px] font-bold text-slate-700">
                             {
                               !instagramConnection
-                                ? "Instagram ainda não conectado"
+                                ? tDashboard(locale, "Instagram ainda não conectado")
                                 : !metaReady
-                                  ? "Integração Meta indisponível neste acesso"
+                                  ? tDashboard(locale, "Integração Meta indisponível neste acesso")
                                   : instagramLoadError
-                                    ? "Não foi possível atualizar as métricas agora"
-                                    : "Carregando histórico do Instagram"
+                                    ? tDashboard(locale, "Não foi possível atualizar as métricas agora")
+                                    : tDashboard(locale, "Carregando histórico do Instagram")
                             }
                           </p>
 
                           <p className="mt-1 text-[10px] leading-relaxed text-slate-400">
                             {
                               !instagramConnection
-                                ? "Abra a análise do Instagram deste cliente para realizar a conexão."
+                                ? tDashboard(locale, "Abra a análise do Instagram deste cliente para realizar a conexão.")
                                 : !metaReady
-                                  ? "Assim que a integração Meta estiver liberada para este usuário, os indicadores aparecerão aqui."
-                                  : "A análise completa continua disponível na página do Instagram do cliente."
+                                  ? tDashboard(locale, "Assim que a integração Meta estiver liberada para este usuário, os indicadores aparecerão aqui.")
+                                  : tDashboard(locale, "A análise completa continua disponível na página do Instagram do cliente.")
                             }
                           </p>
                         </div>
@@ -2551,7 +2562,7 @@ export default async function OperacaoPage({
               />
 
               <h2 className="text-[15px] font-bold text-slate-900">
-                Calendário editorial
+                {tDashboard(locale, "Calendário editorial")}
               </h2>
             </div>
 
@@ -2563,7 +2574,7 @@ export default async function OperacaoPage({
               }
               className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-600 hover:bg-slate-50"
             >
-              Ver calendário
+              {tDashboard(locale, "Ver calendário")}
             </Link>
           </div>
 
@@ -2591,7 +2602,7 @@ export default async function OperacaoPage({
 
             <p className="min-w-[140px] text-center text-[13px] font-bold text-slate-700">
               {
-                monthNames[
+                monthNamesForLocale[
                   selectedMonthIndex
                 ]
               }{" "}
@@ -2621,7 +2632,7 @@ export default async function OperacaoPage({
 
 
           <div className="mt-3 grid grid-cols-7 gap-1">
-            {weekDays.map(
+            {weekDaysForLocale.map(
               (
                 day
               ) => (
@@ -2720,7 +2731,7 @@ export default async function OperacaoPage({
             {nextSchedule.length ===
             0 ? (
               <div className="rounded-lg border border-dashed border-slate-200 py-5 text-center text-[11px] text-slate-400">
-                Nenhum conteúdo próximo.
+                {tDashboard(locale, "Nenhum conteúdo próximo.")}
               </div>
             ) : (
               nextSchedule.map(
@@ -2772,7 +2783,7 @@ export default async function OperacaoPage({
                       </p>
 
                       <p className="mt-0.5 truncate text-[9px] text-slate-400">
-                        Cliente:{" "}
+                        {tDashboard(locale, "Cliente:")}{" "}
                         {cleanName(
                           content.client.name
                         )}
@@ -2780,9 +2791,9 @@ export default async function OperacaoPage({
                     </div>
 
                     <span className="rounded-md bg-blue-50 px-2 py-1 text-[9px] font-bold text-blue-600">
-                      {statusLabel(
+                      {tDashboard(locale, statusLabel(
                         content.status
-                      )}
+                      ))}
                     </span>
                   </Link>
                 )
@@ -2799,7 +2810,7 @@ export default async function OperacaoPage({
             }
             className="mt-3 flex items-center justify-center gap-1 text-[11px] font-bold text-blue-600 hover:underline"
           >
-            Ver todos os conteúdos
+            {tDashboard(locale, "Ver todos os conteúdos")}
 
             <ArrowUpRight
               size={10}
@@ -2819,7 +2830,7 @@ export default async function OperacaoPage({
               />
 
               <h2 className="text-[15px] font-bold text-slate-900">
-                Próximas aprovações
+                {tDashboard(locale, "Próximas aprovações")}
               </h2>
 
               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-violet-50 px-1.5 text-[10px] font-bold text-violet-600">
@@ -2835,7 +2846,7 @@ export default async function OperacaoPage({
               }
               className="text-[10px] font-bold text-blue-600 hover:underline"
             >
-              Ver todas
+              {tDashboard(locale, "Ver todas")}
             </Link>
           </div>
 
@@ -2844,7 +2855,7 @@ export default async function OperacaoPage({
             {approvalQueue.length ===
             0 ? (
               <div className="rounded-lg border border-dashed border-slate-200 py-8 text-center text-[11px] text-slate-400">
-                Nenhuma aprovação pendente.
+                {tDashboard(locale, "Nenhuma aprovação pendente.")}
               </div>
             ) : (
               approvalQueue.map(
@@ -2882,7 +2893,7 @@ export default async function OperacaoPage({
                       </div>
 
                       <p className="mt-1 truncate text-[9px] text-slate-400">
-                        Cliente:{" "}
+                        {tDashboard(locale, "Cliente:")}{" "}
                         {cleanName(
                           content.client.name
                         )}
@@ -2890,10 +2901,10 @@ export default async function OperacaoPage({
 
                       <div className="mt-1.5 flex items-center justify-between gap-2">
                         <span className="text-[9px] text-slate-400">
-                          Entrega:{" "}
-                          {formatShortDate(
+                          {tDashboard(locale, "Entrega:")}{" "}
+                          {tDashboard(locale, formatShortDate(
                             content.plannedDate
-                          )}
+                          ))}
                         </span>
 
                         <span
@@ -2911,18 +2922,18 @@ export default async function OperacaoPage({
                             " "
                           )}
                         >
-                          {relativeDate(
+                          {tDashboard(locale, relativeDate(
                             content.plannedDate,
                             today
-                          )}
+                          ))}
                         </span>
                       </div>
                     </div>
 
                     <span className="shrink-0 rounded-md bg-violet-50 px-2 py-1 text-[9px] font-bold text-violet-600">
-                      {approvalStage(
+                      {tDashboard(locale, approvalStage(
                         content.status
-                      )}
+                      ))}
                     </span>
                   </Link>
                 )
@@ -2939,7 +2950,7 @@ export default async function OperacaoPage({
             }
             className="mt-3 flex items-center justify-center gap-1 border-t border-slate-100 pt-3 text-[11px] font-bold text-blue-600 hover:underline"
           >
-            Ver todas as aprovações
+            {tDashboard(locale, "Ver todas as aprovações")}
 
             <ArrowUpRight
               size={10}
@@ -2953,7 +2964,7 @@ export default async function OperacaoPage({
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-3">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-[15px] font-bold text-slate-900">
-              Clientes ativos
+              {tDashboard(locale, "Clientes ativos")}
             </h2>
 
             <Link
@@ -2991,14 +3002,14 @@ export default async function OperacaoPage({
                     </p>
 
                     <p className="mt-0.5 truncate text-[9px] text-slate-400">
-                      {client._count.contents} projetos
+                      {client._count.contents} {tDashboard(locale, "projetos")}
                       {" • "}
-                      ativo há{" "}
+                      {tDashboard(locale, "ativo há")}{" "}
                       {monthsActive(
                         client.createdAt,
                         now
                       )}{" "}
-                      meses
+                      {tDashboard(locale, "meses")}
                     </p>
                   </div>
 
@@ -3015,7 +3026,7 @@ export default async function OperacaoPage({
             href="/clientes"
             className="mt-3 flex items-center justify-center gap-1 border-t border-slate-100 pt-3 text-[11px] font-bold text-blue-600 hover:underline"
           >
-            Ver todos os clientes
+            {tDashboard(locale, "Ver todos os clientes")}
 
             <ArrowUpRight
               size={10}
@@ -3035,7 +3046,7 @@ export default async function OperacaoPage({
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:col-span-7">
           <div className="flex items-center justify-between">
             <h2 className="text-[15px] font-bold text-slate-900">
-              Status da produção
+              {tDashboard(locale, "Status da produção")}
             </h2>
 
             <Link
@@ -3085,7 +3096,7 @@ export default async function OperacaoPage({
                   </p>
 
                   <p className="text-[9px] text-slate-400">
-                    projetos
+                    {tDashboard(locale, "projetos")}
                   </p>
 
                   {index <
@@ -3105,7 +3116,7 @@ export default async function OperacaoPage({
             {projectContents.length ===
             0 ? (
               <div className="rounded-lg border border-dashed border-slate-200 py-8 text-center text-[11px] text-slate-400">
-                Nenhum projeto em andamento.
+                {tDashboard(locale, "Nenhum projeto em andamento.")}
               </div>
             ) : (
               projectContents.map(
@@ -3165,9 +3176,9 @@ export default async function OperacaoPage({
 
 
                       <span className="rounded-md bg-slate-50 px-2 py-1 text-center text-[9px] font-bold text-slate-500">
-                        {statusLabel(
+                        {tDashboard(locale, statusLabel(
                           content.status
-                        )}
+                        ))}
                       </span>
                     </Link>
                   );
@@ -3181,7 +3192,7 @@ export default async function OperacaoPage({
             href="/conteudos/kanban"
             className="mt-3 flex items-center justify-center gap-1 text-[11px] font-bold text-blue-600 hover:underline"
           >
-            Ver todos os projetos
+            {tDashboard(locale, "Ver todos os projetos")}
 
             <ArrowUpRight
               size={10}
@@ -3196,16 +3207,16 @@ export default async function OperacaoPage({
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-[15px] font-bold text-slate-900">
-                Performance operacional
+                {tDashboard(locale, "Performance operacional")}
               </h2>
 
               <p className="mt-0.5 text-[10px] text-slate-400">
-                Evolução da produção no mês atual.
+                {tDashboard(locale, "Evolução da produção no mês atual.")}
               </p>
             </div>
 
             <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-slate-600">
-              Este mês
+              {tDashboard(locale, "Este mês")}
             </span>
           </div>
 
@@ -3213,7 +3224,7 @@ export default async function OperacaoPage({
           <div className="mt-4 grid grid-cols-4 gap-2">
             <div>
               <p className="text-[9px] text-slate-400">
-                Planejados
+                {tDashboard(locale, "Planejados")}
               </p>
 
               <p className="mt-1 text-[15px] font-bold text-slate-900">
@@ -3223,7 +3234,7 @@ export default async function OperacaoPage({
 
             <div>
               <p className="text-[9px] text-slate-400">
-                Em produção
+                {tDashboard(locale, "Em produção")}
               </p>
 
               <p className="mt-1 text-[15px] font-bold text-slate-900">
@@ -3243,7 +3254,7 @@ export default async function OperacaoPage({
 
             <div>
               <p className="text-[9px] text-slate-400">
-                Concluídos
+                {tDashboard(locale, "Concluídos")}
               </p>
 
               <p className="mt-1 text-[15px] font-bold text-slate-900">
@@ -3258,7 +3269,7 @@ export default async function OperacaoPage({
               viewBox="0 0 600 180"
               className="h-[175px] w-full"
               role="img"
-              aria-label="Evolução de conteúdos planejados no mês"
+              aria-label={tDashboard(locale, "Evolução de conteúdos planejados no mês")}
             >
               <line
                 x1="24"
@@ -3375,7 +3386,7 @@ export default async function OperacaoPage({
                 fill="#94a3b8"
               >
                 1{" "}
-                {monthNames[
+                {monthNamesForLocale[
                   now.getMonth()
                 ].slice(
                   0,
@@ -3417,7 +3428,7 @@ export default async function OperacaoPage({
             href="/relatorios"
             className="mt-3 flex items-center justify-center gap-1 text-[11px] font-bold text-blue-600 hover:underline"
           >
-            Ver relatório completo
+            {tDashboard(locale, "Ver relatório completo")}
 
             <ArrowUpRight
               size={10}
