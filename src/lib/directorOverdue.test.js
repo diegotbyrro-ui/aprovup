@@ -1,0 +1,28 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const ts = require('typescript');
+const target = path.join(process.cwd(), 'src/lib/directorOverdue.ts');
+const code = fs.readFileSync(target, 'utf8');
+const transpiled = ts.transpileModule(code, {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}}).outputText;
+const {module: nativeModule} = {module:{exports:{}}};
+new Function('module', 'exports', 'require', transpiled)(nativeModule, nativeModule.exports, require);
+const {classifyDirectorOverdue, directorLane, validatePublicationProof} = nativeModule.exports;
+const now = new Date('2026-10-15T12:00:00Z');
+const base = {area:'DESIGN',status:'DESIGN_FAZENDO',plannedDate:'2026-10-14T10:00:00Z',productionDeadline:'2026-10-13T10:00:00Z',socialPublications:[]};
+test('design overdue while in progress',()=>assert.equal(classifyDirectorOverdue(base,now),'PRODUCAO'));
+test('design in analysis is not production overdue',()=>assert.equal(classifyDirectorOverdue({...base,status:'DESIGN_ANALISE',plannedDate:'2026-10-16T10:00:00Z'},now),null));
+test('filmmaker overdue',()=>assert.equal(classifyDirectorOverdue({...base,area:'FILMMAKER',status:'FILMMAKER_EDICAO'},now),'PRODUCAO'));
+test('filmmaker returned for analysis is not production overdue',()=>assert.equal(classifyDirectorOverdue({...base,area:'FILMMAKER',status:'FILMMAKER_ANALISE',plannedDate:'2026-10-16T10:00:00Z'},now),null));
+test('publication overdue even if media delivered',()=>assert.equal(classifyDirectorOverdue({...base,status:'PRONTO_PARA_POSTAR'},now),'PUBLICACAO'));
+test('published manually is never overdue',()=>assert.equal(classifyDirectorOverdue({...base,status:'PUBLICADO_MANUALMENTE'},now),null));
+test('all platform records published but main status not updated',()=>assert.equal(classifyDirectorOverdue({...base,instagramPublication:{status:'PUBLICADO'}},now),'BAIXA_PENDENTE'));
+test('partial publication does not become published',()=>assert.equal(classifyDirectorOverdue({...base,instagramPublication:{status:'PUBLICADO'},socialPublications:[{selected:true,status:'ERRO'}]},now),'PRODUCAO'));
+test('future publication and delivery not overdue',()=>assert.equal(classifyDirectorOverdue({...base,plannedDate:'2026-10-17T10:00:00Z',productionDeadline:'2026-10-17T10:00:00Z'},now),null));
+test('unknown lane goes to social media',()=>assert.equal(directorLane({area:'GERAL',status:'IDEIA'}),'SOCIAL_MEDIA'));
+test('accepts HTTPS proof',()=>assert.deepEqual(validatePublicationProof('https://www.instagram.com/p/example/'),['https://www.instagram.com/p/example/']));
+test('refuses javascript proof',()=>assert.throws(()=>validatePublicationProof('javascript:alert(1)')));
+test('refuses private links',()=>assert.throws(()=>validatePublicationProof('https://localhost/test')));
+
+test('today planned date is not overdue',()=>assert.equal(classifyDirectorOverdue({...base, status:'PRONTO_PARA_POSTAR', plannedDate:'2026-10-15T00:00:00Z'}, now), null));

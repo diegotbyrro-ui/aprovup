@@ -1473,6 +1473,11 @@ const query =
 
 
         <div className="flex flex-wrap items-center gap-2">
+        {isDirector(currentUser.role) ? (
+          <Link href="/social-media/diretoria" className="flex h-9 items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-[9px] font-bold text-indigo-800 hover:bg-indigo-100">
+            <UsersRound size={13}/> Diretoria - atrasos
+          </Link>
+        ) : null}
 {canManageSocial ? (
           <Link
             href={`/conteudos/novo?cliente=${clientId}`}
