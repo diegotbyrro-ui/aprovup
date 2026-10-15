@@ -34,7 +34,12 @@ export default async function FinanceIntegrationsPage() {
         </p>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+        <Link href="/financas/cadastro-fiscal" className="inline-flex items-center gap-2 text-sm font-bold text-blue-900 underline underline-offset-4 hover:text-blue-700">
+          {en ? "Open preliminary fiscal profile (no saving)" : "Abrir cadastro fiscal preliminar (sem salvar)"}
+        </Link>
+      </div>
+<section className="grid gap-3 md:grid-cols-3">
         {[
           { icon: Building2, title: en ? "Independent agencies" : "Agencias independentes", desc: en ? "Each company will control its own providers." : "Cada empresa tera suas proprias conexoes." },
           { icon: ShieldCheck, title: en ? "Approval required" : "Aprovacao obrigatoria", desc: en ? "The LIV will act only within authorized limits." : "A LIV atuara apenas dentro das autorizacoes." },
