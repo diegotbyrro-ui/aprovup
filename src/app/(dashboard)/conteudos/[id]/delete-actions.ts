@@ -6,6 +6,7 @@ import { requirePermission } from '@/lib/userAccess';
 import { canAccessClient } from '@/lib/clientAccess';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { getDirectorReturnUrl } from '@/lib/directorReturn';
 
 function getCalendarRedirect(
   clientId: string,
@@ -102,6 +103,7 @@ export async function updateContentPlannedDateAction(
 ) {
   const currentUser =
     await requireCurrentUser();
+  const directorReturn = getDirectorReturnUrl(formData.get("retornoDiretoria"),currentUser.role);
 
   const content =
     await prisma.content.findFirst({
@@ -241,6 +243,8 @@ export async function updateContentPlannedDateAction(
     '/social-media/agendamentos'
   );
 
+  revalidatePath('/social-media/diretoria');
+  if (directorReturn) redirect(directorReturn);
   redirect(
     `/conteudos/${content.id}`
   );

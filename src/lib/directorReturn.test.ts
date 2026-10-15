@@ -1,0 +1,27 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { getDirectorReturnUrl } from "./directorReturn";
+const director = "DIRECTOR";
+test("Diretoria: aceita URL interna sem filtros",()=>assert.equal(getDirectorReturnUrl("/social-media/diretoria",director),"/social-media/diretoria"));
+test("Diretoria: preserva filtros e pagina apos edicao",()=>{
+ const original="/social-media/diretoria?situacao=ATRASADO&setor=DESIGN&cliente=clabc123&busca=campanha&mes=2026-10&pagina=3";
+ assert.equal(getDirectorReturnUrl(original,director),original);
+});
+test("Social Media nao pode determinar retorno privilegiado",()=>assert.equal(getDirectorReturnUrl("/social-media/diretoria","SOCIAL_MEDIA"),null));
+test("Bloqueia redirecionamento para dominio externo",()=>{for(const u of ["https://evil.com","//evil.com","/social-media/diretoria/../admin","/social-media/diretoria#fragment"]){assert.equal(getDirectorReturnUrl(u,director),null)}});
+test("Bloqueia parametros externos e duplicados",()=>{for(const u of ["/social-media/diretoria?next=https://evil.com","/social-media/diretoria?pagina=1&pagina=2"]){assert.equal(getDirectorReturnUrl(u,director),null)}});
+test("Bloqueia pagina ou setor invalido",()=>{for(const u of ["/social-media/diretoria?pagina=0","/social-media/diretoria?setor=ADMIN","/social-media/diretoria?mes=2026-44"]){assert.equal(getDirectorReturnUrl(u,director),null)}});
+const read=(p:string)=>readFileSync(p,"utf8");
+const central=read("src/app/(dashboard)/social-media/diretoria/page.tsx");
+const content=read("src/app/(dashboard)/conteudos/[id]/page.tsx");
+const actions=read("src/app/actions.ts");
+const dateAction=read("src/app/(dashboard)/conteudos/[id]/delete-actions.ts");
+const directorActions=read("src/app/(dashboard)/social-media/diretoria/actions.ts");
+test("Botao Editar preserva contexto da Diretoria",()=>assert.match(central,/href=\{directorEditUrl\(item\.id\)\}/));
+test("Salvar alteracoes inclui retorno valido no formulario",()=>assert.match(content,/name="retornoDiretoria" value=\{directorReturn\}/));
+test("Edicao comum redireciona para a Central somente com role DIRECTOR",()=>{assert.match(actions,/getDirectorReturnUrl\(formData\.get\("retornoDiretoria"\),currentUser\.role\)/);assert.match(actions,/if \(directorReturn\) redirect\(directorReturn\)/)});
+test("Salvar data tambem retorna a Central",()=>{assert.match(dateAction,/getDirectorReturnUrl/);assert.match(dateAction,/if \(directorReturn\) redirect\(directorReturn\)/)});
+test("Somente arquivamento exige motivo",()=>{assert.match(directorActions,/intent === "ARCHIVE" && \(note\.length < 8 \|\| note\.length > 700\)/);assert.doesNotMatch(directorActions,/if \(note\.length < 8/)});
+test("Confirmacao de publicacao ainda exige link HTTPS",()=>assert.match(central,/name="evidence" required/));
+test("Formulário de exclusao preserva justificativa obrigatoria",()=>assert.match(central,/name="note" required minLength=\{8\}/));

@@ -20,6 +20,7 @@ import {
   reopenFinalApprovalInternallyAction,
 } from './contentActions';
 import { hasPermission } from '@/lib/userAccess';
+import { getDirectorReturnUrl } from '@/lib/directorReturn';
 import { SocialMediaProductionPanel } from './SocialMediaProductionPanel';
 import { DownloadContentButton } from '@/components/content/DownloadContentButton';
 import { PermanentDeleteButton } from '@/components/content/PermanentDeleteButton';
@@ -772,6 +773,9 @@ export default async function ConteudoDetailPage({
 
       draftClientId?:
         string;
+
+      retornoDiretoria?:
+        string;
     }>;
 }) {
   const {
@@ -811,6 +815,7 @@ export default async function ConteudoDetailPage({
     );
 
   const currentUser = await requireCurrentUser();
+  const directorReturn = getDirectorReturnUrl(query?.retornoDiretoria, currentUser.role);
 
   const content = await prisma.content.findFirst({
     where: {
@@ -1140,13 +1145,13 @@ export default async function ConteudoDetailPage({
           <div className="min-w-0">
             <Link
               href={
-                contentSafe.clientId
+                directorReturn || (contentSafe.clientId
                   ? `/clientes/${contentSafe.clientId}/visao`
-                  : '/clientes'
+                  : '/clientes')
               }
               className="mb-3 inline-block text-sm text-blue-200 hover:underline"
             >
-              &larr; Voltar para visão do cliente
+              &larr; {directorReturn ? "Voltar para Diretoria" : "Voltar para visão do cliente"}
             </Link>
 
             <p className="text-sm font-bold uppercase tracking-wider text-blue-300">
@@ -1248,6 +1253,7 @@ export default async function ConteudoDetailPage({
           <div className="flex flex-col gap-2 sm:flex-row lg:justify-end">
             {nextStep.nextStatus && nextStep.actionLabel && (
               <form action={updateContentAction}>
+                {directorReturn ? <input type="hidden" name="retornoDiretoria" value={directorReturn}/> : null}
                 {renderHiddenContentFields(nextStep.nextStatus)}
                 <button
                   type="submit"
@@ -1542,6 +1548,7 @@ export default async function ConteudoDetailPage({
             action={updatePlannedDateAction}
             className="flex flex-col gap-2 sm:flex-row sm:items-end"
           >
+            {directorReturn ? <input type="hidden" name="retornoDiretoria" value={directorReturn}/> : null}
             <div>
               <label
                 htmlFor="plannedDateQuickEdit"
@@ -1573,6 +1580,7 @@ export default async function ConteudoDetailPage({
         <div className="space-y-6 xl:col-span-2">
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <form action={updateContentAction} className="space-y-6">
+              {directorReturn ? <input type="hidden" name="retornoDiretoria" value={directorReturn}/> : null}
               <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">

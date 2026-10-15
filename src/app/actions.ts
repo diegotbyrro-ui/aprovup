@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { hasPermission, requireAnyPermission, requirePermission } from '@/lib/userAccess';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getDirectorReturnUrl } from '@/lib/directorReturn';
 
 import {
   deleteAprovUpReferenceFile,
@@ -1090,6 +1091,8 @@ export async function updateContent(contentId: string, formData: FormData) {
     'design.manage',
     'filmmaker.manage',
   ]);
+  const directorReturn = getDirectorReturnUrl(formData.get("retornoDiretoria"),currentUser.role);
+  const directorReturnQuery = directorReturn ? `&retornoDiretoria=${encodeURIComponent(directorReturn)}` : "";
 
   const currentContent =
     await prisma.content.findFirst({
@@ -1207,7 +1210,7 @@ export async function updateContent(contentId: string, formData: FormData) {
     !productionDeadlineTimeValue
   ) {
     redirect(
-      `/conteudos/${contentId}?error=production-deadline-time-required`
+      `/conteudos/${contentId}?error=production-deadline-time-required${directorReturnQuery}`
     );
   }
 
@@ -1218,7 +1221,7 @@ export async function updateContent(contentId: string, formData: FormData) {
     productionDeadlineValue >= plannedDateValue
   ) {
     redirect(
-      `/conteudos/${contentId}?error=production-deadline-before`
+      `/conteudos/${contentId}?error=production-deadline-before${directorReturnQuery}`
     );
   }
 
@@ -1360,17 +1363,19 @@ export async function updateContent(contentId: string, formData: FormData) {
   revalidatePath('/clientes');
   revalidatePath('/design');
   revalidatePath('/social-media');
+  revalidatePath('/social-media/diretoria');
   revalidatePath('/clientes');
 
   if (
     referenceUpdateError
   ) {
     redirect(
-      `/conteudos/${contentId}?error=reference-update`
+      `/conteudos/${contentId}?error=reference-update${directorReturnQuery}`
     );
   }
 
 
+  if (directorReturn) redirect(directorReturn);
   redirect(`/conteudos/${contentId}`);
 }
 

@@ -104,6 +104,8 @@ export default async function DirectorOverduePage({searchParams}: {searchParams?
     return `/social-media/diretoria?${q.toString()}`;
   };
 
+  const directorEditUrl = (contentId:string) => `/conteudos/${contentId}?retornoDiretoria=${encodeURIComponent(url(currentPage))}`;
+
   return <div className="space-y-5 pb-12">
     <header className="rounded-3xl bg-slate-950 p-6 text-white sm:p-8">
       <Link href="/clientes" className="inline-flex items-center gap-2 text-xs font-bold text-blue-200 hover:text-white"><ArrowLeft size={15}/> Voltar para Clientes</Link>
@@ -158,7 +160,7 @@ export default async function DirectorOverduePage({searchParams}: {searchParams?
             {lastFollowup && !archived ? <p className="mt-2 rounded-lg bg-blue-50 p-2 text-xs text-blue-900">{sectorReply ? `Resposta da equipe: ${sectorReply.message.slice(0,170)}` : "Cobranca registrada. Aguardando resposta no conteudo."}</p> : null}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href={`/conteudos/${item.id}`} className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50"><Pencil size={14}/> Editar / abrir</Link>
+            <Link href={directorEditUrl(item.id)} className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50"><Pencil size={14}/> Editar / abrir</Link>
           </div>
         </div>
         <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 lg:grid-cols-4">
@@ -167,22 +169,22 @@ export default async function DirectorOverduePage({searchParams}: {searchParams?
             <form action={directorReviewAction.bind(null,item.id)} className="mt-3 space-y-2">
               <input type="hidden" name="intent" value="POSTED"/>
               <textarea name="evidence" required rows={2} placeholder="Links HTTPS do(s) post(s), um por linha" className="w-full rounded-lg border border-emerald-200 p-2 text-xs"/>
-              <textarea name="note" required minLength={8} maxLength={700} rows={2} placeholder="Onde e quando foi publicado?" className="w-full rounded-lg border border-emerald-200 p-2 text-xs"/>
+
               <button type="submit" className="w-full rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white">Confirmar publicacao manual</button>
             </form>
           </details> : <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">{published ? "Ja registrado como publicado." : "Conteudo arquivado: restaure para editar o fluxo."}</div>}
           {!published && !archived ? <details className="rounded-xl border border-amber-200 bg-amber-50 p-3"><summary className="cursor-pointer text-xs font-bold text-amber-900"><AlertTriangle size={14} className="mr-1 inline"/> Nao foi publicado</summary>
-            <form action={directorReviewAction.bind(null,item.id)} className="mt-3 space-y-2"><input type="hidden" name="intent" value="NOT_POSTED"/><textarea name="note" required minLength={8} maxLength={700} rows={2} placeholder="Por que ainda nao foi postado?" className="w-full rounded-lg border border-amber-200 p-2 text-xs"/><button type="submit" className="w-full rounded-lg bg-amber-700 px-3 py-2 text-xs font-bold text-white">Registrar como pendente</button></form>
+            <form action={directorReviewAction.bind(null,item.id)} className="mt-3 space-y-2"><input type="hidden" name="intent" value="NOT_POSTED"/><button type="submit" className="w-full rounded-lg bg-amber-700 px-3 py-2 text-xs font-bold text-white">Registrar como pendente</button></form>
           </details> : null}
           {!archived ? <details className="rounded-xl border border-blue-200 bg-blue-50 p-3"><summary className="cursor-pointer text-xs font-bold text-blue-900"><MessageCircle size={14} className="mr-1 inline"/> Cobrar posicao</summary>
             <form action={directorReviewAction.bind(null,item.id)} className="mt-3 space-y-2"><input type="hidden" name="intent" value="FOLLOWUP"/>
               <select name="sector" defaultValue={lane} className="w-full rounded-lg border border-blue-200 p-2 text-xs">{sectors.filter(x=>x.value!=="TODOS").map(x=><option key={x.value} value={x.value}>{x.label}</option>)}</select>
-              <textarea name="note" required minLength={8} maxLength={700} rows={2} placeholder="Solicite um posicionamento e previsao." className="w-full rounded-lg border border-blue-200 p-2 text-xs"/>
+              <textarea name="note" maxLength={700} rows={2} placeholder="Mensagem para o setor (opcional)" className="w-full rounded-lg border border-blue-200 p-2 text-xs"/>
               <button type="submit" className="w-full rounded-lg bg-blue-700 px-3 py-2 text-xs font-bold text-white">Registrar cobranca</button>
             </form>
           </details> : null}
           {archived ? <details className="rounded-xl border border-slate-300 bg-slate-50 p-3"><summary className="cursor-pointer text-xs font-bold text-slate-700"><RotateCcw size={14} className="mr-1 inline"/> Restaurar conteudo</summary>
-            <form action={directorReviewAction.bind(null,item.id)} className="mt-3 space-y-2"><input type="hidden" name="intent" value="RESTORE"/><textarea name="note" required minLength={8} maxLength={700} rows={2} placeholder="Motivo da restauracao" className="w-full rounded-lg border border-slate-300 p-2 text-xs"/><button type="submit" className="w-full rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-white">Restaurar</button></form>
+            <form action={directorReviewAction.bind(null,item.id)} className="mt-3 space-y-2"><input type="hidden" name="intent" value="RESTORE"/><button type="submit" className="w-full rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-white">Restaurar</button></form>
           </details> : <details className="rounded-xl border border-rose-200 bg-rose-50 p-3"><summary className="cursor-pointer text-xs font-bold text-rose-800"><Archive size={14} className="mr-1 inline"/> Apagar / arquivar</summary>
             <form action={directorReviewAction.bind(null,item.id)} className="mt-3 space-y-2"><input type="hidden" name="intent" value="ARCHIVE"/><p className="text-xs text-rose-700">Arquiva sem excluir registros ou arquivos das plataformas. Bloqueado se houver publicacao automatica ativa.</p><textarea name="note" required minLength={8} maxLength={700} rows={2} placeholder="Motivo do arquivamento" className="w-full rounded-lg border border-rose-200 p-2 text-xs"/><input name="confirmation" required pattern="ARQUIVAR" placeholder="Digite ARQUIVAR para confirmar" className="w-full rounded-lg border border-rose-200 p-2 text-xs"/><button type="submit" className="w-full rounded-lg bg-rose-700 px-3 py-2 text-xs font-bold text-white">Arquivar conteudo</button></form>
           </details>}

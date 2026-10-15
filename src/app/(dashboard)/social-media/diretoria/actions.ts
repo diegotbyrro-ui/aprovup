@@ -17,7 +17,8 @@ export async function directorReviewAction(contentId:string,formData:FormData) {
   const sector = String(formData.get("sector") || "").trim();
   const evidence = String(formData.get("evidence") || "").trim();
   if (!ALLOWED.has(intent)) throw new Error("Acao desconhecida.");
-  if (note.length < 8 || note.length > 700) throw new Error("Informe uma justificativa de 8 a 700 caracteres.");
+  if (intent === "ARCHIVE" && (note.length < 8 || note.length > 700)) throw new Error("Informe o motivo do arquivamento (8 a 700 caracteres).");
+  if (intent !== "ARCHIVE" && note.length > 700) throw new Error("Mensagem deve ter no maximo 700 caracteres.");
   if (intent === "FOLLOWUP" && !SECTORS.has(sector)) throw new Error("Selecione o setor.");
   if (intent === "ARCHIVE" && String(formData.get("confirmation") || "").trim() !== "ARQUIVAR") throw new Error("Confirme digitando ARQUIVAR.");
   const links = intent === "POSTED" ? validatePublicationProof(evidence) : [];
@@ -63,18 +64,18 @@ export async function directorReviewAction(contentId:string,formData:FormData) {
       if (result.count !== 1) throw new Error("Registro alterado por outra pessoa. Atualize a pagina.");
     }
     const message = intent === "POSTED"
-      ? `DIRETORIA - POSTAGEM CONFERIDA MANUALMENTE: ${note}\nComprovantes:\n${links.join("\n")}\nSem confirmacao automatica das plataformas.`
-      : intent === "NOT_POSTED" ? `DIRETORIA - NAO PUBLICADO: ${note}`
-      : intent === "FOLLOWUP" ? `DIRETORIA - SOLICITACAO DE POSICAO [${sector}]: ${note}`
+      ? `DIRETORIA - POSTAGEM CONFERIDA MANUALMENTE${note ? `: ${note}` : ""}\nComprovantes:\n${links.join("\n")}\nSem confirmacao automatica das plataformas.`
+      : intent === "NOT_POSTED" ? `DIRETORIA - NAO PUBLICADO${note ? `: ${note}` : ""}`
+      : intent === "FOLLOWUP" ? `DIRETORIA - SOLICITACAO DE POSICAO [${sector}]${note ? `: ${note}` : ""}`
       : intent === "ARCHIVE" ? `DIRETORIA - ARQUIVADO: ${note}`
-      : `DIRETORIA - RESTAURADO: ${note}`;
+      : `DIRETORIA - RESTAURADO${note ? `: ${note}` : ""}`;
     const action = intent === "POSTED" ? "DIRECTOR_CONFIRMED_MANUAL_POST"
       : intent === "NOT_POSTED" ? "DIRECTOR_CONFIRMED_NOT_POSTED"
       : intent === "FOLLOWUP" ? "DIRECTOR_REQUESTED_POSITION"
       : intent === "ARCHIVE" ? "DIRECTOR_ARCHIVED_CONTENT"
       : "DIRECTOR_RESTORED_CONTENT";
     const description = intent === "ARCHIVE" ? `Diretoria arquivou ${content.title}. STATUS_ORIGINAL:${content.status}. Motivo: ${note}`
-      : intent === "RESTORE" ? `Diretoria restaurou ${content.title} para ${restoredStatus}. Motivo: ${note}`
+      : intent === "RESTORE" ? `Diretoria restaurou ${content.title} para ${restoredStatus}.${note ? ` Nota: ${note}` : ""}`
       : intent === "POSTED" ? `Diretoria marcou ${content.title} como publicado manualmente com ${links.length} comprovante(s).`
       : intent === "FOLLOWUP" ? `Diretoria cobrou ${sector} sobre ${content.title}.` : `Diretoria registrou pendencia para ${content.title}.`;
     await tx.comment.create({data:{contentId,authorName:author,authorRole:"DIRECTOR",message}});
