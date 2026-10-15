@@ -2,7 +2,6 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/userAccess";
-import { validatePublicationProof } from "@/lib/directorOverdue";
 
 const ARCHIVED = "ARQUIVADO_DIRETORIA";
 const ALLOWED = new Set(["POSTED","NOT_POSTED","FOLLOWUP","ARCHIVE","RESTORE"]);
@@ -15,13 +14,11 @@ export async function directorReviewAction(contentId:string,formData:FormData) {
   const intent = String(formData.get("intent") || "").trim();
   const note = String(formData.get("note") || "").trim();
   const sector = String(formData.get("sector") || "").trim();
-  const evidence = String(formData.get("evidence") || "").trim();
   if (!ALLOWED.has(intent)) throw new Error("Acao desconhecida.");
   if (intent === "ARCHIVE" && (note.length < 8 || note.length > 700)) throw new Error("Informe o motivo do arquivamento (8 a 700 caracteres).");
   if (intent !== "ARCHIVE" && note.length > 700) throw new Error("Mensagem deve ter no maximo 700 caracteres.");
   if (intent === "FOLLOWUP" && !SECTORS.has(sector)) throw new Error("Selecione o setor.");
   if (intent === "ARCHIVE" && String(formData.get("confirmation") || "").trim() !== "ARQUIVAR") throw new Error("Confirme digitando ARQUIVAR.");
-  const links = intent === "POSTED" ? validatePublicationProof(evidence) : [];
   const author = user.name || user.email || "Diretoria";
 
   await prisma.$transaction(async tx=>{
@@ -44,10 +41,6 @@ export async function directorReviewAction(contentId:string,formData:FormData) {
     let restoredStatus = "";
     if (intent === "POSTED") {
       if (["PUBLICADO","PUBLICADO_MANUALMENTE"].includes(content.status)) throw new Error("Conteudo ja publicado.");
-      const platforms = new Set(content.socialPublications.filter(p=>p.selected).map(p=>p.platform));
-      if (content.instagramPublication) platforms.add("INSTAGRAM");
-      if (content.instagramStoryPublication) platforms.add("INSTAGRAM_STORY");
-      if (links.length < Math.max(1,platforms.size)) throw new Error("Informe ao menos um comprovante por canal selecionado.");
       const result = await tx.content.updateMany({where:{id:contentId,client:{agencyId:user.agencyId},status:content.status},data:{status:"PUBLICADO_MANUALMENTE"}});
       if (result.count !== 1) throw new Error("Registro alterado por outra pessoa. Atualize a pagina.");
     }
@@ -64,7 +57,7 @@ export async function directorReviewAction(contentId:string,formData:FormData) {
       if (result.count !== 1) throw new Error("Registro alterado por outra pessoa. Atualize a pagina.");
     }
     const message = intent === "POSTED"
-      ? `DIRETORIA - POSTAGEM CONFERIDA MANUALMENTE${note ? `: ${note}` : ""}\nComprovantes:\n${links.join("\n")}\nSem confirmacao automatica das plataformas.`
+      ? `DIRETORIA - PUBLICADO POR CONFIRMACAO MANUAL DO DIRETOR (SEM COMPROVANTE ANEXADO). Nao e confirmacao automatica das plataformas.`
       : intent === "NOT_POSTED" ? `DIRETORIA - NAO PUBLICADO${note ? `: ${note}` : ""}`
       : intent === "FOLLOWUP" ? `DIRETORIA - SOLICITACAO DE POSICAO [${sector}]${note ? `: ${note}` : ""}`
       : intent === "ARCHIVE" ? `DIRETORIA - ARQUIVADO: ${note}`
@@ -76,7 +69,7 @@ export async function directorReviewAction(contentId:string,formData:FormData) {
       : "DIRECTOR_RESTORED_CONTENT";
     const description = intent === "ARCHIVE" ? `Diretoria arquivou ${content.title}. STATUS_ORIGINAL:${content.status}. Motivo: ${note}`
       : intent === "RESTORE" ? `Diretoria restaurou ${content.title} para ${restoredStatus}.${note ? ` Nota: ${note}` : ""}`
-      : intent === "POSTED" ? `Diretoria marcou ${content.title} como publicado manualmente com ${links.length} comprovante(s).`
+      : intent === "POSTED" ? `Diretoria marcou ${content.title} como publicado por confirmacao manual, sem comprovante anexado. Registro de ${author}.`
       : intent === "FOLLOWUP" ? `Diretoria cobrou ${sector} sobre ${content.title}.` : `Diretoria registrou pendencia para ${content.title}.`;
     await tx.comment.create({data:{contentId,authorName:author,authorRole:"DIRECTOR",message}});
     await tx.historyLog.create({data:{entityType:"CONTENT",entityId:contentId,action,description,authorName:author}});

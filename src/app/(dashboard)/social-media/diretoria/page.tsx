@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/userAccess";
 import { classifyDirectorOverdue, daysOverdue, directorLane, type DirectorOverdueKind, type DirectorLane } from "@/lib/directorOverdue";
 import { directorReviewAction } from "./actions";
+import { DirectorMediaPreview } from "@/components/director/DirectorMediaPreview";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,9 @@ export default async function DirectorOverduePage({searchParams}: {searchParams?
       where: { client: {agencyId:user.agencyId} },
       select: {
         id:true,clientId:true,title:true,format:true,status:true,area:true,responsible:true,createdAt:true,updatedAt:true,
+        finalMediaUrl:true,finalCoverUrl:true,finalMediaType:true,finalExternalUrl:true,finalUploadedAt:true,
+        storyMediaUrl:true,storyCoverUrl:true,storyMediaType:true,storyMediaItems:true,
+        instagramMediaAssets:{select:{url:true,mimeType:true,position:true},orderBy:{position:"asc"}},
         plannedDate:true,productionDeadline:true,
         client:{select:{id:true,name:true}},
         instagramPublication:{select:{status:true}},
@@ -163,16 +167,14 @@ export default async function DirectorOverduePage({searchParams}: {searchParams?
             <Link href={directorEditUrl(item.id)} className="inline-flex items-center gap-1 rounded-lg border border-blue-200 px-3 py-2 text-xs font-bold text-blue-700 hover:bg-blue-50"><Pencil size={14}/> Editar / abrir</Link>
           </div>
         </div>
+        <DirectorMediaPreview content={item}/>
         <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 lg:grid-cols-4">
-          {!published && !archived ? <details className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-            <summary className="cursor-pointer text-xs font-bold text-emerald-800"><ClipboardCheck size={14} className="mr-1 inline"/> Marcar publicado</summary>
-            <form action={directorReviewAction.bind(null,item.id)} className="mt-3 space-y-2">
-              <input type="hidden" name="intent" value="POSTED"/>
-              <textarea name="evidence" required rows={2} placeholder="Links HTTPS do(s) post(s), um por linha" className="w-full rounded-lg border border-emerald-200 p-2 text-xs"/>
-
-              <button type="submit" className="w-full rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white">Confirmar publicacao manual</button>
-            </form>
-          </details> : <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">{published ? "Ja registrado como publicado." : "Conteudo arquivado: restaure para editar o fluxo."}</div>}
+          {!published && !archived ? <form action={directorReviewAction.bind(null,item.id)} className="flex flex-col justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+            <input type="hidden" name="intent" value="POSTED"/>
+            <p className="text-xs font-bold text-emerald-800"><ClipboardCheck size={14} className="mr-1 inline"/> Publicação manual</p>
+            <p className="text-[11px] text-emerald-800">Sem link ou justificativa. O sistema registra que a confirmação foi feita pela Diretoria.</p>
+            <button type="submit" className="w-full rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800">Marcar publicado</button>
+          </form> : <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">{published ? "Ja registrado como publicado." : "Conteudo arquivado: restaure para editar o fluxo."}</div>}
           {!published && !archived ? <details className="rounded-xl border border-amber-200 bg-amber-50 p-3"><summary className="cursor-pointer text-xs font-bold text-amber-900"><AlertTriangle size={14} className="mr-1 inline"/> Nao foi publicado</summary>
             <form action={directorReviewAction.bind(null,item.id)} className="mt-3 space-y-2"><input type="hidden" name="intent" value="NOT_POSTED"/><button type="submit" className="w-full rounded-lg bg-amber-700 px-3 py-2 text-xs font-bold text-white">Registrar como pendente</button></form>
           </details> : null}

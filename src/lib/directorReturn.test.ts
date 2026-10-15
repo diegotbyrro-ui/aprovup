@@ -23,5 +23,5 @@ test("Salvar alteracoes inclui retorno valido no formulario",()=>assert.match(co
 test("Edicao comum redireciona para a Central somente com role DIRECTOR",()=>{assert.match(actions,/getDirectorReturnUrl\(formData\.get\("retornoDiretoria"\),currentUser\.role\)/);assert.match(actions,/if \(directorReturn\) redirect\(directorReturn\)/)});
 test("Salvar data tambem retorna a Central",()=>{assert.match(dateAction,/getDirectorReturnUrl/);assert.match(dateAction,/if \(directorReturn\) redirect\(directorReturn\)/)});
 test("Somente arquivamento exige motivo",()=>{assert.match(directorActions,/intent === "ARCHIVE" && \(note\.length < 8 \|\| note\.length > 700\)/);assert.doesNotMatch(directorActions,/if \(note\.length < 8/)});
-test("Confirmacao de publicacao ainda exige link HTTPS",()=>assert.match(central,/name="evidence" required/));
+test("Confirmacao manual da Diretoria nao exige link HTTPS",()=>{ assert.doesNotMatch(central,/name="evidence" required/); assert.doesNotMatch(directorActions,/validatePublicationProof/); assert.match(directorActions,/CONFIRMACAO MANUAL DO DIRETOR/); });
 test("Formulário de exclusao preserva justificativa obrigatoria",()=>assert.match(central,/name="note" required minLength=\{8\}/));
