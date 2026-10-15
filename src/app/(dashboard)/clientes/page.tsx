@@ -174,6 +174,7 @@ export default async function ClientesPage({
     include: {
       contents: {
         where: {
+          status: {not:"ARQUIVADO_DIRETORIA"},
           plannedDate: {
             gte:
               monthlyRange.start,
@@ -265,6 +266,11 @@ export default async function ClientesPage({
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
+            {currentUser.role === "DIRECTOR" ? (
+              <Link href="/social-media/diretoria" className="inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-300 bg-indigo-100 px-5 py-3 text-sm font-bold text-indigo-950 hover:bg-indigo-200">
+                <Users size={16} /> Central da Diretoria
+              </Link>
+            ) : null}
             <Link
               href="/social-media/agendamentos"
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/20"

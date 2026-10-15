@@ -431,7 +431,8 @@ export async function createGraphicDesignDemandAction(
   );
 
 
+  // Quem solicita acompanha no proprio conteudo; nao precisa operar o Kanban.
   redirect(
-    "/design"
+    `/conteudos/${content.id}`
   );
 }

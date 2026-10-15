@@ -1473,11 +1473,6 @@ const query =
 
 
         <div className="flex flex-wrap items-center gap-2">
-        {isDirector(currentUser.role) ? (
-          <Link href="/social-media/diretoria" className="flex h-9 items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-[9px] font-bold text-indigo-800 hover:bg-indigo-100">
-            <UsersRound size={13}/> Diretoria - atrasos
-          </Link>
-        ) : null}
 {canManageSocial ? (
           <Link
             href={`/conteudos/novo?cliente=${clientId}`}
@@ -1489,6 +1484,16 @@ const query =
 
             Novo conteúdo
           </Link>
+        ) : null}
+        {canManageSocial ? (
+          <>
+            <Link href={`/demandas-emergenciais/nova?cliente=${clientId}`} className="flex h-9 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 text-[9px] font-bold text-red-700 hover:bg-red-100">
+              <AlertCircle size={13}/> Demanda emergencial
+            </Link>
+            <Link href={`/design-grafico/nova?cliente=${clientId}`} className="flex h-9 items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 text-[9px] font-bold text-violet-700 hover:bg-violet-100">
+              <FileText size={13}/> Design grafico
+            </Link>
+          </>
         ) : null}
         </div>
       </section>

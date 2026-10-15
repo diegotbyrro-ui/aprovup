@@ -486,12 +486,8 @@ export async function createEmergencyDemandAction(
   );
 
 
-  const destination =
-    area === "FILMMAKER"
-      ? `/filmmaker?cliente=${clientId}`
-      : `/design?cliente=${clientId}`;
-
+  // Quem solicita acompanha no proprio conteudo; nao precisa operar o Kanban.
   redirect(
-    destination
+    `/conteudos/${content.id}`
   );
 }
