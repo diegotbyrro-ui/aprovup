@@ -194,6 +194,8 @@ model Client {
   socialConnections        SocialConnection[]
   financeEntries           FinanceEntry[]
   agencyClientBillingProfiles AgencyClientBillingProfile[]
+  agencyCharges AgencyCharge[]
+  agencyFiscalDocuments AgencyFiscalDocument[]
   secretaryMeetings        SecretaryMeeting[]
 
   // Configuracao financeira do cliente.
@@ -227,6 +229,7 @@ model Client {
   agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: Restrict)
 
   @@index([agencyId])
+  @@unique([id, agencyId])
 }
 
 model ClientPersona {
@@ -1327,6 +1330,7 @@ model FinanceEntry {
   @@index([agencyId, type, status, dueDate])
   @@index([agencyId, clientId, dueDate])
   @@index([recurrenceGroup])
+  @@unique([id, agencyId])
 }
 
 // APROVUP V4.1.110 - national billing and fiscal foundation.
@@ -1378,6 +1382,7 @@ model AgencyFinanceConnection {
 
   @@unique([agencyId, domain, providerKey, environment])
   @@index([agencyId, status])
+  @@unique([id, agencyId])
 }
 
 model AgencyClientBillingProfile {
@@ -1385,7 +1390,7 @@ model AgencyClientBillingProfile {
   agencyId String
   agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
   clientId String
-  client Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  client Client @relation(fields: [clientId, agencyId], references: [id, agencyId], onDelete: Restrict)
 
   billToLegalName String?
   billToTaxId String?
@@ -1407,11 +1412,12 @@ model AgencyCharge {
   agencyId String
   agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
   financeEntryId String
-  financeEntry FinanceEntry @relation(fields: [financeEntryId], references: [id], onDelete: Restrict)
+  financeEntry FinanceEntry @relation(fields: [financeEntryId, agencyId], references: [id, agencyId], onDelete: Restrict)
   providerConnectionId String
-  providerConnection AgencyFinanceConnection @relation(fields: [providerConnectionId], references: [id], onDelete: Restrict)
+  providerConnection AgencyFinanceConnection @relation(fields: [providerConnectionId, agencyId], references: [id, agencyId], onDelete: Restrict)
 
   clientId String?
+  client Client? @relation(fields: [clientId, agencyId], references: [id, agencyId], onDelete: Restrict)
   idempotencyKey String
   providerReference String?
   requestFingerprint String?
@@ -1438,11 +1444,12 @@ model AgencyFiscalDocument {
   agencyId String
   agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
   financeEntryId String
-  financeEntry FinanceEntry @relation(fields: [financeEntryId], references: [id], onDelete: Restrict)
+  financeEntry FinanceEntry @relation(fields: [financeEntryId, agencyId], references: [id, agencyId], onDelete: Restrict)
   providerConnectionId String?
-  providerConnection AgencyFinanceConnection? @relation(fields: [providerConnectionId], references: [id], onDelete: Restrict)
+  providerConnection AgencyFinanceConnection? @relation(fields: [providerConnectionId, agencyId], references: [id, agencyId], onDelete: Restrict)
 
   clientId String?
+  client Client? @relation(fields: [clientId, agencyId], references: [id, agencyId], onDelete: Restrict)
   idempotencyKey String
   providerReference String?
   status String @default("DRAFT")
@@ -1473,7 +1480,7 @@ model AgencyFinanceWebhookEvent {
   agencyId String
   agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
   providerConnectionId String
-  providerConnection AgencyFinanceConnection @relation(fields: [providerConnectionId], references: [id], onDelete: Restrict)
+  providerConnection AgencyFinanceConnection @relation(fields: [providerConnectionId, agencyId], references: [id, agencyId], onDelete: Restrict)
 
   externalEventId String
   payloadSha256 String?
