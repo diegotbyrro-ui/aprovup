@@ -56,11 +56,22 @@ export function getApprovedContentDestination(
       content.area
     );
 
+  // A area SOCIAL_MEDIA pode ser a origem do planejamento.
+  // Um video aprovado precisa ir ao Filmmaker, mesmo que tenha sido
+  // cadastrado pela Social Media antes da primeira aprovacao.
+  // Formatos de video devem ir ao Audiovisual, mesmo quando
+  // a Social Media inicialmente selecionou a area Design.
+  if (isVideoContent(content)) {
+    return 'FILMMAKER';
+  }
+
+  if (area === 'DESIGN') {
+    return 'DESIGN';
+  }
+
   if (area === 'SOCIAL_MEDIA') {
     return 'SOCIAL_MEDIA';
   }
 
-  return isVideoContent(content)
-    ? 'FILMMAKER'
-    : 'DESIGN';
+  return 'DESIGN';
 }

@@ -2580,8 +2580,12 @@ export default async function DesignPage({
         area:
           "DESIGN",
 
-        // Manter todos os status de Design, exceto arquivos arquivados.
-        status: { not: "ARQUIVADO_DIRETORIA" },
+        // Somente etapas da producao; IDEIA aguarda aprovacao inicial do cliente.
+        status: { in: Array.from(new Set([
+          ...statusKeys.filter((key) => key !== "IDEIA"),
+          "APROVADO", "ENVIADO_CLIENTE", "ALTERACAO_SOLICITADA", "PRONTO_PARA_POSTAR",
+          "PUBLICADO", "PUBLICADO_MANUALMENTE",
+        ])) },
       },
 
       include: {
@@ -2622,15 +2626,6 @@ export default async function DesignPage({
       ],
     });
 
-
-  const visibleDesignStatuses = new Set([...statusKeys,
-    "ENVIADO_CLIENTE","ALTERACAO_SOLICITADA","PRONTO_PARA_POSTAR","PUBLICADO","PUBLICADO_MANUALMENTE"]);
-  const designOutsideFlow = contents.filter(content => !visibleDesignStatuses.has(content.status));
-  // APROVUP_V41130_R4: priorizar pendencias vencidas sem alterar os dados.
-  const designOutsideFlowSorted = [...designOutsideFlow].sort(
-    (a, b) => Number(isLate(b)) - Number(isLate(a))
-  );
-  const designOutsideFlowOverdue = designOutsideFlowSorted.filter(isLate);
 
   const graphicDesignCount =
     contents.filter(
@@ -2822,50 +2817,6 @@ export default async function DesignPage({
       </section>
 
 
-      {designOutsideFlow.length > 0 ? (
-        <section className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="font-bold text-amber-900">Demandas que estavam fora das colunas ({designOutsideFlow.length}) — Design</h2>
-              <p className="mt-1 text-xs text-amber-800">Registros preservados. Nenhuma data ou etapa sera alterada automaticamente.</p>
-            </div>
-            {designOutsideFlowOverdue.length > 0 ? (
-              <span className="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-700">
-                {designOutsideFlowOverdue.length} prazo(s) a conferir
-              </span>
-            ) : null}
-          </div>
-          {designOutsideFlowOverdue.length > 0 ? (
-            <div className="mt-3 space-y-2">
-              {designOutsideFlowOverdue.slice(0, 15).map((content) => (
-                <Link key={content.id} href={`/conteudos/${content.id}`} target="_blank" rel="noopener noreferrer"
-                  className="block rounded-lg border border-red-200 bg-white px-3 py-2 text-xs text-slate-900 hover:border-red-500">
-                  <strong>{content.title}</strong> · {content.client.name} · {content.status}
-                  <span className="block text-red-700">
-                    Entrega: {formatDeliveryDate(content.productionDeadline)} · Publicacao: {formatDate(content.plannedDate)}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          ) : null}
-          <details className="mt-3 rounded-lg border border-amber-200 bg-white">
-            <summary className="cursor-pointer px-3 py-2 text-xs font-bold text-amber-900">
-              Ver todos os registros fora das colunas ({designOutsideFlow.length})
-            </summary>
-            <div className="max-h-[420px] space-y-2 overflow-y-auto border-t border-amber-100 p-3">
-              {designOutsideFlowSorted.map((content) => (
-                <Link key={content.id} href={`/conteudos/${content.id}`} target="_blank" rel="noopener noreferrer"
-                  className="block rounded-lg border border-amber-200 px-3 py-2 text-xs text-slate-900 hover:border-amber-500">
-                  <strong>{content.title}</strong> · {content.client.name} · {content.status}
-                  <span className="block text-slate-600">
-                    Entrega: {formatDeliveryDate(content.productionDeadline)} · Publicacao: {formatDate(content.plannedDate)}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </details>
-        </section>
-      ) : null}
       {/* ===================================================
           RESUMO
           =================================================== */}

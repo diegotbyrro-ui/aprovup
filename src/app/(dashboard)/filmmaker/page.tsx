@@ -40,7 +40,6 @@ import {
   prisma,
 } from "@/lib/prisma";
 
-import { classifyDirectorOverdue } from "@/lib/directorOverdue";
 
 
 
@@ -1554,7 +1553,7 @@ export default async function FilmmakerPage({
 
         status: {
           in:
-            statusKeys,
+            Array.from(new Set([...statusKeys.filter((key) => key !== "IDEIA"), "APROVADO"])),
         },
       },
 
@@ -1583,38 +1582,6 @@ export default async function FilmmakerPage({
       ],
     });
 
-
-  // APROVUP_V41130_R4: visibilidade sem escrita de status, datas ou publicacoes.
-  const outsideFlowExcluded = Array.from(new Set([
-    ...statusKeys, "PUBLICADO", "PUBLICADO_MANUALMENTE", "ARQUIVADO_DIRETORIA",
-  ]));
-  const outsideFlowWhere: Prisma.ContentWhereInput = {
-    client: { agencyId: currentUser.agencyId },
-    ...(selectedClient !== "TODOS" ? { clientId: selectedClient } : {}),
-    area: "FILMMAKER",
-    status: { notIn: outsideFlowExcluded },
-  };
-  const [outsideFlowTotal, outsideFlowContents] = await Promise.all([
-    prisma.content.count({ where: outsideFlowWhere }),
-    prisma.content.findMany({
-      where: outsideFlowWhere,
-      select: {
-        id: true, title: true, area: true, status: true,
-        plannedDate: true, productionDeadline: true,
-        client: { select: { name: true } },
-      },
-      orderBy: [
-        { productionDeadline: "asc" },
-        { plannedDate: "asc" },
-        { createdAt: "desc" },
-      ],
-      take: 150,
-    }),
-  ]);
-  const outsideFlowNow = new Date();
-  const outsideFlowOverdue = outsideFlowContents.filter(
-    (item) => classifyDirectorOverdue(item, outsideFlowNow) !== null
-  );
 
   const preProduction =
     contents.filter(
@@ -1745,63 +1712,6 @@ export default async function FilmmakerPage({
         </div>
       </section>
 
-
-      {/* APROVUP_V41130_R4: alerta apenas visual de status sem coluna */}
-      {outsideFlowTotal > 0 ? (
-        <section className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <h2 className="text-sm font-bold text-amber-950">
-                Demandas audiovisuais fora das colunas ({outsideFlowTotal})
-              </h2>
-              <p className="mt-1 text-xs text-amber-900">
-                Os status abaixo nao possuem coluna ativa no Kanban. Nenhum registro foi alterado.
-              </p>
-            </div>
-            {outsideFlowOverdue.length > 0 ? (
-              <span className="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-700">
-                {outsideFlowOverdue.length} prazo(s) a conferir
-              </span>
-            ) : null}
-          </div>
-          {outsideFlowOverdue.length > 0 ? (
-            <div className="mt-3 space-y-2">
-              <p className="text-xs font-bold text-red-800">Atencao aos prazos:</p>
-              {outsideFlowOverdue.slice(0, 15).map((item) => (
-                <Link key={item.id} href={`/conteudos/${item.id}`} target="_blank" rel="noopener noreferrer"
-                  className="block rounded-lg border border-red-200 bg-white px-3 py-2 text-xs text-slate-800 hover:border-red-500">
-                  <strong>{item.title}</strong> · {item.client.name} · {item.status}
-                  <span className="block text-red-700">
-                    Entrega: {formatDeliveryDate(item.productionDeadline)} · Publicacao: {formatDate(item.plannedDate)}
-                  </span>
-                </Link>
-              ))}
-              {outsideFlowOverdue.length > 15 ? (
-                <p className="text-xs text-red-800">Consulte os demais na lista abaixo.</p>
-              ) : null}
-            </div>
-          ) : null}
-          <details className="mt-3 rounded-lg border border-amber-200 bg-white">
-            <summary className="cursor-pointer px-3 py-2 text-xs font-bold text-amber-950">
-              Ver demandas fora das colunas ({outsideFlowContents.length} exibidas)
-            </summary>
-            <div className="max-h-[420px] space-y-2 overflow-y-auto border-t border-amber-100 p-3">
-              {outsideFlowContents.map((item) => (
-                <Link key={item.id} href={`/conteudos/${item.id}`} target="_blank" rel="noopener noreferrer"
-                  className="block rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 hover:border-amber-400">
-                  <strong>{item.title}</strong> · {item.client.name} · {item.status}
-                  <span className="block text-slate-600">
-                    Entrega: {formatDeliveryDate(item.productionDeadline)} · Publicacao: {formatDate(item.plannedDate)}
-                  </span>
-                </Link>
-              ))}
-              {outsideFlowTotal > outsideFlowContents.length ? (
-                <p className="text-xs text-amber-900">Lista limitada a 150 registros. Consulte Conteudos para ver todos.</p>
-              ) : null}
-            </div>
-          </details>
-        </section>
-      ) : null}
 
       {/* ===================================================
           METRICAS
