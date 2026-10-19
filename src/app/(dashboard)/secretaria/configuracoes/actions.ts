@@ -27,6 +27,7 @@ import {
 
 import {
   normalizeWhatsappPhone,
+  deliverSecretaryDailyBriefs,
 } from "@/lib/secretaryWhatsApp";
 
 import {
@@ -925,6 +926,69 @@ export async function saveWhatsappMemberAction(
   );
 }
 
+
+/** Disparo de teste restrito a um diretor cadastrado, sem interferir no resumo das 18h. */
+export async function testLivDailyBriefAction(formData: FormData) {
+  const requestingUser = await requireSettingsUser();
+  const base = '/secretaria/configuracoes?testeResumo=';
+  if (requestingUser.role !== 'DIRECTOR') redirect(base + 'nao-autorizado');
+
+  const memberId = String(formData.get('memberId') || '').trim();
+  if (!memberId) redirect(base + 'destinatario');
+
+  const member = await prisma.secretaryWhatsappMember.findFirst({
+    where: { id: memberId, agencyId: requestingUser.agencyId, isActive: true, receiveAlerts: true },
+    select: { id: true, userId: true, agencyId: true },
+  });
+  if (!member?.userId) redirect(base + 'destinatario');
+
+  const director = await prisma.user.findFirst({
+    where: { id: member.userId, agencyId: requestingUser.agencyId, status: 'APROVADO', role: 'DIRECTOR' },
+    select: { id: true, name: true },
+  });
+  if (!director) redirect(base + 'destinatario');
+
+  const connection = await prisma.secretaryWhatsappConnection.findUnique({
+    where: { agencyId: requestingUser.agencyId },
+    select: { status: true, proactiveEnabled: true },
+  });
+  if (connection?.status !== 'ATIVO' || !connection?.proactiveEnabled) redirect(base + 'conexao');
+
+  // Teste real do modelo estruturado, nao do texto simples nem do template antigo.
+  if (!(process.env.LIV_DAILY_BRIEF_TEMPLATE_NAME || '').trim()) {
+    redirect(base + 'modelo-ausente');
+  }
+
+  // Um novo teste so pode ser aceito depois de 60 minutos para este destinatario.
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const recent = await prisma.secretaryWhatsappDelivery.findFirst({
+    where: {
+      agencyId: requestingUser.agencyId,
+      memberId: member.id,
+      dedupKey: { startsWith: 'daily-test:' },
+      status: { in: ['SENT', 'DELIVERED', 'READ'] },
+      sentAt: { gte: oneHourAgo },
+    },
+    select: { id: true },
+  });
+  if (recent) redirect(base + 'aguarde');
+
+  let outcome = 'falhou';
+  try {
+    const accepted = await deliverSecretaryDailyBriefs({
+      manualTest: { agencyId: requestingUser.agencyId, memberId: member.id },
+    });
+    // Aceite pela Meta nao garante entrega ou leitura no WhatsApp.
+    outcome = accepted === 1 ? 'aceito' : 'nao-enviado';
+  } catch (error) {
+    console.error('LIV_DAILY_MANUAL_TEST_ERROR', {
+      agencyId: requestingUser.agencyId,
+      memberId: member.id,
+      error,
+    });
+  }
+  redirect(base + outcome);
+}
 
 export async function deleteWhatsappMemberAction(
   memberId:

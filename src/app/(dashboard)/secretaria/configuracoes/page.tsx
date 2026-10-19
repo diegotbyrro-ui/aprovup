@@ -33,6 +33,7 @@ import {
   saveWhatsappMemberAction,
   subscribeWhatsappAppAction,
   testWhatsappConnectionAction,
+  testLivDailyBriefAction,
 } from "./actions";
 
 
@@ -137,6 +138,26 @@ export default async function SecretarySettingsPage({
         }),
     ]);
 
+
+  const testableDirectors = members.filter(member =>
+    member.isActive && member.receiveAlerts && member.userId &&
+    users.some(candidate => candidate.id === member.userId && candidate.role === 'DIRECTOR')
+  );
+  const diego = testableDirectors.find(member => {
+    const director = users.find(candidate => candidate.id === member.userId);
+    return /^diego\b/i.test(String(director?.name || '').trim());
+  });
+  const summaryTemplateConfigured = Boolean((process.env.LIV_DAILY_BRIEF_TEMPLATE_NAME || '').trim());
+  const testOutcomes: Record<string, string> = {
+    'aceito': 'A Meta aceitou o resumo de teste. Confira o WhatsApp do destinatario e o historico de entregas da LIV.',
+    'nao-enviado': 'O envio nao ocorreu. Pode ser cooldown da Meta ou restricao de comunicacao; consulte o historico de entregas e os logs.',
+    'falhou': 'Nao foi possivel concluir o teste. Consulte os logs da Hostinger (LIV_DAILY_MANUAL_TEST_ERROR).',
+    'aguarde': 'Ja houve um teste aceito na ultima hora para esse destinatario. Aguarde antes de tentar novamente.',
+    'modelo-ausente': 'O novo template diario ainda nao esta configurado no ambiente da Hostinger.',
+    'conexao': 'WhatsApp da LIV nao esta ativo ou os alertas proativos estao desligados.',
+    'destinatario': 'Selecione um diretor com numero ativo e opcao Recebe alertas habilitada.',
+    'nao-autorizado': 'Apenas a Diretoria pode solicitar este teste.',
+  };
 
   let verifyToken =
     "";
@@ -616,6 +637,42 @@ export default async function SecretarySettingsPage({
 
       </div>
 
+
+      {user.role === 'DIRECTOR' ? (
+        <section className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-5 shadow-sm">
+          <h2 className="text-sm font-black text-indigo-950">Testar resumo diario da LIV</h2>
+          <p className="mt-1 text-xs leading-relaxed text-indigo-900">
+            Gera os dados de hoje e envia somente ao diretor selecionado. Usa o novo modelo aprovado da Meta, inclusive se o contato falou com a LIV nas ultimas 24 horas. O teste usa identificacao separada do resumo das 18h, mas os limites da Meta ainda podem afetar outros envios.
+          </p>
+          {params.testeResumo && testOutcomes[params.testeResumo] ? (
+            <p role="status" className="mt-3 rounded-lg border border-indigo-200 bg-white p-3 text-xs font-semibold text-indigo-950">
+              {testOutcomes[params.testeResumo]}
+            </p>
+          ) : null}
+          {!summaryTemplateConfigured ? (
+            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+              Novo modelo da LIV nao configurado: aguarde aprovacao na Meta e configure LIV_DAILY_BRIEF_TEMPLATE_NAME na Hostinger.
+            </p>
+          ) : null}
+          <form action={testLivDailyBriefAction} className="mt-4 flex flex-wrap items-end gap-2">
+            <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs font-bold text-slate-700">
+              Destinatario do teste
+              <select name="memberId" required defaultValue={diego?.id || ''} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs">
+                <option value="">Selecione um diretor</option>
+                {testableDirectors.map(member => {
+                  const director = users.find(candidate => candidate.id === member.userId);
+                  return <option key={member.id} value={member.id}>{director?.name || member.displayName || 'Diretoria'}</option>;
+                })}
+              </select>
+            </label>
+            <button type="submit" disabled={!summaryTemplateConfigured || !testableDirectors.length || connection?.status !== 'ATIVO' || !connection?.proactiveEnabled}
+              className="h-10 rounded-lg bg-indigo-700 px-4 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50">
+              Enviar resumo de teste agora
+            </button>
+          </form>
+          <p className="mt-2 text-[10px] text-slate-600">Confirmacao significa aceite pela Meta, nao leitura. Se houver limite ou recusa, o envio nao sera forçado.</p>
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3">

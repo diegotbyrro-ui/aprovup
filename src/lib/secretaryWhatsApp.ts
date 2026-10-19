@@ -2,7 +2,7 @@ import {
   prisma,
 } from '@/lib/prisma';
 
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import {
   canAccessClient,
@@ -2268,6 +2268,7 @@ async function sendProactive({
   title,
   message,
   dailySummary,
+  forceDailyTemplate,
   dedupKey,
 }: {
   agencyId:
@@ -2287,6 +2288,8 @@ async function sendProactive({
 
   dailySummary?:
     LivDailySummaryTemplateData;
+
+  forceDailyTemplate?: boolean;
 
   dedupKey:
     string;
@@ -2342,6 +2345,7 @@ async function sendProactive({
 
   const scheduledPrefixes = [
     'daily:',
+    'daily-test:',
     'approval-digest:',
     'calendar-tomorrow:',
     'calendar-late-change:',
@@ -2510,7 +2514,7 @@ async function sendProactive({
    *    nesse limitador.
    */
   if (
-    !insideWindow &&
+    (!insideWindow || forceDailyTemplate) &&
     !isDirectorCommand
   ) {
 
@@ -2693,7 +2697,7 @@ async function sendProactive({
       '*\n' +
       message;
 
-    if (insideWindow) {
+    if (insideWindow && !forceDailyTemplate) {
       const result =
         await sendWhatsappText({
           agencyId,
@@ -4241,7 +4245,10 @@ function maceioParts() {
 }
 
 
-export async function deliverSecretaryDailyBriefs() {
+export async function deliverSecretaryDailyBriefs(
+  options: { manualTest?: { agencyId: string; memberId: string } } = {}
+) {
+  const manualTest = options.manualTest;
   const local =
     maceioParts();
 
@@ -4253,7 +4260,8 @@ export async function deliverSecretaryDailyBriefs() {
    */
   if (
     local.hour !==
-    18
+    18 &&
+    !manualTest
   ) {
     return 0;
   }
@@ -4300,6 +4308,7 @@ export async function deliverSecretaryDailyBriefs() {
 
           proactiveEnabled:
             true,
+          ...(manualTest ? {agencyId: manualTest.agencyId} : {}),
         },
       });
 
@@ -4361,6 +4370,8 @@ export async function deliverSecretaryDailyBriefs() {
 
             receiveAlerts:
               true,
+
+            ...(manualTest ? {id: manualTest.memberId} : {}),
 
             userId: {
               not:
@@ -4934,6 +4945,7 @@ export async function deliverSecretaryDailyBriefs() {
 
       const result =
         await sendProactive({
+          forceDailyTemplate: Boolean(manualTest),
           agencyId:
             connection.agencyId,
 
@@ -4969,11 +4981,9 @@ export async function deliverSecretaryDailyBriefs() {
             agenda: tomorrowText,
           },
 
-          dedupKey:
-            'daily:' +
-            local.dateKey +
-            ':' +
-            member.id,
+          dedupKey: manualTest
+            ? 'daily-test:' + local.dateKey + ':' + member.id + ':' + randomUUID()
+            : 'daily:' + local.dateKey + ':' + member.id,
         });
 
 
