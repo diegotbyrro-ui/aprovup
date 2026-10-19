@@ -271,6 +271,14 @@ export async function AppSidebar() {
         <AppSidebarNav
           items={items}
         />
+        {(["DIRECTOR", "SOCIAL_MEDIA"].includes(user.role) && hasPermission(user, "social.view")) ? (
+          <Link href="/social-media/diretoria" className="ap-sidebar-nav-link" title="Abrir ConferÃªncia">
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="ap-sidebar-nav-icon"><ShieldCheck size={17} /></span>
+              <span className="truncate">ConferÃªncia</span>
+            </span>
+          </Link>
+        ) : null}
       </div>
 
 

@@ -1441,12 +1441,19 @@ const query =
         </div>
 
 
-        <Link
-          href="/clientes"
-          className="flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[9px] font-bold text-slate-600 hover:bg-slate-50"
-        >
-          Trocar cliente
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {(["DIRECTOR", "SOCIAL_MEDIA"].includes(currentUser.role)) ? (
+            <Link href="/social-media/diretoria" className="flex h-8 items-center gap-1.5 rounded-lg bg-indigo-700 px-3 text-[10px] font-bold text-white hover:bg-indigo-800">
+              <UsersRound size={14} /> ConferÃªncia
+            </Link>
+          ) : null}
+          <Link
+            href="/clientes"
+            className="flex h-8 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[9px] font-bold text-slate-600 hover:bg-slate-50"
+          >
+            Trocar cliente
+          </Link>
+        </div>
       </section>
 
 

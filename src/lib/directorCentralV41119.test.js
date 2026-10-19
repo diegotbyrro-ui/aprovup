@@ -11,7 +11,16 @@ const emerg=read("src/app/(dashboard)/demandas-emergenciais/nova/actions.ts");
 const graphic=read("src/app/(dashboard)/design-grafico/nova/actions.ts");
 const rights=read("src/lib/userAccess.ts");
 test("Conferencia disponivel para Diretor e Social Media",()=>{assert.match(clients,/\["DIRECTOR","SOCIAL_MEDIA"\]\.includes\(currentUser\.role\)/);assert.match(clients,/Conferência/)});
-test("Botao da Diretoria nao aparece dentro da tela Social por cliente",()=>assert.doesNotMatch(social,/href="\/social-media\/diretoria"/));
+test("Conferencia acessivel na tela Social por cliente",()=>{
+  assert.match(social,/href="\/social-media\/diretoria"/);
+  assert.match(social,/\["DIRECTOR", "SOCIAL_MEDIA"\]\.includes\(currentUser\.role\)/);
+});
+test("Conferencia disponivel no menu lateral para Diretor e Social Media",()=>{
+  const sidebar=read("src/components/layout/AppSidebar.tsx");
+  assert.match(sidebar,/href="\/social-media\/diretoria"/);
+  assert.match(sidebar,/\["DIRECTOR", "SOCIAL_MEDIA"\]\.includes\(user\.role\)/);
+  assert.match(sidebar,/hasPermission\(user, "social\.view"\)/);
+});
 test("Conferencia: acesso Diretor ou Social Media, arquivo restrito ao Diretor",()=>{assert.match(page,/user.role !== "SOCIAL_MEDIA"/);assert.match(action,/user.role !== "SOCIAL_MEDIA"/);assert.match(action,/Somente a Diretoria pode arquivar/)});
 test("Diretoria lista todos os conteudos por agencia sem restringir a atrasados",()=>{assert.match(page,/client:\s*\{agencyId:user\.agencyId\}/);assert.doesNotMatch(page,/status:\s*\{notIn:/);assert.match(page,/Todos os conteudos ativos/)});
 test("Diretoria oferece edicao, publicacao e arquivamento",()=>{assert.match(page,/Editar \/ abrir/);assert.match(page,/Marcar publicado/);assert.match(page,/Nao foi publicado/);assert.match(page,/Apagar \/ arquivar/);assert.match(page,/Restaurar conteudo/)});
