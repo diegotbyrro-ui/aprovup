@@ -20,6 +20,6 @@ test("Confirmacao manual nao altera tabelas de publicacao",()=>{assert.match(act
 test("Bloqueio de autoschedule em archive e published",()=>assert.match(action,/\["POSTED","ARCHIVE"\][\s\S]*RUNNING/));
 test("Emergencial apos salvar abre seu conteudo",()=>{assert.match(emerg,/`\/conteudos\/\$\{content\.id\}`/);assert.doesNotMatch(emerg,/`\/filmmaker\?cliente=/)});
 test("Grafico apos salvar abre seu conteudo",()=>{assert.match(graphic,/`\/conteudos\/\$\{content\.id\}`/);assert.doesNotMatch(graphic,/redirect\(\s*"\/design"\s*\)/)});
-test("Social tem tres atalhos para criacao",()=>{assert.match(social,/Novo conteúdo/);assert.match(social,/demandas-emergenciais\/nova\?cliente=/);assert.match(social,/design-grafico\/nova\?cliente=/)});
+test("Faixa de gestao editorial redundante foi removida da tela do cliente",()=>{assert.doesNotMatch(social,/Gestão editorial/);assert.doesNotMatch(social,/Novo conteúdo/);assert.doesNotMatch(social,/demandas-emergenciais\/nova\?cliente=/);assert.doesNotMatch(social,/design-grafico\/nova\?cliente=/)});
 test("Social tem social.manage sem privilegios de Design",()=>{const sect=rights.split("SOCIAL_MEDIA: [")[1].split("],")[0];assert.match(sect,/social\.manage/);assert.doesNotMatch(sect,/design\.manage|filmmaker\.manage|settings\.manage/)});
 test("Arquivados nao contam nos totais de Clientes",()=>assert.match(clients,/status: \{not:"ARQUIVADO_DIRETORIA"\}/));

@@ -1451,55 +1451,6 @@ const query =
 
 
       {/* ===================================================
-          HEADER
-          =================================================== */}
-
-      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-blue-600">
-            Gestão editorial
-          </p>
-
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
-            Social Media
-          </h1>
-
-          <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-slate-500">
-            Acompanhe planejamento, produção e aprovações de {cleanDemoName(
-              selectedClient.name
-            )}.
-          </p>
-        </div>
-
-
-        <div className="flex flex-wrap items-center gap-2">
-{canManageSocial ? (
-          <Link
-            href={`/conteudos/novo?cliente=${clientId}`}
-            className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3 text-[9px] font-bold text-white hover:bg-blue-700"
-          >
-            <Plus
-              size={13}
-            />
-
-            Novo conteúdo
-          </Link>
-        ) : null}
-        {canManageSocial ? (
-          <>
-            <Link href={`/demandas-emergenciais/nova?cliente=${clientId}`} className="flex h-9 items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 text-[9px] font-bold text-red-700 hover:bg-red-100">
-              <AlertCircle size={13}/> Demanda emergencial
-            </Link>
-            <Link href={`/design-grafico/nova?cliente=${clientId}`} className="flex h-9 items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 text-[9px] font-bold text-violet-700 hover:bg-violet-100">
-              <FileText size={13}/> Design grafico
-            </Link>
-          </>
-        ) : null}
-        </div>
-      </section>
-
-
-      {/* ===================================================
           METRICAS
           =================================================== */}
 
