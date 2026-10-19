@@ -1,5 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/userAccess";
 
@@ -21,6 +22,9 @@ function dateLabel(value: Date | null): string {
 export async function conferenceDateAction(contentId:string,formData:FormData) {
   const user = await requirePermission("social.manage");
   if (!["DIRECTOR","SOCIAL_MEDIA"].includes(user.role)) throw new Error("Acesso restrito a Social Media e Diretoria.");
+  let resultState: "success" | "error" = "success";
+  let resultMessage = "Datas verificadas e salvas com sucesso.";
+  try {
   if (!formData.has("expectedPlanned") || !formData.has("expectedDeadline")) throw new Error("Recarregue a tela e tente novamente.");
   const oldPlanned = String(formData.get("expectedPlanned") || "");
   const oldDeadline = String(formData.get("expectedDeadline") || "");
@@ -47,4 +51,55 @@ export async function conferenceDateAction(contentId:string,formData:FormData) {
     await tx.historyLog.create({data:{entityType:"CONTENT",entityId:contentId,action:"CONFERENCE_DATES_UPDATED",authorName:actor,description:`Conferencia: entrega \"${dateLabel(current.productionDeadline)}\" -> \"${dateLabel(productionDeadline)}\"; publicacao \"${dateLabel(current.plannedDate)}\" -> \"${dateLabel(plannedDate)}\".`}});
   });
   for(const p of ["/social-media/diretoria","/social-media","/design","/filmmaker","/clientes","/conteudos","/calendario","/calendario-editorial","/operacao",`/conteudos/${contentId}`]) revalidatePath(p);
+  } catch (error) {
+    resultState = "error";
+    const expectedMessages = new Set([
+      "Data invalida. Use o calendario do formulario.",
+      "Data inexistente.",
+      "Informe a hora da entrega (HH:mm).",
+      "A entrega interna deve ocorrer antes do dia da publicacao.",
+      "Prazo de entrega invalido.",
+      "Recarregue a tela e tente novamente.",
+      "Referencia de data invalida. Recarregue a tela.",
+      "Conteudo nao encontrado nesta agencia.",
+      "Conteudo arquivado: restaure antes de editar datas.",
+      "As datas ja foram alteradas por outra pessoa. Atualize a Conferencia antes de salvar.",
+      "Outro usuario alterou as datas simultaneamente. Recarregue a Conferencia.",
+    ]);
+    if (error instanceof Error && expectedMessages.has(error.message)) {
+      resultMessage = error.message;
+    } else {
+      console.error("CONFERENCE_DATE_SAVE_FAILED", {
+        agencyId: user.agencyId,
+        contentId,
+        error,
+      });
+      resultMessage = "Falha inesperada ao salvar. Recarregue a pagina e confira as datas antes de tentar novamente. Se persistir, consulte os logs da Hostinger.";
+    }
+  }
+
+  // Preservar filtros, sem permitir redirecionamentos externos.
+  const rawReturn = String(formData.get("returnTo") || "").slice(0, 1000);
+  const base = "/social-media/diretoria";
+  const allowedKeys = new Set(["situacao", "setor", "cliente", "busca", "mes", "pagina"]);
+  const query = new URLSearchParams();
+  try {
+    const requested = new URL(rawReturn, "https://aprovup.local");
+    if (
+      rawReturn.startsWith(base) &&
+      requested.origin === "https://aprovup.local" &&
+      requested.pathname === base &&
+      !requested.hash &&
+      [...requested.searchParams.keys()].every(key =>
+        allowedKeys.has(key) && requested.searchParams.getAll(key).length === 1
+      )
+    ) {
+      for (const [key, value] of requested.searchParams) query.set(key, value);
+    }
+  } catch {
+    // Usa a rota padrao em caso de URL invalida.
+  }
+  query.set("resultadoDatas", resultState);
+  query.set("mensagemDatas", resultMessage);
+  redirect(base + "?" + query.toString() + "#resultado-datas");
 }

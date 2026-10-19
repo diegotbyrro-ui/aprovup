@@ -11,7 +11,7 @@ import { DirectorMediaPreview } from "@/components/director/DirectorMediaPreview
 export const dynamic = "force-dynamic";
 
 const ARCHIVED = "ARQUIVADO_DIRETORIA";
-type Query = { situacao?:string; setor?:string; cliente?:string; busca?:string; mes?:string; pagina?:string };
+type Query = { situacao?:string; setor?:string; cliente?:string; busca?:string; mes?:string; pagina?:string; resultadoDatas?:string; mensagemDatas?:string };
 type Situation = "ATRASADO" | "PUBLICADO" | "EM_ANDAMENTO" | "SEM_DATA" | "ARQUIVADO";
 const situations = [
   {value:"TODOS",label:"Todos os conteudos ativos"},
@@ -134,6 +134,15 @@ export default async function DirectorOverduePage({searchParams}: {searchParams?
       <div className="mt-4 flex items-center gap-3"><ShieldCheck className="text-blue-300" size={28}/><div><p className="text-xs font-bold uppercase tracking-widest text-blue-300">Diretoria e equipe Social Media</p><h1 className="mt-1 text-2xl font-black sm:text-3xl">Conferência</h1></div></div>
       <p className="mt-3 max-w-4xl text-sm text-slate-300">Todos os conteudos da agencia, por cliente e setor. Confirme publicacoes, edite, arquive ou cobre posicionamento. O arquivamento preserva o historico e pode ser desfeito.</p>
     </header>
+    {params.resultadoDatas === "success" ? (
+      <div id="resultado-datas" role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+        {String(params.mensagemDatas || "Datas salvas com sucesso.").slice(0, 250)}
+      </div>
+    ) : params.resultadoDatas === "error" ? (
+      <div id="resultado-datas" role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
+        Não foi possível salvar as datas: {String(params.mensagemDatas || "Confira os campos e tente novamente.").slice(0, 250)}
+      </div>
+    ) : null}
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
       {[
         {label:"Conteudos ativos",value:active.length},
@@ -181,6 +190,7 @@ export default async function DirectorOverduePage({searchParams}: {searchParams?
             {!archived ? <details className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3">
               <summary className="cursor-pointer text-xs font-bold text-indigo-800">Editar datas aqui (entrega e publicação)</summary>
               <form action={conferenceDateAction.bind(null,item.id)} className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+                <input type="hidden" name="returnTo" value={url(currentPage)}/>
                 <input type="hidden" name="expectedPlanned" value={item.plannedDate?.toISOString() || ""}/>
                 <input type="hidden" name="expectedDeadline" value={item.productionDeadline?.toISOString() || ""}/>
                 <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">Data da entrega
