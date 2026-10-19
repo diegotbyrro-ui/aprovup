@@ -436,41 +436,26 @@ export async function POST(
     tiktokOauthConfig();
 
   /*
-   * TikTok recommends HMAC-SHA256 verification using:
-   * timestamp + "." + raw request body
-   * with TIKTOK_CLIENT_SECRET as the key.
-   *
-   * The Developer Portal test may be sent without the signature
-   * header. When TikTok sends a signature, it is verified.
+   * Falha fechada: eventos sem chave ou assinatura verificavel
+   * nao podem alterar conexoes ou publicacoes.
+   * O teste do TikTok Developer Portal tambem deve ser assinado.
    */
+  if (!config.clientSecret) {
+    console.error('TIKTOK_WEBHOOK_CLIENT_SECRET_MISSING');
+    return NextResponse.json(
+      { ok: false, error: 'webhook_not_configured' },
+      { status: 503 }
+    );
+  }
+
   if (
-    signatureHeader &&
-    config.clientSecret
+    !signatureHeader ||
+    !verifyTikTokSignature(rawBody, signatureHeader, config.clientSecret)
   ) {
-    const valid =
-      verifyTikTokSignature(
-        rawBody,
-        signatureHeader,
-        config.clientSecret
-      );
-
-    if (
-      !valid
-    ) {
-      return NextResponse.json(
-        {
-          ok:
-            false,
-
-          error:
-            'invalid_signature',
-        },
-        {
-          status:
-            401,
-        }
-      );
-    }
+    return NextResponse.json(
+      { ok: false, error: 'invalid_signature' },
+      { status: 401 }
+    );
   }
 
   let body:
@@ -484,17 +469,8 @@ export async function POST(
   }
   catch {
     return NextResponse.json(
-      {
-        ok:
-          true,
-
-        received:
-          true,
-      },
-      {
-        status:
-          200,
-      }
+      { ok: false, error: 'invalid_payload' },
+      { status: 400 }
     );
   }
 
@@ -515,10 +491,11 @@ export async function POST(
       error
     );
 
-    /*
-     * Acknowledge the webhook even when the internal synchronization
-     * fails. TikTok retries non-2xx responses for webhook delivery.
-     */
+    // Falhas transitorias devem retornar erro para permitir nova tentativa.
+    return NextResponse.json(
+      { ok: false, error: 'webhook_processing_failed' },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json(

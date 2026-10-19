@@ -910,22 +910,23 @@ export function RetentionDetailedChart({
 
 
   const [
-    detectedDuration,
-    setDetectedDuration,
-  ] =
-    useState<
-      number | null
-    >(
-      null
-    );
+    measuredDuration,
+    setMeasuredDuration,
+  ] = useState<{
+    url: string;
+    seconds: number;
+  } | null>(null);
+
+  const detectedDuration =
+    measuredDuration?.url === videoUrl
+      ? measuredDuration.seconds
+      : null;
 
 
   useEffect(
     () => {
 
-      setDetectedDuration(
-        null
-      );
+
 
 
       if (
@@ -972,9 +973,10 @@ export function RetentionDetailedChart({
               0
           ) {
 
-            setDetectedDuration(
-              video.duration
-            );
+            setMeasuredDuration({
+              url: String(videoUrl),
+              seconds: video.duration,
+            });
           }
         };
 
@@ -1025,22 +1027,10 @@ export function RetentionDetailedChart({
   );
 
 
-  if (
-    retained === null ||
-    skipped === null
-  ) {
-
-    return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-bold text-slate-400">
-        A Meta ainda não retornou a taxa de pulo deste Reel.
-      </div>
-    );
-  }
-
 
   const retainedValue =
     clamp(
-      retained,
+      retained ?? 0,
       0,
       100
     );
@@ -1048,7 +1038,7 @@ export function RetentionDetailedChart({
 
   const skippedValue =
     clamp(
-      skipped,
+      skipped ?? 0,
       0,
       100
     );
@@ -1117,6 +1107,19 @@ export function RetentionDetailedChart({
         durationSeconds,
       ]
     );
+
+  if (
+    retained === null ||
+    skipped === null
+  ) {
+
+    return (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-bold text-slate-400">
+        A Meta ainda não retornou a taxa de pulo deste Reel.
+      </div>
+    );
+  }
+
 
 
   const chartLeft =
