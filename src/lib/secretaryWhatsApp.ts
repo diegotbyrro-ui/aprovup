@@ -623,6 +623,123 @@ async function sendWhatsappTemplate({
 }
 
 
+type LivDailySummaryTemplateData = {
+  firstName: string;
+  planned: number;
+  approvals: number;
+  instagram: string;
+  attention: number;
+  alerts: number;
+  agenda: string;
+};
+
+function cleanLivDailyTemplateValue(value: unknown): string {
+  return String(value ?? '')
+    .replace(/[\r\n\t]+/g, ' | ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+    .slice(0, 850) || '-';
+}
+
+function renderLivDailyTemplateHistory(
+  title: string,
+  summary: LivDailySummaryTemplateData
+): string {
+  const fields = [
+    title,
+    summary.firstName,
+    summary.planned,
+    summary.approvals,
+    summary.instagram,
+    summary.attention,
+    summary.alerts,
+    summary.agenda,
+  ].map(cleanLivDailyTemplateValue);
+
+  return [
+    '*Secretária IA*',
+    '*' + fields[0] + '*',
+    '',
+    '🌙 Boa noite, ' + fields[1] + '!',
+    '',
+    'A LIV passou o dia de olho nos bastidores 👀 e trouxe o placar da operação.',
+    '',
+    '📊 *PLACAR DO DIA*',
+    '🗂️ Conteúdos no radar: ' + fields[2],
+    '⏳ Aprovações aguardando: ' + fields[3],
+    '📲 Instagram: ' + fields[4],
+    '👀 Itens que precisam de atenção: ' + fields[5],
+    '🚨 Alertas operacionais: ' + fields[6],
+    '',
+    '📅 *AMANHÃ*',
+    'Agenda: ' + fields[7],
+    '',
+    '💙 Por hoje é isso. Eu continuo de olho por aqui!',
+  ].join('\n');
+}
+
+async function sendWhatsappDailyTemplate({
+  agencyId,
+  to,
+  title,
+  summary,
+}: {
+  agencyId: string;
+  to: string;
+  title: string;
+  summary: LivDailySummaryTemplateData;
+}) {
+  const connection = await getWhatsappConnection(agencyId);
+  if (!connection) {
+    throw new Error('WhatsApp da agência não está ativo.');
+  }
+
+  const templateName = (process.env.LIV_DAILY_BRIEF_TEMPLATE_NAME || '').trim();
+  if (!templateName) {
+    throw new Error('Modelo diário da LIV não configurado.');
+  }
+
+  const fields = [
+    title,
+    summary.firstName,
+    summary.planned,
+    summary.approvals,
+    summary.instagram,
+    summary.attention,
+    summary.alerts,
+    summary.agenda,
+  ].map(cleanLivDailyTemplateValue);
+
+  const result = await graphRequest({
+    connection,
+    path: connection.phoneNumberId + '/messages',
+    method: 'POST',
+    body: {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: normalizeWhatsappPhone(to),
+      type: 'template',
+      template: {
+        name: templateName,
+        language: {
+          code: (process.env.LIV_DAILY_BRIEF_TEMPLATE_LANGUAGE || '').trim() ||
+            connection.alertTemplateLanguage || 'pt_BR',
+        },
+        components: [{
+          type: 'body',
+          parameters: fields.map((text) => ({ type: 'text', text })),
+        }],
+      },
+    },
+  });
+
+  const messages = result.messages as Array<JsonRecord> | undefined;
+  return {
+    sent: true as const,
+    messageId: Array.isArray(messages) && typeof messages[0]?.id === 'string'
+      ? messages[0].id : null,
+  };
+}
 async function downloadWhatsappMedia({
   agencyId,
   mediaId,
@@ -2150,6 +2267,7 @@ async function sendProactive({
   toPhone,
   title,
   message,
+  dailySummary,
   dedupKey,
 }: {
   agencyId:
@@ -2166,6 +2284,9 @@ async function sendProactive({
 
   message:
     string;
+
+  dailySummary?:
+    LivDailySummaryTemplateData;
 
   dedupKey:
     string;
@@ -2566,6 +2687,11 @@ async function sendProactive({
     let templateUsed =
       false;
 
+    let messageForHistory =
+      '*Secretária IA*\n\n*' +
+      title +
+      '*\n' +
+      message;
 
     if (insideWindow) {
       const result =
@@ -2586,14 +2712,31 @@ async function sendProactive({
         result.messageId;
     }
     else {
-      const result =
-        await sendWhatsappTemplate({
-          agencyId,
-          to:
-            toPhone,
+      const useNewDailyTemplate = Boolean(
+        dailySummary &&
+        (process.env.LIV_DAILY_BRIEF_TEMPLATE_NAME || '').trim()
+      );
+
+      const result = useNewDailyTemplate && dailySummary
+        ? await sendWhatsappDailyTemplate({
+            agencyId,
+            to: toPhone,
+            title,
+            summary: dailySummary,
+          })
+        : await sendWhatsappTemplate({
+            agencyId,
+            to: toPhone,
+            title,
+            message,
+          });
+
+      if (useNewDailyTemplate && dailySummary) {
+        messageForHistory = renderLivDailyTemplateHistory(
           title,
-          message,
-        });
+          dailySummary
+        );
+      }
 
 
       if (!result.sent) {
@@ -2714,10 +2857,7 @@ async function sendProactive({
                 'ASSISTANT',
 
               content:
-                '*Secretária IA*\n\n*' +
-                title +
-                '*\n' +
-                message,
+                messageForHistory,
 
               inputType:
                 'TEXT',
@@ -4815,6 +4955,19 @@ export async function deliverSecretaryDailyBriefs() {
                 ),
 
           message,
+
+          dailySummary: {
+            firstName,
+            planned,
+            approvals: totalApprovals,
+            instagram: errors > 0
+              ? String(errors) + ' erro(s) identificado(s)'
+              : String(published) + ' publicado(s) • ' +
+                String(scheduled) + ' agendado(s) • 0 erro(s)',
+            attention: socialAttention,
+            alerts: openAlerts,
+            agenda: tomorrowText,
+          },
 
           dedupKey:
             'daily:' +
