@@ -31,69 +31,14 @@ export const dynamic =
   "force-dynamic";
 
 
-function parsePlannedDate(
-  value: unknown
-) {
-  const raw =
-    typeof value ===
-    "string"
-      ? value.trim()
-      : "";
-
-
-  const match =
-    raw.match(
-      /^(\d{4})-(\d{2})-(\d{2})$/
-    );
-
-
-  if (
-    !match
-  ) {
-    return null;
-  }
-
-
-  const year =
-    Number(
-      match[1]
-    );
-
-  const month =
-    Number(
-      match[2]
-    );
-
-  const day =
-    Number(
-      match[3]
-    );
-
-
-  const parsed =
-    new Date(
-      year,
-      month - 1,
-      day,
-      12,
-      0,
-      0,
-      0
-    );
-
-
-  if (
-    parsed.getFullYear() !==
-      year ||
-    parsed.getMonth() !==
-      month - 1 ||
-    parsed.getDate() !==
-      day
-  ) {
-    return null;
-  }
-
-
+function parsePlannedDate(value: unknown): Date | null {
+  const clean = String(value || '').trim();
+  if (!clean) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(clean);
+  if (!match) return null;
+  const year=Number(match[1]); const month=Number(match[2]); const day=Number(match[3]);
+  const parsed=new Date(Date.UTC(year,month-1,day,12,0,0,0));
+  if (parsed.getUTCFullYear()!==year || parsed.getUTCMonth()!==month-1 || parsed.getUTCDate()!==day) return null;
   return parsed;
 }
 

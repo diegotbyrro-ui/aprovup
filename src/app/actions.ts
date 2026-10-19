@@ -1140,7 +1140,15 @@ export async function updateContent(contentId: string, formData: FormData) {
     return 'MEDIA';
   }
 
-  const plannedDateValue = text('plannedDate');
+  const existingPlannedDateValue = formatMaceioDatePart(currentContent.plannedDate);
+  const submittedPlannedDateValue = formData.has('plannedDate') ? text('plannedDate') : existingPlannedDateValue;
+  const originalPlannedDateValue = formData.get('originalPlannedDate');
+  const plannedDateChanged = originalPlannedDateValue !== null && submittedPlannedDateValue !== String(originalPlannedDateValue);
+  if (plannedDateChanged && String(originalPlannedDateValue) !== existingPlannedDateValue) {
+    redirect(`/conteudos/${contentId}?error=date-conflict${directorReturnQuery}`);
+  }
+  const plannedDateValue = originalPlannedDateValue !== null && !plannedDateChanged
+    ? existingPlannedDateValue : submittedPlannedDateValue;
 
   const existingProductionDeadlineValue =
     formatMaceioDatePart(
@@ -1179,6 +1187,15 @@ export async function updateContent(contentId: string, formData: FormData) {
         ).trim()
       : existingProductionDeadlineTimeValue;
 
+  const originalDeadlineDate = formData.get('originalProductionDeadline');
+  const originalDeadlineTime = formData.get('originalProductionDeadlineTime');
+  const deadlineEdited = originalDeadlineDate !== null && originalDeadlineTime !== null &&
+    (requestedProductionDeadlineValue !== String(originalDeadlineDate) || requestedProductionDeadlineTimeValue !== String(originalDeadlineTime));
+  if (deadlineEdited && (String(originalDeadlineDate) !== existingProductionDeadlineValue ||
+      String(originalDeadlineTime) !== existingProductionDeadlineTimeValue)) {
+    redirect(`/conteudos/${contentId}?error=date-conflict${directorReturnQuery}`);
+  }
+
   const canManageProductionDeadline =
     hasPermission(
       currentUser,
@@ -1186,15 +1203,13 @@ export async function updateContent(contentId: string, formData: FormData) {
     );
 
   const productionDeadlineValue =
-    canManageProductionDeadline
-      ? requestedProductionDeadlineValue
-      : existingProductionDeadlineValue;
+    canManageProductionDeadline && (originalDeadlineDate === null || deadlineEdited)
+      ? requestedProductionDeadlineValue : existingProductionDeadlineValue;
 
 
   const productionDeadlineTimeValue =
-    canManageProductionDeadline
-      ? requestedProductionDeadlineTimeValue
-      : existingProductionDeadlineTimeValue;
+    canManageProductionDeadline && (originalDeadlineTime === null || deadlineEdited)
+      ? requestedProductionDeadlineTimeValue : existingProductionDeadlineTimeValue;
 
 
   const nextArea =

@@ -1,0 +1,13 @@
+const test=require('node:test'); const assert=require('node:assert/strict'); const fs=require('node:fs');
+const read=p=>fs.readFileSync(p,'utf8');
+const page=read('src/app/(dashboard)/social-media/diretoria/page.tsx');
+const actions=read('src/app/(dashboard)/social-media/diretoria/datesAction.ts');
+const content=read('src/app/(dashboard)/conteudos/[id]/page.tsx');
+const app=read('src/app/actions.ts');
+const design=read('src/app/(dashboard)/design/page.tsx');
+test('Conferencia altera entrega e publicacao na propria aba',()=>{for(const t of ['name="productionDeadline"','name="productionDeadlineTime"','name="plannedDate"','expectedPlanned','expectedDeadline'])assert.ok(page.includes(t));});
+test('Edicao abre nova aba',()=>assert.match(page,/target="_blank" rel="noopener noreferrer"/));
+test('Acao usa controle de concorrencia e historico',()=>{assert.match(actions,/updateMany/);assert.match(actions,/CONFERENCE_DATES_UPDATED/);assert.match(actions,/As datas ja foram alteradas/);});
+test('Mudanca de status nao reenvia datas antigas',()=>{const start=content.indexOf('function renderHiddenContentFields');const end=content.indexOf('\n  return (\n    <div',start);assert.ok(start>=0&&end>start);const section=content.slice(start,end);assert.doesNotMatch(section,/name="plannedDate"|name="productionDeadline"/);});
+test('Atualizacao principal respeita snapshots',()=>{assert.match(app,/originalPlannedDate/);assert.match(app,/originalProductionDeadline/);assert.match(app,/date-conflict/);});
+test('Design nao suprime status desconhecido nem exibe arquivados',()=>{assert.match(design,/designOutsideFlow/);assert.match(design,/Demandas que estavam fora das colunas/);assert.match(design,/status: \{ not: "ARQUIVADO_DIRETORIA" \}/);});

@@ -42,58 +42,14 @@ function formatHistoryDate(
   );
 }
 
-function parsePlannedDate(
-  value: string
-): Date | null {
-
-  const clean =
-    String(value || '').trim();
-
-  if (!clean) {
-    return null;
-  }
-
-  const match =
-    clean.match(
-      /^(\d{4})-(\d{2})-(\d{2})$/
-    );
-
-  if (!match) {
-    throw new Error(
-      'Data prevista inválida.'
-    );
-  }
-
-  const year =
-    Number(match[1]);
-
-  const month =
-    Number(match[2]);
-
-  const day =
-    Number(match[3]);
-
-  const parsed =
-    new Date(
-      year,
-      month - 1,
-      day,
-      12,
-      0,
-      0,
-      0
-    );
-
-  if (
-    parsed.getFullYear() !== year ||
-    parsed.getMonth() !== month - 1 ||
-    parsed.getDate() !== day
-  ) {
-    throw new Error(
-      'Data prevista inválida.'
-    );
-  }
-
+function parsePlannedDate(value: string): Date | null {
+  const clean = String(value || '').trim();
+  if (!clean) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(clean);
+  if (!match) throw new Error("Data prevista invalida.");
+  const year=Number(match[1]); const month=Number(match[2]); const day=Number(match[3]);
+  const parsed=new Date(Date.UTC(year,month-1,day,12,0,0,0));
+  if (parsed.getUTCFullYear()!==year || parsed.getUTCMonth()!==month-1 || parsed.getUTCDate()!==day) throw new Error("Data prevista invalida.");
   return parsed;
 }
 

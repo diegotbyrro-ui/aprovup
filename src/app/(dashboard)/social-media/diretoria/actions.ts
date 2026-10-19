@@ -10,8 +10,9 @@ const RUNNING = new Set(["AGENDADO","PUBLICANDO","PROCESSANDO"]);
 
 export async function directorReviewAction(contentId:string,formData:FormData) {
   const user = await requirePermission("social.manage");
-  if (user.role !== "DIRECTOR") throw new Error("Acesso exclusivo da Diretoria.");
+  if (user.role !== "DIRECTOR" && user.role !== "SOCIAL_MEDIA") throw new Error("Acesso restrito a Social Media e Diretoria.");
   const intent = String(formData.get("intent") || "").trim();
+  if (["ARCHIVE","RESTORE"].includes(intent) && user.role !== "DIRECTOR") throw new Error("Somente a Diretoria pode arquivar ou restaurar conteúdos.");
   const note = String(formData.get("note") || "").trim();
   const sector = String(formData.get("sector") || "").trim();
   if (!ALLOWED.has(intent)) throw new Error("Acao desconhecida.");
@@ -19,7 +20,7 @@ export async function directorReviewAction(contentId:string,formData:FormData) {
   if (intent !== "ARCHIVE" && note.length > 700) throw new Error("Mensagem deve ter no maximo 700 caracteres.");
   if (intent === "FOLLOWUP" && !SECTORS.has(sector)) throw new Error("Selecione o setor.");
   if (intent === "ARCHIVE" && String(formData.get("confirmation") || "").trim() !== "ARQUIVAR") throw new Error("Confirme digitando ARQUIVAR.");
-  const author = user.name || user.email || "Diretoria";
+  const author = user.name || user.email || "Equipe";
 
   await prisma.$transaction(async tx=>{
     const content = await tx.content.findFirst({
@@ -57,11 +58,11 @@ export async function directorReviewAction(contentId:string,formData:FormData) {
       if (result.count !== 1) throw new Error("Registro alterado por outra pessoa. Atualize a pagina.");
     }
     const message = intent === "POSTED"
-      ? `DIRETORIA - PUBLICADO POR CONFIRMACAO MANUAL DO DIRETOR (SEM COMPROVANTE ANEXADO). Nao e confirmacao automatica das plataformas.`
-      : intent === "NOT_POSTED" ? `DIRETORIA - NAO PUBLICADO${note ? `: ${note}` : ""}`
-      : intent === "FOLLOWUP" ? `DIRETORIA - SOLICITACAO DE POSICAO [${sector}]${note ? `: ${note}` : ""}`
-      : intent === "ARCHIVE" ? `DIRETORIA - ARQUIVADO: ${note}`
-      : `DIRETORIA - RESTAURADO${note ? `: ${note}` : ""}`;
+      ? `CONFERENCIA - PUBLICADO POR CONFIRMACAO MANUAL DE ${author} (SEM COMPROVANTE ANEXADO). Nao e confirmacao automatica das plataformas.`
+      : intent === "NOT_POSTED" ? `CONFERENCIA - NAO PUBLICADO${note ? `: ${note}` : ""}`
+      : intent === "FOLLOWUP" ? `CONFERENCIA - SOLICITACAO DE POSICAO [${sector}]${note ? `: ${note}` : ""}`
+      : intent === "ARCHIVE" ? `CONFERENCIA - ARQUIVADO: ${note}`
+      : `CONFERENCIA - RESTAURADO${note ? `: ${note}` : ""}`;
     const action = intent === "POSTED" ? "DIRECTOR_CONFIRMED_MANUAL_POST"
       : intent === "NOT_POSTED" ? "DIRECTOR_CONFIRMED_NOT_POSTED"
       : intent === "FOLLOWUP" ? "DIRECTOR_REQUESTED_POSITION"
@@ -71,7 +72,7 @@ export async function directorReviewAction(contentId:string,formData:FormData) {
       : intent === "RESTORE" ? `Diretoria restaurou ${content.title} para ${restoredStatus}.${note ? ` Nota: ${note}` : ""}`
       : intent === "POSTED" ? `Diretoria marcou ${content.title} como publicado por confirmacao manual, sem comprovante anexado. Registro de ${author}.`
       : intent === "FOLLOWUP" ? `Diretoria cobrou ${sector} sobre ${content.title}.` : `Diretoria registrou pendencia para ${content.title}.`;
-    await tx.comment.create({data:{contentId,authorName:author,authorRole:"DIRECTOR",message}});
+    await tx.comment.create({data:{contentId,authorName:author,authorRole:user.role,message}});
     await tx.historyLog.create({data:{entityType:"CONTENT",entityId:contentId,action,description,authorName:author}});
   });
   for(const path of ["/social-media/diretoria","/social-media","/clientes","/design","/filmmaker","/conteudos","/operacao","/calendario","/calendario-editorial",`/conteudos/${contentId}`]) revalidatePath(path);

@@ -97,6 +97,7 @@ function formatDate(
   ).toLocaleDateString(
     "pt-BR",
     {
+      timeZone: "America/Maceio",
       day:
         "2-digit",
 
@@ -2579,19 +2580,8 @@ export default async function DesignPage({
         area:
           "DESIGN",
 
-        status: {
-          in: Array.from(
-            new Set([
-              ...statusKeys,
-
-              "ENVIADO_CLIENTE",
-              "ALTERACAO_SOLICITADA",
-              "PRONTO_PARA_POSTAR",
-              "PUBLICADO",
-              "PUBLICADO_MANUALMENTE",
-            ])
-          ),
-        },
+        // Manter todos os status de Design, exceto arquivos arquivados.
+        status: { not: "ARQUIVADO_DIRETORIA" },
       },
 
       include: {
@@ -2632,6 +2622,10 @@ export default async function DesignPage({
       ],
     });
 
+
+  const visibleDesignStatuses = new Set([...statusKeys,
+    "ENVIADO_CLIENTE","ALTERACAO_SOLICITADA","PRONTO_PARA_POSTAR","PUBLICADO","PUBLICADO_MANUALMENTE"]);
+  const designOutsideFlow = contents.filter(content => !visibleDesignStatuses.has(content.status));
 
   const graphicDesignCount =
     contents.filter(
@@ -2823,6 +2817,13 @@ export default async function DesignPage({
       </section>
 
 
+      {designOutsideFlow.length > 0 ? <section className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+        <h2 className="font-bold text-amber-900">Demandas que estavam fora das colunas ({designOutsideFlow.length})</h2>
+        <p className="mt-1 text-xs text-amber-800">Estes conteúdos pertencem ao Design, mas possuem status sem coluna ativa. Eles não serão apagados ou alterados automaticamente.</p>
+        <div className="mt-3 space-y-2">{designOutsideFlow.map(content => <Link key={content.id} href={`/conteudos/${content.id}`} target="_blank" rel="noopener noreferrer" className="block rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs text-amber-950 hover:border-amber-500">
+          <strong>{content.title}</strong> · {content.client.name} · Status: {content.status} · Entrega: {formatDeliveryDate(content.productionDeadline)} · Publicação: {formatDate(content.plannedDate)}
+        </Link>)}</div>
+      </section> : null}
       {/* ===================================================
           RESUMO
           =================================================== */}

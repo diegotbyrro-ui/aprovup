@@ -266,9 +266,9 @@ export default async function ClientesPage({
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            {currentUser.role === "DIRECTOR" ? (
+            {["DIRECTOR","SOCIAL_MEDIA"].includes(currentUser.role) ? (
               <Link href="/social-media/diretoria" className="inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-300 bg-indigo-100 px-5 py-3 text-sm font-bold text-indigo-950 hover:bg-indigo-200">
-                <Users size={16} /> Central da Diretoria
+                <Users size={16} /> Conferência
               </Link>
             ) : null}
             <Link

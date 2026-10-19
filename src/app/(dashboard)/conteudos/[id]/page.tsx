@@ -1086,22 +1086,7 @@ export default async function ConteudoDetailPage({
         <input type="hidden" name="objective" value={contentSafe.objective || ''} />
         <input type="hidden" name="format" value={contentSafe.format || ''} />
         <input type="hidden" name="platform" value={contentSafe.platform || ''} />
-        <input
-          type="hidden"
-          name="plannedDate"
-          value={formatDateInput(contentSafe.plannedDate)}
-        />
-        <input
-          type="hidden"
-          name="productionDeadline"
-          value={formatDateInput(contentSafe.productionDeadline)}
-        />
-
-        <input
-          type="hidden"
-          name="productionDeadlineTime"
-          value={formatTimeInput(contentSafe.productionDeadline)}
-        />
+        {/* Status update: nao reenviar datas antigas do formulario */}
         <input type="hidden" name="briefing" value={contentSafe.briefing || ''} />
         <input type="hidden" name="artText" value={contentSafe.artText || ''} />
         <input type="hidden" name="caption" value={contentSafe.caption || ''} />
@@ -1124,6 +1109,7 @@ export default async function ConteudoDetailPage({
         />
       ) : null}
 
+      {pageError === 'date-conflict' ? <section className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">As datas deste conteudo mudaram em outra tela. Recarregue para confirmar as datas atuais antes de salvar novamente.</section> : null}
       {pageError ===
       'reference-update' ? (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
@@ -1580,6 +1566,9 @@ export default async function ConteudoDetailPage({
         <div className="space-y-6 xl:col-span-2">
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <form action={updateContentAction} className="space-y-6">
+              <input type="hidden" name="originalPlannedDate" value={formatDateInput(contentSafe.plannedDate)}/>
+              <input type="hidden" name="originalProductionDeadline" value={formatDateInput(contentSafe.productionDeadline)}/>
+              <input type="hidden" name="originalProductionDeadlineTime" value={formatTimeInput(contentSafe.productionDeadline)}/>
               {directorReturn ? <input type="hidden" name="retornoDiretoria" value={directorReturn}/> : null}
               <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
