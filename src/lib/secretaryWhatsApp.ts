@@ -740,6 +740,51 @@ async function sendWhatsappDailyTemplate({
       ? messages[0].id : null,
   };
 }
+
+// APROVUP V4.1.132 - Modelos Meta aprovados para producao e prazo.
+type LivProductionTemplateData = {
+  name: string; sector: string; date: string; pending: number;
+  overdue: number; today: number; upcoming: number;
+  top1: string; top2: string; top3: string; url: string;
+};
+type LivOverdueTemplateData = {
+  name: string; sector: string; demand: string;
+  deadline: string; overdue: number; url: string;
+};
+async function sendWhatsappLivSectorTemplate({ agencyId, to, templateName, fields }: {
+  agencyId: string; to: string; templateName: string;
+  fields: Array<string | number>;
+}) {
+  const connection = await getWhatsappConnection(agencyId);
+  if (!connection) throw new Error('WhatsApp da agencia nao esta ativo.');
+  if (!templateName.trim()) throw new Error('Modelo da LIV nao configurado.');
+  if (fields.length !== 11 && fields.length !== 6) {
+    throw new Error('Quantidade incorreta de parametros no modelo da LIV.');
+  }
+  const language = fields.length === 11
+    ? process.env.LIV_PRODUCTION_BRIEF_TEMPLATE_LANGUAGE
+    : process.env.LIV_OVERDUE_ALERT_TEMPLATE_LANGUAGE;
+  const result = await graphRequest({
+    connection, path: connection.phoneNumberId + '/messages', method: 'POST',
+    body: {
+      messaging_product: 'whatsapp', recipient_type: 'individual',
+      to: normalizeWhatsappPhone(to), type: 'template',
+      template: {
+        name: templateName,
+        language: { code: String(language || 'pt_BR').trim() || 'pt_BR' },
+        components: [{ type: 'body', parameters: fields.map((value) => ({
+          type: 'text', text: cleanLivDailyTemplateValue(value),
+        })) }],
+      },
+    },
+  });
+  const messages = result.messages as Array<JsonRecord> | undefined;
+  return { sent: true as const,
+    messageId: Array.isArray(messages) && typeof messages[0]?.id === 'string'
+      ? messages[0].id : null,
+  };
+}
+
 async function downloadWhatsappMedia({
   agencyId,
   mediaId,
@@ -2268,6 +2313,8 @@ async function sendProactive({
   title,
   message,
   dailySummary,
+  productionSummary,
+  overdueSummary,
   forceDailyTemplate,
   dedupKey,
 }: {
@@ -2288,6 +2335,9 @@ async function sendProactive({
 
   dailySummary?:
     LivDailySummaryTemplateData;
+
+  productionSummary?: LivProductionTemplateData;
+  overdueSummary?: LivOverdueTemplateData;
 
   forceDailyTemplate?: boolean;
 
@@ -2489,6 +2539,13 @@ async function sendProactive({
     );
 
 
+  // Os resumos estruturados usam o template Meta, inclusive na janela de 24h.
+  const forceStructuredTemplate = Boolean(
+    (dailySummary && (process.env.LIV_DAILY_BRIEF_TEMPLATE_NAME || '').trim()) ||
+    (productionSummary && (process.env.LIV_PRODUCTION_BRIEF_TEMPLATE_NAME || '').trim()) ||
+    (overdueSummary && (process.env.LIV_OVERDUE_ALERT_TEMPLATE_NAME || '').trim())
+  );
+
   /*
    * ==================================================
    * LIV PROACTIVE RATE LIMIT
@@ -2514,7 +2571,7 @@ async function sendProactive({
    *    nesse limitador.
    */
   if (
-    (!insideWindow || forceDailyTemplate) &&
+    (!insideWindow || forceDailyTemplate || forceStructuredTemplate) &&
     !isDirectorCommand
   ) {
 
@@ -2697,7 +2754,7 @@ async function sendProactive({
       '*\n' +
       message;
 
-    if (insideWindow && !forceDailyTemplate) {
+    if (insideWindow && !forceDailyTemplate && !forceStructuredTemplate) {
       const result =
         await sendWhatsappText({
           agencyId,
@@ -2721,6 +2778,12 @@ async function sendProactive({
         (process.env.LIV_DAILY_BRIEF_TEMPLATE_NAME || '').trim()
       );
 
+      const useProductionTemplate = Boolean(
+        productionSummary && (process.env.LIV_PRODUCTION_BRIEF_TEMPLATE_NAME || '').trim()
+      );
+      const useOverdueTemplate = Boolean(
+        overdueSummary && (process.env.LIV_OVERDUE_ALERT_TEMPLATE_NAME || '').trim()
+      );
       const result = useNewDailyTemplate && dailySummary
         ? await sendWhatsappDailyTemplate({
             agencyId,
@@ -2728,12 +2791,33 @@ async function sendProactive({
             title,
             summary: dailySummary,
           })
-        : await sendWhatsappTemplate({
-            agencyId,
-            to: toPhone,
-            title,
-            message,
-          });
+        : useProductionTemplate && productionSummary
+          ? await sendWhatsappLivSectorTemplate({
+              agencyId,
+              to: toPhone,
+              templateName: (process.env.LIV_PRODUCTION_BRIEF_TEMPLATE_NAME || '').trim(),
+              fields: [productionSummary.name, productionSummary.sector,
+                productionSummary.date, productionSummary.pending,
+                productionSummary.overdue, productionSummary.today,
+                productionSummary.upcoming, productionSummary.top1,
+                productionSummary.top2, productionSummary.top3,
+                productionSummary.url],
+            })
+          : useOverdueTemplate && overdueSummary
+            ? await sendWhatsappLivSectorTemplate({
+                agencyId,
+                to: toPhone,
+                templateName: (process.env.LIV_OVERDUE_ALERT_TEMPLATE_NAME || '').trim(),
+                fields: [overdueSummary.name, overdueSummary.sector,
+                  overdueSummary.demand, overdueSummary.deadline,
+                  overdueSummary.overdue, overdueSummary.url],
+              })
+            : await sendWhatsappTemplate({
+                agencyId,
+                to: toPhone,
+                title,
+                message,
+              });
 
       if (useNewDailyTemplate && dailySummary) {
         messageForHistory = renderLivDailyTemplateHistory(
@@ -5515,9 +5599,10 @@ export async function deliverSecretaryProductionDeadlineReminders() {
         status: 'APROVADO',
         role: { in: ['DESIGN', 'FILMMAKER'] },
       },
-      select: { id: true, role: true },
+      select: { id: true, role: true, name: true },
     });
     const roles = new Map(users.map((user) => [user.id, user.role] as const));
+    const names = new Map(users.map((user) => [user.id, user.name] as const));
     const recipients = members.filter((member) => member.userId && roles.has(member.userId));
     if (!recipients.length) continue;
 
@@ -5532,6 +5617,7 @@ export async function deliverSecretaryProductionDeadlineReminders() {
       }),
     ]);
     const excluded = new Set([
+      'IDEIA', 'ARQUIVADO_DIRETORIA',
       'DESIGN_ANALISE', 'DESIGN_DUVIDA', 'FILMMAKER_ANALISE',
       'FILMMAKER_DUVIDA_SOCIAL', 'PRONTO_PARA_POSTAR',
       'PUBLICADO', 'PUBLICADO_MANUALMENTE', 'ENVIADO_CLIENTE',
@@ -5570,6 +5656,8 @@ export async function deliverSecretaryProductionDeadlineReminders() {
       const role = roles.get(member.userId);
       if (role !== 'DESIGN' && role !== 'FILMMAKER') continue;
       const sectorName = role === 'DESIGN' ? 'Design' : 'Audio Visual';
+      const firstName = String(names.get(member.userId) || member.displayName || 'Equipe')
+        .trim().split(/\s+/)[0] || 'Equipe';
       const sectorHref = role === 'DESIGN' ? '/design' : '/filmmaker';
       const workload = contents.filter((item) => item.area === role);
       if (!workload.length) continue;
@@ -5594,6 +5682,10 @@ export async function deliverSecretaryProductionDeadlineReminders() {
       });
       const digestWasSent = ['SENT', 'DELIVERED', 'READ'].includes(previousDigest?.status || '');
       if (!digestWasSent) {
+        const priorities = [...overdue, ...dueToday, ...upcoming].slice(0, 3);
+        const shortPriority = (item: ProductionReminderItem) =>
+          present(item.client.name, 20) + ' - ' + present(item.title, 52) +
+          ' (' + formatProductionDeadline(item.productionDeadline) + ')';
         const message = [
           `*Setor:* ${sectorName}`,
           `*Pendentes:* ${workload.length}`,
@@ -5610,6 +5702,16 @@ export async function deliverSecretaryProductionDeadlineReminders() {
           toPhone: member.phoneE164,
           title: `Resumo de entregas - ${sectorName}`,
           message,
+          productionSummary: {
+            name: firstName, sector: sectorName,
+            date: today.split('-').reverse().join('/'),
+            pending: workload.length, overdue: overdue.length,
+            today: dueToday.length, upcoming: upcoming.length,
+            top1: priorities[0] ? shortPriority(priorities[0]) : 'Nenhuma outra demanda prioritária',
+            top2: priorities[1] ? shortPriority(priorities[1]) : 'Nenhuma outra demanda prioritária',
+            top3: priorities[2] ? shortPriority(priorities[2]) : 'Nenhuma outra demanda prioritária',
+            url: 'https://aprovup.com.br' + sectorHref,
+          },
           dedupKey: digestKey,
         });
         if (result.status === 'SENT') {
@@ -5668,6 +5770,15 @@ export async function deliverSecretaryProductionDeadlineReminders() {
         toPhone: member.phoneE164,
         title: `Prazo vencido - ${sectorName}`,
         message: overdueMessage,
+        overdueSummary: {
+          name: firstName, sector: sectorName,
+          demand: present(newlyOverdue[0].client.name, 20) + ' - ' +
+            present(newlyOverdue[0].title, 70) +
+            (newlyOverdue.length > 1 ? ' (mais ' + (newlyOverdue.length - 1) + ' no AprovUp)' : ''),
+          deadline: formatProductionDeadline(newlyOverdue[0].productionDeadline),
+          overdue: overdue.length,
+          url: 'https://aprovup.com.br' + sectorHref,
+        },
         dedupKey: overdueKey,
       });
       if (result.status === 'SENT') {
