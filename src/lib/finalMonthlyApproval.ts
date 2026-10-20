@@ -199,6 +199,47 @@ export function getFinalApprovalMonthRange(
 }
 
 
+/** Usa a data editorial normal; para uma demanda emergencial sem publicacao prevista,
+ * utiliza seu prazo de producao, preservando seu mes de referencia. */
+export function finalApprovalReferenceDate(content: {
+  format: string | null; plannedDate: Date | null; productionDeadline: Date | null; createdAt: Date;
+}): Date | null {
+  if (content.plannedDate) return content.plannedDate;
+  if (content.format === 'DEMANDA_EMERGENCIAL') {
+    return content.productionDeadline ?? content.createdAt;
+  }
+  return null;
+}
+
+/** Links mensais incluem materias finais e emergenciais com prazo no mes.
+ * Um link individual antigo fica limitado a seu unico conteudo. */
+export function finalApprovalContentScope(context: {
+  source: 'MONTHLY' | 'LEGACY';
+  legacyContentId?: string | null;
+  start: Date;
+  end: Date;
+}) {
+  if (context.source === 'LEGACY' && context.legacyContentId) {
+    return { id: context.legacyContentId };
+  }
+  return {
+    AND: [{ OR: [
+      { plannedDate: { gte: context.start, lt: context.end } },
+      {
+        format: 'DEMANDA_EMERGENCIAL',
+        plannedDate: null,
+        productionDeadline: { gte: context.start, lt: context.end },
+      },
+      {
+        format: 'DEMANDA_EMERGENCIAL',
+        plannedDate: null,
+        productionDeadline: null,
+        createdAt: { gte: context.start, lt: context.end },
+      },
+    ] }],
+  };
+}
+
 export async function resolveFinalApprovalContext(
   token:
     string
@@ -252,6 +293,8 @@ export async function resolveFinalApprovalContext(
 
       source:
         'MONTHLY' as const,
+
+      legacyContentId: null,
     };
   }
 
@@ -281,15 +324,10 @@ export async function resolveFinalApprovalContext(
       });
 
 
-  if (
-    !legacy ||
-    !legacy
-      .content
-      .plannedDate
-  ) {
+  if (!legacy) return null;
 
-    return null;
-  }
+  const referenceDate = finalApprovalReferenceDate(legacy.content);
+  if (!referenceDate) return null;
 
 
   const {
@@ -297,9 +335,7 @@ export async function resolveFinalApprovalContext(
     month,
   } =
     getFinalApprovalMonthParts(
-      legacy
-        .content
-        .plannedDate
+      referenceDate
     );
 
 
@@ -326,5 +362,7 @@ export async function resolveFinalApprovalContext(
 
     source:
       'LEGACY' as const,
+
+    legacyContentId: legacy.contentId,
   };
 }

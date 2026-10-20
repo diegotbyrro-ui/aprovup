@@ -6,6 +6,7 @@ import {
   FINAL_VISIBLE_STATUSES,
   finalApprovalMonthNames,
   resolveFinalApprovalContext,
+  finalApprovalContentScope,
 } from '@/lib/finalMonthlyApproval';
 import { PreserveApprovalScroll } from '@/components/approval/PreserveApprovalScroll';
 
@@ -246,18 +247,7 @@ export default async function FinalApprovalPage({
       clientId:
         client.id,
 
-      format: {
-        not:
-          'DEMANDA_EMERGENCIAL',
-      },
-
-      plannedDate: {
-        gte:
-          start,
-
-        lt:
-          end,
-      },
+      ...finalApprovalContentScope(approvalContext),
 
       status: {
         in:

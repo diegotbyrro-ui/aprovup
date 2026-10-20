@@ -7,6 +7,7 @@ import {
 import {
   FINAL_PENDING_STATUSES,
   resolveFinalApprovalContext,
+  finalApprovalContentScope,
 } from '@/lib/finalMonthlyApproval';
 
 import {
@@ -70,13 +71,7 @@ export async function approveFinalContentAction(
         clientId:
           client.id,
 
-        plannedDate: {
-          gte:
-            start,
-
-          lt:
-            end,
-        },
+        ...finalApprovalContentScope(context),
 
         status: {
           in:
@@ -287,13 +282,7 @@ export async function reopenFinalContentAction(
         clientId:
           client.id,
 
-        plannedDate: {
-          gte:
-            start,
-
-          lt:
-            end,
-        },
+        ...finalApprovalContentScope(context),
 
         status:
           'PRONTO_PARA_POSTAR',
@@ -652,13 +641,7 @@ export async function requestFinalChangesAction(
         clientId:
           client.id,
 
-        plannedDate: {
-          gte:
-            start,
-
-          lt:
-            end,
-        },
+        ...finalApprovalContentScope(context),
 
         status: {
           in:

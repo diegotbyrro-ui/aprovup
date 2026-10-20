@@ -20,6 +20,7 @@ import {
   FINAL_VISIBLE_STATUSES,
   finalApprovalMonthNames,
   getFinalApprovalMonthParts,
+  finalApprovalReferenceDate,
 } from '@/lib/finalMonthlyApproval';
 
 import {
@@ -114,16 +115,6 @@ export default async function FinalApprovalManagerPage({
           agencyId,
         },
 
-        format: {
-          not:
-            'DEMANDA_EMERGENCIAL',
-        },
-
-        plannedDate: {
-          not:
-            null,
-        },
-
         status: {
           in:
             FINAL_VISIBLE_STATUSES,
@@ -186,6 +177,10 @@ export default async function FinalApprovalManagerPage({
 
         plannedDate:
           true,
+
+        format: true,
+        productionDeadline: true,
+        createdAt: true,
       },
 
       orderBy: [
@@ -226,20 +221,10 @@ export default async function FinalApprovalManagerPage({
     of contents
   ) {
 
-    if (
-      !content.plannedDate
-    ) {
-      continue;
-    }
+    const referenceDate = finalApprovalReferenceDate(content);
+    if (!referenceDate) continue;
 
-
-    const {
-      year,
-      month,
-    } =
-      getFinalApprovalMonthParts(
-        content.plannedDate
-      );
+    const { year, month } = getFinalApprovalMonthParts(referenceDate);
 
 
     const key =

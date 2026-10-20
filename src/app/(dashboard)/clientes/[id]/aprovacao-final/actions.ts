@@ -34,15 +34,11 @@ async function sendContentToClient(
     throw new Error('Conteúdo não encontrado.');
   }
 
-  if (content.format === 'DEMANDA_EMERGENCIAL') {
-    return;
-  }
-
   if (!READY_STATUSES.includes(content.status)) {
     return;
   }
 
-  if (!content.finalMediaUrl && !content.finalCoverUrl) {
+  if (!content.finalMediaUrl && !content.finalCoverUrl && !content.finalExternalUrl) {
     return;
   }
 
@@ -131,7 +127,6 @@ export async function sendAllReadyToFinalApprovalAction(
         agencyId:
           currentUser.agencyId,
       },
-      format: { not: "DEMANDA_EMERGENCIAL" },
       status: {
         in: READY_STATUSES,
       },
