@@ -381,42 +381,13 @@ export default async function CalendarioEditorialPage({
     const selectedClientName =
         clients.find((client) => client.id === selectedClient)?.name || 'Todos';
 
-    const secondStageApproval =
-        selectedClient !== 'TODOS'
-            ? await prisma.approval.findFirst({
-                  where: {
-                      content: {
-                          clientId:
-                              selectedClient,
-
-                          client: {
-                              agencyId,
-                          },
-
-                          status: {
-                              in: [
-                                  'ENVIADO_CLIENTE',
-                                  'ALTERACAO_SOLICITADA',
-                                  'PRONTO_PARA_POSTAR',
-                              ],
-                          },
-                      },
-                  },
-                  orderBy: {
-                      createdAt: 'desc',
-                  },
-                  select: {
-                      token: true,
-                  },
-              })
-            : null;
-
+    // A 2ª etapa deve abrir o gerenciador interno do cliente.
+    // Tokens da tabela Approval pertencem a outra etapa e causavam erro 404.
+    // O link público correto é produzido por FinalMonthlyApproval no gerenciador.
     const secondStageHref =
-        selectedClient !== 'TODOS' && secondStageApproval
-            ? `/aprovacao-final/${secondStageApproval.token}`
-            : selectedClient !== 'TODOS'
-              ? `/clientes/${selectedClient}/aprovacao-final`
-              : '/clientes';
+        selectedClient !== 'TODOS'
+            ? `/clientes/${selectedClient}/aprovacao-final`
+            : '/clientes';
     return (
         <div className="space-y-6">
 
