@@ -719,6 +719,7 @@ export async function GET(
   }
 ) {
   try {
+    const requestedStoryIndex = _request.nextUrl.searchParams.get('story');
     const user =
       await getCurrentUser();
 
@@ -752,6 +753,10 @@ export async function GET(
         hasPermission(
           user,
           'social.manage'
+        ) ||
+        (
+          requestedStoryIndex !== null &&
+          hasPermission(user, 'design.view')
         )
       )
     ) {
@@ -844,6 +849,58 @@ export async function GET(
         'conteudo'
       );
 
+    // O download dos Stories nao deve selecionar o Feed por engano.
+    // O indice e resolvido exclusivamente entre os Stories deste conteudo.
+    if (requestedStoryIndex !== null) {
+      if (!/^(0|[1-9]\d*)$/.test(requestedStoryIndex)) {
+        return NextResponse.json({ ok: false, message: 'Story invalido.' }, { status: 400 });
+      }
+
+      const storyAssets: Array<{ url: string; mimeType: string; position: number }> = [];
+      if (Array.isArray(content.storyMediaItems)) {
+        content.storyMediaItems.forEach((item, itemIndex) => {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) return;
+          const record = item as Record<string, unknown>;
+          const url = typeof record.url === 'string' ? record.url.trim() : '';
+          if (!url) return;
+          storyAssets.push({
+            url,
+            mimeType: typeof record.mimeType === 'string' ? record.mimeType : '',
+            position: typeof record.position === 'number' && Number.isFinite(record.position)
+              ? record.position
+              : itemIndex,
+          });
+        });
+      }
+
+      storyAssets.sort((a, b) => a.position - b.position);
+      if (storyAssets.length === 0 && content.storyMediaUrl) {
+        storyAssets.push({
+          url: content.storyMediaUrl,
+          mimeType: content.storyMediaType || '',
+          position: 0,
+        });
+      }
+
+      const storyIndex = Number(requestedStoryIndex);
+      if (!Number.isSafeInteger(storyIndex) || storyIndex >= storyAssets.length) {
+        return NextResponse.json({ ok: false, message: 'Story nao encontrado.' }, { status: 404 });
+      }
+
+      const chosen = storyAssets[storyIndex];
+      const stored = await fetchStoredMedia(chosen.url);
+      const mimeType = chosen.mimeType || stored.headers.get('content-type') || 'application/octet-stream';
+      const extension = resolveExtension({ mimeType, url: chosen.url });
+      const fileName = `${baseName}-story-${String(storyIndex + 1).padStart(2, '0')}.${extension}`;
+      const headers = new Headers();
+      headers.set('Content-Type', mimeType);
+      headers.set('Content-Disposition', `attachment; filename="${fileName}"`);
+      headers.set('Cache-Control', 'private, no-store');
+      const length = stored.headers.get('content-length');
+      if (length) headers.set('Content-Length', length);
+
+      return new Response(stored.body, { status: 200, headers });
+    }
     if (
       isCarousel
     ) {

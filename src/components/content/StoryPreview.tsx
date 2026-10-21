@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Smartphone } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Smartphone } from "lucide-react";
 
 type StoryAsset = {
   url: string;
@@ -34,12 +34,14 @@ function getStoryAssets(value: unknown, fallbackUrl?: string | null, fallbackTyp
 }
 
 export function StoryPreview({
+  contentId,
   clientName,
   storyMediaUrl,
   storyMediaType,
   storyCoverUrl,
   storyMediaItems,
 }: {
+  contentId: string;
   clientName: string;
   storyMediaUrl?: string | null;
   storyMediaType?: string | null;
@@ -152,6 +154,18 @@ export function StoryPreview({
           </div>
         </div>
 
+        {current && (
+          <div className="mt-4 flex justify-center">
+            <a
+              href={`/api/conteudos/${encodeURIComponent(contentId)}/download?story=${index}`}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2"
+              aria-label={`Baixar Story ${index + 1} de ${assets.length}`}
+            >
+              <Download size={17} />
+              {assets.length > 1 ? `Baixar Story ${index + 1} de ${assets.length}` : "Baixar Story"}
+            </a>
+          </div>
+        )}
         <p className="mt-3 text-center text-[11px] text-slate-500">
           Visualização vertical 9:16 • {assets.length ? "Arquivos enviados pelo Design" : "Nenhum Story enviado"}
         </p>

@@ -2237,6 +2237,7 @@ export default async function ConteudoDetailPage({
           />
 
           <StoryPreview
+            contentId={contentSafe.id}
             clientName={contentSafe.client?.name || 'Cliente'}
             storyMediaUrl={contentSafe.storyMediaUrl}
             storyMediaType={contentSafe.storyMediaType}
