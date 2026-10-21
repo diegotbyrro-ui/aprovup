@@ -11,6 +11,7 @@ import {
 } from '@/components/approval/ConfirmFinalReopenButton';
 import { updateContent, addComment, addTask, completeTask } from '@/app/actions';
 import { InstagramPreview } from '@/components/content/InstagramPreview';
+import { StoryPreview } from '@/components/content/StoryPreview';
 import { CarouselFinalUpload } from '@/components/content/CarouselFinalUpload';
 import { inputClasses, labelClasses } from '@/lib/styles';
 import {
@@ -2211,19 +2212,16 @@ export default async function ConteudoDetailPage({
             platform={contentSafe.platform || 'Instagram'}
             mediaUrl={
               contentSafe.finalMediaUrl ||
-              contentSafe.storyMediaUrl ||
               contentSafe.instagramMediaAssets[0]?.url ||
               ''
             }
             mediaType={
               contentSafe.finalMediaType ||
-              contentSafe.storyMediaType ||
               contentSafe.instagramMediaAssets[0]?.mimeType ||
               ''
             }
             coverUrl={
               contentSafe.finalCoverUrl ||
-              contentSafe.storyCoverUrl ||
               contentSafe.coverImageUrl ||
               ''
             }
@@ -2236,6 +2234,14 @@ export default async function ConteudoDetailPage({
                 })
               )
             }
+          />
+
+          <StoryPreview
+            clientName={contentSafe.client?.name || 'Cliente'}
+            storyMediaUrl={contentSafe.storyMediaUrl}
+            storyMediaType={contentSafe.storyMediaType}
+            storyCoverUrl={contentSafe.storyCoverUrl}
+            storyMediaItems={contentSafe.storyMediaItems}
           />
 
           {contentSafe.instagramMediaAssets.length > 0 ? (
