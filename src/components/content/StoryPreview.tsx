@@ -61,12 +61,12 @@ export function StoryPreview({
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
         <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-slate-700">
           <Smartphone size={16} className="text-violet-600" />
-          PrÃ©via dos Stories
+          Prévia dos Stories
         </h3>
         <span className={assets.length
           ? "rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-emerald-600"
           : "rounded-full bg-slate-100 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-400"}>
-          {assets.length ? `${assets.length} ${assets.length === 1 ? "Story" : "Stories"}` : "Aguardando criaÃ§Ã£o"}
+          {assets.length ? `${assets.length} ${assets.length === 1 ? "Story" : "Stories"}` : "Aguardando criação"}
         </span>
       </div>
 
@@ -83,14 +83,14 @@ export function StoryPreview({
                   controls
                   preload="metadata"
                   className="h-full w-full object-contain"
-                  aria-label={`VÃ­deo do Story ${index + 1}`}
+                  aria-label={`Vídeo do Story ${index + 1}`}
                 />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={current.url}
                   src={current.url}
-                  alt={`PrÃ©via do Story ${index + 1}`}
+                  alt={`Prévia do Story ${index + 1}`}
                   className="h-full w-full object-contain"
                 />
               )
@@ -99,7 +99,7 @@ export function StoryPreview({
                 <Smartphone size={38} className="mb-3 text-violet-300" />
                 <p className="text-sm font-bold">Aguardando arte dos Stories</p>
                 <p className="mt-2 text-xs leading-relaxed text-slate-300">
-                  Assim que o Design enviar a versÃ£o vertical, a prÃ©via aparecerÃ¡ aqui.
+                  Assim que o Design enviar a versão vertical, a prévia aparecerá aqui.
                 </p>
               </div>
             )}
@@ -118,7 +118,7 @@ export function StoryPreview({
                     {initials || "IG"}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-xs font-bold">{clientName}</span>
-                  <span className="text-[10px] text-white/80">PrÃ©via</span>
+                  <span className="text-[10px] text-white/80">Prévia</span>
                 </div>
               </div>
             )}
@@ -136,7 +136,7 @@ export function StoryPreview({
                 <button
                   type="button"
                   onClick={() => setSelected((value) => (value + 1) % assets.length)}
-                  aria-label="Ver prÃ³ximo Story"
+                  aria-label="Ver próximo Story"
                   className="absolute right-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-violet-400"
                 >
                   <ChevronRight size={20} />
@@ -153,7 +153,7 @@ export function StoryPreview({
         </div>
 
         <p className="mt-3 text-center text-[11px] text-slate-500">
-          VisualizaÃ§Ã£o vertical 9:16 â€¢ {assets.length ? "Arquivos enviados pelo Design" : "Nenhum Story enviado"}
+          Visualização vertical 9:16 • {assets.length ? "Arquivos enviados pelo Design" : "Nenhum Story enviado"}
         </p>
       </div>
     </section>
