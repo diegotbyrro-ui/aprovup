@@ -1523,7 +1523,10 @@ export default async function FinancePage({
 
   return (
     <div className="space-y-5">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Link href="/financas/cartoes" className="inline-flex items-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100">
+          Importar faturas de cartão &rarr;
+        </Link>
         <Link href="/financas/integracoes" className="inline-flex items-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-bold text-blue-800 hover:bg-blue-100">
           Bancos, cobrancas e NFS-e &rarr;
         </Link>

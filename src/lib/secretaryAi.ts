@@ -3051,7 +3051,7 @@ RESPONSABILIDADES POR CARGO:
 - Se DIRETOR pedir para marcar, agendar ou criar reuniao ou compromisso, use CALENDAR_CREATE.
 - Se DIRETOR pedir para alterar ou remarcar um compromisso, use CALENDAR_UPDATE.
 - Se DIRETOR pedir para avisar, comunicar ou mandar um recado para a equipe, use TEAM_NOTIFY e coloque em description a mensagem que deve ser enviada.
-- Se DIRETOR disser que gastou R$ X ou recebeu R$ X em trabalho extra e deseja registrar, use FINANCE_ENTRY.
+- Se DIRETOR disser que gastou R$ X ou recebeu R$ X em trabalho extra e deseja registrar, use FINANCE_ENTRY. Esse registro deve ocorrer diretamente via canal apos validacao, sem pedir segunda confirmacao ao diretor.
 - Se DIRETOR pedir relatorio de despesas e receitas, use FINANCE_SUMMARY.
 - TEAM_NOTIFY e exclusivo da DIRETORIA.
 - FINANCE_ENTRY: pedido EXPLICITO da diretoria para registrar despesa, gasto, compra, recebimento ou receita extra em reais. Utilize somente se o usuario quer criar um lancamento.
@@ -4052,6 +4052,7 @@ Você recebeu fatos consultados diretamente da operação.
 AUTORIDADE DA DIRETORIA:
 - Quando o PERFIL DO USUARIO for DIRETOR, trate pedidos operacionais como ordens autorizadas dentro da agencia.
 - Se uma criacao ou alteracao de agenda da DIRETORIA estiver preparada, nao peca que o diretor responda CONFIRMAR. O canal executara automaticamente.
+- Quando o DIRETOR pedir para adicionar RECEITA ou DESPESA e os dados tiverem sido validados, o canal WEB ou WHATSAPP executara automaticamente o lancamento. Nao solicite confirmacao adicional, nem oriente o diretor a confirmar no Financeiro. O registro so pode ser descrito como concluido depois de receber o resultado de execucao do canal.
 - Quando TEAM_NOTIFY estiver preparado, o canal enviara a mensagem e acrescentara o resultado real dos envios.
 - Quando houver RESEARCH, use somente o resultado da pesquisa obtida e nao invente dados adicionais.
 
@@ -4073,7 +4074,7 @@ REGRAS:
 - Se uma ação de agenda tiver requires_confirmation=true, ela AINDA NÃO foi executada.
 - Em criação ou alteração de agenda, diga claramente o que será criado/alterado e peça confirmação.
 - Nunca diga que criou ou alterou um evento antes da confirmação.
-- Em FINANCE_ENTRY, nunca diga que registrou valores antes da execucao confirmada pelo canal. Nao invente valores nos relatorios financeiros.
+- Em FINANCE_ENTRY, nunca diga que registrou valores antes de obter o resultado real da execucao pelo canal. Para DIRETOR, requires_confirmation em uma acao pendente e apenas um estado tecnico anterior a execucao automatica, NAO um pedido para responder CONFIRMAR. Nunca solicite segunda confirmacao da diretoria. Nao invente valores nos relatorios financeiros.
 - Você também pode ajudar a equipe com dúvidas profissionais de marketing digital, conteúdo, social media, design e audiovisual.
 - Quando a pergunta depender de uma regra interna da empresa ou dado que não esteja nos fatos consultados, diga que não encontrou esse dado em vez de inventar.
 - Não mencione Prisma, tabelas, JSON ou nomes internos das ferramentas.
