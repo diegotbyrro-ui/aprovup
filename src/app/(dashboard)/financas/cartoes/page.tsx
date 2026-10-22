@@ -50,7 +50,7 @@ export default async function CreditCardStatementsPage({ searchParams }: {
           <div className="mb-1.5 flex justify-between gap-3 text-xs"><span className="font-semibold text-slate-700">{category}</span><span className="font-black text-slate-900">{reais(cents)} · {Math.round(cents / total * 100)}%</span></div>
           <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-600" style={{ width: `${cents / total * 100}%` }} /></div>
         </div>)}</div>}
-      <p className="mt-4 text-xs text-slate-500">Valores importados ficam como pendentes até você registrar o pagamento; os gastos são apresentados por mês de fatura, sem somar o pagamento da fatura como nova despesa.</p>
+      <p className="mt-4 text-xs text-slate-500">Compras importadas ja sao gastos confirmados e aparecem no total das despesas, independentemente do pagamento da fatura. O pagamento do cartao e separado: nao registre o mesmo valor novamente como outra despesa.</p>
     </section>
   </div>;
 }

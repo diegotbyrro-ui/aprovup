@@ -36,6 +36,7 @@ import {
 
 
 import { FinanceEntryManagement } from "./FinanceEntryManagement";
+import { isStatementExpense, isOpenPayableFinanceEntry } from "@/lib/financeStatementStatus";
 
 export const dynamic =
   "force-dynamic";
@@ -325,11 +326,15 @@ function sum(
 
 
 function statusInfo(
-  status:
-    string,
-  dueDate:
-    Date
+  status: string,
+  dueDate: Date,
+  source: string | null,
+  type: string
 ) {
+  // Despesa importada comprova o gasto, independentemente do pagamento da fatura.
+  if (isStatementExpense({ source, type })) {
+    return { label: "Confirmado", className: "bg-sky-50 text-sky-700" };
+  }
   if (
     status ===
     "PAGO"
@@ -517,7 +522,9 @@ function FinanceEntryRow({ entry, returnTo, clients, }: {
   const status =
     statusInfo(
       entry.status,
-      entry.dueDate
+      entry.dueDate,
+      entry.source,
+      entry.type
     );
 
 
@@ -573,14 +580,14 @@ function FinanceEntryRow({ entry, returnTo, clients, }: {
       <div>
 
         <p className="text-[7px] font-black uppercase tracking-wider text-slate-400">
-          Vencimento
+          {entry.source === "CARD_STATEMENT" ? "Mês da fatura" : entry.source === "BANK_STATEMENT" ? "Movimentação" : "Vencimento"}
         </p>
 
         <p className="mt-1 text-[9px] font-black text-slate-700">
           {
-            dateFormatter.format(
-              entry.dueDate
-            )
+            entry.source === "CARD_STATEMENT"
+              ? new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" }).format(entry.dueDate)
+              : dateFormatter.format(entry.dueDate)
           }
         </p>
 
@@ -633,7 +640,16 @@ function FinanceEntryRow({ entry, returnTo, clients, }: {
       <div className="flex justify-end">
 
         {
-          entry.status ===
+          isStatementExpense(entry)
+            ? (
+              <span
+                className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-[8px] font-black text-sky-700"
+                title={entry.source === "CARD_STATEMENT" ? "Compra confirmada; a fatura e seu pagamento sao tratados separadamente." : "Debito bancario ja efetivado."}
+              >
+                {entry.source === "CARD_STATEMENT" ? "Gasto registrado" : "Débito registrado"}
+              </span>
+            )
+            : entry.status ===
           "PAGO"
             ? (
               <form
@@ -1132,8 +1148,7 @@ export default async function FinancePage({
         (
           entry
         ) =>
-          entry.status !==
-            "PAGO" &&
+          isOpenPayableFinanceEntry(entry) &&
           entry.dueDate >=
             now &&
           entry.dueDate <=
@@ -1188,8 +1203,7 @@ export default async function FinancePage({
       (
         entry
       ) =>
-        entry.status !==
-          "PAGO" &&
+        isOpenPayableFinanceEntry(entry) &&
         entry.dueDate <
           now
     );

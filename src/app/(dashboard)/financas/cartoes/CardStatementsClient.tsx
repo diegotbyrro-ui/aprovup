@@ -152,7 +152,7 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
             </div>)}
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 p-4">
-            <span className="max-w-xl text-xs text-slate-600">{bankStatement ? <>Importa os débitos da conta como despesas <b>pagas</b>, na data da movimentação. Confira PIX para contas próprias e transferências que não sejam despesas.</> : <>Importa como despesas <b>pendentes</b> no mês da fatura, com data da compra registrada em observações. Não marque novamente o total da fatura como outra despesa.</>}</span>
+            <span className="max-w-xl text-xs text-slate-600">{bankStatement ? <>Importa os débitos da conta como despesas <b>pagas</b>, na data da movimentação. Confira PIX para contas próprias e transferências que não sejam despesas.</> : <>Registra cada compra como <b>gasto confirmado</b> no mês da fatura. <b>A fatura não fica marcada como paga.</b> O pagamento do cartão é controlado separadamente e não deve duplicar essas despesas.</>}</span>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={resetPreview} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700"><RotateCcw size={15} /> Limpar</button>
               <button type="button" disabled={busy !== null || active.length === 0} onClick={() => submit('import')} className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50">
