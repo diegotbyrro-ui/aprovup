@@ -19,11 +19,13 @@ import {
   generateIndividualApprovalLink,
   markContentAsPublishedByDirectorAction,
   reopenFinalApprovalInternallyAction,
+  revertManualPublishedContentAction,
 } from './contentActions';
 import { hasPermission } from '@/lib/userAccess';
 import { getDirectorReturnUrl } from '@/lib/directorReturn';
 import { SocialMediaProductionPanel } from './SocialMediaProductionPanel';
 import { DownloadContentButton } from '@/components/content/DownloadContentButton';
+import { ConfirmManualPublicationRevertButton } from '@/components/content/ConfirmManualPublicationRevertButton';
 import { PermanentDeleteButton } from '@/components/content/PermanentDeleteButton';
 import { listAprovUpReferenceFiles } from '@/lib/aprovupStorage';
 
@@ -972,6 +974,8 @@ export default async function ConteudoDetailPage({
       id
     );
 
+  const revertManualPublishedAction = revertManualPublishedContentAction.bind(null, id);
+
   const canDirectorMarkPublished =
     currentUser.role ===
       'DIRECTOR' &&
@@ -1313,6 +1317,11 @@ export default async function ConteudoDetailPage({
               </form>
             )}
 
+            {canManageSocial && ['DIRECTOR', 'SOCIAL_MEDIA'].includes(currentUser.role) && contentSafe.status === 'PUBLICADO_MANUALMENTE' && (
+              <form action={revertManualPublishedAction}>
+                <ConfirmManualPublicationRevertButton />
+              </form>
+            )}
             {contentSafe.fileLinks && (
               <a
                 href={contentSafe.fileLinks}

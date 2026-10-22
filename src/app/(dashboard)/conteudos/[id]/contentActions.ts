@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/userAccess";
+import { canAccessClient } from "@/lib/clientAccess";
+import { getManualPublicationRevertBlockReason } from "@/lib/manualPublicationRevertPolicy";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
@@ -644,4 +646,77 @@ export async function markContentAsPublishedByDirectorAction(
   revalidatePath(
     "/operacao"
   );
+}
+
+/** V4.1.140: corrigir engano na marcacao manual, sem tocar nas redes sociais. */
+export async function revertManualPublishedContentAction(contentId: string) {
+  const currentUser = await requirePermission('social.manage');
+  if (!['DIRECTOR', 'SOCIAL_MEDIA'].includes(currentUser.role)) {
+    throw new Error('Somente a Diretoria ou a Social Media pode desfazer publicacao manual.');
+  }
+
+  const updatedContent = await prisma.$transaction(async (transaction) => {
+    const content = await transaction.content.findFirst({
+      where: { id: contentId, client: { agencyId: currentUser.agencyId } },
+      select: {
+        id: true, title: true, clientId: true, status: true,
+        client: { select: { agencyId: true, internalResponsible: true } },
+        instagramPublication: { select: { status: true, metaMediaId: true, permalink: true, scheduledFor: true } },
+        instagramStoryPublication: { select: { status: true, metaMediaId: true, permalink: true, scheduledFor: true } },
+        socialPublications: { select: { status: true, externalId: true, permalink: true } },
+      },
+    });
+    if (!content) throw new Error('Conteudo nao encontrado nesta agencia.');
+    if (!canAccessClient(currentUser, content.client)) {
+      throw new Error('Voce nao tem permissao para alterar este cliente.');
+    }
+    const reason = getManualPublicationRevertBlockReason({
+      status: content.status,
+      instagram: content.instagramPublication,
+      story: content.instagramStoryPublication,
+      social: content.socialPublications,
+    });
+    if (reason) throw new Error(reason);
+
+    const applied = await transaction.content.updateMany({
+      where: { id: content.id, status: 'PUBLICADO_MANUALMENTE' },
+      data: { status: 'PRONTO_PARA_POSTAR' },
+    });
+    if (applied.count !== 1) {
+      throw new Error('O status mudou enquanto voce tentava reverter. Atualize a pagina.');
+    }
+
+    // Uma confirmacao manual da Diretoria pode ter marcado como PUBLICADO
+    // um registro Instagram sem retorno de ID da Meta. Ajustar SOMENTE esse
+    // marcador local, mantendo historico e arquivos; jamais republicar.
+    await transaction.instagramPublication.updateMany({
+      where: {
+        contentId: content.id, status: 'PUBLICADO',
+        metaMediaId: null, permalink: null,
+      },
+      data: { status: 'PRONTO', publishedAt: null, scheduledFor: null },
+    });
+
+    await transaction.historyLog.create({
+      data: {
+        entityType: 'CONTENT', entityId: content.id,
+        action: 'MANUAL_PUBLICATION_REVERTED',
+        description: `Marcacao manual de publicado desfeita. Conteudo "${content.title}" voltou para Pronto para Postar, sem alterar publicacoes externas ou aprovacoes.`,
+        authorName: currentUser.name || currentUser.email || 'Equipe AprovUp',
+      },
+    });
+    return { id: content.id, clientId: content.clientId };
+  });
+
+  revalidatePath(`/conteudos/${updatedContent.id}`);
+  revalidatePath(`/clientes/${updatedContent.clientId}`);
+  revalidatePath(`/clientes/${updatedContent.clientId}/visao`);
+  revalidatePath('/pronto-para-postar');
+  revalidatePath('/social-media');
+  revalidatePath('/conteudos');
+  revalidatePath('/conteudos/kanban');
+  revalidatePath('/entregas-semana');
+  revalidatePath('/calendario');
+  revalidatePath('/calendario-editorial');
+  revalidatePath('/operacao');
 }
