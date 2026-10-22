@@ -10,7 +10,13 @@ export async function extractPositionedPdfText(file: File): Promise<PositionedPd
     throw new Error('Selecione um PDF de até 8 MB.');
   }
   const pdfjs = await import('pdfjs-dist');
-  pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.aprovup.mjs';
+  // Webpack includes the PDF.js worker in Next.js static assets (_next/static),
+  // rather than relying on a separately deployed file in /public.
+  // The URL is resolved at build time, and stays version-matched with pdfjs-dist.
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+  ).toString();
   const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()), useSystemFonts: true });
   let document: Awaited<typeof task.promise>;
   try {
