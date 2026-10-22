@@ -42,6 +42,13 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
     setResult(null);
     try {
       const data = new FormData();
+      if (/\.pdf$/i.test(file.name)) {
+        // Read text locally in the browser with a matching, static PDF worker.
+        // The authenticated server validates the structured text and PDF header.
+        const { extractPositionedPdfText } = await import('@/lib/browserPdfText');
+        const lines = await extractPositionedPdfText(file);
+        data.append('pdfLines', JSON.stringify(lines));
+      }
       data.append('file', file);
       data.append('card', card);
       data.append('period', period);
@@ -76,7 +83,7 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
         <div className="mb-4 flex items-start gap-3">
           <div className="rounded-xl bg-blue-50 p-2.5 text-blue-700"><UploadCloud size={21} /></div>
           <div><h2 className="font-bold text-slate-950">Importar extrato ou fatura</h2>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">Baixe o extrato detalhado no aplicativo do banco e envie aqui. Aceita CSV, TSV, OFX, QFX, QBO e PDF com texto selecionável. O arquivo não fica armazenado no APROVUP.</p></div>
+            <p className="mt-1 text-xs leading-relaxed text-slate-500">Baixe o extrato detalhado no aplicativo do banco e envie aqui. Aceita CSV, TSV, OFX, QFX, QBO e PDF com texto selecionável. PDFs são lidos no navegador; os arquivos não ficam armazenados no APROVUP.</p></div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <label className="text-xs font-bold text-slate-700">Identificação do cartão ou conta

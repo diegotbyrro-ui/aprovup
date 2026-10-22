@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { hasPermission } from '@/lib/userAccess';
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
-import { readPositionedPdfLines } from '@/lib/serverPdfText';
+import { parseBrowserPdfLines } from '@/lib/financePdfPayload';
 import { parseBradescoBankStatement } from '@/lib/bradescoBankStatement';
 import {
   CARD_CATEGORIES, classifyStatementFile, parseCardCsv, parseCardOfx,
@@ -24,7 +24,7 @@ function readFileText(buffer: Uint8Array): string {
 
 type StatementReadResult = { rows: CardStatementRow[]; bankStatement: boolean };
 
-async function parseUploadedStatement(file: File, period: string, sign: StatementSign): Promise<StatementReadResult> {
+async function parseUploadedStatement(file: File, period: string, sign: StatementSign, pdfLines: FormDataEntryValue | null): Promise<StatementReadResult> {
   const format = classifyStatementFile(file.name);
   if (file.size < 10 || file.size > 8 * 1024 * 1024) throw new Error('Selecione um arquivo entre 10 bytes e 8 MB.');
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -33,8 +33,12 @@ async function parseUploadedStatement(file: File, period: string, sign: Statemen
   if (format === 'csv') rows = parseCardCsv(readFileText(bytes), period, sign);
   else if (format === 'ofx') rows = parseCardOfx(readFileText(bytes), period);
   else {
-    // Native Node subprocess avoids Next/Webpack bundling pdf.worker.mjs into a missing chunk.
-    const positioned = await readPositionedPdfLines(bytes);
+    // PDF text was extracted by PDF.js in the authenticated director's browser.
+    // No pdfjs-dist Node runtime dependency is required on the hosting server.
+    if (String.fromCharCode(...bytes.subarray(0, 5)) !== '%PDF-') {
+      throw new Error('Arquivo inválido: não encontrei a assinatura de um PDF.');
+    }
+    const positioned = parseBrowserPdfLines(pdfLines);
     const bankRows = parseBradescoBankStatement(positioned, period);
     bankStatement = bankRows !== null;
     rows = bankRows ?? parseCardPdfLines(positioned.map(line => line.text), period);
@@ -102,7 +106,7 @@ export async function POST(request: NextRequest) {
     if (!/^20\d{2}-(0[1-9]|1[0-2])$/.test(period)) {
       return NextResponse.json({ error: 'Mês de referência inválido.' }, { status: 400 });
     }
-    const { rows, bankStatement } = await parseUploadedStatement(file, period, sign);
+    const { rows, bankStatement } = await parseUploadedStatement(file, period, sign, form.get('pdfLines'));
     if (mode === 'preview') {
       return NextResponse.json({ rows, bankStatement, count: rows.length, totalCents: rows.reduce((sum, row) => sum + row.amountCents, 0) });
     }
