@@ -1956,6 +1956,8 @@ export default async function FinancePage({
               <option>Terceirizados</option>
               <option>Ferramentas</option>
               <option>Aluguel</option>
+              <option>Carro</option>
+              <option>Seguro</option>
               <option>Impostos</option>
               <option>Tráfego</option>
               <option>Equipamentos</option>

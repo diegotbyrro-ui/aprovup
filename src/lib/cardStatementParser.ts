@@ -10,6 +10,7 @@ export type CardStatementRow = {
 
 export const CARD_CATEGORIES = [
   'Alimentação', 'Supermercado', 'Transporte', 'Combustível',
+  'Aluguel', 'Carro', 'Seguro',
   'Viagens', 'Hospedagem', 'Marketing e anúncios', 'Software e assinaturas',
   'Equipamentos', 'Saúde', 'Educação', 'Impostos e taxas',
   'Serviços', 'Compras', 'Outras despesas',
@@ -18,6 +19,9 @@ export const CARD_CATEGORIES = [
 export function suggestCardCategory(description: string): string {
   const text = description.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const groups: Array<[string, RegExp]> = [
+    ['Seguro', /seguradora|seguro (?:auto|carro|vida|veicular|residencial|empresarial|saude)|apolice|premio de seguro|yelum/],
+    ['Aluguel', /aluguel|locacao (?:de )?(?:imovel|sala|casa|apartamento)|imobiliaria/],
+    ['Carro', /\bcarro\b|\bveiculo\b|automovel|oficina|mecanica automotiva|ipva|licenciamento veicular|detran|pneus?|autocenter|auto center|troca de oleo|financiamento (?:auto|veiculo|carro)/],
     ['Marketing e anúncios', /meta ads|facebook ads|google ads|tiktok ads|impulsion|anuncios|publicidade/],
     ['Software e assinaturas', /adobe|canva|chatgpt|openai|google workspace|microsoft|spotify|netflix|icloud|dropbox|notion|figma|aws|hostinger|godaddy|apple\.com|assinatura|subscription|software/],
     ['Combustível', /posto |combust|shell|ipiranga|petrobras|gasolina|alcool|etanol/],

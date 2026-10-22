@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCardAmount, parseCardCsv, parseCardOfx, parseCardPdfLines, parseCardDate, suggestCardCategory, classifyStatementFile } from './cardStatementParser.ts';
+import { parseCardAmount, parseCardCsv, parseCardOfx, parseCardPdfLines, parseCardDate, suggestCardCategory, classifyStatementFile, CARD_CATEGORIES } from './cardStatementParser.ts';
 
 test('valores brasileiros e centavos', () => {
   assert.equal(parseCardAmount('R$ 1.234,56'), 123456);
@@ -42,6 +42,17 @@ test('classifica categorias frequentes', () => {
   assert.equal(suggestCardCategory('Google Ads'), 'Marketing e anúncios');
 });
 
+test('categorias Aluguel, Carro e Seguro estao disponiveis e sao sugeridas', () => {
+  for (const category of ['Aluguel', 'Carro', 'Seguro']) {
+    assert.ok(CARD_CATEGORIES.includes(category), `Categoria ausente: ${category}`);
+  }
+  assert.equal(suggestCardCategory('ALUGUEL DA SALA COMERCIAL'), 'Aluguel');
+  assert.equal(suggestCardCategory('OFICINA MECANICA AUTOMOTIVA'), 'Carro');
+  assert.equal(suggestCardCategory('YELUM SEGURADORA'), 'Seguro');
+  assert.equal(suggestCardCategory('SEGURO CARRO'), 'Seguro');
+  assert.equal(suggestCardCategory('POSTO GAMA'), 'Combustível');
+  assert.equal(suggestCardCategory('UBER'), 'Transporte');
+});
 test('identifica formatos bancarios CSV, TSV, OFX, QFX, QBO e PDF', () => {
   assert.equal(classifyStatementFile('nubank.csv'), 'csv');
   assert.equal(classifyStatementFile('planilha.tsv'), 'csv');
