@@ -13,7 +13,7 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
   const [file, setFile] = useState<File | null>(null);
   const [card, setCard] = useState('');
   const [period, setPeriod] = useState(initialPeriod);
-  const [sign, setSign] = useState<StatementSign>('positive');
+  const [sign, setSign] = useState<StatementSign>('auto');
   const [rows, setRows] = useState<DisplayRow[]>([]);
   const [busy, setBusy] = useState<'preview' | 'import' | null>(null);
   const [error, setError] = useState('');
@@ -88,10 +88,11 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
           </label>
           <label className="text-xs font-bold text-slate-700">Formato dos valores CSV
             <select value={sign} onChange={(e) => { setSign(e.target.value as StatementSign); resetPreview(); }} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm">
+              <option value="auto">Detectar automaticamente (recomendado)</option>
               <option value="positive">Compras com valor positivo (+)</option>
               <option value="negative">Compras com valor negativo (−)</option>
             </select>
-            <span className="mt-1 block text-[11px] font-normal text-slate-500">OFX identifica automaticamente os débitos. Para CSV, confira como seu banco indica compras.</span>
+            <span className="mt-1 block text-[11px] font-normal text-slate-500">No CSV, o APROVUP identifica automaticamente o sinal mais provavel. Se o banco exportar compras de forma diferente, selecione a opcao manual antes de analisar.</span>
           </label>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">

@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     if (!(file instanceof File)) return NextResponse.json({ error: 'Selecione a fatura do cartão.' }, { status: 400 });
     const card = String(form.get('card') || '').trim().slice(0, 70);
     const period = String(form.get('period') || '').trim();
-    const sign: StatementSign = form.get('sign') === 'negative' ? 'negative' : 'positive';
+    const sign: StatementSign = form.get('sign') === 'negative' ? 'negative' : form.get('sign') === 'positive' ? 'positive' : 'auto';
     const mode = String(form.get('mode') || 'preview');
     if (!/^[\p{L}\d][\p{L}\d\s._\-]{1,69}$/u.test(card)) {
       return NextResponse.json({ error: 'Informe um identificador para o cartão, por exemplo "Nubank PJ".' }, { status: 400 });

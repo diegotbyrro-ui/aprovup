@@ -1,5 +1,5 @@
 export type StatementFormat = 'csv' | 'ofx' | 'pdf';
-export type StatementSign = 'positive' | 'negative';
+export type StatementSign = 'positive' | 'negative' | 'auto';
 export type CardStatementRow = {
   index: number;
   date: string;
@@ -113,6 +113,14 @@ function parseCsvTable(text: string, separator: string): string[][] {
 }
 
 export function parseCardCsv(text: string, period: string, sign: StatementSign): CardStatementRow[] {
+  // Quando o arquivo nao declara debit/credit separadamente, o padrao varia
+  // por banco. Em modo automatico, analisar os dois sinais sem misturar
+  // compras com estornos/pagamentos na mesma importacao.
+  if (sign === 'auto') {
+    const positive = parseCardCsv(text, period, 'positive');
+    const negative = parseCardCsv(text, period, 'negative');
+    return positive.length >= negative.length ? positive : negative;
+  }
   const cleaned = text.replace(/^\uFEFF/, '');
   const first = cleaned.split(/\r?\n/).find((v) => v.trim()) || '';
   const candidates = [';', ',', '\t'];

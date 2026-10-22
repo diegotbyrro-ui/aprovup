@@ -51,3 +51,18 @@ test('identifica formatos bancarios CSV, TSV, OFX, QFX, QBO e PDF', () => {
   assert.equal(classifyStatementFile('fatura.PDF'), 'pdf');
   assert.throws(() => classifyStatementFile('fatura.xlsx'), /Formato/);
 });
+test('CSV Nubank: data, nome e valor positivo sao detectados automaticamente', () => {
+  const csv = 'date,title,amount\n2026-10-05,Adobe Creative Cloud,49.90\n2026-10-05,Pagamento recebido,-49.90';
+  const rows = parseCardCsv(csv, '2026-10', 'auto');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].description, 'Adobe Creative Cloud');
+  assert.equal(rows[0].amountCents, 4990);
+});
+
+test('CSV com despesas negativas continua funcionando automaticamente', () => {
+  const csv = 'Data,Descrição,Valor\n22/10/2026,Uber,-16.90\n22/10/2026,Estorno,16.90';
+  const rows = parseCardCsv(csv, '2026-10', 'auto');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].description, 'Uber');
+  assert.equal(rows[0].amountCents, 1690);
+});
