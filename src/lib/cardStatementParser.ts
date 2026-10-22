@@ -184,6 +184,8 @@ export function parseCardPdfLines(lines: string[], period: string): CardStatemen
 
 export function classifyStatementFile(filename: string): StatementFormat {
   const ext = filename.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
-  if (ext === 'pdf' || ext === 'ofx' || ext === 'csv') return ext;
-  throw new Error('Formato não suportado. Baixe a fatura em CSV, OFX ou PDF com texto selecionável.');
+  if (ext === 'pdf') return 'pdf';
+  if (ext === 'csv' || ext === 'tsv') return 'csv';
+  if (ext === 'ofx' || ext === 'qfx' || ext === 'qbo') return 'ofx';
+  throw new Error('Formato não suportado. Use CSV, TSV, OFX, QFX, QBO ou PDF com texto selecionável.');
 }

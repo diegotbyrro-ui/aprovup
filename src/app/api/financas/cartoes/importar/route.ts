@@ -73,9 +73,33 @@ function keyForRow(card: string, row: CardStatementRow, occurrence: number) {
 
 export async function POST(request: NextRequest) {
   try {
-    const origin = request.headers.get('origin');
-    if (origin && new URL(origin).host !== request.nextUrl.host) {
-      return NextResponse.json({ error: 'Origem de solicitação inválida.' }, { status: 403 });
+    // Exigir origem declarada e Fetch Metadata do navegador quando presente.
+    // Em proxies, request.nextUrl.host pode ser o host INTERNO, diferente do
+    // dominio publico visto pelo navegador. Sec-Fetch-Site: same-origin e
+    // definido pelo navegador, nao por JavaScript da pagina.
+    const browserOrigin = request.headers.get('origin');
+    const fetchSite = request.headers.get('sec-fetch-site');
+    let originAllowed = false;
+    if (browserOrigin && browserOrigin !== 'null' && (!fetchSite || fetchSite === 'same-origin')) {
+      try {
+        const parsedOrigin = new URL(browserOrigin);
+        if (
+          (parsedOrigin.protocol === 'https:' || parsedOrigin.protocol === 'http:') &&
+          parsedOrigin.origin === browserOrigin
+        ) {
+          const browserProvesSameOrigin = fetchSite === 'same-origin';
+          const hostHeader = request.headers.get('host') || '';
+          const matchesPublicHost = [hostHeader, request.nextUrl.host].some(
+            (host) => host.toLowerCase() === parsedOrigin.host.toLowerCase()
+          );
+          originAllowed = browserProvesSameOrigin || matchesPublicHost;
+        }
+      } catch {
+        originAllowed = false;
+      }
+    }
+    if (!originAllowed) {
+      return NextResponse.json({ error: 'Origem de solicitação inválida. Atualize a página e tente novamente.' }, { status: 403 });
     }
     const user = await getCurrentUser();
     if (!user || user.status !== 'APROVADO' || !user.agencyId || !hasPermission(user, 'settings.manage')) {

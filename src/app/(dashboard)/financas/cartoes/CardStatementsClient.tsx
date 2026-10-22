@@ -74,7 +74,7 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
         <div className="mb-4 flex items-start gap-3">
           <div className="rounded-xl bg-blue-50 p-2.5 text-blue-700"><UploadCloud size={21} /></div>
           <div><h2 className="font-bold text-slate-950">Importar extrato ou fatura</h2>
-            <p className="mt-1 text-xs leading-relaxed text-slate-500">Baixe o extrato detalhado no aplicativo do banco e envie aqui. Aceita CSV, OFX e PDF com texto selecionável. O arquivo não fica armazenado no APROVUP.</p></div>
+            <p className="mt-1 text-xs leading-relaxed text-slate-500">Baixe o extrato detalhado no aplicativo do banco e envie aqui. Aceita CSV, TSV, OFX, QFX, QBO e PDF com texto selecionável. O arquivo não fica armazenado no APROVUP.</p></div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <label className="text-xs font-bold text-slate-700">Identificação do cartão
@@ -84,7 +84,7 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
             <input type="month" value={period} onChange={(e) => { setPeriod(e.target.value); resetPreview(); }} className="mt-1.5 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500" />
           </label>
           <label className="text-xs font-bold text-slate-700">Arquivo de despesas
-            <input type="file" accept=".csv,.ofx,.pdf,text/csv,application/pdf" onChange={(e) => { setFile(e.target.files?.[0] || null); resetPreview(); }} className="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs" />
+            <input type="file" accept=".csv,.tsv,.ofx,.qfx,.qbo,.pdf,text/csv,text/tab-separated-values,application/pdf" onChange={(e) => { setFile(e.target.files?.[0] || null); resetPreview(); }} className="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs" />
           </label>
           <label className="text-xs font-bold text-slate-700">Formato dos valores CSV
             <select value={sign} onChange={(e) => { setSign(e.target.value as StatementSign); resetPreview(); }} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm">

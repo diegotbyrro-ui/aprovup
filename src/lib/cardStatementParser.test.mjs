@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCardAmount, parseCardCsv, parseCardOfx, parseCardPdfLines, parseCardDate, suggestCardCategory } from './cardStatementParser.ts';
+import { parseCardAmount, parseCardCsv, parseCardOfx, parseCardPdfLines, parseCardDate, suggestCardCategory, classifyStatementFile } from './cardStatementParser.ts';
 
 test('valores brasileiros e centavos', () => {
   assert.equal(parseCardAmount('R$ 1.234,56'), 123456);
@@ -40,4 +40,14 @@ test('PDF textual reconhece linha simples', () => {
 test('classifica categorias frequentes', () => {
   assert.equal(suggestCardCategory('Adobe Creative Cloud'), 'Software e assinaturas');
   assert.equal(suggestCardCategory('Google Ads'), 'Marketing e anúncios');
+});
+
+test('identifica formatos bancarios CSV, TSV, OFX, QFX, QBO e PDF', () => {
+  assert.equal(classifyStatementFile('nubank.csv'), 'csv');
+  assert.equal(classifyStatementFile('planilha.tsv'), 'csv');
+  assert.equal(classifyStatementFile('banco.ofx'), 'ofx');
+  assert.equal(classifyStatementFile('cartao.qfx'), 'ofx');
+  assert.equal(classifyStatementFile('extrato.qbo'), 'ofx');
+  assert.equal(classifyStatementFile('fatura.PDF'), 'pdf');
+  assert.throws(() => classifyStatementFile('fatura.xlsx'), /Formato/);
 });
