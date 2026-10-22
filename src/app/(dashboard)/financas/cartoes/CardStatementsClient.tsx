@@ -15,6 +15,7 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
   const [period, setPeriod] = useState(initialPeriod);
   const [sign, setSign] = useState<StatementSign>('auto');
   const [rows, setRows] = useState<DisplayRow[]>([]);
+  const [bankStatement, setBankStatement] = useState(false);
   const [busy, setBusy] = useState<'preview' | 'import' | null>(null);
   const [error, setError] = useState('');
   const [result, setResult] = useState<{ imported: number; duplicates: number; totalCents: number } | null>(null);
@@ -51,6 +52,7 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
       const body = await response.json();
       if (!response.ok) throw new Error(String(body.error || 'Falha no processamento da fatura.'));
       if (mode === 'preview') {
+        setBankStatement(body.bankStatement === true);
         setRows((body.rows as CardStatementRow[]).map((row) => ({ ...row, checked: true })));
       } else {
         setResult({ imported: body.imported, duplicates: body.duplicates, totalCents: body.totalCents });
@@ -63,7 +65,7 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
     } finally { setBusy(null); }
   }
 
-  function resetPreview() { setRows([]); setResult(null); setError(''); }
+  function resetPreview() { setRows([]); setBankStatement(false); setResult(null); setError(''); }
   function editRow(index: number, patch: Partial<DisplayRow>) {
     setRows((old) => old.map((row) => row.index === index ? { ...row, ...patch } : row));
   }
@@ -77,8 +79,8 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
             <p className="mt-1 text-xs leading-relaxed text-slate-500">Baixe o extrato detalhado no aplicativo do banco e envie aqui. Aceita CSV, TSV, OFX, QFX, QBO e PDF com texto selecionável. O arquivo não fica armazenado no APROVUP.</p></div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="text-xs font-bold text-slate-700">Identificação do cartão
-            <input value={card} onChange={(e) => { setCard(e.target.value); resetPreview(); }} placeholder="Ex.: Nubank PJ, Itaú Platinum" maxLength={70} className="mt-1.5 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500" />
+          <label className="text-xs font-bold text-slate-700">Identificação do cartão ou conta
+            <input value={card} onChange={(e) => { setCard(e.target.value); resetPreview(); }} placeholder="Ex.: Nubank PJ, Conta Bradesco" maxLength={70} className="mt-1.5 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500" />
           </label>
           <label className="text-xs font-bold text-slate-700">Mês da fatura
             <input type="month" value={period} onChange={(e) => { setPeriod(e.target.value); resetPreview(); }} className="mt-1.5 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500" />
@@ -110,9 +112,10 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
       </section>
 
       {rows.length > 0 && <>
+        {bankStatement && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-900"><b>Extrato bancário identificado:</b> foram lidos apenas os valores da coluna Débito. Créditos e saldos foram ignorados. Débitos bancários já realizados serão lançados como pagos. Revise principalmente transferências PIX para não classificar movimentações entre contas como despesas.</div>}
         <section className="rounded-2xl border border-blue-200 bg-blue-50/40 p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div><p className="text-xs font-bold uppercase tracking-wide text-blue-700">Prévia da fatura</p>
+            <div><p className="text-xs font-bold uppercase tracking-wide text-blue-700">{bankStatement ? 'Prévia do extrato bancário' : 'Prévia da fatura'}</p>
               <h2 className="mt-1 text-2xl font-black text-slate-950">{reais(total)}</h2>
               <p className="mt-1 text-xs text-slate-600">{active.length} de {rows.length} despesas selecionadas. Revise as categorias e desmarque pagamentos, estornos ou lançamentos incorretos.</p>
             </div>
@@ -142,7 +145,7 @@ export function CardStatementsClient({ initialPeriod }: { initialPeriod: string 
             </div>)}
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 p-4">
-            <span className="max-w-xl text-xs text-slate-600">Importa como despesas <b>pendentes</b> no mês da fatura, com data da compra registrada em observações. Não marque novamente o total da fatura como outra despesa.</span>
+            <span className="max-w-xl text-xs text-slate-600">{bankStatement ? <>Importa os débitos da conta como despesas <b>pagas</b>, na data da movimentação. Confira PIX para contas próprias e transferências que não sejam despesas.</> : <>Importa como despesas <b>pendentes</b> no mês da fatura, com data da compra registrada em observações. Não marque novamente o total da fatura como outra despesa.</>}</span>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={resetPreview} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700"><RotateCcw size={15} /> Limpar</button>
               <button type="button" disabled={busy !== null || active.length === 0} onClick={() => submit('import')} className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50">
