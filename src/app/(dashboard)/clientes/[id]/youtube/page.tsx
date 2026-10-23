@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { SocialAnalyticsNavigation } from '@/components/social/SocialAnalyticsNavigation';
 import { SocialInsightsTabs } from '@/components/social/SocialInsightsTabs';
+import { SocialConnectionManagement } from '@/components/social/SocialConnectionManagement';
 
 import type {
   ReactNode,
@@ -38,6 +39,9 @@ import {
   getYoutubeDashboard,
 } from '@/lib/youtube';
 
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function numberLabel(
   value:
@@ -310,6 +314,8 @@ export default async function YoutubeMetricsPage({
         string;
       aba?:
         string;
+      youtube?:
+        string;
     }>;
 }) {
 
@@ -429,9 +435,11 @@ export default async function YoutubeMetricsPage({
   }
 
 
-  const connection =
-    client
-      .socialConnections[0];
+  // Consulta direta; evita apresentar um estado antigo de uma relacao previamente renderizada.
+  const connection = await prisma.socialConnection.findUnique({
+    where: { clientId_platform: { clientId: client.id, platform: 'YOUTUBE' } },
+    select: { status: true, accountName: true, accountUsername: true, connectedAt: true },
+  });
 
 
   if (
@@ -448,14 +456,11 @@ export default async function YoutubeMetricsPage({
 
           <Link
             href={
-              '/configuracoes/integracoes/redes-sociais?cliente=' +
-              encodeURIComponent(
-                client.id
-              )
+              '/clientes'
             }
             className="text-sm font-bold text-blue-300 hover:underline"
           >
-            ← Voltar para integrações
+            ← Voltar para clientes
           </Link>
 
 
@@ -472,6 +477,7 @@ export default async function YoutubeMetricsPage({
 
         <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
         <SocialInsightsTabs clientId={client.id} network="YOUTUBE" active={tab} period={period} />
+        <SocialConnectionManagement platform="YOUTUBE" clientId={client.id} status={connection?.status} accountName={connection?.accountName} feedback={query.youtube} />
 
         <section className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
 
@@ -556,14 +562,11 @@ export default async function YoutubeMetricsPage({
 
           <Link
             href={
-              '/configuracoes/integracoes/redes-sociais?cliente=' +
-              encodeURIComponent(
-                client.id
-              )
+              '/clientes'
             }
             className="text-sm font-bold text-blue-300 hover:underline"
           >
-            ← Voltar para integrações
+            ← Voltar para clientes
           </Link>
 
 
@@ -580,6 +583,7 @@ export default async function YoutubeMetricsPage({
 
         <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
         <SocialInsightsTabs clientId={client.id} network="YOUTUBE" active={tab} period={period} />
+        <SocialConnectionManagement platform="YOUTUBE" clientId={client.id} status={connection?.status} accountName={connection?.accountName} feedback={query.youtube} />
 
         <section className="rounded-3xl border border-red-200 bg-red-50 p-6">
 
@@ -615,10 +619,7 @@ export default async function YoutubeMetricsPage({
 
             <Link
               href={
-                '/configuracoes/integracoes/redes-sociais?cliente=' +
-                encodeURIComponent(
-                  client.id
-                )
+                '/clientes'
               }
               className="rounded-xl border border-red-200 bg-white px-5 py-3 text-sm font-black text-red-700"
             >
@@ -673,14 +674,11 @@ export default async function YoutubeMetricsPage({
 
           <Link
             href={
-              '/configuracoes/integracoes/redes-sociais?cliente=' +
-              encodeURIComponent(
-                client.id
-              )
+              '/clientes'
             }
             className="text-sm font-bold text-blue-300 hover:underline"
           >
-            ← Voltar para integrações
+            ← Voltar para clientes
           </Link>
 
 
@@ -809,6 +807,7 @@ export default async function YoutubeMetricsPage({
 
       <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
       <SocialInsightsTabs clientId={client.id} network="YOUTUBE" active={tab} period={period} />
+        <SocialConnectionManagement platform="YOUTUBE" clientId={client.id} status={connection?.status} accountName={connection?.accountName} feedback={query.youtube} />
 
       {tab === 'conteudos' && (
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

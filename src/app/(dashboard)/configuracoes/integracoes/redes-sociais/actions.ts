@@ -280,14 +280,11 @@ export async function disconnectSocialConnectionAction(
   revalidatePath(
     '/pronto-para-postar'
   );
+  revalidatePath('/clientes/' + encodeURIComponent(client.id) + '/' + platform.toLowerCase());
 
 
   redirect(
-    '/configuracoes/integracoes/redes-sociais?cliente=' +
-    encodeURIComponent(
-      client.id
-    ) +
-    '&' +
+    '/clientes/' + encodeURIComponent(client.id) + '/' + platform.toLowerCase() + '?' +
     platform.toLowerCase() +
     '=disconnected'
   );

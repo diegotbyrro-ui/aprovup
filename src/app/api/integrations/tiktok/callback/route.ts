@@ -107,17 +107,14 @@ function destination(
 
   const url =
     new URL(
-      '/configuracoes/integracoes/redes-sociais',
+      clientId ? '/clientes/' + encodeURIComponent(clientId) + '/tiktok' : '/clientes',
       tiktokOauthConfig().origin
     );
 
 
   if (clientId) {
 
-    url.searchParams.set(
-      'cliente',
-      clientId
-    );
+    // Cliente ja esta identificado no caminho da pagina de analises.
   }
 
 

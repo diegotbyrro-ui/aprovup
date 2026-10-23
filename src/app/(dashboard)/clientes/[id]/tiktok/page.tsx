@@ -5,6 +5,7 @@ import { canAccessClient } from '@/lib/clientAccess';
 import { requirePermission } from '@/lib/userAccess';
 import { SocialAnalyticsNavigation } from '@/components/social/SocialAnalyticsNavigation';
 import { SocialInsightsTabs } from '@/components/social/SocialInsightsTabs';
+import { SocialConnectionManagement } from '@/components/social/SocialConnectionManagement';
 import { getTikTokDashboard, type TikTokVideo } from '@/lib/tiktokDashboard';
 
 export const dynamic = 'force-dynamic';
@@ -43,7 +44,7 @@ function VideoList({ videos }: { videos: TikTokVideo[] }) {
 
 export default async function ClientTikTokPage({ params, searchParams }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ aba?: string; periodo?: string }>;
+  searchParams?: Promise<{ aba?: string; periodo?: string; tiktok?: string }>;
 }) {
   const user = await requirePermission('social.view');
   const { id } = await params;
@@ -56,6 +57,10 @@ export default async function ClientTikTokPage({ params, searchParams }: {
     select: { id: true, name: true, logoUrl: true, agencyId: true, internalResponsible: true },
   });
   if (!client || !canAccessClient(user, client)) notFound();
+  const connection = await prisma.socialConnection.findUnique({
+    where: { clientId_platform: { clientId: client.id, platform: 'TIKTOK' } },
+    select: { status: true, accountName: true },
+  });
   let dashboard: Awaited<ReturnType<typeof getTikTokDashboard>> | null = null;
   let error = '';
   try { dashboard = await getTikTokDashboard(client.id, days); }
@@ -70,19 +75,20 @@ export default async function ClientTikTokPage({ params, searchParams }: {
       <p className="text-xs font-black uppercase tracking-widest text-cyan-300">TikTok · Análises do cliente</p>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
         <div><h1 className="text-3xl font-black">{client.name}</h1><p className="mt-2 text-sm text-slate-300">{dashboard?.accountName || 'Conecte o perfil para visualizar os resultados reais.'}</p></div>
-        <Link href={`/configuracoes/integracoes/redes-sociais?cliente=${encodeURIComponent(client.id)}`} className="rounded-xl border border-white/20 px-4 py-2.5 text-xs font-bold hover:bg-white/10">Gerenciar conexão</Link>
+        <Link href={`/api/integrations/tiktok/connect?clientId=${encodeURIComponent(client.id)}`} className="rounded-xl border border-white/20 px-4 py-2.5 text-xs font-bold hover:bg-white/10">Gerenciar conexão</Link>
       </div>
     </header>
     <SocialAnalyticsNavigation clientId={client.id} active="TIKTOK" />
     <SocialInsightsTabs clientId={client.id} network="TIKTOK" active={tab} period={days} />
+    <SocialConnectionManagement platform="TIKTOK" clientId={client.id} status={connection?.status} accountName={connection?.accountName} feedback={query?.tiktok} />
     {!dashboard?.connected ? <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
       <h2 className="text-lg font-black text-amber-900">TikTok ainda não conectado</h2>
       <p className="mt-2 text-sm text-amber-800">Vincule o TikTok deste cliente para carregar dados autorizados.</p>
-      <Link href={`/configuracoes/integracoes/redes-sociais?cliente=${encodeURIComponent(client.id)}`} className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white">Conectar conta</Link>
+      <Link href={`/api/integrations/tiktok/connect?clientId=${encodeURIComponent(client.id)}`} className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white">Conectar conta</Link>
     </section> : !dashboard.scopeReady ? <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
       <h2 className="text-lg font-black text-amber-950">Conta conectada · Leitura de vídeos ainda não autorizada</h2>
       <p className="mt-2 text-sm leading-relaxed text-amber-900">A integração atual possui acesso ao perfil, mas não recebeu o escopo <b>video.list</b>. Para habilitar análises, a aplicação precisa ter aprovação do produto Display API no portal TikTok for Developers, ativar <code>TIKTOK_DISPLAY_API_ENABLED=true</code> na hospedagem e reconectar a conta para autorizar a leitura. Não são exibidas métricas fictícias.</p>
-      <Link href={`/configuracoes/integracoes/redes-sociais?cliente=${encodeURIComponent(client.id)}`} className="mt-4 inline-flex rounded-lg bg-slate-950 px-4 py-2 text-xs font-bold text-white">Voltar às integrações</Link>
+      <Link href={`/api/integrations/tiktok/connect?clientId=${encodeURIComponent(client.id)}`} className="mt-4 inline-flex rounded-lg bg-slate-950 px-4 py-2 text-xs font-bold text-white">Reconectar TikTok</Link>
     </section> : null}
     {error && <section role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><b>Não foi possível carregar os dados do TikTok:</b> {error}</section>}
     {dashboard?.scopeReady && !error && <>

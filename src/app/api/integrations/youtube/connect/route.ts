@@ -54,19 +54,14 @@ export async function GET(
 
   const fallbackUrl =
     new URL(
-      '/configuracoes/integracoes/redes-sociais',
+      clientId ? '/clientes/' + encodeURIComponent(clientId) + '/youtube' : '/clientes',
       youtubeOauthConfig().origin
     );
 
 
   if (clientId) {
 
-    fallbackUrl
-      .searchParams
-      .set(
-        'cliente',
-        clientId
-      );
+    // O ID do cliente ja faz parte da rota.
   }
 
 

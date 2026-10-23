@@ -99,17 +99,14 @@ function destination(
 
   const url =
     new URL(
-      '/configuracoes/integracoes/redes-sociais',
+      clientId ? '/clientes/' + encodeURIComponent(clientId) + '/youtube' : '/clientes',
       youtubeOauthConfig().origin
     );
 
 
   if (clientId) {
 
-    url.searchParams.set(
-      'cliente',
-      clientId
-    );
+    // Cliente ja esta identificado no caminho da pagina de analises.
   }
 
 
