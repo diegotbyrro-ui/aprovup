@@ -1,6 +1,7 @@
 import {
   prisma,
 } from '@/lib/prisma';
+import { socialPresetRange, type SocialDateRange } from '@/lib/socialAnalyticsPeriod';
 
 import {
   decryptSocialSecret,
@@ -188,81 +189,19 @@ function dateValue(
 }
 
 
-function subtractDays(
-  date:
-    Date,
-
-  days:
-    number
-) {
-
-  const result =
-    new Date(
-      date.getTime()
-    );
-
-
-  result.setUTCDate(
-    result.getUTCDate() -
-    days
-  );
-
-
-  return result;
-}
-
-
 export function getYoutubeAnalyticsRange(
-  requestedDays:
-    number
+  requestedDays: number,
+  customRange?: SocialDateRange,
 ) {
-
-  const days =
-    [
-      7,
-      28,
-      90,
-    ].includes(
-      requestedDays
-    )
-      ? requestedDays
-      : 28;
-
-
-  /*
-   * O YouTube Analytics pode ter atraso
-   * no processamento dos dados recentes.
-   *
-   * Usamos os tres ultimos dias como margem.
-   */
-  const end =
-    subtractDays(
-      new Date(),
-      3
-    );
-
-
-  const start =
-    subtractDays(
-      end,
-      days - 1
-    );
-
-
-  return {
-
-    days,
-
-    startDate:
-      dateValue(
-        start
-      ),
-
-    endDate:
-      dateValue(
-        end
-      ),
-  };
+  if (customRange) {
+    return {
+      days: Math.round((Date.parse(customRange.endDate) - Date.parse(customRange.startDate)) / 86400000) + 1,
+      startDate: customRange.startDate,
+      endDate: customRange.endDate,
+    };
+  }
+  // Keep the original three-day Analytics processing buffer for presets.
+  return { days: requestedDays, ...socialPresetRange(requestedDays, 3) };
 }
 
 
@@ -758,7 +697,8 @@ export async function getYoutubeDashboard(
     string,
 
   requestedDays:
-    number = 28
+    number = 30,
+  customRange?: SocialDateRange
 ) {
 
   const connection =
@@ -790,7 +730,8 @@ export async function getYoutubeDashboard(
 
   const range =
     getYoutubeAnalyticsRange(
-      requestedDays
+      requestedDays,
+      customRange
     );
 
 

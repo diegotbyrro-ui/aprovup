@@ -14,11 +14,15 @@ export function SocialInsightsTabs({
   network,
   active,
   period,
+  startDate,
+  endDate,
 }: {
   clientId: string;
   network: Network;
   active: ActiveTab;
-  period: number;
+  period: number | 'custom';
+  startDate?: string;
+  endDate?: string;
 }) {
   const slug = network === 'YOUTUBE' ? 'youtube' : 'tiktok';
   const periodParam = network === 'YOUTUBE' ? 'period' : 'periodo';
@@ -31,7 +35,7 @@ export function SocialInsightsTabs({
         {tabLabels.map(tab => (
           <Link
             key={tab.id}
-            href={`${base}?aba=${tab.id}&${periodParam}=${period}`}
+            href={`${base}?aba=${tab.id}&${periodParam}=${period}${period === 'custom' && startDate && endDate ? `&inicio=${encodeURIComponent(startDate)}&fim=${encodeURIComponent(endDate)}` : ''}`}
             aria-current={active === tab.id ? 'page' : undefined}
             className={active === tab.id
               ? 'whitespace-nowrap rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white'

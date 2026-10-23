@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { socialPresetRange, tiktokPublicationDay, type SocialDateRange } from '@/lib/socialAnalyticsPeriod';
 import { decryptSocialSecret, encryptSocialSecret, tiktokOauthConfig } from '@/lib/socialOAuth';
 import { hasTikTokScope, numberFromProvider, aggregateTikTokVideos } from '@/lib/tiktokAnalyticsMath';
 
@@ -89,7 +90,7 @@ async function tiktokRequest<T>(connection: TikTokConnection, path: string, body
   throw new Error('Falha ao validar a conexão TikTok.');
 }
 
-export async function getTikTokDashboard(clientId: string, days: 7 | 28 | 90) {
+export async function getTikTokDashboard(clientId: string, days: number = 30, customRange?: SocialDateRange) {
   const connection = await prisma.socialConnection.findUnique({
     where: { clientId_platform: { clientId, platform: 'TIKTOK' } },
     select: { id: true, status: true, encryptedAccessToken: true, encryptedRefreshToken: true, tokenExpiresAt: true, scopes: true, accountName: true, accountUsername: true },
@@ -126,8 +127,11 @@ export async function getTikTokDashboard(clientId: string, days: 7 | 28 | 90) {
     if (!hasMore || !payload.data?.cursor) break;
     cursor = payload.data.cursor;
   }
-  const since = Math.floor(Date.now() / 1000) - days * 86400;
-  const periodVideos = videos.filter(video => video.createdAt >= since);
+  const range = customRange || socialPresetRange(days);
+  const periodVideos = videos.filter(video => {
+    const date = tiktokPublicationDay(video.createdAt);
+    return date >= range.startDate && date <= range.endDate;
+  });
   let profile: { followers: number | null; likes: number | null; videoCount: number | null } | null = null;
   if (hasTikTokScope(connection.scopes, 'user.info.stats')) {
     type ProfileResponse = { data?: { user?: { follower_count?: number; likes_count?: number; video_count?: number } } };

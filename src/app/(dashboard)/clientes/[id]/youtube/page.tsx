@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { SocialAnalyticsNavigation } from '@/components/social/SocialAnalyticsNavigation';
 import { SocialInsightsTabs } from '@/components/social/SocialInsightsTabs';
+import { SocialPeriodPicker } from '@/components/social/SocialPeriodPicker';
+import { isValidSocialRange, socialTodayMaceio, type SocialDateRange } from '@/lib/socialAnalyticsPeriod';
 import { SocialConnectionManagement } from '@/components/social/SocialConnectionManagement';
 
 import type {
@@ -37,6 +39,7 @@ import {
 
 import {
   getYoutubeDashboard,
+  getYoutubeAnalyticsRange,
 } from '@/lib/youtube';
 
 
@@ -316,6 +319,8 @@ export default async function YoutubeMetricsPage({
         string;
       youtube?:
         string;
+      inicio?: string;
+      fim?: string;
     }>;
 }) {
 
@@ -335,23 +340,15 @@ export default async function YoutubeMetricsPage({
     await searchParams;
 
 
-  const requestedPeriod =
-    Number(
-      query.period ||
-      28
-    );
-
-
-  const period =
-    [
-      7,
-      28,
-      90,
-    ].includes(
-      requestedPeriod
-    )
-      ? requestedPeriod
-      : 28;
+  const customRequested = query.period === 'custom';
+  const customRange: SocialDateRange | undefined = customRequested &&
+    isValidSocialRange(query.inicio, query.fim)
+    ? { startDate: query.inicio!, endDate: query.fim! } : undefined;
+  const customError = customRequested && !customRange;
+  const requestedPeriod = Number(query.period || 30);
+  const period = [7, 30, 90].includes(requestedPeriod) ? requestedPeriod : 30;
+  const selectedPeriod = customRange ? 'custom' : period;
+  const fallbackRange = getYoutubeAnalyticsRange(30);
 
 
   const tab = query.aba === 'conteudos' || query.aba === 'relatorios' ? query.aba : 'visao';
@@ -476,7 +473,7 @@ export default async function YoutubeMetricsPage({
         </section>
 
         <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
-        <SocialInsightsTabs clientId={client.id} network="YOUTUBE" active={tab} period={period} />
+        <SocialInsightsTabs clientId={client.id} network="YOUTUBE" active={tab} period={selectedPeriod} startDate={customRange?.startDate} endDate={customRange?.endDate} />
         <SocialConnectionManagement platform="YOUTUBE" clientId={client.id} status={connection?.status} accountName={connection?.accountName} feedback={query.youtube} />
 
         <section className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
@@ -529,7 +526,8 @@ export default async function YoutubeMetricsPage({
     dashboard =
       await getYoutubeDashboard(
         client.id,
-        period
+        period,
+        customRange
       );
 
   }
@@ -582,7 +580,7 @@ export default async function YoutubeMetricsPage({
         </section>
 
         <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
-        <SocialInsightsTabs clientId={client.id} network="YOUTUBE" active={tab} period={period} />
+        <SocialInsightsTabs clientId={client.id} network="YOUTUBE" active={tab} period={selectedPeriod} startDate={customRange?.startDate} endDate={customRange?.endDate} />
         <SocialConnectionManagement platform="YOUTUBE" clientId={client.id} status={connection?.status} accountName={connection?.accountName} feedback={query.youtube} />
 
         <section className="rounded-3xl border border-red-200 bg-red-50 p-6">
@@ -755,49 +753,18 @@ export default async function YoutubeMetricsPage({
             </div>
 
 
-            <div className="flex flex-wrap gap-2">
-
-              {
-                [
-                  7,
-                  28,
-                  90,
-                ].map(
-                  (
-                    value
-                  ) => (
-
-                    <Link
-                      key={
-                        value
-                      }
-                      href={
-                        '/clientes/' +
-                        encodeURIComponent(
-                          client.id
-                        ) +
-                        '/youtube?aba=' + tab + '&period=' +
-                        value
-                      }
-                      className={
-                        value ===
-                        period
-
-                          ? 'rounded-xl bg-white px-4 py-2.5 text-sm font-black text-slate-950'
-
-                          : 'rounded-xl border border-white/15 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10'
-                      }
-                    >
-                      {value}
-                      {' '}
-                      dias
-                    </Link>
-
-                  )
-                )
-              }
-
-            </div>
+            <SocialPeriodPicker
+              clientId={client.id}
+              network="YOUTUBE"
+              activeTab={tab}
+              selectedPeriod={selectedPeriod}
+              startDate={customRange?.startDate}
+              endDate={customRange?.endDate}
+              fallbackStart={fallbackRange.startDate}
+              fallbackEnd={fallbackRange.endDate}
+              maxDate={socialTodayMaceio()}
+              initialCustomOpen={customRequested}
+            />
 
           </div>
 
@@ -806,7 +773,8 @@ export default async function YoutubeMetricsPage({
       </section>
 
       <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
-      <SocialInsightsTabs clientId={client.id} network="YOUTUBE" active={tab} period={period} />
+      {customError ? <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Intervalo inválido. Escolha datas até hoje, em ordem crescente, com até 366 dias. Exibindo os últimos 30 dias disponíveis.</p> : null}
+      <SocialInsightsTabs clientId={client.id} network="YOUTUBE" active={tab} period={selectedPeriod} startDate={customRange?.startDate} endDate={customRange?.endDate} />
         <SocialConnectionManagement platform="YOUTUBE" clientId={client.id} status={connection?.status} accountName={connection?.accountName} feedback={query.youtube} />
 
       {tab === 'conteudos' && (

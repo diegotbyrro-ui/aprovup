@@ -5,6 +5,8 @@ import { canAccessClient } from '@/lib/clientAccess';
 import { requirePermission } from '@/lib/userAccess';
 import { SocialAnalyticsNavigation } from '@/components/social/SocialAnalyticsNavigation';
 import { SocialInsightsTabs } from '@/components/social/SocialInsightsTabs';
+import { SocialPeriodPicker } from '@/components/social/SocialPeriodPicker';
+import { isValidSocialRange, socialPresetRange, socialTodayMaceio, type SocialDateRange } from '@/lib/socialAnalyticsPeriod';
 import { SocialConnectionManagement } from '@/components/social/SocialConnectionManagement';
 import { getTikTokDashboard, type TikTokVideo } from '@/lib/tiktokDashboard';
 
@@ -44,13 +46,19 @@ function VideoList({ videos }: { videos: TikTokVideo[] }) {
 
 export default async function ClientTikTokPage({ params, searchParams }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ aba?: string; periodo?: string; tiktok?: string }>;
+  searchParams?: Promise<{ aba?: string; periodo?: string; tiktok?: string; inicio?: string; fim?: string }>;
 }) {
   const user = await requirePermission('social.view');
   const { id } = await params;
   const query = await searchParams;
-  const value = Number(query?.periodo || 28);
-  const days: 7 | 28 | 90 = value === 7 || value === 90 ? value : 28;
+  const customRequested = query?.periodo === 'custom';
+  const customRange: SocialDateRange | undefined = customRequested && isValidSocialRange(query?.inicio, query?.fim)
+    ? { startDate: query!.inicio!, endDate: query!.fim! } : undefined;
+  const customError = customRequested && !customRange;
+  const value = Number(query?.periodo || 30);
+  const days = value === 7 || value === 90 ? value : 30;
+  const selectedPeriod = customRange ? 'custom' : days;
+  const fallbackRange = socialPresetRange(30);
   const tab = query?.aba === 'conteudos' || query?.aba === 'relatorios' ? query.aba : 'visao';
   const client = await prisma.client.findFirst({
     where: { id, agencyId: user.agencyId },
@@ -63,39 +71,47 @@ export default async function ClientTikTokPage({ params, searchParams }: {
   });
   let dashboard: Awaited<ReturnType<typeof getTikTokDashboard>> | null = null;
   let error = '';
-  try { dashboard = await getTikTokDashboard(client.id, days); }
+  try { dashboard = await getTikTokDashboard(client.id, days, customRange); }
   catch (caught) { console.error('APROVUP_TIKTOK_DASHBOARD_ERROR', caught); error = caught instanceof Error ? caught.message : 'Falha ao carregar vídeos do TikTok.'; }
   const videos = dashboard?.periodVideos || [];
   const totals = dashboard?.totals;
   const top = [...videos].sort((a, b) => b.views - a.views).slice(0, 10);
   const maxViews = Math.max(1, ...top.map(item => item.views));
-  const base = `/clientes/${encodeURIComponent(client.id)}/tiktok`;
   return <div className="mx-auto max-w-7xl space-y-5 p-1 pb-10">
     <header className="rounded-3xl bg-slate-950 p-7 text-white shadow-sm">
-      <p className="text-xs font-black uppercase tracking-widest text-cyan-300">TikTok · Análises do cliente</p>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
-        <div><h1 className="text-3xl font-black">{client.name}</h1><p className="mt-2 text-sm text-slate-300">{dashboard?.accountName || 'Conecte o perfil para visualizar os resultados reais.'}</p></div>
-        <Link href={`/api/integrations/tiktok/connect?clientId=${encodeURIComponent(client.id)}`} className="rounded-xl border border-white/20 px-4 py-2.5 text-xs font-bold hover:bg-white/10">Gerenciar conexão</Link>
+      <Link href="/clientes" className="text-xs font-bold text-blue-200 hover:underline">← Voltar para clientes</Link>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white text-xl font-black text-slate-950">
+            {client.logoUrl ? <img src={client.logoUrl} alt="" className="h-full w-full object-cover" /> : client.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-widest text-cyan-300">TikTok Analytics</p>
+            <h1 className="mt-1 text-3xl font-black">{client.name}</h1>
+            <p className="mt-2 text-sm text-slate-300">{dashboard?.accountName || connection?.accountName || 'Perfil não conectado'}</p>
+          </div>
+        </div>
+        <SocialPeriodPicker clientId={client.id} network="TIKTOK" activeTab={tab}
+          selectedPeriod={selectedPeriod} startDate={customRange?.startDate} endDate={customRange?.endDate}
+          fallbackStart={fallbackRange.startDate} fallbackEnd={fallbackRange.endDate}
+          maxDate={socialTodayMaceio()} initialCustomOpen={customRequested} />
       </div>
     </header>
     <SocialAnalyticsNavigation clientId={client.id} active="TIKTOK" />
-    <SocialInsightsTabs clientId={client.id} network="TIKTOK" active={tab} period={days} />
+    {customError ? <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Intervalo inválido. Selecione datas até hoje, em ordem crescente, com até 366 dias. Exibindo os últimos 30 dias.</p> : null}
+    <SocialInsightsTabs clientId={client.id} network="TIKTOK" active={tab} period={selectedPeriod} startDate={customRange?.startDate} endDate={customRange?.endDate} />
     <SocialConnectionManagement platform="TIKTOK" clientId={client.id} status={connection?.status} accountName={connection?.accountName} feedback={query?.tiktok} />
     {!dashboard?.connected ? <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
       <h2 className="text-lg font-black text-amber-900">TikTok ainda não conectado</h2>
       <p className="mt-2 text-sm text-amber-800">Vincule o TikTok deste cliente para carregar dados autorizados.</p>
       <Link href={`/api/integrations/tiktok/connect?clientId=${encodeURIComponent(client.id)}`} className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white">Conectar conta</Link>
-    </section> : !dashboard.scopeReady ? <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-      <h2 className="text-lg font-black text-amber-950">Conta conectada · Leitura de vídeos ainda não autorizada</h2>
-      <p className="mt-2 text-sm leading-relaxed text-amber-900">A integração atual possui acesso ao perfil, mas não recebeu o escopo <b>video.list</b>. Para habilitar análises, a aplicação precisa ter aprovação do produto Display API no portal TikTok for Developers, ativar <code>TIKTOK_DISPLAY_API_ENABLED=true</code> na hospedagem e reconectar a conta para autorizar a leitura. Não são exibidas métricas fictícias.</p>
-      <Link href={`/api/integrations/tiktok/connect?clientId=${encodeURIComponent(client.id)}`} className="mt-4 inline-flex rounded-lg bg-slate-950 px-4 py-2 text-xs font-bold text-white">Reconectar TikTok</Link>
+    </section> : !dashboard.scopeReady ? <section className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+      <h2 className="text-sm font-bold text-amber-950">Aguardando autorização para analisar os vídeos do TikTok</h2>
+      <p className="mt-2 text-xs leading-relaxed text-amber-900">A conta está conectada, mas não autorizou o escopo <b>video.list</b>. Após a aprovação do Display API no TikTok for Developers, ative <code>TIKTOK_DISPLAY_API_ENABLED=true</code> na hospedagem e use o botão <b>Reconectar TikTok</b> na seção acima. Nenhuma métrica será simulada.</p>
     </section> : null}
     {error && <section role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><b>Não foi possível carregar os dados do TikTok:</b> {error}</section>}
     {dashboard?.scopeReady && !error && <>
-      <section className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-3">
-        <p className="px-2 text-xs text-slate-500">Selecionar período de publicação dos vídeos</p>
-        <div className="flex gap-2">{([7, 28, 90] as const).map(d => <Link key={d} href={`${base}?aba=${tab}&periodo=${d}`} className={days === d ? 'rounded-lg bg-slate-950 px-3 py-2 text-xs font-bold text-white' : 'rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600'}>{d} dias</Link>)}</div>
-      </section>
+
       {tab !== 'conteudos' && <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="Visualizações acumuladas" value={numberLabel(totals?.views)} helper="Dos vídeos publicados no período; não são visualizações ocorridas apenas neste período" />
         <Metric label="Curtidas" value={numberLabel(totals?.likes)} helper="Curtidas atuais desses vídeos" />
