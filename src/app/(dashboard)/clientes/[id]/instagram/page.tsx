@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SocialAnalyticsNavigation } from '@/components/social/SocialAnalyticsNavigation';
 
 import { InstagramIcon } from '@/components/icons/InstagramIcon';
 
@@ -961,6 +962,8 @@ export default async function ClientInstagramPage({
         </section>
       ) : null}
 
+
+      <SocialAnalyticsNavigation clientId={client.id} active="INSTAGRAM" />
 
       {/* TABS INTERNAS */}
 

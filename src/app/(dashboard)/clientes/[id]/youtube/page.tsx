@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SocialAnalyticsNavigation } from '@/components/social/SocialAnalyticsNavigation';
 
 import type {
   ReactNode,
@@ -436,6 +437,7 @@ export default async function YoutubeMetricsPage({
     return (
 
       <div className="mx-auto max-w-7xl space-y-6">
+        <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
 
         <section className="rounded-3xl border border-slate-800 bg-slate-950 p-7 text-white">
 
@@ -542,6 +544,7 @@ export default async function YoutubeMetricsPage({
     return (
 
       <div className="mx-auto max-w-7xl space-y-6">
+        <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
 
         <section className="rounded-3xl border border-slate-800 bg-slate-950 p-7 text-white">
 
@@ -655,6 +658,7 @@ export default async function YoutubeMetricsPage({
   return (
 
     <div className="mx-auto max-w-7xl space-y-6">
+        <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
 
       <section className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-sm">
 

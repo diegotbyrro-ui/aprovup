@@ -165,6 +165,8 @@ export async function GET(
     [
       'user.info.basic',
       'video.publish',
+      ...(process.env.TIKTOK_DISPLAY_API_ENABLED === 'true' ? ['video.list'] : []),
+      ...(process.env.TIKTOK_STATS_API_ENABLED === 'true' ? ['user.info.stats'] : []),
     ].join(
       ','
     )

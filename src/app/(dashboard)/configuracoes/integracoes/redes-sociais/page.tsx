@@ -555,7 +555,7 @@ export default async function SocialConnectionsPage({
                     }
                     className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-black text-red-700 hover:bg-red-100"
                   >
-                    Ver métricas
+                    Ver análises
                   </Link>
                 )
                 : null
@@ -723,6 +723,10 @@ export default async function SocialConnectionsPage({
 
 
           <div className="mt-5 flex flex-wrap gap-2">
+
+            {tiktok?.status === 'ATIVO' ? (
+              <Link href={'/clientes/' + encodeURIComponent(selectedClient.id) + '/tiktok'} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-black text-slate-700 hover:bg-slate-100">Ver análises</Link>
+            ) : null}
 
             {
               tiktok

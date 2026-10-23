@@ -10,6 +10,7 @@ import { markContentAsPublished } from './actions';
 import { InstagramPublishButton } from '@/components/instagram/InstagramPublishButton';
 import { InstagramScheduleControl } from '@/components/instagram/InstagramScheduleControl';
 import { ReadyPostComposer } from '@/components/content/ReadyPostComposer';
+import { SocialAnalyticsNavigation } from '@/components/social/SocialAnalyticsNavigation';
 
 import {
     MultiPlatformSelector,
@@ -248,6 +249,7 @@ export default async function ProntoParaPostarPage({
 
     return (
         <div className="space-y-6">
+            <SocialAnalyticsNavigation clientId={selectedClient} />
             <section className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-sm">
                 <div className="absolute -right-10 -top-10 h-52 w-52 rounded-full bg-emerald-500/20 blur-3xl"></div>
                 <div className="absolute bottom-0 left-1/3 h-52 w-52 rounded-full bg-blue-500/20 blur-3xl"></div>
