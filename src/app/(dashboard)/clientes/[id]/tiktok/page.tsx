@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { canAccessClient } from '@/lib/clientAccess';
 import { requirePermission } from '@/lib/userAccess';
 import { SocialAnalyticsNavigation } from '@/components/social/SocialAnalyticsNavigation';
+import { SocialInsightsTabs } from '@/components/social/SocialInsightsTabs';
 import { getTikTokDashboard, type TikTokVideo } from '@/lib/tiktokDashboard';
 
 export const dynamic = 'force-dynamic';
@@ -65,17 +66,15 @@ export default async function ClientTikTokPage({ params, searchParams }: {
   const maxViews = Math.max(1, ...top.map(item => item.views));
   const base = `/clientes/${encodeURIComponent(client.id)}/tiktok`;
   return <div className="mx-auto max-w-7xl space-y-5 p-1 pb-10">
-    <SocialAnalyticsNavigation clientId={client.id} active="TIKTOK" />
     <header className="rounded-3xl bg-slate-950 p-7 text-white shadow-sm">
       <p className="text-xs font-black uppercase tracking-widest text-cyan-300">TikTok · Análises do cliente</p>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
         <div><h1 className="text-3xl font-black">{client.name}</h1><p className="mt-2 text-sm text-slate-300">{dashboard?.accountName || 'Conecte o perfil para visualizar os resultados reais.'}</p></div>
         <Link href={`/configuracoes/integracoes/redes-sociais?cliente=${encodeURIComponent(client.id)}`} className="rounded-xl border border-white/20 px-4 py-2.5 text-xs font-bold hover:bg-white/10">Gerenciar conexão</Link>
       </div>
-      <div className="mt-5 flex flex-wrap gap-2">
-        {(['visao', 'conteudos', 'relatorios'] as const).map((key, index) => <Link key={key} href={`${base}?aba=${key}&periodo=${days}`} className={tab === key ? 'rounded-lg bg-white px-4 py-2.5 text-xs font-bold text-slate-950' : 'rounded-lg border border-white/20 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/10'}>{['Visão geral', 'Conteúdos', 'Relatórios'][index]}</Link>)}
-      </div>
     </header>
+    <SocialAnalyticsNavigation clientId={client.id} active="TIKTOK" />
+    <SocialInsightsTabs clientId={client.id} network="TIKTOK" active={tab} period={days} />
     {!dashboard?.connected ? <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
       <h2 className="text-lg font-black text-amber-900">TikTok ainda não conectado</h2>
       <p className="mt-2 text-sm text-amber-800">Vincule o TikTok deste cliente para carregar dados autorizados.</p>

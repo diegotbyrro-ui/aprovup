@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { SocialAnalyticsNavigation } from '@/components/social/SocialAnalyticsNavigation';
+import { SocialInsightsTabs } from '@/components/social/SocialInsightsTabs';
 
 import type {
   ReactNode,
@@ -307,6 +308,8 @@ export default async function YoutubeMetricsPage({
     Promise<{
       period?:
         string;
+      aba?:
+        string;
     }>;
 }) {
 
@@ -343,6 +346,9 @@ export default async function YoutubeMetricsPage({
     )
       ? requestedPeriod
       : 28;
+
+
+  const tab = query.aba === 'conteudos' || query.aba === 'relatorios' ? query.aba : 'visao';
 
 
   const client =
@@ -437,7 +443,6 @@ export default async function YoutubeMetricsPage({
     return (
 
       <div className="mx-auto max-w-7xl space-y-6">
-        <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
 
         <section className="rounded-3xl border border-slate-800 bg-slate-950 p-7 text-white">
 
@@ -465,6 +470,8 @@ export default async function YoutubeMetricsPage({
 
         </section>
 
+        <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
+        <SocialInsightsTabs clientId={client.id} network="YOUTUBE" active={tab} period={period} />
 
         <section className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
 
@@ -544,7 +551,6 @@ export default async function YoutubeMetricsPage({
     return (
 
       <div className="mx-auto max-w-7xl space-y-6">
-        <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
 
         <section className="rounded-3xl border border-slate-800 bg-slate-950 p-7 text-white">
 
@@ -572,6 +578,8 @@ export default async function YoutubeMetricsPage({
 
         </section>
 
+        <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
+        <SocialInsightsTabs clientId={client.id} network="YOUTUBE" active={tab} period={period} />
 
         <section className="rounded-3xl border border-red-200 bg-red-50 p-6">
 
@@ -658,7 +666,6 @@ export default async function YoutubeMetricsPage({
   return (
 
     <div className="mx-auto max-w-7xl space-y-6">
-        <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
 
       <section className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-sm">
 
@@ -771,7 +778,7 @@ export default async function YoutubeMetricsPage({
                         encodeURIComponent(
                           client.id
                         ) +
-                        '/youtube?period=' +
+                        '/youtube?aba=' + tab + '&period=' +
                         value
                       }
                       className={
@@ -800,7 +807,24 @@ export default async function YoutubeMetricsPage({
 
       </section>
 
+      <SocialAnalyticsNavigation clientId={client.id} active="YOUTUBE" />
+      <SocialInsightsTabs clientId={client.id} network="YOUTUBE" active={tab} period={period} />
 
+      {tab === 'conteudos' && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-black text-slate-900">Conteúdos do YouTube</h2>
+          <p className="mt-1 text-sm text-slate-500">Vídeos retornados pelo YouTube Analytics para o período selecionado. O ranking não representa necessariamente todo o catálogo do canal.</p>
+        </section>
+      )}
+      {tab === 'relatorios' && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-black text-slate-900">Relatórios do YouTube</h2>
+          <p className="mt-1 text-sm text-slate-500">Análise do canal, evolução das visualizações, localização da audiência e fontes de tráfego.</p>
+        </section>
+      )}
+
+      {tab !== 'conteudos' && (
+      <>
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
         <MetricCard
@@ -1132,8 +1156,10 @@ export default async function YoutubeMetricsPage({
         }
 
       </section>
+      </>
+      )}
 
-
+      {tab !== 'relatorios' && (
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
 
         <p className="text-xs font-black uppercase tracking-wider text-red-600">
@@ -1305,8 +1331,10 @@ export default async function YoutubeMetricsPage({
         </div>
 
       </section>
+      )}
 
-
+      {tab === 'relatorios' && (
+      <>
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
 
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -1494,6 +1522,8 @@ export default async function YoutubeMetricsPage({
         </p>
 
       </section>
+      </>
+      )}
 
     </div>
   );
