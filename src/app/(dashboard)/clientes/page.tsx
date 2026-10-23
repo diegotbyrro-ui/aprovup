@@ -431,11 +431,7 @@ export default async function ClientesPage({
 
 
                     <Link
-                      href={
-                        `/configuracoes/integracoes/redes-sociais?cliente=${encodeURIComponent(
-                          client.id
-                        )}`
-                      }
+                      href={`/clientes/${client.id}/youtube`}
                       title="YouTube do cliente"
                       className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-600/95 text-white shadow-sm backdrop-blur transition hover:bg-red-500"
                     >
@@ -444,11 +440,7 @@ export default async function ClientesPage({
 
 
                     <Link
-                      href={
-                        `/configuracoes/integracoes/redes-sociais?cliente=${encodeURIComponent(
-                          client.id
-                        )}`
-                      }
+                      href={`/clientes/${client.id}/tiktok`}
                       title="TikTok do cliente"
                       className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/90 text-white shadow-sm backdrop-blur transition hover:bg-slate-900"
                     >
