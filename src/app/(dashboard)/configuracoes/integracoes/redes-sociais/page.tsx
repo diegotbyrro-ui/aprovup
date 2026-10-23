@@ -64,6 +64,31 @@ function connectionFor(
 }
 
 
+function connectionStatusLabel(status: string | null | undefined): string {
+  switch (status) {
+    case 'ATIVO': return 'Conectado';
+    case 'EXPIRADO': return 'Conexão expirada';
+    case 'ERRO': return 'Erro na conexão';
+    case 'PENDENTE': return 'Conexão pendente';
+    case 'INATIVO': return 'Desconectado';
+    default: return 'Não conectado';
+  }
+}
+
+function formatTikTokPermissions(scopes: string | null | undefined): string {
+  if (!scopes?.trim()) return '—';
+  const names: Record<string, string> = {
+    'user.info.basic': 'Dados básicos do perfil',
+    'user.info.profile': 'Informações do perfil',
+    'user.info.stats': 'Estatísticas do perfil',
+    'video.upload': 'Enviar vídeos',
+    'video.publish': 'Publicar vídeos',
+    'video.list': 'Consultar vídeos',
+  };
+  return scopes.split(/[,\s]+/).filter(Boolean)
+    .map((scope) => names[scope] || scope).join(', ');
+}
+
 function dateLabel(
   value:
     Date |
@@ -72,7 +97,7 @@ function dateLabel(
 ) {
 
   if (!value) {
-    return 'â€”';
+    return '—';
   }
 
 
@@ -299,25 +324,25 @@ export default async function SocialConnectionsPage({
       'Conta desconectada.',
 
     'server-config':
-      'As credenciais desta plataforma ainda nÃ£o estÃ£o configuradas no servidor.',
+      'As credenciais desta plataforma ainda não estão configuradas no servidor.',
 
     state:
-      'A sessÃ£o de conexÃ£o expirou ou nÃ£o pÃ´de ser validada. Tente novamente.',
+      'A sessão de conexão expirou ou não pôde ser validada. Tente novamente.',
 
     denied:
-      'A autorizaÃ§Ã£o foi cancelada.',
+      'A autorização foi cancelada.',
 
     token:
-      'A plataforma recusou a troca do cÃ³digo de autorizaÃ§Ã£o.',
+      'A plataforma recusou a troca do código de autorização.',
 
     channel:
-      'A conta Google foi autorizada, mas nenhum canal do YouTube pÃ´de ser identificado.',
+      'A conta Google foi autorizada, mas nenhum canal do YouTube pôde ser identificado.',
 
     profile:
-      'A conta TikTok foi autorizada, mas o perfil nÃ£o pÃ´de ser identificado.',
+      'A conta TikTok foi autorizada, mas o perfil não pôde ser identificado.',
 
     client:
-      'Este cliente nÃ£o estÃ¡ disponÃ­vel para o usuÃ¡rio atual.',
+      'Este cliente não está disponível para o usuário atual.',
   };
 
 
@@ -351,11 +376,11 @@ export default async function SocialConnectionsPage({
           }
           className="text-xs font-bold text-blue-200 hover:underline"
         >
-          â† Voltar para Pronto para Postar
+          ← Voltar para Pronto para Postar
         </Link>
 
         <p className="mt-5 text-xs font-black uppercase tracking-[0.14em] text-emerald-300">
-          IntegraÃ§Ãµes sociais
+          Integrações sociais
         </p>
 
         <h1 className="mt-2 text-3xl font-black">
@@ -438,7 +463,7 @@ export default async function SocialConnectionsPage({
               </h2>
 
               <p className="mt-1 text-xs text-slate-500">
-                Canal utilizado para publicar vÃ­deos e Shorts.
+                Canal utilizado para publicar vídeos e Shorts.
               </p>
 
             </div>
@@ -453,9 +478,7 @@ export default async function SocialConnectionsPage({
               }
             >
               {
-                youtube
-                  ?.status ||
-                'NÃƒO CONECTADO'
+                connectionStatusLabel(youtube?.status)
               }
             </span>
 
@@ -489,7 +512,7 @@ export default async function SocialConnectionsPage({
               {
                 youtube
                   ?.accountUsername ||
-                'â€”'
+                '—'
               }
             </p>
 
@@ -504,7 +527,7 @@ export default async function SocialConnectionsPage({
             </p>
 
             <p>
-              <strong>Access token expira:</strong>{' '}
+              <strong>Token de acesso expira em:</strong>{' '}
               {
                 dateLabel(
                   youtube
@@ -625,7 +648,7 @@ export default async function SocialConnectionsPage({
               </h2>
 
               <p className="mt-1 text-xs text-slate-500">
-                Conta autorizada para publicaÃ§Ã£o via Content Posting API.
+                Conta autorizada para publicar vídeos por meio da API do TikTok.
               </p>
 
             </div>
@@ -640,9 +663,7 @@ export default async function SocialConnectionsPage({
               }
             >
               {
-                tiktok
-                  ?.status ||
-                'NÃƒO CONECTADO'
+                connectionStatusLabel(tiktok?.status)
               }
             </span>
 
@@ -672,11 +693,9 @@ export default async function SocialConnectionsPage({
             </p>
 
             <p>
-              <strong>PermissÃµes:</strong>{' '}
+              <strong>Permissões:</strong>{' '}
               {
-                tiktok
-                  ?.scopes ||
-                'â€”'
+                formatTikTokPermissions(tiktok?.scopes)
               }
             </p>
 
@@ -691,7 +710,7 @@ export default async function SocialConnectionsPage({
             </p>
 
             <p>
-              <strong>Access token expira:</strong>{' '}
+              <strong>Token de acesso expira em:</strong>{' '}
               {
                 dateLabel(
                   tiktok
@@ -781,11 +800,11 @@ export default async function SocialConnectionsPage({
       <section className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
 
         <p className="text-xs font-black text-blue-900">
-          PrÃ³xima etapa
+          Próxima etapa
         </p>
 
         <p className="mt-1 text-xs leading-relaxed text-blue-700">
-          Depois das contas conectadas, o AprovUp poderÃ¡ renovar os tokens automaticamente e publicar cada conteÃºdo nas plataformas selecionadas de forma independente.
+          Depois de conectar as contas, o AprovUp poderá renovar os tokens de acesso automaticamente e publicar cada conteúdo nas plataformas selecionadas de forma independente.
         </p>
 
       </section>
