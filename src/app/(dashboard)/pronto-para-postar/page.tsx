@@ -11,6 +11,7 @@ import { InstagramPublishButton } from '@/components/instagram/InstagramPublishB
 import { InstagramScheduleControl } from '@/components/instagram/InstagramScheduleControl';
 import { ReadyPostComposer } from '@/components/content/ReadyPostComposer';
 import { SocialAnalyticsNavigation } from '@/components/social/SocialAnalyticsNavigation';
+import { TikTokSandboxPublishPanel } from '@/components/tiktok/TikTokSandboxPublishPanel';
 
 import {
     MultiPlatformSelector,
@@ -904,6 +905,15 @@ export default async function ProntoParaPostarPage({
                                                                 )
                                                             }
                                                         />
+
+                                                        {socialUser.role === 'DIRECTOR' && selectedClientName.trim().toLowerCase() === 'level up' ? (
+                                                            <TikTokSandboxPublishPanel
+                                                                contentId={content.id}
+                                                                selected={Boolean(content.socialPublications.find(p => p.platform === 'TIKTOK' && p.selected))}
+                                                                hasVideo={Boolean(content.finalMediaUrl && isVideoMedia)}
+                                                                initialCaption={content.caption || ''}
+                                                            />
+                                                        ) : null}
 
                                                         <div className="rounded-xl border border-pink-100 bg-gradient-to-br from-pink-50 to-violet-50 p-4">
 

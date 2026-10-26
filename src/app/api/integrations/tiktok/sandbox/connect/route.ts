@@ -13,7 +13,7 @@ export async function GET(_request: NextRequest) {
   const url = new URL('https://www.tiktok.com/v2/auth/authorize/');
   url.searchParams.set('client_key', config.key);
   url.searchParams.set('response_type', 'code');
-  url.searchParams.set('scope', 'user.info.basic,video.list,user.info.stats');
+  url.searchParams.set('scope', 'user.info.basic,video.list,user.info.stats,video.publish');
   url.searchParams.set('redirect_uri', config.redirectUri);
   url.searchParams.set('state', state.state);
   const response = NextResponse.redirect(url);
