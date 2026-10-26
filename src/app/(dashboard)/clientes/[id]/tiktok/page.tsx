@@ -101,6 +101,10 @@ export default async function ClientTikTokPage({ params, searchParams }: {
     {customError ? <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Intervalo inválido. Selecione datas até hoje, em ordem crescente, com até 366 dias. Exibindo os últimos 30 dias.</p> : null}
     <SocialInsightsTabs clientId={client.id} network="TIKTOK" active={tab} period={selectedPeriod} startDate={customRange?.startDate} endDate={customRange?.endDate} />
     <SocialConnectionManagement platform="TIKTOK" clientId={client.id} status={connection?.status} accountName={connection?.accountName} feedback={query?.tiktok} />
+    {user.role === 'DIRECTOR' ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-xs text-cyan-950">
+      <span><b>Ambiente de homologação:</b> testes TikTok isolados dos clientes.</span>
+      <Link href="/configuracoes/integracoes/tiktok-sandbox" className="rounded-lg bg-slate-950 px-3 py-2 font-bold text-white">Abrir TikTok Sandbox</Link>
+    </div> : null}
     {!dashboard?.connected ? <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
       <h2 className="text-lg font-black text-amber-900">TikTok ainda não conectado</h2>
       <p className="mt-2 text-sm text-amber-800">Vincule o TikTok deste cliente para carregar dados autorizados.</p>
