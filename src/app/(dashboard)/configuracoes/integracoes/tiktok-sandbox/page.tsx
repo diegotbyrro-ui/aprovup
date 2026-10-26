@@ -14,6 +14,17 @@ export default async function TikTokSandboxPage({ searchParams }: {
   if (user.role !== 'DIRECTOR') redirect('/acesso-bloqueado');
   const query = await searchParams;
   const config = sandboxConfig();
+  const keyAvailable = Boolean(config.key);
+  const secretAvailable = Boolean(config.secret);
+  const prodKey = process.env.TIKTOK_CLIENT_KEY || '';
+  const differentKeys = keyAvailable && config.key !== prodKey;
+  const reason = !keyAvailable
+    ? 'O servidor nao recebeu TIKTOK_SANDBOX_CLIENT_KEY.'
+    : !secretAvailable
+      ? 'O servidor nao recebeu TIKTOK_SANDBOX_CLIENT_SECRET.'
+      : !differentKeys
+        ? 'O Client Key do Sandbox coincide com o da producao. Confirme qual chave esta cadastrada em cada ambiente.'
+        : 'Os tres testes foram atendidos.';
   return (
     <div className="mx-auto max-w-6xl space-y-5 px-2 pb-12">
       <div className="rounded-3xl bg-slate-950 p-7 text-white">
@@ -23,7 +34,14 @@ export default async function TikTokSandboxPage({ searchParams }: {
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">Teste de autorização e leitura de métricas para a revisão do TikTok. Não altera as conexões dos clientes, não publica vídeos e não grava tokens de teste no banco de produção.</p>
       </div>
       {!config.ready ? <section role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
-        <b>Configuração pendente.</b> Adicione na Hostinger <code>TIKTOK_SANDBOX_CLIENT_KEY</code> e <code>TIKTOK_SANDBOX_CLIENT_SECRET</code> com as credenciais do Sandbox (nunca as da produção). Depois atualize a aplicação.
+        <h2 className="font-bold">Diagnóstico do TikTok Sandbox</h2>
+        <p className="mt-2">{reason}</p>
+        <ul className="mt-3 space-y-1 rounded-xl bg-white/70 p-3">
+          <li>Client Key do Sandbox carregada: <strong>{keyAvailable ? 'SIM' : 'NÃO'}</strong></li>
+          <li>Client Secret do Sandbox carregado: <strong>{secretAvailable ? 'SIM' : 'NÃO'}</strong></li>
+          <li>Client Key diferente da produção: <strong>{keyAvailable ? (differentKeys ? 'SIM' : 'NÃO') : 'NÃO VERIFICÁVEL'}</strong></li>
+        </ul>
+        <p className="mt-2 text-xs">Nenhum valor de chave, segredo ou token é exibido. Não modifique as credenciais oficiais.</p>
       </section> : null}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-700">
         <b>Redirect URI exclusivo do Sandbox</b>
