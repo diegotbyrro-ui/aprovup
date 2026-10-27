@@ -4,7 +4,7 @@ import { readSandboxPost, publicPostStatus, noStoreJson, safeTikTokCode } from '
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-type StatusData = { status?: string; fail_reason?: string; publicaly_available_post_id?: string[] };
+type StatusData = { status?: string; fail_reason?: string; publicaly_available_post_id?: string[]; uploaded_bytes?: number };
 export async function GET(request: NextRequest) {
   const user = await sandboxAdmin();
   if (!user) return noStoreJson({ error: 'Acesso negado.' }, 403);
@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
     const mapped = publicPostStatus(result.status || '');
     const response = noStoreJson({ status: mapped, providerStatus: result.status || 'INDEFINIDO',
       failReason: result.status === 'FAILED' ? String(result.fail_reason || 'Erro de processamento') : undefined,
-      publishId: post.publishId, complete: mapped === 'PUBLICADO_PRIVADO' });
+      publishId: post.publishId, complete: mapped === 'PUBLICADO_PRIVADO',
+      uploadedBytes: typeof result.uploaded_bytes === 'number' && Number.isFinite(result.uploaded_bytes) ? result.uploaded_bytes : null,
+      elapsedSeconds: Math.max(0, Math.floor((Date.now() - post.createdAt) / 1000)) });
     if (changed) setSandboxSession(response, session);
     return response;
   } catch (error) { return noStoreJson({ error: safeTikTokCode(error) }, 502); }

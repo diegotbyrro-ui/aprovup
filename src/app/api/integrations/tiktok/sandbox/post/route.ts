@@ -49,9 +49,11 @@ export async function POST(request: NextRequest) {
     if (target.protocol !== 'https:' || target.hostname !== 'open-upload.tiktokapis.com' || target.username || target.password)
       throw new Error('O TikTok retornou um destino de upload não autorizado.');
     const upload = await fetch(target.toString(), { method: 'PUT',
-      headers: { 'Content-Type': 'video/mp4', 'Content-Range': `bytes 0-${bytes.length - 1}/${bytes.length}` },
+      headers: { 'Content-Type': 'video/mp4', 'Content-Length': String(bytes.length), 'Content-Range': `bytes 0-${bytes.length - 1}/${bytes.length}` },
       body: bytes as unknown as BodyInit, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(120000) });
-    if (!upload.ok) throw new Error(`TikTok não aceitou o arquivo de vídeo (HTTP ${upload.status}).`);
+    if (upload.status !== 201) {
+      throw new Error(`Upload do TikTok nao confirmado por inteiro (HTTP ${upload.status}; esperado 201). Consulte o ID do envio antes de tentar outro.`);
+    }
     const response = noStoreJson({ ok: true, status: 'PROCESSANDO', publishId,
       message: 'Vídeo enviado ao TikTok para processamento privado. Aguardando confirmação.' });
     setSandboxPost(response, { userId: user.id, agencyId: user.agencyId, contentId: content.id,

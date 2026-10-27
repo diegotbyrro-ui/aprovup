@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 type Creator = { account?: string; privacyOptions?: string[]; canTest?: boolean; maxDuration?: number;
   commentsDisabled?: boolean; duetDisabled?: boolean; stitchDisabled?: boolean; error?: string; reconnect?: boolean };
-type PostStatus = { status?: string; providerStatus?: string; publishId?: string; complete?: boolean; failReason?: string; error?: string };
+type PostStatus = { status?: string; providerStatus?: string; publishId?: string; complete?: boolean; failReason?: string; error?: string; uploadedBytes?: number | null; elapsedSeconds?: number };
 
 export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initialCaption }: {
   contentId: string; selected: boolean; hasVideo: boolean; initialCaption: string;
@@ -99,6 +99,16 @@ export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initi
           {checking ? 'Verificando...' : 'Atualizar status'}
         </button>
       </div>
+      {status?.providerStatus === 'PROCESSING_UPLOAD' ? (
+        <p role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
+          O TikTok ainda informa <b>envio do arquivo em andamento</b>.
+          {' '}Bytes recebidos: <b>{status.uploadedBytes == null ? 'não informados pela API' : status.uploadedBytes.toLocaleString('pt-BR')}</b>.
+          {' '}Tempo desde o início: <b>{status.elapsedSeconds == null ? 'não disponível' : `${Math.floor(status.elapsedSeconds / 60)} min`}</b>.
+          {typeof status.elapsedSeconds === 'number' && status.elapsedSeconds >= 900
+            ? ' O envio está demorando mais que o esperado. Não tente publicar novamente antes de verificar o resultado e o arquivo.'
+            : ' Use Atualizar status para consultar o andamento real.'}
+        </p>
+      ) : null}
       {status?.failReason ? <p className="text-xs text-red-700">TikTok informou falha: {status.failReason}</p> : null}
       {status?.publishId ? <p className="break-all text-[10px] text-slate-500">ID de rastreio: {status.publishId}</p> : null}
       <p className="text-[10px] text-slate-500">O envio não significa publicação concluída. A confirmação depende de PUBLISH_COMPLETE no TikTok. O teste não altera os estados de publicação do cliente.</p>
