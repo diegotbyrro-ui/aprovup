@@ -46,8 +46,12 @@ export async function POST(request: NextRequest) {
     if (!init.publish_id || !init.upload_url) throw new Error('TikTok não forneceu dados para o upload.');
     publishId = init.publish_id;
     const target = new URL(init.upload_url);
-    if (target.protocol !== 'https:' || target.hostname !== 'open-upload.tiktokapis.com' || target.username || target.password)
-      throw new Error('O TikTok retornou um destino de upload não autorizado.');
+    // A documentacao oficial tambem usa enderecos regionais como upload.us.tiktokapis.com.
+    // Nao aceitar redirecionamentos, credenciais na URL ou dominios fora do TikTok.
+    const host = target.hostname.toLowerCase();
+    const allowedUploadHost = host === 'open-upload.tiktokapis.com' || /^upload\.[a-z0-9-]+\.tiktokapis\.com$/.test(host);
+    if (target.protocol !== 'https:' || !allowedUploadHost || target.username || target.password)
+      throw new Error('O TikTok retornou um destino de upload nao reconhecido. O arquivo nao foi enviado; consulte o rastreamento.');
     const upload = await fetch(target.toString(), { method: 'PUT',
       headers: { 'Content-Type': 'video/mp4', 'Content-Length': String(bytes.length), 'Content-Range': `bytes 0-${bytes.length - 1}/${bytes.length}` },
       body: bytes as unknown as BodyInit, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(120000) });

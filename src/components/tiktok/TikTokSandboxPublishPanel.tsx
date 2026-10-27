@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 type Creator = { account?: string; privacyOptions?: string[]; canTest?: boolean; maxDuration?: number;
   commentsDisabled?: boolean; duetDisabled?: boolean; stitchDisabled?: boolean; error?: string; reconnect?: boolean };
-type PostStatus = { status?: string; providerStatus?: string; publishId?: string; complete?: boolean; failReason?: string; error?: string; uploadedBytes?: number | null; elapsedSeconds?: number };
+type PostStatus = { status?: string; providerStatus?: string; publishId?: string; complete?: boolean; failReason?: string; error?: string; uploadedBytes?: number | null; elapsedSeconds?: number; canAbandon?: boolean };
 
 export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initialCaption }: {
   contentId: string; selected: boolean; hasVideo: boolean; initialCaption: string;
@@ -47,6 +47,24 @@ export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initi
       .catch(error => { if (active) setMessage(error instanceof Error ? error.message : 'Falha ao consultar status.'); });
     return () => { active = false; };
   }, [selected, hasVideo, contentId]);
+
+  async function abandonStalledUpload() {
+    if (!status?.canAbandon || posting) return;
+    if (!window.confirm('O TikTok informa zero bytes recebidos ha mais de 30 minutos. Remover somente o rastreamento local? Isso NAO cancela a tarefa no TikTok e NAO publica outro video automaticamente. Confira antes o perfil privado.')) return;
+    setPosting(true); setMessage('');
+    try {
+      const response = await fetch('/api/integrations/tiktok/sandbox/abandon', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentId, confirm: 'DESCARTAR_RASTREAMENTO' }),
+      });
+      const data = await response.json() as PostStatus & { message?: string };
+      if (!response.ok) throw new Error(data.error || 'Nao foi possivel encerrar o rastreamento.');
+      setStatus({ status: 'NENHUM_ENVIO' });
+      setConfirmed(false);
+      setMessage(data.message || 'Rastreamento local encerrado. Nenhum video foi enviado.');
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Falha ao liberar teste.'); }
+    finally { setPosting(false); }
+  }
 
   async function publish() {
     if (posting || !selected || !hasVideo || !creator?.canTest || !confirmed || !caption.trim()) return;
@@ -108,6 +126,15 @@ export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initi
             ? ' O envio está demorando mais que o esperado. Não tente publicar novamente antes de verificar o resultado e o arquivo.'
             : ' Use Atualizar status para consultar o andamento real.'}
         </p>
+      ) : null}
+      {status?.canAbandon ? (
+        <div className="space-y-2 rounded-lg border border-amber-200 bg-white p-3 text-xs">
+          <p><b>Upload parado:</b> a API informa zero bytes ha mais de 30 minutos. O arquivo anterior nao foi confirmado. Confira o perfil privado antes de qualquer novo teste.</p>
+          <button type="button" onClick={() => void abandonStalledUpload()} disabled={posting}
+            className="rounded-lg border border-amber-400 bg-amber-50 px-3 py-2 font-bold text-amber-950 disabled:opacity-50">
+            Encerrar rastreamento travado (nao republica)
+          </button>
+        </div>
       ) : null}
       {status?.failReason ? <p className="text-xs text-red-700">TikTok informou falha: {status.failReason}</p> : null}
       {status?.publishId ? <p className="break-all text-[10px] text-slate-500">ID de rastreio: {status.publishId}</p> : null}
