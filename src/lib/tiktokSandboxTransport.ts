@@ -15,8 +15,17 @@ type UploadReceipt = { httpStatus: number };
 export async function sendTikTokUpload(url: URL, bytes: Buffer): Promise<UploadReceipt> {
   const size = bytes.byteLength;
   if (size < 100 || size > 50 * 1024 * 1024) throw new TikTokUploadFailure('FILE_SIZE_INVALID');
-  if (url.protocol !== 'https:' || url.username || url.password ||
-      !(url.hostname === 'open-upload.tiktokapis.com' || /^upload\.[a-z0-9-]+\.tiktokapis\.com$/.test(url.hostname))) {
+  // Mesmas regras da rota post/route.ts. Enderecos regionais sao permitidos,
+  // mas nunca URLs de terceiros, credenciais, HTTP ou portas nao seguras.
+  const host = url.hostname.toLowerCase();
+  const allowedUploadHost =
+    host === 'open.tiktokapis.com' ||
+    host === 'open-upload.tiktokapis.com' ||
+    host === 'upload.tiktokapis.com' ||
+    /^(?:open-upload|upload)-[a-z0-9-]+\.tiktokapis\.com$/.test(host) ||
+    /^(?:open-upload|upload)\.[a-z0-9-]+\.tiktokapis\.com$/.test(host);
+  const allowedPort = !url.port || url.port === '443';
+  if (url.protocol !== 'https:' || !allowedPort || !allowedUploadHost || url.username || url.password) {
     throw new TikTokUploadFailure('UPLOAD_DESTINATION_INVALID');
   }
   return await new Promise<UploadReceipt>((resolve, reject) => {
