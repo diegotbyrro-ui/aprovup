@@ -55,9 +55,20 @@ export async function POST(request: NextRequest) {
     // A documentacao oficial tambem usa enderecos regionais como upload.us.tiktokapis.com.
     // Nao aceitar redirecionamentos, credenciais na URL ou dominios fora do TikTok.
     const host = target.hostname.toLowerCase();
-    const allowedUploadHost = host === 'open-upload.tiktokapis.com' || /^upload\.[a-z0-9-]+\.tiktokapis\.com$/.test(host);
-    if (target.protocol !== 'https:' || !allowedUploadHost || target.username || target.password)
-      throw new Error('O TikTok retornou um destino de upload nao reconhecido. O arquivo nao foi enviado; consulte o rastreamento.');
+    // Allow only TikTok-owned upload endpoints; never expose the signed URL or upload_token.
+    // Regional endpoints can use dots or hyphens in the upload host prefix.
+    const allowedUploadHost =
+      host === 'open.tiktokapis.com' ||
+      host === 'open-upload.tiktokapis.com' ||
+      host === 'upload.tiktokapis.com' ||
+      /^(?:open-upload|upload)-[a-z0-9-]+\.tiktokapis\.com$/.test(host) ||
+      /^(?:open-upload|upload)\.[a-z0-9-]+\.tiktokapis\.com$/.test(host);
+    const allowedPort = !target.port || target.port === '443';
+    if (target.protocol !== 'https:' || !allowedPort || !allowedUploadHost || target.username || target.password) {
+      // Host only: query parameters carry a sensitive one-time TikTok upload token.
+      const safeHost = /^[a-z0-9.-]{1,255}$/.test(host) ? host : 'invalido';
+      throw new Error(`Destino de upload TikTok rejeitado (host: ${safeHost}). Arquivo nao enviado. Informe apenas este host, nunca a URL completa.`);
+    }
     // HTTPS Node envia os bytes diretamente, com Content-Length exato e sem seguir redirects.
     // Qualquer status diferente de 201 e uma transferencia NAO confirmada.
     const upload = await sendTikTokUpload(target, bytes);
