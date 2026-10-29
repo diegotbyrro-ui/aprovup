@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 type Creator = { account?: string; privacyOptions?: string[]; canTest?: boolean; maxDuration?: number;
   commentsDisabled?: boolean; duetDisabled?: boolean; stitchDisabled?: boolean; error?: string; reconnect?: boolean };
-type PostStatus = { status?: string; providerStatus?: string; publishId?: string; complete?: boolean; failReason?: string; error?: string; uploadedBytes?: number | null; elapsedSeconds?: number; canAbandon?: boolean };
+type PostStatus = { status?: string; providerStatus?: string; publishId?: string; complete?: boolean; failReason?: string; error?: string; uploadedBytes?: number | null; elapsedSeconds?: number; canAbandon?: boolean;
+  uploadDiagnostic?: { phase: string; httpStatus?: number | null; diagnosticCode?: string | null; sizeBytes?: number | null } | null };
 
 export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initialCaption }: {
   contentId: string; selected: boolean; hasVideo: boolean; initialCaption: string;
@@ -80,7 +81,11 @@ export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initi
       setMessage(data.message || 'Vídeo enviado para processamento.');
       setConfirmed(false);
       await refresh();
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'Erro no envio.'); }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Erro no envio.');
+      // Mostrar diagnostico persistido, inclusive quando o PUT falhou apos gerar publish_id.
+      await refresh();
+    }
     finally { setPosting(false); }
   }
 
@@ -111,12 +116,22 @@ export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initi
       </button>
       {message ? <p role="status" className="text-xs text-slate-700">{message}</p> : null}
       <div className="flex items-center justify-between gap-2 border-t border-cyan-200 pt-3">
-        <div className="text-xs"><b>Status TikTok:</b> {status?.status === 'PUBLICADO_PRIVADO' ? 'Publicado como Somente eu' : status?.status || 'Consultando...'}</div>
+        <div className="text-xs"><b>Status TikTok:</b> {status?.status === 'PUBLICADO_PRIVADO' ? 'Publicado como Somente eu' : status?.status === 'FALHA_NA_TRANSFERENCIA' ? 'Falha no upload do arquivo' : status?.status || 'Consultando...'}</div>
         <button type="button" onClick={() => void refresh()} disabled={checking || posting}
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold disabled:opacity-50">
           {checking ? 'Verificando...' : 'Atualizar status'}
         </button>
       </div>
+      {status?.uploadDiagnostic?.phase === 'ARQUIVO_NAO_CONFIRMADO' ? (
+        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-950">
+          <b>Arquivo ainda nao confirmado pelo servidor:</b> a solicitacao de publicacao recebeu um identificador,
+          mas o upload binario nao teve confirmacao HTTP 201.
+          {' '}Resultado da transferencia: <b>{status.uploadDiagnostic.httpStatus == null ? 'sem resposta HTTP' : `HTTP ${status.uploadDiagnostic.httpStatus}`}</b>.
+          {' '}Diagnostico: <b>{status.uploadDiagnostic.diagnosticCode || 'indisponivel'}</b>.
+          {' '}Tamanho do arquivo: <b>{status.uploadDiagnostic.sizeBytes == null ? 'nao informado' : `${status.uploadDiagnostic.sizeBytes.toLocaleString('pt-BR')} bytes`}</b>.
+          {' '}Nao tente novamente sem conferir o perfil privado e o status remoto.
+        </p>
+      ) : null}
       {status?.providerStatus === 'PROCESSING_UPLOAD' ? (
         <p role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
           O TikTok ainda informa <b>envio do arquivo em andamento</b>.
@@ -135,6 +150,12 @@ export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initi
             Encerrar rastreamento travado (nao republica)
           </button>
         </div>
+      ) : null}
+      {status?.uploadDiagnostic?.phase === 'ARQUIVO_CONFIRMADO' ? (
+        <p role="status" className="rounded-lg border border-cyan-200 bg-white p-2 text-xs text-cyan-950">
+          Transferencia HTTP do MP4 confirmada pelo TikTok: <b>HTTP {status.uploadDiagnostic.httpStatus}</b>.
+          {' '}A publicacao ainda depende do estado remoto PUBLISH_COMPLETE. Nao republicar enquanto houver rastreamento.
+        </p>
       ) : null}
       {status?.failReason ? <p className="text-xs text-red-700">TikTok informou falha: {status.failReason}</p> : null}
       {status?.publishId ? <p className="break-all text-[10px] text-slate-500">ID de rastreio: {status.publishId}</p> : null}

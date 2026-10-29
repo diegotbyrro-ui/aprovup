@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sandboxAdmin, sandboxConfig, allowedOrigin, getSandboxSession, maybeRefresh, setSandboxSession, tiktokFetch } from '@/lib/tiktokSandbox';
 import { type CreatorInfo, downloadSandboxVideo, noStoreJson, readSandboxPost, setSandboxPost, safeTikTokCode } from '@/lib/tiktokSandboxPosting';
+import { sendTikTokUpload, TikTokUploadFailure } from '@/lib/tiktokSandboxTransport';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,10 @@ export async function POST(request: NextRequest) {
   if (!content.finalMediaUrl || !String(content.finalMediaType || '').startsWith('video/'))
     return noStoreJson({ error: 'O TikTok exige um vídeo final. Imagens não são aceitas neste teste.' }, 400);
   let publishId: string | undefined;
+  let videoSize: number | undefined;
+  let uploadHttpStatus: number | undefined;
+  let uploadPhase: 'ARQUIVO_CONFIRMADO' | 'ARQUIVO_NAO_CONFIRMADO' = 'ARQUIVO_NAO_CONFIRMADO';
+  let uploadDiagnostic: string | undefined;
   try {
     const { session, changed } = await maybeRefresh(original);
     if (!session.scopes.split(/[\s,]+/).includes('video.publish'))
@@ -39,6 +44,7 @@ export async function POST(request: NextRequest) {
     if (!(creator.privacy_level_options || []).includes('SELF_ONLY'))
       return noStoreJson({ error: 'O TikTok não autorizou a privacidade Somente eu para esta conta.' }, 400);
     const bytes = await downloadSandboxVideo(content.finalMediaUrl);
+    videoSize = bytes.length;
     const init = await tiktokFetch<InitResult>('https://open.tiktokapis.com/v2/post/publish/video/init/', session.accessToken, {
       post_info: { title, privacy_level: 'SELF_ONLY', disable_comment: true, disable_duet: true, disable_stitch: true },
       source_info: { source: 'FILE_UPLOAD', video_size: bytes.length, chunk_size: bytes.length, total_chunk_count: 1 },
@@ -52,24 +58,33 @@ export async function POST(request: NextRequest) {
     const allowedUploadHost = host === 'open-upload.tiktokapis.com' || /^upload\.[a-z0-9-]+\.tiktokapis\.com$/.test(host);
     if (target.protocol !== 'https:' || !allowedUploadHost || target.username || target.password)
       throw new Error('O TikTok retornou um destino de upload nao reconhecido. O arquivo nao foi enviado; consulte o rastreamento.');
-    const upload = await fetch(target.toString(), { method: 'PUT',
-      headers: { 'Content-Type': 'video/mp4', 'Content-Length': String(bytes.length), 'Content-Range': `bytes 0-${bytes.length - 1}/${bytes.length}` },
-      body: bytes as unknown as BodyInit, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(120000) });
-    if (upload.status !== 201) {
-      throw new Error(`Upload do TikTok nao confirmado por inteiro (HTTP ${upload.status}; esperado 201). Consulte o ID do envio antes de tentar outro.`);
+    // HTTPS Node envia os bytes diretamente, com Content-Length exato e sem seguir redirects.
+    // Qualquer status diferente de 201 e uma transferencia NAO confirmada.
+    const upload = await sendTikTokUpload(target, bytes);
+    uploadHttpStatus = upload.httpStatus;
+    if (upload.httpStatus !== 201) {
+      uploadDiagnostic = `HTTP_${upload.httpStatus}`;
+      throw new Error(`TikTok nao confirmou a transferencia completa (HTTP ${upload.httpStatus}; esperado 201).`);
     }
+    uploadPhase = 'ARQUIVO_CONFIRMADO';
     const response = noStoreJson({ ok: true, status: 'PROCESSANDO', publishId,
       message: 'Vídeo enviado ao TikTok para processamento privado. Aguardando confirmação.' });
     setSandboxPost(response, { userId: user.id, agencyId: user.agencyId, contentId: content.id,
-      publishId, createdAt: Date.now(), expiresAt: Date.now() + 3600_000 });
+      publishId, upload: { phase: uploadPhase, httpStatus: uploadHttpStatus, sizeBytes: videoSize },
+      createdAt: Date.now(), expiresAt: Date.now() + 3600_000 });
     if (changed) setSandboxSession(response, session);
     return response;
   } catch (error) {
-    // If TikTok created a publish_id, persist it even if uploading failed: do not claim failure as unposted.
+    // Nao confundir publish_id criado com arquivo transferido. Preservar o diagnostico
+    // no cookie criptografado; sem registrar URLs, tokens ou corpo da resposta.
+    if (error instanceof TikTokUploadFailure) uploadDiagnostic = error.diagnosticCode;
+    if (publishId && !uploadDiagnostic) uploadDiagnostic = uploadHttpStatus ? `HTTP_${uploadHttpStatus}` : 'UPLOAD_NAO_CONFIRMADO';
     const response = noStoreJson({ error: safeTikTokCode(error),
       status: publishId ? 'VERIFICAR_STATUS' : 'NAO_INICIADO' }, 502);
-    if (publishId) setSandboxPost(response, { userId: user.id, agencyId: user.agencyId, contentId: content.id,
-      publishId, createdAt: Date.now(), expiresAt: Date.now() + 3600_000 });
+    if (publishId) setSandboxPost(response, { userId: user.id, agencyId: user.agencyId, contentId: body.contentId,
+      publishId, upload: { phase: uploadPhase, httpStatus: uploadHttpStatus,
+        diagnosticCode: uploadDiagnostic, sizeBytes: videoSize },
+      createdAt: Date.now(), expiresAt: Date.now() + 3600_000 });
     return response;
   }
 }

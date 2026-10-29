@@ -11,6 +11,12 @@ export type SandboxPost = {
   agencyId: string;
   contentId: string;
   publishId: string;
+  upload?: {
+    phase: 'ARQUIVO_CONFIRMADO' | 'ARQUIVO_NAO_CONFIRMADO';
+    httpStatus?: number;
+    diagnosticCode?: string;
+    sizeBytes?: number;
+  };
   createdAt: number;
   expiresAt: number;
 };
