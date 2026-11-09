@@ -7,7 +7,9 @@ import { sendTikTokUpload, TikTokUploadFailure } from '@/lib/tiktokSandboxTransp
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 type InitResult = { publish_id?: string; upload_url?: string };
-type Input = { contentId?: string; title?: string; consent?: boolean; privacy?: string };
+type Input = { contentId?: string; title?: string; consent?: boolean; musicConsent?: boolean; privacy?: string;
+  allowComment?: boolean; allowDuet?: boolean; allowStitch?: boolean; commercialDisclosure?: boolean;
+  ownBrand?: boolean; brandedContent?: boolean; durationSec?: number };
 
 export async function POST(request: NextRequest) {
   const user = await sandboxAdmin();
@@ -18,8 +20,14 @@ export async function POST(request: NextRequest) {
   if (!original) return noStoreJson({ error: 'Conecte o TikTok Sandbox antes de publicar.' }, 401);
   let body: Input;
   try { body = await request.json() as Input; } catch { return noStoreJson({ error: 'Requisição inválida.' }, 400); }
-  if (!body.consent || body.privacy !== 'SELF_ONLY' || !body.contentId || typeof body.contentId !== 'string')
-    return noStoreJson({ error: 'Confirme o envio privado e a autorização explícita.' }, 400);
+  if (!body.consent || !body.musicConsent || body.privacy !== 'SELF_ONLY' || !body.contentId || typeof body.contentId !== 'string')
+    return noStoreJson({ error: 'Escolha a privacidade Somente eu e confirme o envio e o uso de música.' }, 400);
+  if ([body.allowComment, body.allowDuet, body.allowStitch, body.commercialDisclosure, body.ownBrand, body.brandedContent].some(v => typeof v !== 'boolean'))
+    return noStoreJson({ error: 'Preencha explicitamente as opções de interação e conteúdo comercial.' }, 400);
+  if (body.brandedContent || (body.commercialDisclosure && !body.ownBrand) || (!body.commercialDisclosure && body.ownBrand))
+    return noStoreJson({ error: 'Parcerias pagas não podem ser publicadas em Somente eu. Escolha conteúdo não comercial ou minha marca.' }, 400);
+  if (typeof body.durationSec !== 'number' || !Number.isFinite(body.durationSec) || body.durationSec <= 0)
+    return noStoreJson({ error: 'Não foi possível conferir a duração do vídeo. Atualize a prévia.' }, 400);
   const title = String(body.title || '').trim();
   if (!title || title.length > 2200) return noStoreJson({ error: 'Informe uma legenda de até 2.200 caracteres.' }, 400);
   const pending = readSandboxPost(request, user);
@@ -43,10 +51,20 @@ export async function POST(request: NextRequest) {
     const creator = await tiktokFetch<CreatorInfo>('https://open.tiktokapis.com/v2/post/publish/creator_info/query/', session.accessToken, {});
     if (!(creator.privacy_level_options || []).includes('SELF_ONLY'))
       return noStoreJson({ error: 'O TikTok não autorizou a privacidade Somente eu para esta conta.' }, 400);
+    if ((body.allowComment && creator.comment_disabled) || (body.allowDuet && creator.duet_disabled) ||
+        (body.allowStitch && creator.stitch_disabled))
+      return noStoreJson({ error: 'O criador desativou uma das interações selecionadas. Recarregue as opções do TikTok.' }, 400);
+    if (creator.max_video_post_duration_sec && body.durationSec > creator.max_video_post_duration_sec)
+      return noStoreJson({ error: 'A duração do vídeo excede o limite informado pelo TikTok.' }, 400);
     const bytes = await downloadSandboxVideo(content.finalMediaUrl);
     videoSize = bytes.length;
     const init = await tiktokFetch<InitResult>('https://open.tiktokapis.com/v2/post/publish/video/init/', session.accessToken, {
-      post_info: { title, privacy_level: 'SELF_ONLY', disable_comment: true, disable_duet: true, disable_stitch: true },
+      post_info: { title, privacy_level: 'SELF_ONLY',
+        disable_comment: !body.allowComment || Boolean(creator.comment_disabled),
+        disable_duet: !body.allowDuet || Boolean(creator.duet_disabled),
+        disable_stitch: !body.allowStitch || Boolean(creator.stitch_disabled),
+        brand_organic_toggle: Boolean(body.commercialDisclosure && body.ownBrand),
+        brand_content_toggle: false },
       source_info: { source: 'FILE_UPLOAD', video_size: bytes.length, chunk_size: bytes.length, total_chunk_count: 1 },
     });
     if (!init.publish_id || !init.upload_url) throw new Error('TikTok não forneceu dados para o upload.');

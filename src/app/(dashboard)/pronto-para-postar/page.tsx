@@ -912,6 +912,7 @@ export default async function ProntoParaPostarPage({
                                                                 selected={Boolean(content.socialPublications.find(p => p.platform === 'TIKTOK' && p.selected))}
                                                                 hasVideo={Boolean(content.finalMediaUrl && isVideoMedia)}
                                                                 initialCaption={content.caption || ''}
+                                                                videoUrl={content.finalMediaUrl || ''}
                                                             />
                                                         ) : null}
 

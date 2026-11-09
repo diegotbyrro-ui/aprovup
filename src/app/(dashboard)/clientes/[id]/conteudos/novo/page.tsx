@@ -150,11 +150,16 @@ export default async function NovoConteudoClientePage({
 
       <form
         action={createContent}
-        className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6"
+        className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6 pb-24 2xl:pb-6"
       >
         <NewContentDraftGuard
           clientId={client.id}
         />
+        <div className="fixed bottom-3 right-3 z-40 rounded-xl border border-blue-200 bg-white/95 p-2 shadow-2xl backdrop-blur 2xl:hidden" role="group" aria-label="Ações para salvar novo conteúdo no tablet ou celular">
+          <button type="submit" className="min-h-11 rounded-lg bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow hover:bg-blue-700 active:bg-blue-800">
+            Salvar conteúdo
+          </button>
+        </div>
 
         <input type="hidden" name="clientId" value={client.id} />
         <input type="hidden" name="status" value="IDEIA" />

@@ -1575,7 +1575,12 @@ export default async function ConteudoDetailPage({
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="space-y-6 xl:col-span-2">
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <form action={updateContentAction} className="space-y-6">
+            <form action={updateContentAction} className="space-y-6 pb-20 2xl:pb-0">
+              <div className="fixed bottom-3 right-3 z-40 rounded-xl border border-blue-200 bg-white/95 p-2 shadow-2xl backdrop-blur 2xl:hidden" role="group" aria-label="Ações para salvar edição no tablet ou celular">
+                <button type="submit" className="min-h-11 rounded-lg bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow hover:bg-blue-700 active:bg-blue-800">
+                  Salvar alterações
+                </button>
+              </div>
               <input type="hidden" name="originalPlannedDate" value={formatDateInput(contentSafe.plannedDate)}/>
               <input type="hidden" name="originalProductionDeadline" value={formatDateInput(contentSafe.productionDeadline)}/>
               <input type="hidden" name="originalProductionDeadlineTime" value={formatTimeInput(contentSafe.productionDeadline)}/>

@@ -2,18 +2,27 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-type Creator = { account?: string; privacyOptions?: string[]; canTest?: boolean; maxDuration?: number;
+type Creator = { account?: string; username?: string | null; privacyOptions?: string[]; canTest?: boolean; maxDuration?: number | null;
   commentsDisabled?: boolean; duetDisabled?: boolean; stitchDisabled?: boolean; error?: string; reconnect?: boolean };
 type PostStatus = { status?: string; providerStatus?: string; publishId?: string; complete?: boolean; failReason?: string; error?: string; uploadedBytes?: number | null; elapsedSeconds?: number; canAbandon?: boolean;
   uploadDiagnostic?: { phase: string; httpStatus?: number | null; diagnosticCode?: string | null; sizeBytes?: number | null } | null };
 
-export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initialCaption }: {
-  contentId: string; selected: boolean; hasVideo: boolean; initialCaption: string;
+export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initialCaption, videoUrl }: {
+  contentId: string; selected: boolean; hasVideo: boolean; initialCaption: string; videoUrl: string;
 }) {
   const [creator, setCreator] = useState<Creator | null>(null);
   const [checking, setChecking] = useState(false);
   const [caption, setCaption] = useState(initialCaption);
   const [confirmed, setConfirmed] = useState(false);
+  const [musicConsent, setMusicConsent] = useState(false);
+  const [privacy, setPrivacy] = useState(''); // TikTok exige escolha MANUAL, sem valor inicial.
+  const [allowComment, setAllowComment] = useState(false);
+  const [allowDuet, setAllowDuet] = useState(false);
+  const [allowStitch, setAllowStitch] = useState(false);
+  const [commercialDisclosure, setCommercialDisclosure] = useState(false);
+  const [ownBrand, setOwnBrand] = useState(false);
+  const [brandedContent, setBrandedContent] = useState(false);
+  const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [posting, setPosting] = useState(false);
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<PostStatus | null>(null);
@@ -67,19 +76,30 @@ export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initi
     finally { setPosting(false); }
   }
 
+  const validDuration = videoDuration !== null && Number.isFinite(videoDuration) && videoDuration > 0 &&
+    (!creator?.maxDuration || videoDuration <= creator.maxDuration);
+  const readyToPublish = Boolean(selected && hasVideo && creator?.canTest && privacy === 'SELF_ONLY' &&
+    confirmed && musicConsent && caption.trim() && validDuration &&
+    (!commercialDisclosure || ownBrand || brandedContent) && !(privacy === 'SELF_ONLY' && brandedContent) &&
+    (!allowComment || !creator?.commentsDisabled) && (!allowDuet || !creator?.duetDisabled) &&
+    (!allowStitch || !creator?.stitchDisabled));
+
   async function publish() {
-    if (posting || !selected || !hasVideo || !creator?.canTest || !confirmed || !caption.trim()) return;
-    if (!window.confirm(`Enviar este vídeo à conta ${creator.account || 'TikTok Sandbox'} como SOMENTE EU? O envio é real, mas privado.`)) return;
+    if (posting || !readyToPublish) return;
+    if (!window.confirm(`Enviar este vídeo à conta ${creator?.account || 'TikTok Sandbox'} como SOMENTE EU? O envio é real, mas privado.`)) return;
     setPosting(true); setMessage('');
     try {
       const response = await fetch('/api/integrations/tiktok/sandbox/post', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentId, title: caption.trim(), privacy: 'SELF_ONLY', consent: true }),
+        body: JSON.stringify({ contentId, title: caption.trim(), privacy, consent: confirmed,
+          musicConsent, allowComment, allowDuet, allowStitch, commercialDisclosure, ownBrand,
+          brandedContent, durationSec: videoDuration }),
       });
       const data = await response.json() as { error?: string; message?: string };
       if (!response.ok) throw new Error(data.error || 'TikTok não aceitou o envio.');
       setMessage(data.message || 'Vídeo enviado para processamento.');
       setConfirmed(false);
+      setMusicConsent(false);
       await refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Erro no envio.');
@@ -96,21 +116,66 @@ export function TikTokSandboxPublishPanel({ contentId, selected, hasVideo, initi
       <p className="mt-1 text-xs text-slate-600">Teste real e privado, exclusivo da diretoria. Não marca o conteúdo como publicado para o cliente.</p>
     </div>
     {!hasVideo ? <p role="alert" className="text-amber-800">Envie um arquivo MP4 final para liberar este teste.</p> : <>
-      <p className="text-xs"><b>Conta de destino:</b> {creator?.account || 'Consultando conta...'}</p>
+      <p className="text-xs"><b>Conta TikTok autorizada:</b> {creator?.account || 'Consultando conta...'}{creator?.username ? ` (@${creator.username})` : ''}</p>
       {creator?.error ? <p role="alert" className="text-xs font-semibold text-red-700">{creator.error} <a className="underline" href="/configuracoes/integracoes/tiktok-sandbox">Abrir TikTok Sandbox</a></p> : null}
-      <div className="rounded-lg bg-white p-3 text-xs">
-        <b>Privacidade: Somente eu (SELF_ONLY)</b>
-        <p className="mt-1 text-slate-500">Opções autorizadas nesta conta: {(creator?.privacyOptions || []).join(', ') || 'Consultando...'}. O teste utiliza somente a opção privada.</p>
-        <p className="mt-1 text-slate-500">Comentários, Duetos e Costuras desativados neste envio. Limite de duração informado pelo TikTok: {creator?.maxDuration ? `${creator.maxDuration} segundos` : 'não informado'}.</p>
+      <div className="rounded-lg border border-cyan-100 bg-white p-3">
+        <p className="text-xs font-bold">Prévia do vídeo que será enviado</p>
+        <video key={videoUrl} src={videoUrl} controls playsInline preload="metadata"
+          onLoadedMetadata={event => { const duration = event.currentTarget.duration; setVideoDuration(Number.isFinite(duration) && duration > 0 ? duration : null); }}
+          onError={() => setVideoDuration(null)}
+          className="mt-2 aspect-video max-h-52 w-full rounded-lg bg-slate-900 object-contain" />
+        <p className="mt-2 text-[11px] text-slate-600">Duração: {videoDuration === null ? 'verificando...' : `${Math.ceil(videoDuration)} s`} · Limite autorizado: {creator?.maxDuration ? `${creator.maxDuration} s` : 'não informado'}</p>
+        {videoDuration !== null && Boolean(creator?.maxDuration) && videoDuration > (creator?.maxDuration || 0) ? <p role="alert" className="text-xs font-bold text-red-700">Este vídeo excede a duração máxima autorizada pelo TikTok.</p> : null}
       </div>
-      <label className="block text-xs font-bold" htmlFor={`sandbox-caption-${contentId}`}>Legenda TikTok (editável, apenas para este teste)</label>
+      <label className="block text-xs font-bold" htmlFor={`sandbox-caption-${contentId}`}>Legenda TikTok (edite antes de publicar)</label>
       <textarea id={`sandbox-caption-${contentId}`} value={caption} onChange={e => setCaption(e.target.value)} maxLength={2200} rows={3}
         className="w-full rounded-lg border border-slate-200 bg-white p-3 text-xs outline-none focus:border-cyan-500" />
+      <div className="space-y-2 rounded-lg bg-white p-3">
+        <label htmlFor={`sandbox-privacy-${contentId}`} className="block text-xs font-bold">Quem pode assistir? (escolha obrigatória)</label>
+        <select id={`sandbox-privacy-${contentId}`} value={privacy} onChange={e => setPrivacy(e.target.value)}
+          className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs">
+          <option value="">Selecione a privacidade</option>
+          {(creator?.privacyOptions || []).map(level => <option key={level} value={level} disabled={level !== 'SELF_ONLY'}>
+            {level === 'SELF_ONLY' ? 'Somente eu' : level === 'PUBLIC_TO_EVERYONE' ? 'Todos — indisponível antes da auditoria' : level === 'MUTUAL_FOLLOW_FRIENDS' ? 'Amigos — indisponível antes da auditoria' : level === 'FOLLOWER_OF_CREATOR' ? 'Seguidores — indisponível antes da auditoria' : level}
+          </option>)}
+        </select>
+        <p className="text-[11px] text-slate-600">O TikTok retornou estas opções, mas o aplicativo em auditoria só pode publicar em <b>Somente eu</b>. Nenhuma privacidade é pré-selecionada.</p>
+      </div>
+      <fieldset className="space-y-2 rounded-lg bg-white p-3">
+        <legend className="text-xs font-bold">Permissões de interação (todas desmarcadas inicialmente)</legend>
+        {[
+          { label: 'Permitir comentários', value: allowComment, update: setAllowComment, disabled: Boolean(creator?.commentsDisabled) },
+          { label: 'Permitir Dueto', value: allowDuet, update: setAllowDuet, disabled: Boolean(creator?.duetDisabled) },
+          { label: 'Permitir Costura (Stitch)', value: allowStitch, update: setAllowStitch, disabled: Boolean(creator?.stitchDisabled) },
+        ].map(item => <label key={item.label} className={`flex items-center gap-2 text-xs ${item.disabled ? 'cursor-not-allowed text-slate-400' : 'text-slate-800'}`}>
+          <input type="checkbox" checked={item.value && !item.disabled} onChange={e => item.update(e.target.checked)} disabled={item.disabled} />
+          <span>{item.label}{item.disabled ? ' (desativado pelas configurações do TikTok)' : ''}</span>
+        </label>)}
+        <p className="text-[11px] text-slate-500">Interações dependem da privacidade e das configurações atuais do criador no TikTok.</p>
+      </fieldset>
+      <fieldset className="space-y-2 rounded-lg bg-white p-3">
+        <legend className="text-xs font-bold">Divulgação de conteúdo comercial</legend>
+        <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={commercialDisclosure}
+          onChange={e => { setCommercialDisclosure(e.target.checked); if (!e.target.checked) { setOwnBrand(false); setBrandedContent(false); } }} />
+          <span>Este vídeo promove uma marca, produto ou serviço</span></label>
+        {commercialDisclosure ? <div className="ml-4 space-y-2 border-l-2 border-slate-100 pl-3">
+          <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={ownBrand} onChange={e => setOwnBrand(e.target.checked)} />
+            <span><b>Minha marca:</b> promoção do meu negócio (identificação: conteúdo promocional).</span></label>
+          <label className="flex items-start gap-2 text-xs text-slate-400"><input type="checkbox" checked={brandedContent} disabled onChange={e => setBrandedContent(e.target.checked)} />
+            <span><b>Parceria paga / marca de terceiros:</b> indisponível na publicação privada do Sandbox; o TikTok exige visibilidade pública ou para amigos.</span></label>
+          {ownBrand ? <p className="text-xs font-semibold text-amber-800">O TikTok poderá marcar o vídeo como “Conteúdo promocional”.</p> : null}
+          {!ownBrand && !brandedContent ? <p role="alert" className="text-xs font-semibold text-red-700">Selecione o tipo de conteúdo comercial para habilitar o envio.</p> : null}
+        </div> : null}
+      </fieldset>
+      <label className="flex items-start gap-2 text-xs leading-relaxed">
+        <input type="checkbox" checked={musicConsent} onChange={e => setMusicConsent(e.target.checked)} className="mt-1" />
+        <span>Ao publicar, concordo com a <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noopener noreferrer" className="font-bold underline">Confirmação de uso de música do TikTok</a>. (By posting, you agree to TikTok&#39;s Music Usage Confirmation.)</span>
+      </label>
       <label className="flex items-start gap-2 text-xs leading-relaxed">
         <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} className="mt-1" />
-        <span>Confirmo que revisei o vídeo e a legenda e autorizo enviar este conteúdo real ao meu TikTok como <b>Somente eu</b>, sujeito ao processamento e às regras do TikTok.</span>
+        <span>Revisei a prévia e a legenda e autorizo expressamente enviar este vídeo real para <b>{creator?.account || 'minha conta TikTok'}</b> com a privacidade que selecionei.</span>
       </label>
-      <button type="button" disabled={posting || !creator?.canTest || !confirmed || !caption.trim() || (status?.status !== 'NENHUM_ENVIO' && Boolean(status?.publishId))}
+      <button type="button" disabled={posting || !readyToPublish || (status?.status !== 'NENHUM_ENVIO' && Boolean(status?.publishId))}
         onClick={() => void publish()} className="w-full rounded-lg bg-slate-950 px-3 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">
         {posting ? 'Enviando arquivo...' : 'Publicar teste privado no TikTok'}
       </button>

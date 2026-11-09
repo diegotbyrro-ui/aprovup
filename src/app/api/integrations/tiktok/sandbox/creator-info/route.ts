@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
     const info = await tiktokFetch<CreatorInfo>('https://open.tiktokapis.com/v2/post/publish/creator_info/query/', session.accessToken, {});
     const privacy = Array.isArray(info.privacy_level_options) ? info.privacy_level_options : [];
     const result = noStoreJson({
-      account: info.creator_username || info.creator_nickname || 'Conta autorizada',
+      account: info.creator_nickname || info.creator_username || 'Conta autorizada',
+      username: info.creator_username || null,
       privacyOptions: privacy,
       canTest: privacy.includes('SELF_ONLY'),
       maxDuration: info.max_video_post_duration_sec ?? null,
