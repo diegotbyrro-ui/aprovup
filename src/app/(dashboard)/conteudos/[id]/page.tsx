@@ -1837,7 +1837,8 @@ export default async function ConteudoDetailPage({
               </div>
 
               <ReferenceAttachmentsField
-                existing={
+                  contentId={contentSafe.id}
+                  existing={
                   referenceImages
                 }
               />

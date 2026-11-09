@@ -103,6 +103,14 @@ async function deleteContent(
         },
       });
 
+      // Remove dependencias locais explicitamente, inclusive se a
+      // base antiga nao tiver todas as cascatas implementadas.
+      // Tudo ocorre na mesma transacao: falha => rollback integral.
+      await transaction.instagramMediaAsset.deleteMany({ where: { contentId: content.id } });
+      await transaction.instagramStoryPublication.deleteMany({ where: { contentId: content.id } });
+      await transaction.instagramPublication.deleteMany({ where: { contentId: content.id } });
+      await transaction.socialPublication.deleteMany({ where: { contentId: content.id } });
+
       await transaction.content.delete({
         where: {
           id:

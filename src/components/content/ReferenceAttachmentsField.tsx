@@ -130,6 +130,10 @@ function formatFileSize(
 }
 
 
+function canPreviewReference(mime: string, name: string) {
+  return /\.(png|jpe?g|webp|gif|avif)$/i.test(name) && /^image\/(png|jpeg|webp|gif|avif)$/i.test(mime);
+}
+
 function fileKey(
   file:
     File
@@ -147,9 +151,11 @@ function fileKey(
 
 export function ReferenceAttachmentsField({
   existing,
+  contentId,
 }: {
   existing:
     ReferenceAttachmentItem[];
+  contentId?: string;
 }) {
 
   const inputRef =
@@ -172,7 +178,7 @@ export function ReferenceAttachmentsField({
 
 
   const [
-    selectedExistingUrls,
+    storedSelectedExistingUrls,
     setSelectedExistingUrls,
   ] =
     useState<
@@ -194,7 +200,7 @@ export function ReferenceAttachmentsField({
 
 
   const [
-    removedExistingUrls,
+    storedRemovedExistingUrls,
     setRemovedExistingUrls,
   ] =
     useState<
@@ -203,6 +209,23 @@ export function ReferenceAttachmentsField({
       []
     );
 
+
+  // Keep the current selection consistent with the server-provided
+  // attachments without a synchronous state update inside an effect.
+  const currentExistingUrlSet = useMemo(
+    () => new Set(existing.map((image) => image.url)),
+    [existing]
+  );
+
+  const selectedExistingUrls = useMemo(
+    () => storedSelectedExistingUrls.filter((url) => currentExistingUrlSet.has(url)),
+    [storedSelectedExistingUrls, currentExistingUrlSet]
+  );
+
+  const removedExistingUrls = useMemo(
+    () => storedRemovedExistingUrls.filter((url) => currentExistingUrlSet.has(url)),
+    [storedRemovedExistingUrls, currentExistingUrlSet]
+  );
 
   const selectedExistingSet =
     useMemo(
@@ -302,56 +325,6 @@ export function ReferenceAttachmentsField({
     },
     [
       previews,
-    ]
-  );
-
-
-  useEffect(
-    () => {
-
-      const currentUrls =
-        new Set(
-          existing.map(
-            (
-              image
-            ) =>
-              image.url
-          )
-        );
-
-
-      setRemovedExistingUrls(
-        (
-          current
-        ) =>
-          current.filter(
-            (
-              url
-            ) =>
-              currentUrls.has(
-                url
-              )
-          )
-      );
-
-
-      setSelectedExistingUrls(
-        (
-          current
-        ) =>
-          current.filter(
-            (
-              url
-            ) =>
-              currentUrls.has(
-                url
-              )
-          )
-      );
-
-    },
-    [
-      existing,
     ]
   );
 
@@ -647,7 +620,7 @@ export function ReferenceAttachmentsField({
             </p>
 
             <p className="mt-0.5 text-[11px] text-slate-500">
-              Fotos para Design ou Filmmaker usar na criação.
+              Imagens, documentos, arquivos de Design e vídeos para produção.
             </p>
 
           </div>
@@ -682,7 +655,6 @@ export function ReferenceAttachmentsField({
         }
         name="referenceImages"
         type="file"
-        accept="image/*"
         multiple
         onChange={
           (
@@ -791,24 +763,17 @@ export function ReferenceAttachmentsField({
 
 
                     <a
-                      href={
-                        image.url
-                      }
+                      href={contentId ? '/api/conteudos/' + encodeURIComponent(contentId) + '/reference-download?url=' + encodeURIComponent(image.url) : image.url}
                       target="_blank"
                       rel="noreferrer"
                       className="h-12 w-16 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100"
                     >
 
-                      <img
-                        src={
-                          image.url
-                        }
-                        alt={
-                          image.originalName ||
-                          'Anexo'
-                        }
-                        className="h-full w-full object-cover"
-                      />
+                      {canPreviewReference(image.mimeType, image.originalName || image.name) ? (
+                        <img src={image.url} alt={image.originalName || 'Anexo'} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center"><Paperclip size={20} className="text-slate-500" /></span>
+                      )}
 
                     </a>
 
@@ -850,9 +815,7 @@ export function ReferenceAttachmentsField({
 
 
                     <a
-                      href={
-                        image.url
-                      }
+                      href={contentId ? '/api/conteudos/' + encodeURIComponent(contentId) + '/reference-download?url=' + encodeURIComponent(image.url) : image.url}
                       target="_blank"
                       rel="noreferrer"
                       aria-label="Abrir anexo"
@@ -930,15 +893,11 @@ export function ReferenceAttachmentsField({
 
                     <div className="h-12 w-16 shrink-0 overflow-hidden rounded-md border border-blue-100 bg-white">
 
-                      <img
-                        src={
-                          preview.url
-                        }
-                        alt={
-                          preview.file.name
-                        }
-                        className="h-full w-full object-cover"
-                      />
+                      {canPreviewReference(preview.file.type, preview.file.name) ? (
+                        <img src={preview.url} alt={preview.file.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center"><Paperclip size={20} className="text-blue-500" /></span>
+                      )}
 
                     </div>
 
@@ -964,10 +923,7 @@ export function ReferenceAttachmentsField({
                     </div>
 
 
-                    <ImageIcon
-                      size={16}
-                      className="shrink-0 text-blue-400"
-                    />
+                    {canPreviewReference(preview.file.type, preview.file.name) ? <ImageIcon size={16} className="shrink-0 text-blue-400" /> : <Paperclip size={16} className="shrink-0 text-blue-400" />}
 
                   </div>
                 );
@@ -1006,7 +962,7 @@ export function ReferenceAttachmentsField({
               size={16}
             />
 
-            Anexar fotos de referência
+            Anexar arquivos de referência
 
           </button>
 
@@ -1016,7 +972,7 @@ export function ReferenceAttachmentsField({
 
 
       <p className="mt-3 text-[10px] leading-4 text-slate-400">
-        Você pode adicionar várias fotos de uma vez ou adicionar novas imagens em etapas. Marque os arquivos desejados e use Excluir selecionados para remover somente os escolhidos.
+        Aceita PNG, JPG, PDF, PSD, AI, CDR, SVG, vídeos, documentos e ZIP, entre outros formatos de produção. Máximo de 100 MB por arquivo e 120 MB por envio. Arquivos executáveis não são aceitos.
       </p>
 
     </section>

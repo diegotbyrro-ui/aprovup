@@ -5,6 +5,7 @@ import { hasPermission, requireAnyPermission, requirePermission } from '@/lib/us
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getDirectorReturnUrl } from '@/lib/directorReturn';
+import { validateProductionReferences } from '@/lib/referenceFilePolicy';
 
 import {
   deleteAprovUpReferenceFile,
@@ -42,32 +43,8 @@ function referenceImageFiles(
 }
 
 
-function validateReferenceImages(
-  files:
-    File[]
-) {
-  /*
-   * Mantemos somente a validação de tipo.
-   * Quantidade e tamanho deixam de ser limitados
-   * artificialmente pelo AprovUp.
-   */
-  for (
-    const file
-    of files
-  ) {
-    if (
-      !String(
-        file.type ||
-        ''
-      ).startsWith(
-        'image/'
-      )
-    ) {
-      throw new Error(
-        `O arquivo "${file.name}" não é uma imagem.`
-      );
-    }
-  }
+function validateReferenceImages(files: File[]) {
+  validateProductionReferences(files);
 }
 
 

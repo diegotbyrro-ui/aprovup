@@ -1,6 +1,7 @@
 import {
   randomUUID,
 } from "node:crypto";
+import { safeReferenceContentType } from './referenceFilePolicy';
 
 import {
   createClient,
@@ -507,8 +508,7 @@ export async function uploadAprovUpReferenceFile(
         ),
         {
           contentType:
-            file.type ||
-            'application/octet-stream',
+            safeReferenceContentType(file),
 
           cacheControl:
             '3600',
