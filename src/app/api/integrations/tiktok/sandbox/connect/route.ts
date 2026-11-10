@@ -16,6 +16,7 @@ export async function GET(_request: NextRequest) {
   url.searchParams.set('scope', 'user.info.basic,video.list,user.info.stats,video.publish');
   url.searchParams.set('redirect_uri', config.redirectUri);
   url.searchParams.set('state', state.state);
+  url.searchParams.set('disable_auto_auth', '1');
   const response = NextResponse.redirect(url);
   response.headers.set('Cache-Control', 'no-store');
   setSandboxState(response, state);
