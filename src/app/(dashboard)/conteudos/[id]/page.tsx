@@ -1106,7 +1106,7 @@ export default async function ConteudoDetailPage({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-40 2xl:pb-16">
 
       {shouldClearCreationDraft ? (
         <ClearNewContentDraft
@@ -1576,8 +1576,8 @@ export default async function ConteudoDetailPage({
         <div className="space-y-6 xl:col-span-2">
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <form action={updateContentAction} className="space-y-6 pb-20 2xl:pb-0">
-              <div className="fixed bottom-3 right-3 z-40 rounded-xl border border-blue-200 bg-white/95 p-2 shadow-2xl backdrop-blur 2xl:hidden" role="group" aria-label="Ações para salvar edição no tablet ou celular">
-                <button type="submit" className="min-h-11 rounded-lg bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow hover:bg-blue-700 active:bg-blue-800">
+              <div className="sticky top-24 z-30 flex justify-end 2xl:hidden" role="group" aria-label="Ações para salvar edição no tablet ou celular">
+                <button type="submit" className="min-h-11 rounded-xl border border-blue-200 bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg hover:bg-blue-700 active:bg-blue-800">
                   Salvar alterações
                 </button>
               </div>
@@ -2426,7 +2426,7 @@ export default async function ConteudoDetailPage({
               Excluir conteúdo
             </summary>
 
-            <div className="mt-3 w-full rounded-2xl border border-red-200 bg-white p-4 shadow-lg md:absolute md:right-0 md:z-30 md:w-80">
+            <div className="mt-3 w-full rounded-2xl border border-red-200 bg-white p-4 shadow-lg md:w-80">
               <p className="font-bold text-slate-900">
                 Excluir conteúdo?
               </p>

@@ -21,7 +21,7 @@ test('novo conteudo usa action createContent e submit visivel no tablet', () => 
   assert.match(newer.slice(form, closing), /<button type="submit"[^>]*>\s*Salvar conteúdo/);
 });
 test('telas responsivas mostram o botao ate 2xl e preservam botao original desktop', () => {
-  assert.match(edit, /fixed bottom-3 right-3 z-40[^"\n]*2xl:hidden/);
+  assert.match(edit, /sticky top-24 z-30 flex justify-end 2xl:hidden/);
   assert.match(newer, /fixed bottom-3 right-3 z-40[^"\n]*2xl:hidden/);
   assert.ok(edit.match(/Salvar alterações/g)?.length >= 2);
   assert.ok(newer.includes('Salvar Conteúdo'));

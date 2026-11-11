@@ -187,11 +187,9 @@ export function InternalReviewAdjustment({
       null
     >(null);
 
-  const [
-    adjustment,
-    setAdjustment,
-  ] =
-    useState('');
+  // Keep typing outside React state to avoid rerendering the card on each keystroke.
+  const adjustmentRef =
+    useRef<HTMLTextAreaElement | null>(null);
 
   const [
     recording,
@@ -636,7 +634,7 @@ export function InternalReviewAdjustment({
     setError('');
 
     const cleanText =
-      adjustment.trim();
+      adjustmentRef.current?.value.trim() || '';
 
     if (
       !cleanText &&
@@ -792,16 +790,8 @@ export function InternalReviewAdjustment({
       </p>
 
       <textarea
-        value={
-          adjustment
-        }
-        onChange={
-          (event) => {
-            setAdjustment(
-              event.target.value
-            );
-          }
-        }
+        ref={adjustmentRef}
+        name="adjustment"
         maxLength={2000}
         rows={2}
         placeholder="Ex: cortar de 00:14 a 00:18, trocar a tela final..."
