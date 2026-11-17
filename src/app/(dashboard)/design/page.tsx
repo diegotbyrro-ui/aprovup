@@ -36,6 +36,10 @@ import {
   KanbanClientFilter,
 } from "@/components/kanban/KanbanClientFilter";
 
+import { ProductionDeadlineFilter } from "@/components/kanban/ProductionDeadlineFilter";
+import { ProductionOverdueList } from "@/components/kanban/ProductionOverdueList";
+import { filterProductionByDay } from "@/lib/productionDayFilter";
+
 import {
   ProductionBatchKanbanPrototype,
 } from "@/components/kanban/ProductionBatchKanbanPrototype";
@@ -2241,6 +2245,9 @@ export default async function DesignPage({
 }: {
   searchParams?: Promise<{
     cliente?: string;
+    periodo?: string;
+    dia?: string;
+    visao?: string;
   }>;
 }) {
   const {
@@ -2562,7 +2569,7 @@ export default async function DesignPage({
       : "TODOS";
 
 
-  const contents =
+  const allContents =
     await prisma.content.findMany({
       where: {
         client: {
@@ -2626,6 +2633,10 @@ export default async function DesignPage({
       ],
     });
 
+
+  const contents = filterProductionByDay(allContents, params?.periodo, params?.dia);
+  // O contador e a tela de atrasos nao dependem do filtro por dia.
+  const overdueContents = allContents.filter((content) => isLate(content));
 
   const graphicDesignCount =
     contents.filter(
@@ -2706,15 +2717,7 @@ export default async function DesignPage({
     ).length;
 
 
-  const lateCount =
-    contents.filter(
-      (
-        content
-      ) =>
-        isLate(
-          content
-        )
-    ).length;
+  const lateCount = overdueContents.length;
 
 
   const demandCount =
@@ -2761,6 +2764,30 @@ export default async function DesignPage({
       }
     ).length;
 
+
+  if (params?.visao === "atrasos") {
+    return (
+      <div className="space-y-5">
+        <section className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <Link
+              href={`/design${selectedClient !== "TODOS" ? `?cliente=${encodeURIComponent(selectedClient)}` : ""}`}
+              className="text-xs font-bold text-blue-700 hover:underline"
+            >
+              Voltar ao fluxo de Design
+            </Link>
+            <h1 className="mt-2 text-2xl font-black text-slate-900">Design Â· Projetos em atraso</h1>
+            <p className="mt-1 text-xs text-slate-500">Todas as demandas vencidas da Ã¡rea, sem limite por dia.</p>
+          </div>
+          <KanbanClientFilter
+            selectedClient={selectedClient}
+            clients={clients.map((client) => ({ id: client.id, name: client.name }))}
+          />
+        </section>
+        <ProductionOverdueList contents={overdueContents} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -2871,25 +2898,17 @@ export default async function DesignPage({
         />
 
 
-        {lateCount >
-        0 ? (
-          <div className="flex min-w-[160px] items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-3">
-            <AlertTriangle
-              size={15}
-              className="text-red-600"
-            />
-
-            <div>
-              <p className="text-lg font-bold leading-none text-red-700">
-                {lateCount}
-              </p>
-
-              <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.07em] text-red-500">
-                Fora do prazo
-              </p>
-            </div>
+        <Link
+          href={`/design?visao=atrasos${selectedClient !== "TODOS" ? `&cliente=${encodeURIComponent(selectedClient)}` : ""}`}
+          title="Ver todas as demandas fora do prazo"
+          className="flex min-w-[160px] items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-3 transition hover:border-red-400 hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+        >
+          <AlertTriangle size={15} className="text-red-600" />
+          <div>
+            <p className="text-lg font-bold leading-none text-red-700">{lateCount}</p>
+            <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.07em] text-red-600">Fora do prazo Â· Ver todos</p>
           </div>
-        ) : null}
+        </Link>
       </section>
 
 
@@ -3023,6 +3042,8 @@ export default async function DesignPage({
               }
             />
 
+
+            <ProductionDeadlineFilter />
 
             <div className="flex items-center gap-1.5 text-[9px] font-semibold text-slate-400">
               <Palette

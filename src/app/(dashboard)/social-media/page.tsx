@@ -1647,7 +1647,7 @@ const query =
                 </h2>
 
                 <p className="mt-0.5 text-[9px] text-slate-400">
-                  Confira o material final e a legenda antes de enviar ao cliente.
+                  Confira o material final antes de enviar ao cliente. A legenda é opcional.
                 </p>
               </div>
             </div>
@@ -1748,8 +1748,7 @@ const query =
                   Boolean(
                     mediaUrl ||
                     externalUrl
-                  ) &&
-                  hasCaption;
+                  );
 
                 const waiting =
                   content.status ===
@@ -2083,7 +2082,7 @@ const query =
                           </strong>
 
                           {content.caption ||
-                            "Prévia da legenda do conteúdo."}
+                            "Sem legenda (opcional)."}
                         </p>
 
                         <p className="mt-1.5 text-[7px] uppercase tracking-wide text-slate-400">
@@ -2144,19 +2143,19 @@ const query =
                               className={
                                 hasCaption
                                   ? "text-[7px] font-bold text-emerald-600"
-                                  : "text-[7px] font-bold text-red-500"
+                                  : "text-[7px] font-bold text-slate-500"
                               }
                             >
                               {hasCaption
                                 ? "PRONTA"
-                                : "PENDENTE"}
+                                : "OPCIONAL"}
                             </span>
                           </div>
 
                           <p className="mt-1.5 line-clamp-3 text-[9px] leading-relaxed text-slate-600">
                             {hasCaption
                               ? content.caption
-                              : "Finalize a legenda antes de enviar ao cliente."}
+                              : "Sem legenda cadastrada; envio permitido."}
                           </p>
                         </div>
 
@@ -2211,9 +2210,7 @@ const query =
                                       : !mediaUrl &&
                                           !externalUrl
                                         ? "Aguardando material final"
-                                        : !hasCaption
-                                          ? "Aguardando legenda"
-                                          : "Aguardando produção"
+                                        : "Aguardando produção"
                                   }
                                 </button>
                               </form>
@@ -2256,11 +2253,9 @@ const query =
                             </Link>
                           ) : (
                             <div className="flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[8px] font-bold text-slate-400">
-                              {!mediaUrl
+                              {!mediaUrl && !externalUrl
                                 ? "Material final pendente"
-                                : !hasCaption
-                                  ? "Legenda pendente"
-                                  : "Aguardando produção"}
+                                : "Aguardando produção"}
                             </div>
                           )}
                         </div>

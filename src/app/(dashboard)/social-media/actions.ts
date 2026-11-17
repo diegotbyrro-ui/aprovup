@@ -622,15 +622,7 @@ const content =
   }
 
 
-  if (
-    !String(
-      content.caption || ''
-    ).trim()
-  ) {
-    throw new Error(
-      'A legenda precisa estar pronta antes da aprovação final.'
-    );
-  }
+
 
 
   const existingPendingApproval =
