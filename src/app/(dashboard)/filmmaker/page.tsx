@@ -1679,8 +1679,8 @@ export default async function FilmmakerPage({
             >
               Voltar ao fluxo de Audiovisual
             </Link>
-            <h1 className="mt-2 text-2xl font-black text-slate-900">Audiovisual Â· Projetos em atraso</h1>
-            <p className="mt-1 text-xs text-slate-500">Todas as demandas vencidas da Ã¡rea, sem limite por dia.</p>
+            <h1 className="mt-2 text-2xl font-black text-slate-900">Audiovisual · Projetos em atraso</h1>
+            <p className="mt-1 text-xs text-slate-500">Todas as demandas vencidas da área, sem limite por dia.</p>
           </div>
           <KanbanClientFilter
             selectedClient={selectedClient}
@@ -1802,7 +1802,7 @@ export default async function FilmmakerPage({
           <AlertTriangle size={15} className="text-red-600" />
           <div>
             <p className="text-lg font-bold leading-none text-red-700">{late}</p>
-            <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.07em] text-red-600">Fora do prazo Â· Ver todos</p>
+            <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.07em] text-red-600">Fora do prazo · Ver todos</p>
           </div>
         </Link>
       </section>

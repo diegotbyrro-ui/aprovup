@@ -32,7 +32,7 @@ export function ProductionOverdueList({
         <div>
           <h2 className="text-lg font-black text-slate-900">Todas as demandas fora do prazo</h2>
           <p className="mt-1 text-xs text-slate-500">
-            Prazo de produÃ§Ã£o vencido, sem entrega Ã  anÃ¡lise ou conclusÃ£o. Ordenadas do vencimento mais antigo ao mais recente.
+            Prazo de produção vencido, sem entrega à análise ou conclusão. Ordenadas do vencimento mais antigo ao mais recente.
           </p>
         </div>
         <span className="rounded-lg bg-red-50 px-3 py-2 text-sm font-black text-red-700">
@@ -53,9 +53,9 @@ export function ProductionOverdueList({
             >
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{item.client.name || 'Cliente'}</p>
-                <h3 className="mt-1 text-sm font-black text-slate-900">{item.title || 'Demanda sem tÃ­tulo'}</h3>
+                <h3 className="mt-1 text-sm font-black text-slate-900">{item.title || 'Demanda sem título'}</h3>
                 <p className="mt-1 text-xs text-slate-600">
-                  {formatLabel(item.status)} Â· {formatLabel(item.format)}
+                  {formatLabel(item.status)} · {formatLabel(item.format)}
                 </p>
               </div>
               <div className="flex items-center gap-3">

@@ -6,10 +6,10 @@ import { useTransition } from 'react';
 const OPTIONS = [
   { value: 'TODOS', label: 'Todos os dias' },
   { value: 'HOJE', label: 'Hoje' },
-  { value: 'AMANHA', label: 'AmanhÃ£' },
+  { value: 'AMANHA', label: 'Amanhã' },
   { value: 'SEMANA', label: 'Esta semana' },
-  { value: '7_DIAS', label: 'PrÃ³ximos 7 dias' },
-  { value: 'DATA', label: 'Dia especÃ­fico' },
+  { value: '7_DIAS', label: 'Próximos 7 dias' },
+  { value: 'DATA', label: 'Dia específico' },
   { value: 'SEM_DATA', label: 'Sem data' },
 ];
 
@@ -57,7 +57,7 @@ export function ProductionDeadlineFilter() {
         <label className="flex min-h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 shadow-sm">
           <span className="text-[9px] font-bold text-slate-500">Dia</span>
           <input
-            aria-label="Escolher dia especÃ­fico de entrega"
+            aria-label="Escolher dia específico de entrega"
             type="date"
             value={day}
             disabled={isPending}
